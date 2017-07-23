@@ -196,7 +196,7 @@ NSString *const TGGoogleDriveAppSecret = @"0_auNUxXAOmt_CtRTmIQGTpm";
 
 + (bool)isGoogleDriveInstalled
 {
-    return [[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"googledrive://"]];
+    return false; //[[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"googledrive://"]];
 }
 
 @end

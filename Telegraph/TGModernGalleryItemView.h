@@ -29,6 +29,8 @@
 
 - (TGViewController *)parentControllerForPresentation;
 
+- (UIView *)overlayContainerView;
+
 @end
 
 @interface TGModernGalleryItemView : UIView

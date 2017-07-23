@@ -72,6 +72,9 @@ typedef enum
     NSInteger _zoomedPivotTimestampIndex;
     NSArray *_zoomedTimestamps;
     NSMutableArray *_zoomedThumbnailViews;
+    
+    UIImageView *_arrowView;
+    UILabel *_recipientLabel;
 }
 @end
 
@@ -362,8 +365,31 @@ typedef enum
         _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
         _panGestureRecognizer.delegate = self;
         [_scrubberHandle addGestureRecognizer:_panGestureRecognizer];
+        
+        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PhotoPickerArrow"]];
+        _arrowView.alpha = 0.45f;
+        _arrowView.hidden = true;
+        [self addSubview:_arrowView];
+        
+        _recipientLabel = [[UILabel alloc] init];
+        _recipientLabel.backgroundColor = [UIColor clearColor];
+        _recipientLabel.font = TGBoldSystemFontOfSize(13.0f);
+        _recipientLabel.textColor = UIColorRGBA(0xffffff, 0.45f);
+        _recipientLabel.hidden = true;
+        [self addSubview:_recipientLabel];
     }
     return self;
+}
+
+- (void)setRecipientName:(NSString *)recipientName
+{
+    _recipientLabel.text = recipientName;
+    _recipientLabel.hidden = recipientName.length == 0;
+    _arrowView.hidden = _recipientLabel.hidden;
+    
+    [_recipientLabel sizeToFit];
+    
+    [self _layoutRecipientLabel];
 }
 
 - (bool)zoomAvailable
@@ -1259,6 +1285,18 @@ typedef enum
     }
 }
 
+- (void)_layoutRecipientLabel
+{
+    if (self.frame.size.width < FLT_EPSILON)
+        return;
+    
+    CGFloat screenWidth = MAX(self.frame.size.width, self.frame.size.height);
+    CGFloat recipientWidth = MIN(_recipientLabel.frame.size.width, screenWidth - 100.0f);
+    
+    _arrowView.frame = CGRectMake(48.0f, 6.0f, _arrowView.frame.size.width, _arrowView.frame.size.height);
+    _recipientLabel.frame = CGRectMake(CGRectGetMaxX(_arrowView.frame) + 6.0f, _arrowView.frame.origin.y - 2.0f, recipientWidth, _recipientLabel.frame.size.height);
+}
+
 #pragma mark - Layout
 
 - (void)layoutSubviews
@@ -1271,6 +1309,8 @@ typedef enum
     _zoomedThumbnailWrapperView.frame = _summaryThumbnailWrapperView.frame;
     
     [self _updateScrubberAnimationsAndResetCurrentPosition:true];
+    
+    [self _layoutRecipientLabel];
 }
 
 + (NSString *)_stringFromTotalSeconds:(NSInteger)totalSeconds

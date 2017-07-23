@@ -183,7 +183,7 @@
         if (state.startTime > DBL_EPSILON && !strongSelf->_timerStarted)
             [timer set:[strongSelf timerSignalForStartTime:state.startTime]];
         
-        if (!strongSelf->_dismissing && state.state != TGCallStateEnding && state.state != TGCallStateEnded && state.state != TGCallStateBusy && state.state != TGCallStateMissed)
+        if (!strongSelf->_dismissing && state.state != TGCallStateEnding && state.state != TGCallStateEnded && state.state != TGCallStateBusy && state.state != TGCallStateMissed && state.state != TGCallStateNoAnswer)
             strongSelf->_durationPipe.sink(@(duration));
         
         [strongSelf setState:state duration:duration];
@@ -303,6 +303,7 @@
             break;
             
         case TGCallStateBusy:
+        case TGCallStateNoAnswer:
         {
             if (_durationPipe != nil)
                 _durationPipe.sink(nil);

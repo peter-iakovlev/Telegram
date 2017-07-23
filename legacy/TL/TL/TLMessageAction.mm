@@ -706,3 +706,29 @@
 
 @end
 
+@implementation TLMessageAction$messageActionScreenshotTaken : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x4792929b;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x496da402;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessageAction$messageActionScreenshotTaken *object = [[TLMessageAction$messageActionScreenshotTaken alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

@@ -3,7 +3,6 @@
 #import "TGActivityIndicatorView.h"
 #import "TGProgressSpinnerView.h"
 #import "TGAppDelegate.h"
-#import "TGBlurEffect.h"
 
 #import "TGOverlayControllerWindow.h"
 
@@ -45,7 +44,7 @@
     
     if (iosMajorVersion() >= 9)
     {
-        _effectView = [[UIVisualEffectView alloc] initWithEffect:_light ? [TGBlurEffect lightProgressBlurEffect] : [TGBlurEffect progressBlurEffect]];
+        _effectView = [[UIVisualEffectView alloc] initWithEffect:_light ? [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight] : [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
         _effectView.frame = _containerView.bounds;
         [_containerView addSubview:_effectView];
         

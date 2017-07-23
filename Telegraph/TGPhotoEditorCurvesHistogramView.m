@@ -108,7 +108,7 @@
     button = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 80, 20)];
     button.backgroundColor = [UIColor clearColor];
     button.titleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-    [button setTitle:[title uppercaseString] forState:UIControlStateNormal];
+    [button setTitle:title forState:UIControlStateNormal];
     [button setTitleColor:UIColorRGB(0x808080) forState:UIControlStateNormal];
     [button setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected];
     [button setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected | UIControlStateHighlighted];
@@ -157,10 +157,10 @@
     
     if (!self.isLandscape)
     {
-        _rgbButton.frame = CGRectMake(floor(self.frame.size.width / 5 - _rgbButton.frame.size.width / 2), 8, _rgbButton.frame.size.width, _rgbButton.frame.size.height);
-        _redButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 2 - _redButton.frame.size.width / 2), 8, _redButton.frame.size.width, _redButton.frame.size.height);
-        _greenButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 3 - _greenButton.frame.size.width / 2), 8, _greenButton.frame.size.width, _greenButton.frame.size.height);
-        _blueButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 4 - _blueButton.frame.size.width / 2), 8, _blueButton.frame.size.width, _blueButton.frame.size.height);
+        _rgbButton.frame = CGRectMake(floor(self.frame.size.width / 5 - _rgbButton.frame.size.width / 2), 10, _rgbButton.frame.size.width, _rgbButton.frame.size.height);
+        _redButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 2 - _redButton.frame.size.width / 2), 10, _redButton.frame.size.width, _redButton.frame.size.height);
+        _greenButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 3 - _greenButton.frame.size.width / 2), 10, _greenButton.frame.size.width, _greenButton.frame.size.height);
+        _blueButton.frame = CGRectMake(floor(self.frame.size.width / 5 * 4 - _blueButton.frame.size.width / 2), 10, _blueButton.frame.size.width, _blueButton.frame.size.height);
         
         _histogramView.frame = CGRectMake(0, 34, histogramViewSize.width, histogramViewSize.height);
     }
@@ -177,10 +177,10 @@
                 _blueButton.transform = transform;
                 _histogramView.transform = transform;
                 
-                _rgbButton.frame = CGRectMake(self.frame.size.width - _rgbButton.frame.size.width - 8, floor(self.frame.size.height / 5 - _rgbButton.frame.size.height / 2), _rgbButton.frame.size.width, _rgbButton.frame.size.height);
-                _redButton.frame = CGRectMake(self.frame.size.width - _redButton.frame.size.width - 8, floor(self.frame.size.height / 5 * 2 - _redButton.frame.size.height / 2), _redButton.frame.size.width, _redButton.frame.size.height);
-                _greenButton.frame = CGRectMake(self.frame.size.width - _blueButton.frame.size.width - 8, floor(self.frame.size.height / 5 * 3 - _greenButton.frame.size.height / 2), _greenButton.frame.size.width, _greenButton.frame.size.height);
-                _blueButton.frame = CGRectMake(self.frame.size.width - _blueButton.frame.size.width - 8, floor(self.frame.size.height / 5 * 4 - _blueButton.frame.size.height / 2), _blueButton.frame.size.width, _blueButton.frame.size.height);
+                _rgbButton.frame = CGRectMake(self.frame.size.width - _rgbButton.frame.size.width - 10, floor(self.frame.size.height / 5 - _rgbButton.frame.size.height / 2), _rgbButton.frame.size.width, _rgbButton.frame.size.height);
+                _redButton.frame = CGRectMake(self.frame.size.width - _redButton.frame.size.width - 10, floor(self.frame.size.height / 5 * 2 - _redButton.frame.size.height / 2), _redButton.frame.size.width, _redButton.frame.size.height);
+                _greenButton.frame = CGRectMake(self.frame.size.width - _blueButton.frame.size.width - 10, floor(self.frame.size.height / 5 * 3 - _greenButton.frame.size.height / 2), _greenButton.frame.size.width, _greenButton.frame.size.height);
+                _blueButton.frame = CGRectMake(self.frame.size.width - _blueButton.frame.size.width - 10, floor(self.frame.size.height / 5 * 4 - _blueButton.frame.size.height / 2), _blueButton.frame.size.width, _blueButton.frame.size.height);
                 _histogramView.frame = CGRectMake(0, 0, histogramViewSize.width, histogramViewSize.height);
             }
             else if (orientation == UIInterfaceOrientationLandscapeRight)
@@ -192,10 +192,10 @@
                 _blueButton.transform = transform;
                 _histogramView.transform = transform;
                 
-                _rgbButton.frame = CGRectMake(8, floor(self.frame.size.height / 5 * 4 - _rgbButton.frame.size.height / 2), _rgbButton.frame.size.width, _rgbButton.frame.size.height);
-                _redButton.frame = CGRectMake(8, floor(self.frame.size.height / 5 * 3 - _redButton.frame.size.height / 2), _redButton.frame.size.width, _redButton.frame.size.height);
-                _greenButton.frame = CGRectMake(8, floor(self.frame.size.height / 5 * 2 - _greenButton.frame.size.height / 2), _greenButton.frame.size.width, _greenButton.frame.size.height);
-                _blueButton.frame = CGRectMake(8, floor(self.frame.size.height / 5 - _blueButton.frame.size.height / 2), _blueButton.frame.size.width, _blueButton.frame.size.height);
+                _rgbButton.frame = CGRectMake(10, floor(self.frame.size.height / 5 * 4 - _rgbButton.frame.size.height / 2), _rgbButton.frame.size.width, _rgbButton.frame.size.height);
+                _redButton.frame = CGRectMake(10, floor(self.frame.size.height / 5 * 3 - _redButton.frame.size.height / 2), _redButton.frame.size.width, _redButton.frame.size.height);
+                _greenButton.frame = CGRectMake(10, floor(self.frame.size.height / 5 * 2 - _greenButton.frame.size.height / 2), _greenButton.frame.size.width, _greenButton.frame.size.height);
+                _blueButton.frame = CGRectMake(10, floor(self.frame.size.height / 5 - _blueButton.frame.size.height / 2), _blueButton.frame.size.width, _blueButton.frame.size.height);
                 _histogramView.frame = CGRectMake(34, 0, histogramViewSize.width, histogramViewSize.height);
             }
         }];

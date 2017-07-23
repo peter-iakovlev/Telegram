@@ -18,6 +18,8 @@ typedef enum
 
 - (NSArray *)interpolateCurve;
 
++ (instancetype)defaultValue;
+
 @end
 
 @interface PGCurvesToolValue : NSObject <NSCopying, PGCustomToolValue>

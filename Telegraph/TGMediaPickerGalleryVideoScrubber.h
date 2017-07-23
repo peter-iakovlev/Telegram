@@ -35,6 +35,8 @@
 
 - (void)setThumbnailImage:(UIImage *)image forTimestamp:(NSTimeInterval)timestamp isSummaryThubmnail:(bool)isSummaryThumbnail;
 
+- (void)setRecipientName:(NSString *)recipientName;
+
 @end
 
 @protocol TGMediaPickerGalleryVideoScrubberDelegate <NSObject>

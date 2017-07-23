@@ -28,7 +28,7 @@
 
 - (void)serialize:(NSMutableData *)data
 {
-    int32_t magic = 0x72413fac;
+    int32_t magic = 0x72413fad;
     [data appendBytes:&magic length:4];
     
     int dataLengthPtr = (int)data.length;
@@ -43,6 +43,11 @@
     [data appendBytes:&_forwardPostId length:4];
     
     [data appendBytes:&_forwardSourcePeerId length:8];
+    
+    NSData *signatureData = [_forwardAuthorSignature dataUsingEncoding:NSUTF8StringEncoding];
+    int32_t signatureLength = (int32_t)signatureData.length;
+    [data appendBytes:&signatureLength length:4];
+    [data appendData:signatureData];
     
     int dataLength = (int)(data.length - dataLengthPtr - 4);
     [data replaceBytesInRange:NSMakeRange(dataLengthPtr, 4) withBytes:&dataLength];
@@ -65,6 +70,9 @@
         [is read:(uint8_t *)&dataLength maxLength:4];
     } else if (magic == 0x72413fac) {
         version = 4;
+        [is read:(uint8_t *)&dataLength maxLength:4];
+    } else if (magic == 0x72413fad) {
+        version = 5;
         [is read:(uint8_t *)&dataLength maxLength:4];
     } else {
         dataLength = magic;
@@ -104,6 +112,19 @@
         int64_t forwardSourcePeerId = 0;
         [is read:(uint8_t *)&forwardSourcePeerId maxLength:8];
         messageAttachment.forwardSourcePeerId = forwardSourcePeerId;
+    }
+    
+    if (version >= 5) {
+        int32_t signatureLength = 0;
+        [is read:(uint8_t *)&signatureLength maxLength:4];
+        uint8_t *signatureBytes = malloc(signatureLength);
+        [is read:signatureBytes maxLength:signatureLength];
+        NSString *signature = [[NSString alloc] initWithBytesNoCopy:signatureBytes length:signatureLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        if (signatureLength != 0) {
+            messageAttachment.forwardAuthorSignature = signature;
+        } else {
+            messageAttachment.forwardAuthorSignature = nil;
+        }
     }
     
     return messageAttachment;

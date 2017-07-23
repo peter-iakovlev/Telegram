@@ -7,6 +7,7 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
 @interface TGMenuSheetButtonItemView ()
 {
     TGModernButton *_button;
+    bool _dark;
 }
 
 @end
@@ -39,6 +40,13 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
         };
     }
     return self;
+}
+
+- (void)setDark
+{
+    _dark = true;
+    _button.highlightBackgroundColor = nil;
+    [self _updateForType:_buttonType];
 }
 
 - (void)buttonPressed
@@ -83,7 +91,8 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
 - (void)_updateForType:(TGMenuSheetButtonType)type
 {
     _button.titleLabel.font = (type == TGMenuSheetButtonTypeCancel || type == TGMenuSheetButtonTypeSend) ? TGMediumSystemFontOfSize(20) : TGSystemFontOfSize(20);
-    [_button setTitleColor:(type == TGMenuSheetButtonTypeDestructive) ? TGDestructiveAccentColor() : TGAccentColor()];
+    UIColor *accentColor = _dark ? UIColorRGB(0x4fbcff) : TGAccentColor();
+    [_button setTitleColor:(type == TGMenuSheetButtonTypeDestructive) ? TGDestructiveAccentColor() : accentColor];
 }
 
 - (CGFloat)preferredHeightForWidth:(CGFloat)__unused width screenHeight:(CGFloat)__unused screenHeight

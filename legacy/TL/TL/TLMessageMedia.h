@@ -5,10 +5,10 @@
 
 @class TLGeoPoint;
 @class TLWebPage;
-@class TLPhoto;
-@class TLDocument;
 @class TLGame;
 @class TLWebDocument;
+@class TLPhoto;
+@class TLDocument;
 
 @interface TLMessageMedia : NSObject <TLObject>
 
@@ -46,13 +46,6 @@
 
 @end
 
-@interface TLMessageMedia$messageMediaPhoto : TLMessageMedia
-
-@property (nonatomic, retain) TLPhoto *photo;
-@property (nonatomic, retain) NSString *caption;
-
-@end
-
 @interface TLMessageMedia$messageMediaVenue : TLMessageMedia
 
 @property (nonatomic, retain) TLGeoPoint *geo;
@@ -60,13 +53,6 @@
 @property (nonatomic, retain) NSString *address;
 @property (nonatomic, retain) NSString *provider;
 @property (nonatomic, retain) NSString *venue_id;
-
-@end
-
-@interface TLMessageMedia$messageMediaDocument : TLMessageMedia
-
-@property (nonatomic, retain) TLDocument *document;
-@property (nonatomic, retain) NSString *caption;
 
 @end
 
@@ -86,6 +72,24 @@
 @property (nonatomic, retain) NSString *currency;
 @property (nonatomic) int64_t total_amount;
 @property (nonatomic, retain) NSString *start_param;
+
+@end
+
+@interface TLMessageMedia$messageMediaPhotoMeta : TLMessageMedia
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLPhoto *photo;
+@property (nonatomic, retain) NSString *caption;
+@property (nonatomic) int32_t ttl_seconds;
+
+@end
+
+@interface TLMessageMedia$messageMediaDocumentMeta : TLMessageMedia
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLDocument *document;
+@property (nonatomic, retain) NSString *caption;
+@property (nonatomic) int32_t ttl_seconds;
 
 @end
 

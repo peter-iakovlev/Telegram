@@ -279,7 +279,8 @@
     self.isPlaying = false;
     _autoplayAfterDownload = false;
     
-    [self footerView].hidden = true;
+    if ([self footerView] == _footerView)
+        [self footerView].hidden = true;
 }
 
 - (void)cleanupCurrentPlayer
@@ -449,7 +450,8 @@
     
     [self cleanupCurrentPlayer];
     
-    [self footerView].hidden = true;
+    if ([self footerView] == _footerView)
+        [self footerView].hidden = true;
     
     CGSize dimensions = CGSizeZero;
     NSTimeInterval duration = 0.0;
@@ -647,7 +649,8 @@
                 
                 [self layoutSubviews];
                 
-                [self footerView].hidden = false;
+                if ([self footerView] == _footerView)
+                    [self footerView].hidden = false;
                 [self setDefaultFooterHidden:true];
             }
         }
@@ -878,7 +881,8 @@
 {
     if (!isFocused)
     {
-        [self footerView].hidden = true;
+        if ([self footerView] == _footerView)
+            [self footerView].hidden = true;
         [self setDefaultFooterHidden:false];
     }
 }

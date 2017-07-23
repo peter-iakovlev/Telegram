@@ -135,9 +135,40 @@
         [_view.interfaceView willRotateToInterfaceOrientation:interfaceOrientation duration:duration];
 }
 
-- (void)dismissWhenReady
+- (void)dismissWhenReady {
+    [self dismissWhenReadyAnimated:false];
+}
+
+- (void)dismissWhenReadyAnimated:(bool)animated {
+    [self dismissWhenReadyAnimated:animated force:false];
+}
+
+- (void)dismissWhenReadyAnimated:(bool)animated force:(bool)force
 {
-    [self dismiss];
+    if (animated) {
+        id<TGModernGalleryItem> focusItem = nil;
+        if ([self currentItemIndex] < self.model.items.count)
+            focusItem = self.model.items[[self currentItemIndex]];
+        
+        TGModernGalleryItemView *currentItemView = nil;
+        for (TGModernGalleryItemView *itemView in self->_visibleItemViews)
+        {
+            if ([itemView.item isEqual:focusItem])
+            {
+                currentItemView = itemView;
+                break;
+            }
+        }
+        
+        if (currentItemView == nil || [currentItemView dismissControllerNowOrSchedule] || force) {
+            [_view simpleTransitionOutWithVelocity:0.0f completion:^
+            {
+                [self dismiss];
+            }];
+        }
+    } else {
+        [self dismiss];
+    }
 }
 
 - (bool)isFullyOpaque
@@ -247,12 +278,12 @@
             }
         };
         
-        _model.dismissWhenReady = ^
+        _model.dismissWhenReady = ^(bool animated)
         {
             __strong TGModernGalleryController *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
-                [strongSelf dismissWhenReady];
+                [strongSelf dismissWhenReadyAnimated:animated];
             }
         };
         
@@ -262,7 +293,7 @@
 
 - (void)itemViewIsReadyForScheduledDismiss:(TGModernGalleryItemView *)__unused itemView
 {
-    [self dismiss];
+    [self dismissWhenReadyAnimated:true force:true];
 }
 
 - (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)__unused itemView
@@ -295,6 +326,10 @@
 
 - (TGViewController *)parentControllerForPresentation {
     return self;
+}
+
+- (UIView *)overlayContainerView {
+    return _view.overlayContainerView;
 }
 
 - (TGModernGalleryItemView *)dequeueViewForItem:(id<TGModernGalleryItem>)item
@@ -373,7 +408,7 @@
 {
     _showInterface = showInterface;
     
-    _view.userInteractionEnabled = showInterface;
+    //_view.userInteractionEnabled = showInterface;
     
     _statusBarStyle = _showInterface ? UIStatusBarStyleLightContent : _defaultStatusBarStyle;
 }
@@ -611,6 +646,17 @@
         }
         
         [_model _transitionCompleted];
+    }
+    
+    if (!_showInterface) {
+        [_view enableInstantDismiss];
+        __weak TGModernGalleryController *weakSelf = self;
+        _view.instantDismiss = ^{
+            __strong TGModernGalleryController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf dismiss];
+            }
+        };
     }
 }
 

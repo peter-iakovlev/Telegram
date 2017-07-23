@@ -6,8 +6,6 @@
 
 #define TGGameAttachmentType ((int)0x57af081e)
 
-//gameMeta flags:int id:long access_hash:long short_name:string title:string n_description:string url:string photo:Photo document:Document = Game;
-
 @interface TGGameMediaAttachment : TGMediaAttachment <TGMediaAttachmentParser, NSCoding>
 
 @property (nonatomic, readonly) int64_t gameId;

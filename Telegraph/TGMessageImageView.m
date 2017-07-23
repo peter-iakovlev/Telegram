@@ -114,6 +114,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         _overlayDiameter = 50.0f;
         
         _buttonView = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _overlayDiameter, _overlayDiameter)];
+        _buttonView.adjustsImageWhenHighlighted = false;
         _buttonView.exclusiveTouch = true;
         _buttonView.modernHighlight = true;
         [_buttonView addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
@@ -122,8 +123,6 @@ static const CGFloat additionalDataTopPadding = 6.0f;
         [_overlayView setRadius:_overlayDiameter];
         _overlayView.userInteractionEnabled = false;
         [_buttonView addSubview:_overlayView];
-
-        _buttonView.highlightImage = [self highlightImageForDiameter:_overlayDiameter];
     }
     return self;
 }

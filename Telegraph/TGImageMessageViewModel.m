@@ -149,6 +149,8 @@
     TGWebpageFooterModel *_webPageFooterModel;
     bool _boundToContainer;
     TGWebPageMediaAttachment *_webPage;
+    
+    NSString *_currentBaseUri;
 }
 
 @end
@@ -224,7 +226,9 @@ static CTFontRef textFontForSize(CGFloat size)
         _forwardAuthor = forwardAuthor;
         
         NSString *imageUri = [imageInfo imageUrlForLargestSize:NULL];
-        if ([imageUri hasPrefix:@"photo-thumbnail://?"])
+        if (imageUri == nil) {
+            imageUri = @"photo-thumbnail://?";
+        } else if ([imageUri hasPrefix:@"photo-thumbnail://?"])
         {
             NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:[imageUri substringFromIndex:@"photo-thumbnail://?".length]];
             _legacyThumbnailCacheUri = dict[@"legacy-thumbnail-cache-url"];
@@ -239,6 +243,8 @@ static CTFontRef textFontForSize(CGFloat size)
             NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:[imageUri substringFromIndex:@"animation-thumbnail://?".length]];
             _legacyThumbnailCacheUri = dict[@"legacy-thumbnail-cache-url"];
         }
+        
+        _currentBaseUri = imageUri;
         
         if (_replyHeader != nil || _caption.length != 0 || _forwardPeer != nil || _viaUser != nil || _webPage != nil) {
             imageUri = [imageUri stringByAppendingString:@"&flat=1"];
@@ -420,7 +426,9 @@ static CTFontRef textFontForSize(CGFloat size)
 - (void)updateImageInfo:(TGImageInfo *)imageInfo
 {
     NSString *imageUri = [imageInfo imageUrlForLargestSize:NULL];
-    if ([imageUri hasPrefix:@"photo-thumbnail://?"])
+    if (imageUri == nil) {
+        imageUri = @"photo-thumbnail://?";
+    } else if ([imageUri hasPrefix:@"photo-thumbnail://?"])
     {
         NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:[imageUri substringFromIndex:@"photo-thumbnail://?".length]];
         _legacyThumbnailCacheUri = dict[@"legacy-thumbnail-cache-url"];
@@ -435,6 +443,8 @@ static CTFontRef textFontForSize(CGFloat size)
         NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:[imageUri substringFromIndex:@"animation-thumbnail://?".length]];
         _legacyThumbnailCacheUri = dict[@"legacy-thumbnail-cache-url"];
     }
+    
+    _currentBaseUri = imageUri;
     
     if (_backgroundModel != nil)
         imageUri = [imageUri stringByAppendingString:@"&flat=1"];
@@ -622,7 +632,7 @@ static CTFontRef textFontForSize(CGFloat size)
                     static UIImage *image;
                     dispatch_once(&onceToken, ^
                     {
-                        CGRect frame = CGRectMake(0.0f, 0.0f, 28.0f, 28.0f);
+                        CGRect frame = CGRectMake(0.0f, 0.0f, 26.0f, 26.0f);
                         UIGraphicsBeginImageContextWithOptions(frame.size, false, 0.0f);
                         CGContextRef context = UIGraphicsGetCurrentContext();
                         CGContextSetFillColorWithColor(context, UIColorRGBA(0xffffff, 0.7f).CGColor);
@@ -1016,6 +1026,14 @@ static CTFontRef textFontForSize(CGFloat size)
                     [self layoutForContainerSize:CGSizeMake(self.frame.size.width, 0.0f)];
             }
         }
+        
+        if ((previousCaption.length == 0) != (_caption.length != 0)) {
+            NSString *imageUri = _currentBaseUri;
+            if (_backgroundModel != nil) {
+                imageUri = [imageUri stringByAppendingString:@"&flat=1"];
+            }
+            [_imageModel setUri:imageUri];
+        }
     }
     
     TGBotReplyMarkup *replyMarkup = message.replyMarkup != nil && message.replyMarkup.isInline ? message.replyMarkup : nil;
@@ -1369,7 +1387,7 @@ static CTFontRef textFontForSize(CGFloat size)
             {
                 if (_mediaIsAvailable)
                 {
-                    [self activateMedia];
+                    [self activateMedia:[self isInstant]];
                 }
                 else
                     [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
@@ -1467,7 +1485,7 @@ static CTFontRef textFontForSize(CGFloat size)
     {
         if (![self instantPreviewGesture])
         {
-            [self activateMedia];
+            [self activateMedia:[self isInstant]];
         }
     }
     else
@@ -2486,6 +2504,10 @@ static CTFontRef textFontForSize(CGFloat size)
 
 - (void)instantPageButtonPressed {
     
+}
+
+- (bool)isInstant {
+    return false;
 }
 
 @end

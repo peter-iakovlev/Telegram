@@ -42,6 +42,9 @@ NSString *const TGMediaPickerPhotoStripCellKind = @"PhotoStripCell";
     {
         self.clipsToBounds = true;
         
+        if (iosMajorVersion() >= 8)
+            self.layer.cornerRadius = 4.0f;
+        
         _imageView = [[TGImageView alloc] initWithFrame:self.bounds];
         _imageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _imageView.contentMode = UIViewContentModeScaleAspectFill;

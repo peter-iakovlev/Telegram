@@ -187,7 +187,7 @@
                                     [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
                                     
                                     if (strongSelf.dismissWhenReady) {
-                                        strongSelf.dismissWhenReady();
+                                        strongSelf.dismissWhenReady(false);
                                     }
                                 }
                             }

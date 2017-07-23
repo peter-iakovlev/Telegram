@@ -34,14 +34,14 @@
             {
                 SSignal *uploadPart = [[SSignal single:nil] mapToSignal:^SSignal *(__unused id next)
                 {
-                    Api69_FunctionContext *functionContext = nil;
+                    Api70_FunctionContext *functionContext = nil;
                     if (largeParts)
                     {
-                        functionContext = [Api69 upload_saveBigFilePartWithFileId:@(fileId) filePart:@(i) fileTotalParts:@(numberOfParts) bytes:[data subdataWithRange:NSMakeRange(i * partSize, MIN(data.length - i * partSize, partSize))]];
+                        functionContext = [Api70 upload_saveBigFilePartWithFileId:@(fileId) filePart:@(i) fileTotalParts:@(numberOfParts) bytes:[data subdataWithRange:NSMakeRange(i * partSize, MIN(data.length - i * partSize, partSize))]];
                     }
                     else
                     {
-                        functionContext = [Api69 upload_saveFilePartWithFileId:@(fileId) filePart:@(i) bytes:[data subdataWithRange:NSMakeRange(i * partSize, MIN(data.length - i * partSize, partSize))]];
+                        functionContext = [Api70 upload_saveFilePartWithFileId:@(fileId) filePart:@(i) bytes:[data subdataWithRange:NSMakeRange(i * partSize, MIN(data.length - i * partSize, partSize))]];
                     }
                     return [[datacenterContext.context function:functionContext] map:^id(__unused id next)
                     {
@@ -134,13 +134,13 @@
     NSUInteger numberOfParts = 0;
     SSignal *uploadSignal = [self uploadDataWithContext:context data:data outFileId:&fileId outLargeParts:&largeParts outNumberOfParts:&numberOfParts];
     
-    Api69_InputFile *inputFile = nil;
+    Api70_InputFile *inputFile = nil;
     if (largeParts)
-        inputFile = [Api69_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:@"file.jpg"];
+        inputFile = [Api70_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:@"file.jpg"];
     else
-        inputFile = [Api69_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:@"file.jpg" md5Checksum:@""];
+        inputFile = [Api70_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:@"file.jpg" md5Checksum:@""];
     
-    Api69_InputMedia_inputMediaUploadedPhoto *inputMedia = [Api69_InputMedia inputMediaUploadedPhotoWithFlags:@(0) file:inputFile caption:@"" stickers:nil];
+    Api70_InputMedia_inputMediaUploadedPhoto *inputMedia = [Api70_InputMedia inputMediaUploadedPhotoWithFlags:@(0) file:inputFile caption:@"" stickers:nil ttlSeconds:nil];
     
     uploadSignal = [uploadSignal then:[SSignal single:inputMedia]];
     
@@ -154,17 +154,17 @@
     NSUInteger numberOfParts = 0;
     SSignal *uploadSignal = [self uploadDataWithContext:context data:data outFileId:&fileId outLargeParts:&largeParts outNumberOfParts:&numberOfParts];
     
-    Api69_InputFile *inputFile = nil;
+    Api70_InputFile *inputFile = nil;
     if (largeParts)
-        inputFile = [Api69_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:name];
+        inputFile = [Api70_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:name];
     else
-        inputFile = [Api69_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:name md5Checksum:@""];
+        inputFile = [Api70_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:name md5Checksum:@""];
     
     NSMutableArray *completeAttributes = [[NSMutableArray alloc] init];
-    [completeAttributes addObject:[Api69_DocumentAttribute documentAttributeFilenameWithFileName:name]];
+    [completeAttributes addObject:[Api70_DocumentAttribute documentAttributeFilenameWithFileName:name]];
     [completeAttributes addObjectsFromArray:attributes];
     
-    Api69_InputMedia_inputMediaUploadedDocument *inputMedia = [Api69_InputMedia inputMediaUploadedDocumentWithFlags:@(0) file:inputFile mimeType:mimeType.length == 0 ? @"application/octet-stream" : mimeType attributes:completeAttributes caption:@"" stickers:nil];
+    Api70_InputMedia_inputMediaUploadedDocument *inputMedia = [Api70_InputMedia inputMediaUploadedDocumentWithFlags:@(0) file:inputFile thumb:nil mimeType:mimeType.length == 0 ? @"application/octet-stream" : mimeType attributes:completeAttributes caption:@"" stickers:nil ttlSeconds:nil];
     
     uploadSignal = [uploadSignal then:[SSignal single:inputMedia]];
     
@@ -179,11 +179,11 @@
     SSignal *uploadSignal = [self uploadDataWithContext:context data:data outFileId:&fileId outLargeParts:&largeParts outNumberOfParts:&numberOfParts];
     
     NSString *fileName = @"file.mov";
-    Api69_InputFile *inputFile = nil;
+    Api70_InputFile *inputFile = nil;
     if (largeParts)
-        inputFile = [Api69_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:fileName];
+        inputFile = [Api70_InputFile inputFileBigWithPid:@(fileId) parts:@(numberOfParts) name:fileName];
     else
-        inputFile = [Api69_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:fileName md5Checksum:@""];
+        inputFile = [Api70_InputFile inputFileWithPid:@(fileId) parts:@(numberOfParts) name:fileName md5Checksum:@""];
     
     int64_t thumbFileId = 0;
     bool thumbLargeParts = false;
@@ -194,16 +194,16 @@
     }];
     
     NSString *thumbFileName = @"file.jpg";
-    Api69_InputFile *inputThumbFile = nil;
+    Api70_InputFile *inputThumbFile = nil;
     if (thumbLargeParts)
-        inputThumbFile = [Api69_InputFile inputFileBigWithPid:@(thumbFileId) parts:@(thumbNumberOfParts) name:thumbFileName];
+        inputThumbFile = [Api70_InputFile inputFileBigWithPid:@(thumbFileId) parts:@(thumbNumberOfParts) name:thumbFileName];
     else
-        inputThumbFile = [Api69_InputFile inputFileWithPid:@(thumbFileId) parts:@(thumbNumberOfParts) name:thumbFileName md5Checksum:@""];
+        inputThumbFile = [Api70_InputFile inputFileWithPid:@(thumbFileId) parts:@(thumbNumberOfParts) name:thumbFileName md5Checksum:@""];
     
-    Api69_InputMedia_inputMediaUploadedThumbDocument *inputMedia = [Api69_InputMedia inputMediaUploadedThumbDocumentWithFlags:@(0) file:inputFile thumb:inputThumbFile mimeType:@"video/mp4" attributes:@[
-                                                                                                                                                                                                          [Api69_DocumentAttribute documentAttributeVideoWithFlags:@(0) duration:@(duration) w:@(width) h:@(height)],
-        [Api69_DocumentAttribute documentAttributeFilenameWithFileName:@"video.mp4"]
-    ] caption:@"" stickers:nil];
+    Api70_InputMedia_inputMediaUploadedDocument *inputMedia = [Api70_InputMedia inputMediaUploadedDocumentWithFlags:@(1 << 2) file:inputFile thumb:inputThumbFile mimeType:@"video/mp4" attributes:@[
+                                                                                                                                                                                                          [Api70_DocumentAttribute documentAttributeVideoWithFlags:@(0) duration:@(duration) w:@(width) h:@(height)],
+        [Api70_DocumentAttribute documentAttributeFilenameWithFileName:@"video.mp4"]
+    ] caption:@"" stickers:nil ttlSeconds:nil];
     
     uploadSignal = [[uploadSignal then:thumbUploadSignal] then:[SSignal single:inputMedia]];
     

@@ -14,6 +14,7 @@
     PGBlurToolType _currentType;
     
     UIView *_buttonsWrapper;
+    UILabel *_titleLabel;
     TGPhotoEditorBlurTypeButton *_offButton;
     TGPhotoEditorBlurTypeButton *_radialButton;
     TGPhotoEditorBlurTypeButton *_linearButton;
@@ -32,6 +33,7 @@
 
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
+@dynamic interactionBegan;
 @dynamic interactionEnded;
 @synthesize actualAreaSize;
 @synthesize isLandscape;
@@ -45,6 +47,15 @@
         _buttonsWrapper = [[UIView alloc] initWithFrame:self.bounds];
         _buttonsWrapper.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_buttonsWrapper];
+        
+        _titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 8, 160, 20)];
+        _titleLabel.backgroundColor = [UIColor clearColor];
+        _titleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
+        _titleLabel.text = TGLocalized(@"PhotoEditor.TiltShift");
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
+        _titleLabel.textColor = [TGPhotoEditorInterfaceAssets editorItemTitleColor];
+        _titleLabel.userInteractionEnabled = false;
+        [self addSubview:_titleLabel];
         
         _offButton = [[TGPhotoEditorBlurTypeButton alloc] initWithFrame:CGRectZero];
         _offButton.tag = PGBlurToolTypeNone;
@@ -101,28 +112,7 @@
 
 - (bool)buttonPressed:(bool)__unused cancelButton
 {
-//    if (_editingIntensity)
-//    {
-//        PGBlurToolValue *value = [(PGBlurToolValue *)self.value copy];
-//        if (cancelButton)
-//            value.intensity = _startIntensity;
-//        
-//        value.editingIntensity = false;
-//        
-//        _value = value;
-//        
-//        if (self.valueChanged != nil)
-//            self.valueChanged(value);
-//        
-//        _editingIntensity = false;
-//        [self setIntensitySliderHidden:true animated:true];
-//        
-//        return false;
-//    }
-//    else
-//    {
-        return true;
-//    }
+    return true;
 }
 
 - (void)setInteractionEnded:(void (^)(void))interactionEnded
@@ -255,13 +245,16 @@
 
 - (void)layoutSubviews
 {
-    _sliderView.interfaceOrientation = [UIApplication sharedApplication].statusBarOrientation;
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    _sliderView.interfaceOrientation = orientation;
     
     if (CGRectIsEmpty(self.frame))
         return;
     
     if (self.frame.size.width > self.frame.size.height)
     {
+        _titleLabel.frame = CGRectMake((self.frame.size.width - _titleLabel.frame.size.width) / 2, 10, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+        
         _offButton.frame = CGRectMake(CGFloor(self.frame.size.width / 4 - 50), self.frame.size.height / 2 - 42, 100, 100);
         _radialButton.frame = CGRectMake(self.frame.size.width / 2 - 50, self.frame.size.height / 2 - 42, 100, 100);
         _linearButton.frame = CGRectMake(CGCeil(self.frame.size.width / 2 + self.frame.size.width / 4 - 50), self.frame.size.height / 2 - 42, 100, 100);
@@ -275,6 +268,20 @@
         _linearButton.frame = CGRectMake(self.frame.size.width / 2 - 50, self.frame.size.height / 4 - 50, 100, 100);
 
         _sliderView.frame = CGRectMake((self.frame.size.width - 32) / 2, TGPhotoEditorSliderViewMargin, 32, self.frame.size.height - 2 * TGPhotoEditorSliderViewMargin);
+        
+        [UIView performWithoutAnimation:^
+        {
+            if (orientation == UIInterfaceOrientationLandscapeLeft)
+            {
+                _titleLabel.transform = CGAffineTransformMakeRotation(M_PI_2);
+                _titleLabel.frame = CGRectMake(self.frame.size.width - _titleLabel.frame.size.width - 10, (self.frame.size.height - _titleLabel.frame.size.height) / 2, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+            }
+            else if (orientation == UIInterfaceOrientationLandscapeRight)
+            {
+                _titleLabel.transform = CGAffineTransformMakeRotation(-M_PI_2);
+                _titleLabel.frame = CGRectMake(10, (self.frame.size.height - _titleLabel.frame.size.height) / 2, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+            }
+        }];
     }
     
     _sliderView.hitTestEdgeInsets = UIEdgeInsetsMake(-_sliderView.frame.origin.x,

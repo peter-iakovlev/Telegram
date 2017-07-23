@@ -245,7 +245,7 @@
 {
     if ([self isOrderChanged]) {
         TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-        [progressWindow showWithDelay:0.2];
+        [progressWindow showWithDelay:0.4];
         
         NSMutableArray *currentStickerPacksReferences = [[NSMutableArray alloc] init];
         for (TGStickerPack *pack in [self currentStickerPacks]) {
@@ -456,7 +456,7 @@
                 }
             } else if ([action isEqualToString:@"delete"]) {
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                [progressWindow showWithDelay:0.2];
+                [progressWindow showWithDelay:0.4];
                 
                 SSignal *removeStickerPackSignal = masksMode ? [TGMaskStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false] : [TGStickersSignals removeStickerPack:stickerPack.packReference hintArchived:false];
                 [[[removeStickerPackSignal deliverOn:[SQueue mainQueue]] onDispose:^
@@ -523,7 +523,7 @@
             if (okButtonPressed)
             {
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                [progressWindow showWithDelay:0.2];
+                [progressWindow showWithDelay:0.4];
                 
                 if (hide) {
                     __strong TGStickerPacksSettingsController *strongSelf = weakSelf;
@@ -585,7 +585,7 @@
 
 - (void)toggleStickerPack:(TGStickerPack *)stickerPack hidden:(bool)hidden {
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-    [progressWindow showWithDelay:0.2];
+    [progressWindow showWithDelay:0.4];
     
     __weak TGStickerPacksSettingsController *weakSelf = self;
     SSignal *toggleStickerPackHiddenSignal = _masksMode ? [TGMaskStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden] : [TGStickersSignals toggleStickerPackHidden:stickerPack.packReference hidden:hidden];

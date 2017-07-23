@@ -55,11 +55,14 @@
 - (CGPoint)dateOffset;
 - (bool)instantPreviewGesture;
 - (void)activateMedia;
+- (void)activateMedia:(bool)instant;
 - (int)defaultOverlayActionType;
 
 - (void)enableInstantPreview;
 - (NSString *)defaultAdditionalDataString;
 
 - (void)updateImageOverlay:(bool)animated;
+
+- (bool)isInstant;
 
 @end

@@ -4,8 +4,6 @@
 
 #import "TGAppDelegate.h"
 
-#import "TGBlurEffect.h"
-
 const CGFloat TGChatActionsPeekScale = 0.95f;
 const NSTimeInterval TGChatActionsPeekDuration = 0.22;
 
@@ -55,11 +53,6 @@ const NSTimeInterval TGChatActionsPeekDuration = 0.22;
     _rootView.superview.backgroundColor = [UIColor whiteColor];
     
     _blurView.layer.speed = 0.0f;
-    
-    [UIView animateWithDuration:0.22 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^
-    {
-        _blurView.effect = [TGBlurEffect forceTouchBlurEffect];
-    } completion:nil];
 }
 
 - (void)test:(UISlider *)sender

@@ -1135,7 +1135,11 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
                     case TGMessageActionEncryptedChatScreenshot:
                     case TGMessageActionEncryptedChatMessageScreenshot:
                     {
-                        _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.SecretChatMessageScreenshot"), _encryptionFirstName];
+                        if (_encryptionFirstName.length != 0) {
+                            _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.SecretChatMessageScreenshot"), _encryptionFirstName];
+                        } else {
+                            _messageText = [[NSString alloc] initWithFormat:TGLocalized(@"Notification.SecretChatScreenshot"), _encryptionFirstName];
+                        }
                         
                         break;
                     }
@@ -1277,7 +1281,11 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
             else if (attachment.type == TGImageMediaAttachmentType)
             {
                 TGImageMediaAttachment *imageMediaAttachment = (TGImageMediaAttachment *)attachment;
-                if (imageMediaAttachment.caption.length > 0)
+                if (imageMediaAttachment.imageId == 0 && imageMediaAttachment.localImageId == 0) {
+                    _messageText = TGLocalized(@"Message.ImageExpired");
+                    _messageTextColor = mediaTextColor;
+                }
+                else if (imageMediaAttachment.caption.length > 0)
                 {
                     _messageText = imageMediaAttachment.caption;
                     _messageTextColor = normalTextColor;
@@ -1294,7 +1302,11 @@ static NSArray *editingButtonTypes(bool muted, bool pinned, bool mutable) {
             else if (attachment.type == TGVideoMediaAttachmentType)
             {
                 TGVideoMediaAttachment *videoMediaAttachment = (TGVideoMediaAttachment *)attachment;
-                if (videoMediaAttachment.caption.length > 0)
+                if (videoMediaAttachment.videoId == 0 && videoMediaAttachment.localVideoId == 0) {
+                    _messageText = TGLocalized(@"Message.VideoExpired");
+                    _messageTextColor = mediaTextColor;
+                }
+                else if (videoMediaAttachment.caption.length > 0)
                 {
                     _messageText = videoMediaAttachment.caption;
                     _messageTextColor = normalTextColor;

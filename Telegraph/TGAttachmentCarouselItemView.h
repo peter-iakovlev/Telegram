@@ -20,6 +20,7 @@
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 @property (nonatomic) bool allowCaptions;
 @property (nonatomic) bool inhibitDocumentCaptions;
+@property (nonatomic) bool hasTimer;
 
 @property (nonatomic, strong) NSArray *underlyingViews;
 @property (nonatomic, assign) bool openEditor;
@@ -33,6 +34,8 @@
 
 @property (nonatomic, assign) CGFloat remainingHeight;
 @property (nonatomic, assign) bool condensed;
+
+@property (nonatomic, strong) NSString *recipientName;
 
 - (instancetype)initWithCamera:(bool)hasCamera selfPortrait:(bool)selfPortrait forProfilePhoto:(bool)forProfilePhoto assetType:(TGMediaAssetType)assetType;
 

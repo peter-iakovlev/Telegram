@@ -53,6 +53,8 @@ typedef enum {
 - (void)dismissEditor;
 - (void)applyEditor;
 
+- (void)setInfoString:(NSString *)string;
+
 - (void)dismissAnimated:(bool)animated;
 
 - (void)updateStatusBarAppearanceForDismiss;

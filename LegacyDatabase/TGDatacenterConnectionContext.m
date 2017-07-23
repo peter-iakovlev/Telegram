@@ -27,7 +27,7 @@
     [_mtProto stop];
 }
 
-- (SSignal *)function:(Api69_FunctionContext *)functionContext
+- (SSignal *)function:(Api70_FunctionContext *)functionContext
 {
     __weak TGDatacenterConnectionContext *weakSelf = self;
     return [[SSignal alloc] initWithGenerator:^id<SDisposable> (SSubscriber *subscriber)

@@ -716,6 +716,12 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
                 
                 if (selectedWorker == nil && workerList.count < TGMaxWorkerCount)
                 {
+                    if ([nDatacenterId intValue] > 10) {
+                        if (!isCdn) {
+                            TGLog(@"missing cdn mark");
+                            isCdn = true;
+                        }
+                    }
                     TGNetworkWorker *worker = [[TGNetworkWorker alloc] initWithContext:_context datacenterId:[nDatacenterId integerValue] masterDatacenterId:_masterDatacenterId isCdn:isCdn];
                     worker.delegate = self;
                     [workerList addObject:worker];

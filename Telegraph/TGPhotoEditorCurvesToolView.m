@@ -26,6 +26,7 @@ typedef enum
     
     UILongPressGestureRecognizer *_pressGestureRecognizer;
     UIPanGestureRecognizer *_panGestureRecognizer;
+    UITapGestureRecognizer *_doubleTapGestureRecognizer;
     
     NSArray *_interpolatedCurveValues;
     CAShapeLayer *_curveLayer;
@@ -40,6 +41,7 @@ typedef enum
 
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
+@synthesize interactionBegan = _interactionBegan;
 @synthesize interactionEnded = _interactionEnded;
 @synthesize actualAreaSize;
 @synthesize isLandscape;
@@ -89,6 +91,10 @@ typedef enum
         _pressGestureRecognizer.delegate = self;
         _pressGestureRecognizer.minimumPressDuration = 0.1f;
         [self addGestureRecognizer:_pressGestureRecognizer];
+        
+        _doubleTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTap:)];
+        _doubleTapGestureRecognizer.numberOfTapsRequired = 2;
+        [self addGestureRecognizer:_doubleTapGestureRecognizer];
         
         if ([editorItem isKindOfClass:[PGCurvesTool class]])
         {
@@ -329,6 +335,41 @@ typedef enum
         default:
             break;
     }
+}
+
+- (void)handleDoubleTap:(UITapGestureRecognizer *)__unused gestureRecognizer
+{
+    PGCurvesToolValue *value = [_value copy];
+    if (value == nil)
+        return;
+    
+    switch (value.activeType) {
+        case PGCurvesTypeLuminance:
+            value.luminanceCurve = [PGCurvesValue defaultValue];
+            break;
+            
+        case PGCurvesTypeRed:
+            value.redCurve = [PGCurvesValue defaultValue];
+            break;
+            
+        case PGCurvesTypeGreen:
+            value.greenCurve = [PGCurvesValue defaultValue];
+            break;
+            
+        case PGCurvesTypeBlue:
+            value.blueCurve = [PGCurvesValue defaultValue];
+            break;
+            
+        default:
+            break;
+    }
+    
+    _value = value;
+    
+    [self updateCurve];
+    [self updateValueLabels];
+    
+    self.valueChanged(value, false);
 }
 
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer

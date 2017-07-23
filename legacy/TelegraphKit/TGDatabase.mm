@@ -6978,7 +6978,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 {
                     TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
                     TGMessage *actualMessage = [self loadMessageWithMid:message.mid peerId:conversationId];
-                    if (conversationId <= INT_MIN && (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
+                    if ((actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
                         continue;
                     //TGLog(@"mid %d", message.mid);
                     [mediaArray addObject:message];
@@ -6996,7 +6996,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 {
                     TGMessage *message = loadMessageMediaFromQueryResult(result, dateIndex, fromIdIndex, midIndex, mediaIndex);
                     TGMessage *actualMessage = [self loadMessageWithMid:message.mid peerId:conversationId];
-                    if (conversationId <= INT_MIN && (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
+                    if ((actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17))
                         continue;
                     //TGLog(@"add mid %d", message.mid);
                     [mediaArray addObject:message];
@@ -7004,7 +7004,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                 
                 if (count != NULL)
                 {
-                    if (conversationId <= INT_MIN)
+                    if (conversationId <= INT_MIN || TGPeerIdIsUser(conversationId))
                     {
                         FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid FROM %@ WHERE cid=?", _conversationMediaTableName], @(conversationId)];
                         int localCount = 0;
@@ -7072,7 +7072,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                     extraLimit++;
                     continue;
                 }
-                else if (conversationId <= INT_MIN)
+                else if (conversationId <= INT_MIN || TGPeerIdIsUser(conversationId))
                 {
                     TGMessage *actualMessage = [self loadMessageWithMid:mid peerId:conversationId];
                     if (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17)
@@ -7106,7 +7106,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
                     {
                         continue;
                     }
-                    else if (conversationId <= INT_MIN)
+                    else if (conversationId <= INT_MIN || TGPeerIdIsUser(conversationId))
                     {
                         TGMessage *actualMessage = [self loadMessageWithMid:mid peerId:conversationId];
                         if (actualMessage.messageLifetime > 0 && actualMessage.messageLifetime <= 60 && actualMessage.layer >= 17)
@@ -7121,7 +7121,7 @@ inline TGMessage *loadMessageMediaFromQueryResult(FMResultSet *result, int const
             
             if (count != NULL)
             {
-                if (conversationId <= INT_MIN)
+                if (conversationId <= INT_MIN || TGPeerIdIsUser(conversationId))
                 {
                     FMResultSet *result = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT mid FROM %@ WHERE cid=?", _conversationMediaTableName], @(conversationId)];
                     int localCount = 0;
@@ -9346,7 +9346,26 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
         
         if (deleteMids.count != 0)
         {
-            [self transactionRemoveMessagesInteractive:@{@0: deleteMids} keepDates:true removeMessagesInteractiveForEveryone:false updateConversationDatas:nil];
+            NSMutableArray *secretMids = [[NSMutableArray alloc] init];
+            NSMutableArray *updateMessages = [[NSMutableArray alloc] init];
+            for (NSNumber *nMessageId in deleteMids) {
+                TGMessage *message = [self loadMessageWithMid:[nMessageId intValue] peerId:0];
+                if (message != nil && !TGPeerIdIsSecretChat(message.cid)) {
+                    message = [message copy];
+                    [message filterOutExpiredMedia];
+                    [updateMessages addObject:[[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:message.cid messageId:message.mid message:message dispatchEdited:true]];
+                    
+                    [updateMessages addObject:[[TGDatabaseUpdateMessage alloc] init]];
+                } else {
+                    [secretMids addObject:nMessageId];
+                }
+            }
+            if (secretMids.count != 0) {
+                [self transactionRemoveMessagesInteractive:@{@0: deleteMids} keepDates:true removeMessagesInteractiveForEveryone:false updateConversationDatas:nil];
+            }
+            if (updateMessages.count != 0) {
+                [self transactionUpdateMessages:updateMessages updateConversationDatas:nil];
+            }
             
             for (NSNumber *nMessageId in deleteMids) {
                 [_database executeUpdate:selfDestructDeleteFormat, nMessageId];
@@ -9434,6 +9453,7 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
         FMResultSet *messageResult = [_database executeQuery:[[NSString alloc] initWithFormat:@"SELECT localMid, cid FROM %@ WHERE mid=?", _messagesTableName], @(mid)];
         if ([messageResult next])
         {
+            TGMessage *message = [self loadMessageWithMid:mid peerId:0];
             int messageLifetime = [messageResult intForColumn:@"localMid"];
             int64_t peerId = [messageResult longLongIntForColumn:@"cid"];
             
@@ -9446,12 +9466,24 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                 {
                     [self raiseSecretMessageFlagsByMessageId:mid flagsToRise:TGSecretMessageFlagViewed];
                     
-                    int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:peerId];
-                    int64_t randomId = [self randomIdForMessageId:mid];
-                    int64_t messageRandomId = 0;
-                    arc4random_buf(&messageRandomId, 8);
-                    
-                    [self storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:messageRandomId action:TGEncryptedChatServiceActionViewMessage actionContext:randomId]]];
+                    if (TGPeerIdIsSecretChat(peerId)) {
+                        int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:peerId];
+                        int64_t randomId = [self randomIdForMessageId:mid];
+                        int64_t messageRandomId = 0;
+                        arc4random_buf(&messageRandomId, 8);
+                        
+                        [self storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:messageRandomId action:TGEncryptedChatServiceActionViewMessage actionContext:randomId]]];
+                    } else {
+                        if (!TGPeerIdIsSecretChat(peerId) && message.contentProperties[@"contentsRead"] == nil) {
+                            NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+                            contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                            [self replaceContentPropertiesInMessageWithId:message.mid contentProperties:contentProperties];
+                        }
+                        
+                        TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = mid, .arg0 = 0, .arg1 = 0};
+                        [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
+                        [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
+                    }
 
                     [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", peerId] resource:@{@(mid): @([self secretMessageFlags:mid])}];
                     if (messageLifetime != 0) {
@@ -9468,6 +9500,11 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                     [_database executeUpdate:selfDestructInsertQuery, @(mid), @(currentDate + messageLifetime)];
                 }
                 
+                if (!TGPeerIdIsSecretChat(peerId) && message.contentProperties[@"contentsRead"] == nil) {
+                    NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+                    contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                    [self replaceContentPropertiesInMessageWithId:message.mid contentProperties:contentProperties];
+                }
                 [self raiseSecretMessageFlagsByMessageId:mid flagsToRise:TGSecretMessageFlagViewed];
                 
                 if (messageLifetime != 0) {
@@ -9479,13 +9516,18 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
                     countdownTime = (int)(currentDate - (kCFAbsoluteTimeIntervalSince1970 + _timeDifferenceFromUTC));
                 }
                 
-                
-                int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:peerId];
-                int64_t randomId = [self randomIdForMessageId:mid];
-                int64_t messageRandomId = 0;
-                arc4random_buf(&messageRandomId, 8);
-                
-                [self storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:messageRandomId action:TGEncryptedChatServiceActionViewMessage actionContext:randomId]]];
+                if (TGPeerIdIsSecretChat(peerId)) {
+                    int64_t encryptedConversationId = [self encryptedConversationIdForPeerId:peerId];
+                    int64_t randomId = [self randomIdForMessageId:mid];
+                    int64_t messageRandomId = 0;
+                    arc4random_buf(&messageRandomId, 8);
+                    
+                    [self storeFutureActions:@[[[TGEncryptedChatServiceAction alloc] initWithEncryptedConversationId:encryptedConversationId messageRandomId:messageRandomId action:TGEncryptedChatServiceActionViewMessage actionContext:randomId]]];
+                } else {
+                    TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = mid, .arg0 = 0, .arg1 = 0};
+                    [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
+                    [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
+                }
                 
                 [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", peerId] resource:@{@(mid): @([self secretMessageFlags:mid])}];
                 if (messageLifetime != 0) {
@@ -15381,7 +15423,7 @@ static bool checkMember(TGCachedConversationData *data) {
             }
             
             int currentLifetime = 0;
-            if (message.layer >= 17) {
+            if (message.layer >= 17 || !TGPeerIdIsSecretChat([nPeerId longLongValue])) {
                 currentLifetime = message.messageLifetime;
             } else if (message.messageLifetime != 0) {
                 currentLifetime = (int)message.messageLifetime;
@@ -15391,7 +15433,7 @@ static bool checkMember(TGCachedConversationData *data) {
             
             [_database executeUpdate:insertQuery, @(message.mid), @(message.cid), @(currentLifetime), message.text, [message serializeMediaAttachments:false], @(message.fromUid), @(message.toUid), @(message.outgoing ? 1 : 0), nil, @((int)message.deliveryState), @((int)message.date), @(message.flags), @(message.seqIn), @(message.seqOut), [message serializeContentProperties]];
             
-            if (mediaData != nil && mediaData.length != 0) {
+            if (mediaData != nil && mediaData.length != 0 && !hasSecretMedia) {
                 [_database executeUpdate:mediaInsertQuery, @(message.mid), @(message.cid), @((int)message.date), @((int)message.fromUid), @(mediaType), mediaData];
             }
             
@@ -16002,7 +16044,7 @@ static bool checkMember(TGCachedConversationData *data) {
             
             [_database executeUpdate:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mid=?, date=? WHERE mid=?", _conversationMediaTableName], @(updatedMessage.mid), @((int)updatedMessage.date), @(previousMessage.mid)];
         } else {
-            [_database executeUpdate:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET unread=?, dstate=?, date=?, flags=?, content_properties=?, media=? WHERE mid=?", _messagesTableName], nil, @((int)updatedMessage.deliveryState), @((int)updatedMessage.date), @(updatedMessage.flags), contentProperties, mediaData, @(previousMessage.mid)];
+            [_database executeUpdate:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET unread=?, dstate=?, date=?, flags=?, content_properties=?, media=?, localMid=? WHERE mid=?", _messagesTableName], nil, @((int)updatedMessage.deliveryState), @((int)updatedMessage.date), @(updatedMessage.flags), contentProperties, mediaData, @(updatedMessage.messageLifetime), @(previousMessage.mid)];
         }
         
         if (!TGStringCompare(previousMessage.text, updatedMessage.text)) {
@@ -16049,6 +16091,17 @@ static bool checkMember(TGCachedConversationData *data) {
                 contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
                 updatedMessage = [message copy];
                 updatedMessage.contentProperties = contentProperties;
+                
+                if (updatedMessage.messageLifetime != 0 && !TGPeerIdIsSecretChat(message.cid)) {
+                    [updatedMessage filterOutExpiredMedia];
+                    
+                    NSMutableArray<TGMessage *> *array = dispatchMessagesEditedByPeerId[@(message.cid)];
+                    if (array == nil) {
+                        array = [[NSMutableArray alloc] init];
+                        dispatchMessagesEditedByPeerId[@(message.cid)] = array;
+                    }
+                    [array addObject:updatedMessage];
+                }
             }
         } else if ([updateMessage isKindOfClass:[TGDatabaseUpdateMessageWithMessage class]]) {
             updatedMessage = ((TGDatabaseUpdateMessageWithMessage *)updateMessage).message;

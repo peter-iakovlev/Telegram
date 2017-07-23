@@ -270,6 +270,12 @@
             
             break;
         }
+        case TGMessageActionEncryptedChatScreenshot:
+        case TGMessageActionEncryptedChatMessageScreenshot:
+        {
+            messageText = TGLocalized(@"Notification.SecretChatScreenshot");
+            break;
+        }
         default:
             break;
     }

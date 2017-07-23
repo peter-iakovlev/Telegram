@@ -28,6 +28,8 @@
 
 @property (nonatomic, copy) void (^valuesChanged)(void);
 
+@property (nonatomic, copy) void (^tabsChanged)(void);
+
 @property (nonatomic, assign) TGPhotoEditorTab availableTabs;
 
 @property (nonatomic, assign) TGPhotoEditorTab switchingToTab;
@@ -58,6 +60,10 @@
 - (void)handleTabAction:(TGPhotoEditorTab)tab;
 
 - (bool)isDismissAllowed;
+
+- (void)_updateTabs;
+- (TGPhotoEditorTab)activeTab;
+- (TGPhotoEditorTab)highlightedTabs;
 
 + (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation panelSize:(CGFloat)panelSize;
 

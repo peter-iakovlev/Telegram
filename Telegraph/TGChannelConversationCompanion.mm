@@ -485,38 +485,35 @@
 
 - (void)_createOrUpdatePrimaryTitlePanel:(bool)__unused createIfNeeded
 {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
+    TGModernConversationController *controller = self.controller;
+    
+    TGModernConversationGroupTitlePanel *groupTitlePanel = nil;
+    if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationGroupTitlePanel class]])
+        groupTitlePanel = (TGModernConversationGroupTitlePanel *)[controller primaryTitlePanel];
+    else
     {
-        TGModernConversationController *controller = self.controller;
-        
-        TGModernConversationGroupTitlePanel *groupTitlePanel = nil;
-        if ([[controller primaryTitlePanel] isKindOfClass:[TGModernConversationGroupTitlePanel class]])
-            groupTitlePanel = (TGModernConversationGroupTitlePanel *)[controller primaryTitlePanel];
-        else
+        if (createIfNeeded)
         {
-            if (createIfNeeded)
-            {
-                groupTitlePanel = [[TGModernConversationGroupTitlePanel alloc] init];
-                groupTitlePanel.companionHandle = self.actionHandle;
-            }
-            else
-                return;
+            groupTitlePanel = [[TGModernConversationGroupTitlePanel alloc] init];
+            groupTitlePanel.companionHandle = self.actionHandle;
         }
-        
-        NSMutableArray *actions = [[NSMutableArray alloc] init];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
-        if (_isGroup && _conversation.username.length != 0) {
-            [actions addObject:@{@"title": TGLocalized(@"ReportPeer.Report"), @"icon": [UIImage imageNamed:@"PanelReportIcon"], @"action": @"report"}];
-        }
-        if (_isMuted)
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
         else
-            [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
-        [groupTitlePanel setButtonsWithTitlesAndActions:actions];
-        
-        [controller setPrimaryTitlePanel:groupTitlePanel];
+            return;
     }
+    
+    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [UIImage imageNamed:@"PanelSearchIcon"], @"action": @"search"}];
+    if (_isGroup && _conversation.username.length != 0) {
+        [actions addObject:@{@"title": TGLocalized(@"ReportPeer.Report"), @"icon": [UIImage imageNamed:@"PanelReportIcon"], @"action": @"report"}];
+    }
+    if (_isMuted)
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionUnmute"], TGAccentColor()), @"action": @"unmute"}];
+    else
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": TGTintedImage([UIImage imageNamed:@"DialogListActionMute"], TGAccentColor()), @"action": @"mute"}];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [UIImage imageNamed:@"PanelInfoIcon"], @"action": @"info"}];
+    [groupTitlePanel setButtonsWithTitlesAndActions:actions];
+    
+    [controller setPrimaryTitlePanel:groupTitlePanel];
 }
 
 - (void)_loadControllerPrimaryTitlePanel {
@@ -667,6 +664,11 @@
         
         [self _createOrUpdatePrimaryTitlePanel:false];
     });
+}
+
+- (NSString *)title
+{
+    return [self titleForConversation:_conversation];
 }
 
 - (void)loadInitialState {
@@ -2253,7 +2255,7 @@
         }] deliverOn:[TGModernConversationCompanion messageQueue]] onNext:^(TGMessage *message) {
             __strong TGChannelConversationCompanion *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf updateMessagesLive:@{@(message.mid): message}];
+                [strongSelf updateMessagesLive:@{@(message.mid): message} animated:false];
             }
         }];
     }];
@@ -2562,8 +2564,8 @@
     } target:self] showInView:controller.view];
 }
 
-- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage {
-    [super updateMessagesLive:messageIdToMessage];
+- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage animated:(bool)animated {
+    [super updateMessagesLive:messageIdToMessage animated:animated];
     
     TGDispatchOnMainThread(^{
         if (_pinnedMessagePanel != nil && messageIdToMessage[@(_pinnedMessagePanel.message.mid)] != nil){

@@ -13,13 +13,11 @@
 
 #import "TGMediaPickerGallerySelectedItemsModel.h"
 
-const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
-
 @interface TGMediaPickerPhotoStripView () <TGDraggableCollectionViewDataSource, UICollectionViewDelegate>
 {
     UIView *_wrapperView;
+    UIVisualEffectView *_effectView;
     UIImageView *_backgroundView;
-    UIImageView *_arrowView;
     UIView *_maskView;
     TGDraggableCollectionView *_collectionView;
     TGDraggableCollectionViewFlowLayout *_collectionViewLayout;
@@ -34,7 +32,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
     if (self != nil)
     {        
         static UIImage *background = nil;
-        static UIImage *arrow = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
@@ -42,24 +39,9 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, [TGPhotoEditorInterfaceAssets selectedImagesPanelBackgroundColor].CGColor);
 
-            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 6, 6)
-                                                          cornerRadius:2];
+            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 6, 6) cornerRadius:2];
             [path fill];
             background = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(3, 3, 3, 3)];
-            UIGraphicsEndImageContext();
-            
-            UIGraphicsBeginImageContextWithOptions(TGMediaPickerSelectedPhotosViewArrowSize, false, 0.0f);
-            context = UIGraphicsGetCurrentContext();
-            
-            CGContextBeginPath(context);
-            CGContextSetFillColorWithColor(context, [TGPhotoEditorInterfaceAssets selectedImagesPanelBackgroundColor].CGColor);
-            CGContextMoveToPoint(context, TGMediaPickerSelectedPhotosViewArrowSize.width / 2.0f, 0);
-            CGContextAddLineToPoint(context, TGMediaPickerSelectedPhotosViewArrowSize.width, TGMediaPickerSelectedPhotosViewArrowSize.height);
-            CGContextAddLineToPoint(context, 0, TGMediaPickerSelectedPhotosViewArrowSize.height);
-            CGContextClosePath(context);
-            CGContextFillPath(context);
-
-            arrow = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
         });
         
@@ -67,13 +49,20 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_wrapperView];
         
-        _backgroundView = [[UIImageView alloc] initWithFrame:CGRectZero];
-        _backgroundView.image = background;
-        [_wrapperView addSubview:_backgroundView];
+        if (iosMajorVersion() >= 8)
+        {
         
-        _arrowView = [[UIImageView alloc] initWithFrame:CGRectZero];
-        _arrowView.image = arrow;
-        //[_wrapperView addSubview:_arrowView];
+            _effectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+            _effectView.clipsToBounds = true;
+            _effectView.layer.cornerRadius = 8.0f;
+            [_wrapperView addSubview:_effectView];
+        }
+        else
+        {
+            _backgroundView = [[UIImageView alloc] initWithFrame:CGRectZero];
+            _backgroundView.image = background;
+            [_wrapperView addSubview:_backgroundView];
+        }
         
         _maskView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, frame.size.height)];
         _maskView.clipsToBounds = true;
@@ -82,8 +71,8 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
         _collectionViewLayout = [[TGDraggableCollectionViewFlowLayout alloc] init];
         _collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionViewLayout.itemSize = TGPhotoThumbnailSizeForCurrentScreen();
-        _collectionViewLayout.minimumInteritemSpacing = 2.5f;
-        _collectionViewLayout.minimumLineSpacing = 2.5f;
+        _collectionViewLayout.minimumInteritemSpacing = 4.0f;
+        _collectionViewLayout.minimumLineSpacing = 4.0f;
         
         _collectionView = [[TGDraggableCollectionView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, frame.size.height) collectionViewLayout:_collectionViewLayout];
         _collectionView.alwaysBounceHorizontal = false;
@@ -93,6 +82,7 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
         _collectionView.delegate = self;
         _collectionView.draggable = false;
         _collectionView.draggedViewSuperview = self;
+        _collectionView.contentInset = UIEdgeInsetsMake(0.0f, 4.0f, 0.0f, 4.0);
         _collectionView.showsHorizontalScrollIndicator = false;
         _collectionView.showsVerticalScrollIndicator = false;
         [_collectionView registerClass:[TGMediaPickerPhotoStripCell class] forCellWithReuseIdentifier:TGMediaPickerPhotoStripCellKind];
@@ -353,6 +343,8 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 
 - (void)scrollViewDidScroll:(UIScrollView *)__unused scrollView
 {
+    UIView *backgroundView = iosMajorVersion() >= 8 ? _effectView : _backgroundView;
+    
     if (_collectionViewLayout.scrollDirection == UICollectionViewScrollDirectionHorizontal)
     {
         if (_collectionView.contentSize.width > _collectionView.frame.size.width - _collectionView.contentInset.left - _collectionView.contentInset.right)
@@ -360,21 +352,21 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             if (_collectionView.contentOffset.x < -_collectionView.contentInset.left)
             {
                 CGFloat offset = -_collectionView.contentOffset.x - _collectionView.contentInset.left;
-                _backgroundView.frame = CGRectMake(self.frame.size.width - _backgroundView.frame.size.width + offset, 0, _backgroundView.frame.size.width, self.frame.size.height);
-                _maskView.frame = CGRectMake(_maskView.frame.origin.x, _maskView.frame.origin.y, _backgroundView.frame.size.width - 8 + MIN(8, offset), _maskView.frame.size.height);
+                backgroundView.frame = CGRectMake(self.frame.size.width - backgroundView.frame.size.width + offset, 0, backgroundView.frame.size.width, self.frame.size.height);
+                _maskView.frame = CGRectMake(_maskView.frame.origin.x, _maskView.frame.origin.y, backgroundView.frame.size.width + MIN(0, offset), _maskView.frame.size.height);
                 return;
             }
             else if (_collectionView.contentOffset.x + _collectionView.frame.size.width > _collectionView.contentSize.width + _collectionView.contentInset.right)
             {
                 CGFloat offset = (_collectionView.contentSize.width - _collectionView.frame.size.width - _collectionView.contentOffset.x + _collectionView.contentInset.right);
-                _backgroundView.frame = CGRectMake(self.frame.size.width - _backgroundView.frame.size.width + offset + MAX(-8, offset * 2), 0, _backgroundView.frame.size.width, self.frame.size.height);
-                _maskView.frame = CGRectMake(self.frame.size.width - _backgroundView.frame.size.width + 4 - MIN(8, -offset * 2), _maskView.frame.origin.y, _maskView.frame.size.width, _maskView.frame.size.height);
+                backgroundView.frame = CGRectMake(self.frame.size.width - backgroundView.frame.size.width + offset + MAX(0, offset * 2), 0, backgroundView.frame.size.width, self.frame.size.height);
+                _maskView.frame = CGRectMake(self.frame.size.width - backgroundView.frame.size.width - MIN(0, -offset * 2), _maskView.frame.origin.y, _maskView.frame.size.width, _maskView.frame.size.height);
                 return;
             }
         }
 
-        _backgroundView.frame = CGRectMake(self.frame.size.width - _backgroundView.frame.size.width, 0, _backgroundView.frame.size.width, self.frame.size.height);
-        _maskView.frame = CGRectMake(_backgroundView.frame.origin.x + 4, _backgroundView.frame.origin.y + 4, _backgroundView.frame.size.width - 8, _backgroundView.frame.size.height - 8);
+        backgroundView.frame = CGRectMake(self.frame.size.width - backgroundView.frame.size.width, 0, backgroundView.frame.size.width, self.frame.size.height);
+        _maskView.frame = CGRectMake(backgroundView.frame.origin.x, backgroundView.frame.origin.y + 4, backgroundView.frame.size.width, backgroundView.frame.size.height - 8);
     }
     else
     {
@@ -383,20 +375,20 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             if (_collectionView.contentOffset.y < -_collectionView.contentInset.top)
             {
                 CGFloat offset = -_collectionView.contentOffset.y - _collectionView.contentInset.top;
-                _backgroundView.frame = CGRectMake(0, offset, self.frame.size.width, _backgroundView.frame.size.height);
-                _maskView.frame = CGRectMake(_maskView.frame.origin.x, _maskView.frame.origin.y, _maskView.frame.size.width, _backgroundView.frame.size.height - 8 + MIN(8, offset));
+                backgroundView.frame = CGRectMake(0, offset, self.frame.size.width, backgroundView.frame.size.height);
+                _maskView.frame = CGRectMake(_maskView.frame.origin.x, _maskView.frame.origin.y, _maskView.frame.size.width, backgroundView.frame.size.height - 8 + MIN(8, offset));
                 return;
             }
             else if (_collectionView.contentOffset.y + _collectionView.frame.size.height > _collectionView.contentSize.height + _collectionView.contentInset.bottom)
             {
                 CGFloat offset = (_collectionView.contentSize.height - _collectionView.frame.size.height - _collectionView.contentOffset.y + _collectionView.contentInset.bottom);
-                _backgroundView.frame = CGRectMake(0, offset + MAX(-8, offset * 2), self.frame.size.width, _backgroundView.frame.size.height);
+                backgroundView.frame = CGRectMake(0, offset + MAX(-8, offset * 2), self.frame.size.width, backgroundView.frame.size.height);
                 _maskView.frame = CGRectMake(_maskView.frame.origin.x, 4 - MIN(8, -offset * 2), _maskView.frame.size.width, _maskView.frame.size.height);
                 return;
             }
             
-            _backgroundView.frame = CGRectMake(0, 0, self.frame.size.width, _backgroundView.frame.size.height);
-            _maskView.frame = CGRectMake(_backgroundView.frame.origin.x + 4, _backgroundView.frame.origin.y + 4, _backgroundView.frame.size.width - 8, _backgroundView.frame.size.height - 8);
+            backgroundView.frame = CGRectMake(0, 0, self.frame.size.width, backgroundView.frame.size.height);
+            _maskView.frame = CGRectMake(backgroundView.frame.origin.x + 4, backgroundView.frame.origin.y + 4, backgroundView.frame.size.width - 8, backgroundView.frame.size.height - 8);
         }
     }
 }
@@ -438,12 +430,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             {
                 _collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
                 [_collectionViewLayout invalidateLayout];
-                
-                _arrowView.transform = CGAffineTransformMakeRotation((CGFloat)-M_PI_2);
-                _arrowView.frame = CGRectMake(-TGMediaPickerSelectedPhotosViewArrowSize.height,
-                                              18.5f,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.height,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.width);
             }
                 break;
                 
@@ -451,12 +437,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             {
                 _collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
                 [_collectionViewLayout invalidateLayout];
-                
-                _arrowView.transform = CGAffineTransformMakeRotation((CGFloat)M_PI_2);
-                _arrowView.frame = CGRectMake(self.frame.size.width,
-                                              18.5f,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.height,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.width);
             }
                 break;
                 
@@ -464,12 +444,6 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
             {
                 _collectionViewLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
                 [_collectionViewLayout invalidateLayout];
-                
-                _arrowView.transform = CGAffineTransformMakeRotation((CGFloat)M_PI);
-                _arrowView.frame = CGRectMake(self.frame.size.width - TGMediaPickerSelectedPhotosViewArrowSize.width - 18.5f,
-                                              self.frame.size.height,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.width,
-                                              TGMediaPickerSelectedPhotosViewArrowSize.height);
             }
                 break;
         }
@@ -480,23 +454,25 @@ const CGSize TGMediaPickerSelectedPhotosViewArrowSize = { 19, 8.5f };
 {
     NSInteger numberOfItems = MAX(1, [self collectionView:_collectionView numberOfItemsInSection:0]);
     CGFloat size = 0.0f;
+    
+    UIView *backgroundView = iosMajorVersion() >= 8 ? _effectView : _backgroundView;
 
     if (UIInterfaceOrientationIsPortrait(orientation))
     {
         size = numberOfItems * (_collectionViewLayout.itemSize.width + _collectionViewLayout.minimumInteritemSpacing) - _collectionViewLayout.minimumInteritemSpacing;
         
         size = MAX(0, MIN(self.frame.size.width, size + 8));
-        _backgroundView.frame = CGRectMake(self.frame.size.width - size, 0, size, self.frame.size.height);
+        backgroundView.frame = CGRectMake(self.frame.size.width - size, 0, size, self.frame.size.height);
     }
     else
     {
         size = numberOfItems * (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumInteritemSpacing) - _collectionViewLayout.minimumInteritemSpacing;
         
         size = MAX(0, MIN(self.frame.size.height, size + 8));
-        _backgroundView.frame = CGRectMake(0, 0, self.frame.size.width, size);
+        backgroundView.frame = CGRectMake(0, 0, self.frame.size.width, size);
     }
     
-    CGRect maskViewFrame = CGRectMake(_backgroundView.frame.origin.x + 4, _backgroundView.frame.origin.y + 4, _backgroundView.frame.size.width - 8, _backgroundView.frame.size.height - 8);
+    CGRect maskViewFrame = CGRectMake(backgroundView.frame.origin.x, backgroundView.frame.origin.y + 4, backgroundView.frame.size.width, backgroundView.frame.size.height - 8);
     
     if (!CGRectEqualToRect(maskViewFrame, _maskView.frame))
     {

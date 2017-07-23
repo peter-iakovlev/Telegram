@@ -44,25 +44,44 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 
 @implementation TGMenuSheetBackgroundView
 
-- (instancetype)initWithFrame:(CGRect)frame sizeClass:(UIUserInterfaceSizeClass)sizeClass
+- (instancetype)initWithFrame:(CGRect)frame sizeClass:(UIUserInterfaceSizeClass)sizeClass dark:(bool)dark
 {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
         self.clipsToBounds = true;
         
-        if (TGMenuSheetUseEffectView)
+        if (dark)
         {
-            self.layer.cornerRadius = TGMenuSheetCornerRadius;
-            
-            _effectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight]];
-            _effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            _effectView.frame = self.bounds;
-            [self addSubview:_effectView];
+            if (iosMajorVersion() >= 8)
+            {
+                self.layer.cornerRadius = TGMenuSheetCornerRadius;
+                
+                _effectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
+                _effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                _effectView.frame = self.bounds;
+                [self addSubview:_effectView];
+            }
+            else
+            {
+                self.backgroundColor = UIColorRGBA(0x181818, 0.9f);
+            }
         }
         else
         {
-            self.backgroundColor = [UIColor whiteColor];
+            if (TGMenuSheetUseEffectView)
+            {
+                self.layer.cornerRadius = TGMenuSheetCornerRadius;
+                
+                _effectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleExtraLight]];
+                _effectView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                _effectView.frame = self.bounds;
+                [self addSubview:_effectView];
+            }
+            else
+            {
+                self.backgroundColor = [UIColor whiteColor];
+            }
         }
         
         [self updateTraitsWithSizeClass:sizeClass];
@@ -72,6 +91,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 
 - (void)setMaskEnabled:(bool)enabled
 {
+    if (_effectView != nil)
+        return;
+    
     self.layer.cornerRadius = enabled ? TGMenuSheetCornerRadius : 0.0f;
 }
 
@@ -98,6 +120,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     NSMutableDictionary *_dividerViews;
     
     UIUserInterfaceSizeClass _sizeClass;
+    bool _dark;
     
     id _panHandlingItemView;
     bool _expectsPreciseContentTouch;
@@ -106,12 +129,13 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 
 @implementation TGMenuSheetView
 
-- (instancetype)initWithItemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass
+- (instancetype)initWithItemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass dark:(bool)dark
 {
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
     {
         self.backgroundColor = [UIColor clearColor];
+        _dark = dark;
         
         _itemViews = [[NSMutableArray alloc] init];
         _dividerViews = [[NSMutableDictionary alloc] init];
@@ -154,6 +178,8 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     itemView.sizeClass = _sizeClass;
     itemView.tag = _itemViews.count;
     itemView.handleInternalPan = [self.handleInternalPan copy];
+    if (_dark)
+        [itemView setDark];
     
     switch (itemView.type)
     {
@@ -166,7 +192,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             
             if (_mainBackgroundView == nil)
             {
-                _mainBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass];
+                _mainBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_mainBackgroundView atIndex:0];
                 
                 _scrollView = [[TGMenuSheetScrollView alloc] initWithFrame:CGRectZero];
@@ -197,7 +223,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             
             if (_headerBackgroundView == nil)
             {
-                _headerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass];
+                _headerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_headerBackgroundView atIndex:0];
             }
             
@@ -214,7 +240,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             
             if (_footerBackgroundView == nil)
             {
-                _footerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass];
+                _footerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_footerBackgroundView atIndex:0];
             }
             
@@ -292,7 +318,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
         topDivider = _dividerViews[@(previousItemView.tag)][TGMenuDividerBottom];
         
     UIView *bottomDivider = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
-    bottomDivider.backgroundColor = TGSeparatorColor();
+    bottomDivider.backgroundColor = _dark ? UIColorRGBA(0xffffff, 0.18f) : TGSeparatorColor();
     
     NSMutableDictionary *dividers = [[NSMutableDictionary alloc] init];
     if (topDivider != nil)

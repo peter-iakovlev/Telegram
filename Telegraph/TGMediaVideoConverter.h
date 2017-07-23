@@ -21,6 +21,7 @@
 
 + (NSUInteger)estimatedSizeForPreset:(TGMediaVideoConversionPreset)preset duration:(NSTimeInterval)duration hasAudio:(bool)hasAudio;
 + (TGMediaVideoConversionPreset)bestAvailablePresetForDimensions:(CGSize)dimensions;
++ (CGSize)_renderSizeWithCropSize:(CGSize)cropSize;
 
 @end
 

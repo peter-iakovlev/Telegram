@@ -197,7 +197,7 @@ const NSUInteger PGCurveDataStep = 2;
     return [UIImage imageNamed:@"PhotoEditorCurvesTool"];
 }
 
-- (UIView <TGPhotoEditorToolView> *)itemAreaViewWithChangeBlock:(void (^)(id))changeBlock
+- (UIView <TGPhotoEditorToolView> *)itemAreaViewWithChangeBlock:(void (^)(id))changeBlock explicit:(bool)explicit
 {
     __weak PGCurvesTool *weakSelf = self;
     
@@ -210,10 +210,16 @@ const NSUInteger PGCurveDataStep = 2;
         
         if (newValue != nil)
         {
-            if ([strongSelf.tempValue isEqual:newValue])
+            if (!explicit && [strongSelf.tempValue isEqual:newValue])
                 return;
             
-            strongSelf.tempValue = newValue;
+            if (explicit && [strongSelf.value isEqual:newValue])
+                return;
+            
+            if (!explicit)
+                strongSelf.tempValue = newValue;
+            else
+                strongSelf.value = newValue;
         }
         
         if (changeBlock != nil)
@@ -222,7 +228,7 @@ const NSUInteger PGCurveDataStep = 2;
     return view;
 }
 
-- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id, bool))__unused changeBlock
+- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id, bool))__unused changeBlock explicit:(bool)explicit nameWidth:(CGFloat)__unused nameWidth
 {
     __weak PGCurvesTool *weakSelf = self;
     
@@ -235,10 +241,16 @@ const NSUInteger PGCurveDataStep = 2;
         
         if (newValue != nil)
         {
-            if ([strongSelf.tempValue isEqual:newValue])
+            if (!explicit && [strongSelf.tempValue isEqual:newValue])
                 return;
             
-            strongSelf.tempValue = newValue;
+            if (explicit && [strongSelf.value isEqual:newValue])
+                return;
+            
+            if (!explicit)
+                strongSelf.tempValue = newValue;
+            else
+                strongSelf.value = newValue;
         }
         
         if (changeBlock != nil)
@@ -339,6 +351,11 @@ const NSUInteger PGCurveDataStep = 2;
         result = vec4(applyRGBCurve(hslToRgb(applyLuminanceCurve(rgbToHsl(result.rgb)))), result.a);
      }
     );
+}
+
+- (bool)isSimple
+{
+    return false;
 }
 
 @end

@@ -42,7 +42,7 @@
     _singleSize = singleFontSize;
     _doubleSize = doubleFontSize;
     
-    _singleFont = [UIFont fontWithName:@".SFCompactRounded-Semibold" size:singleFontSize];
+    _singleFont = [TGFont roundedFontOfSize:singleFontSize];
     _doubleFont = _singleFont;
 }
 

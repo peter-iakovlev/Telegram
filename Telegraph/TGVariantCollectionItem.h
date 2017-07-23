@@ -18,6 +18,7 @@
 @property (nonatomic) bool enabled;
 @property (nonatomic) bool hideArrow;
 @property (nonatomic) CGFloat minLeftPadding;
+@property (nonatomic) bool flexibleLayout;
 @property (nonatomic) UIColor *variantColor;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;

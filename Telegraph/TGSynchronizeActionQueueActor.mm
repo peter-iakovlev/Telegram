@@ -79,7 +79,7 @@
         }
     }];
     
-    [TGDatabaseInstance() loadQueuedActions:[NSArray arrayWithObjects:[NSNumber numberWithInt:TGDatabaseActionReadConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteMessage], [NSNumber numberWithInt:TGDatabaseActionClearConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteConversation], @(TGDatabaseActionDeleteSecretMessage), @(TGDatabaseActionClearSecretConversation), @(TGDatabaseActionReadMessageContents), nil] completion:^(NSDictionary *actionSetsByType)
+    [TGDatabaseInstance() loadQueuedActions:[NSArray arrayWithObjects:[NSNumber numberWithInt:TGDatabaseActionReadConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteMessage], [NSNumber numberWithInt:TGDatabaseActionClearConversation], [NSNumber numberWithInt:TGDatabaseActionDeleteConversation], @(TGDatabaseActionDeleteSecretMessage), @(TGDatabaseActionClearSecretConversation), @(TGDatabaseActionReadMessageContents), @(TGDatabaseActionScreenshotMessage), nil] completion:^(NSDictionary *actionSetsByType)
     {
         [ActionStageInstance() dispatchOnStageQueue:^
         {
@@ -90,6 +90,7 @@
             NSArray *clearConversationActions = [actionSetsByType objectForKey:[NSNumber numberWithInt:TGDatabaseActionClearConversation]];
             NSArray *clearSecretConversationsActions = [actionSetsByType objectForKey:@(TGDatabaseActionClearSecretConversation)];
             NSArray *readMessageContentActions = [actionSetsByType objectForKey:@(TGDatabaseActionReadMessageContents)];
+            NSArray *screenshotMessageContentActions = [actionSetsByType objectForKey:@(TGDatabaseActionScreenshotMessage)];
             
             if (readConversationActions.count != 0)
             {
@@ -359,6 +360,53 @@
                         [strongSelf execute:nil];
                     }
                 }]];
+            }
+            else if (screenshotMessageContentActions.count != 0) {
+                TLRPCmessages_sendScreenshotNotification$messages_sendScreenshotNotification *sendScreenshotNotification = [[TLRPCmessages_sendScreenshotNotification$messages_sendScreenshotNotification alloc] init];
+                
+                NSValue *value = screenshotMessageContentActions.firstObject;
+                TGDatabaseAction action;
+                [value getValue:&action];
+                
+                int64_t messageRandomId = 0;
+                arc4random_buf(&messageRandomId, 8);
+                sendScreenshotNotification.random_id = messageRandomId;
+                
+                sendScreenshotNotification.reply_to_msg_id = action.arg0;
+                
+                sendScreenshotNotification.peer = [TGTelegraphInstance createInputPeerForConversation:action.subject accessHash:0];
+                
+                if (sendScreenshotNotification.peer == nil) {
+                    if (screenshotMessageContentActions.count != 0) {
+                        [TGDatabaseInstance() confirmQueuedActions:@[screenshotMessageContentActions.firstObject] requireFullMatch:true];
+                    }
+                    [self execute:nil];
+                } else {
+                    __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                    [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:sendScreenshotNotification] startWithNext:^(TLUpdates *updates) {
+                        [[TGTelegramNetworking instance] addUpdates:updates];
+                    } error:^(__unused id error)
+                    {
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            if (screenshotMessageContentActions.count != 0) {
+                                [TGDatabaseInstance() confirmQueuedActions:@[screenshotMessageContentActions.firstObject] requireFullMatch:true];
+                            }
+                            [strongSelf execute:nil];
+                        }
+                    } completed:^
+                    {
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            if (screenshotMessageContentActions.count != 0) {
+                                [TGDatabaseInstance() confirmQueuedActions:@[screenshotMessageContentActions.firstObject] requireFullMatch:true];
+                            }
+                            [strongSelf execute:nil];
+                        }
+                    }]];
+                }
             }
             else
             {

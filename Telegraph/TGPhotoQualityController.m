@@ -12,7 +12,6 @@
 #import "TGModernGalleryVideoView.h"
 #import "TGPhotoEditorPreviewView.h"
 #import "TGPhotoEditorGenericToolView.h"
-#import "TGPhotoEditorToolButtonsView.h"
 
 #import "TGMediaAsset.h"
 #import "TGMediaAssetImageSignals.h"
@@ -23,6 +22,7 @@
 
 #import "PGPhotoEditor.h"
 
+const CGFloat TGPhotoEditorQualityPanelSize = 75.0f;
 const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
 
 @interface TGPhotoQuality : NSObject <PGPhotoEditorItem>
@@ -38,7 +38,6 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
 {
     TGPhotoQuality *_quality;
     
-    UIView *_initialPreviewSuperview;
     UIView *_wrapperView;
     UIView *_portraitToolsWrapperView;
     UIView *_landscapeToolsWrapperView;
@@ -46,9 +45,7 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     UIView <TGPhotoEditorToolView> *_portraitToolControlView;
     UIView <TGPhotoEditorToolView> *_landscapeToolControlView;
     
-    TGPhotoEditorToolButtonsView *_portraitButtonsView;
-    TGPhotoEditorToolButtonsView *_landscapeButtonsView;
-    
+    bool _appeared;
     bool _dismissing;
     bool _animating;
     
@@ -73,12 +70,14 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
 
 @implementation TGPhotoQualityController
 
-- (instancetype)initWithPhotoEditor:(PGPhotoEditor *)photoEditor
+- (instancetype)initWithPhotoEditor:(PGPhotoEditor *)photoEditor previewView:(TGPhotoEditorPreviewView *)previewView
 {
     self = [super init];
     if (self != nil)
     {
         self.photoEditor = photoEditor;
+        self.previewView = previewView;
+        
         _previewId = (int)arc4random();
         _currentPreset = TGMediaVideoConversionPresetCompressedDefault;
         
@@ -137,16 +136,21 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
         _quality.maximumValue = [TGMediaVideoConverter bestAvailablePresetForDimensions:dimensions] - 1;
     else
         _quality.maximumValue = TGMediaVideoConversionPresetCompressedMedium - 1;
-        
+    
+    TGPhotoEditorPreviewView *previewView = _previewView;
+    previewView.hidden = true;
+    previewView.interactionEnded = nil;
+    [self.view addSubview:_previewView];
+    
     _wrapperView = [[UIView alloc] initWithFrame:CGRectZero];
-    _wrapperView.alpha = 0.0f;
-    _wrapperView.backgroundColor = [UIColor blackColor];
     [self.view addSubview:_wrapperView];
     
     _portraitToolsWrapperView = [[UIView alloc] initWithFrame:CGRectZero];
+    _portraitToolsWrapperView.alpha = 0.0f;
     [_wrapperView addSubview:_portraitToolsWrapperView];
     
     _landscapeToolsWrapperView = [[UIView alloc] initWithFrame:CGRectZero];
+    _landscapeToolsWrapperView.alpha = 0.0f;
     [_wrapperView addSubview:_landscapeToolsWrapperView];
     
     _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 44.0f, 44.0f)];
@@ -184,42 +188,6 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     _landscapeToolControlView.isLandscape = true;
     _landscapeToolControlView.toolbarLandscapeSize = self.toolbarLandscapeSize;
     [_landscapeToolsWrapperView addSubview:_landscapeToolControlView];
-    
-    void(^cancelPressed)(void) = ^
-    {
-        __strong TGPhotoQualityController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        [strongSelf.mainController dismissEditor];
-    };
-    
-    void(^confirmPressed)(void) = ^
-    {
-        __strong TGPhotoQualityController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        if (strongSelf->_portraitToolControlView.isTracking || strongSelf->_landscapeToolControlView.isTracking || strongSelf->_animating)
-            return;
-        
-        [[NSUserDefaults standardUserDefaults] setObject:@(strongSelf.preset) forKey:@"TG_preferredVideoPreset_v0"];
-    
-        [strongSelf.mainController applyEditor];
-    };
-    
-    NSString *cancelButton = TGLocalized(@"Common.Cancel");
-    NSString *doneButton = TGLocalized(@"Common.Done");
-    
-    _portraitButtonsView = [[TGPhotoEditorToolButtonsView alloc] initWithCancelButton:cancelButton doneButton:doneButton];
-    _portraitButtonsView.cancelPressed = cancelPressed;
-    _portraitButtonsView.confirmPressed = confirmPressed;
-    [_portraitToolsWrapperView addSubview:_portraitButtonsView];
-    
-    _landscapeButtonsView = [[TGPhotoEditorToolButtonsView alloc] initWithCancelButton:cancelButton doneButton:doneButton];
-    _landscapeButtonsView.cancelPressed = cancelPressed;
-    _landscapeButtonsView.confirmPressed = confirmPressed;
-    [_landscapeToolsWrapperView addSubview:_landscapeButtonsView];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -227,16 +195,6 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     [super viewDidAppear:animated];
     
     [self transitionIn];
-}
-
-- (void)attachPreviewView:(TGPhotoEditorPreviewView *)previewView
-{
-    self.previewView = previewView;
-    _initialPreviewSuperview = previewView.superview;
-    [self.view insertSubview:previewView aboveSubview:_wrapperView];
-    
-    if (self.finishedCombinedTransition != nil)
-        self.finishedCombinedTransition();
     
     [UIView animateWithDuration:0.3f animations:^
     {
@@ -245,45 +203,43 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     [self generateVideoPreview];
 }
 
+- (BOOL)shouldAutorotate
+{
+    TGPhotoEditorPreviewView *previewView = self.previewView;
+    return (!previewView.isTracking && !_portraitToolControlView.isTracking && !_landscapeToolControlView.isTracking && [super shouldAutorotate]);
+}
+
+- (bool)isDismissAllowed
+{
+    return _appeared && !(_portraitToolControlView.isTracking && !_landscapeToolControlView.isTracking && !_animating);
+}
+
 #pragma mark - Transition
-
-- (void)prepareForCombinedAppearance
-{
-    _wrapperView.backgroundColor = [UIColor clearColor];
-    _portraitToolControlView.backgroundColor = [UIColor clearColor];
-    _landscapeToolControlView.backgroundColor = [UIColor clearColor];
-}
-
-- (void)finishedCombinedAppearance
-{
-    _wrapperView.backgroundColor = [UIColor blackColor];
-    _portraitToolControlView.backgroundColor = [TGPhotoEditorInterfaceAssets panelBackgroundColor];
-    _landscapeToolControlView.backgroundColor = [TGPhotoEditorInterfaceAssets panelBackgroundColor];
-}
 
 - (void)transitionIn
 {
+    [UIView animateWithDuration:0.3f animations:^
+    {
+        _portraitToolsWrapperView.alpha = 1.0f;
+        _landscapeToolsWrapperView.alpha = 1.0f;
+    }];
+    
     if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation))
         _portraitToolControlView.layer.shouldRasterize = true;
     else
         _landscapeToolControlView.layer.shouldRasterize = true;
     
-    CGRect targetFrame;
     CGRect toolTargetFrame;
     switch (self.interfaceOrientation)
     {
         case UIInterfaceOrientationLandscapeLeft:
         {
-            targetFrame = _landscapeButtonsView.frame;
-            _landscapeButtonsView.frame = CGRectOffset(_landscapeButtonsView.frame, -_landscapeButtonsView.frame.size.width, 0);
             toolTargetFrame = _landscapeToolsWrapperView.frame;
             _landscapeToolsWrapperView.frame = CGRectOffset(_landscapeToolsWrapperView.frame, -_landscapeToolsWrapperView.frame.size.width / 2 - 20, 0);
         }
             break;
         case UIInterfaceOrientationLandscapeRight:
         {
-            targetFrame = _landscapeButtonsView.frame;
-            _landscapeButtonsView.frame = CGRectOffset(_landscapeButtonsView.frame, _landscapeButtonsView.frame.size.width, 0);
             toolTargetFrame = _landscapeToolsWrapperView.frame;
             _landscapeToolsWrapperView.frame = CGRectOffset(_landscapeToolsWrapperView.frame, _landscapeToolsWrapperView.frame.size.width / 2 + 20, 0);
         }
@@ -291,8 +247,6 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             
         default:
         {
-            targetFrame = _portraitButtonsView.frame;
-            _portraitButtonsView.frame = CGRectOffset(_portraitButtonsView.frame, 0, _portraitButtonsView.frame.size.height);
             toolTargetFrame = _portraitToolsWrapperView.frame;
             _portraitToolsWrapperView.frame = CGRectOffset(_portraitToolsWrapperView.frame, 0, _portraitToolsWrapperView.frame.size.height / 2 + 20);
         }
@@ -301,14 +255,10 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     
     void (^animationBlock)(void) = ^
     {
-        if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation)) {
-            _portraitButtonsView.frame = targetFrame;
+        if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation))
             _portraitToolsWrapperView.frame = toolTargetFrame;
-        }
-        else {
-            _landscapeButtonsView.frame = targetFrame;
+        else
             _landscapeToolsWrapperView.frame = toolTargetFrame;
-        }
     };
     
     [UIView animateWithDuration:0.3f animations:^
@@ -329,22 +279,9 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
         [UIView animateWithDuration:0.3f delay:0.0f options:UIViewAnimationOptionAllowUserInteraction animations:animationBlock completion:nil];
 }
 
-- (void)_animatePreviewViewTransitionOutToFrame:(CGRect)targetFrame saving:(bool)saving parentView:(UIView *)__unused parentView completion:(void (^)(void))completion
+- (void)transitionOutSwitching:(bool)__unused switching completion:(void (^)(void))completion
 {
-    [_disposable dispose];
-    
-    _dismissing = true;
-    
-    _overlayView.hidden = true;
-    if (_player != nil)
-        [_player pause];
-    
-    if (self.beginTransitionOut != nil)
-        self.beginTransitionOut();
-    
     _wrapperView.backgroundColor = [UIColor clearColor];
-    
-    [_initialPreviewSuperview addSubview:self.previewView];
     
     if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation))
         _portraitToolControlView.layer.shouldRasterize = true;
@@ -354,35 +291,9 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     [UIView animateWithDuration:0.3f animations:^
     {
         _wrapperView.alpha = 0.0f;
-    } completion:^(__unused BOOL finished)
-    {
-
     }];
     
-    void (^animationBlock)(void) = ^
-    {
-        switch (self.interfaceOrientation)
-        {
-            case UIInterfaceOrientationLandscapeLeft:
-            {
-                _landscapeButtonsView.frame = CGRectOffset(_landscapeButtonsView.frame, -_landscapeButtonsView.frame.size.width, 0);
-            }
-                break;
-            case UIInterfaceOrientationLandscapeRight:
-            {
-                _landscapeButtonsView.frame = CGRectOffset(_landscapeButtonsView.frame, _landscapeButtonsView.frame.size.width, 0);
-            }
-                break;
-                
-            default:
-            {
-                _portraitButtonsView.frame = CGRectOffset(_portraitButtonsView.frame, 0, _portraitButtonsView.frame.size.height);
-            }
-                break;
-        }
-    };
-    
-    UIInterfaceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    UIInterfaceOrientation orientation = self.interfaceOrientation;
     if ([self inFormSheet] || [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
     {
         orientation = UIInterfaceOrientationPortrait;
@@ -392,25 +303,62 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     {
         orientation = UIInterfaceOrientationPortrait;
     }
-    
+
     if (UIInterfaceOrientationIsPortrait(orientation))
         _landscapeToolsWrapperView.hidden = true;
     else
         _portraitToolsWrapperView.hidden = true;
     
-    void (^finishedBlock)(BOOL) = ^(__unused BOOL finished)
+    switch (orientation)
     {
-        completion();
-    };
+        case UIInterfaceOrientationLandscapeLeft:
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+            {
+                _landscapeToolsWrapperView.transform = CGAffineTransformMakeTranslation(-_landscapeToolsWrapperView.frame.size.width / 3.0f * 2.0f, 0.0f);
+            } completion:nil];
+        }
+            break;
+            
+        case UIInterfaceOrientationLandscapeRight:
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+            {
+                _landscapeToolsWrapperView.transform = CGAffineTransformMakeTranslation(_landscapeToolsWrapperView.frame.size.width / 3.0f * 2.0f, 0.0f);
+            } completion:nil];
+        }
+            break;
+            
+        default:
+        {
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+            {
+                _portraitToolsWrapperView.transform = CGAffineTransformMakeTranslation(0.0f, _portraitToolsWrapperView.frame.size.height / 3.0f * 2.0f);
+            } completion:nil];
+        }
+            break;
+    }
     
-    if (iosMajorVersion() >= 7)
+    [UIView animateWithDuration:0.2f animations:^
     {
-        [UIView animateWithDuration:0.4f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.0f options:UIViewAnimationOptionCurveLinear animations:animationBlock completion:finishedBlock];
-    }
-    else
+        _portraitToolsWrapperView.alpha = 0.0f;
+        _landscapeToolsWrapperView.alpha = 0.0f;
+    } completion:^(__unused BOOL finished)
     {
-        [UIView animateWithDuration:0.3f delay:0.0f options:UIViewAnimationOptionAllowUserInteraction animations:animationBlock completion:finishedBlock];
-    }
+        if (completion != nil)
+            completion();
+    }];
+}
+
+- (void)_animatePreviewViewTransitionOutToFrame:(CGRect)targetFrame saving:(bool)saving parentView:(UIView *)__unused parentView completion:(void (^)(void))completion
+{
+    [_disposable dispose];
+    
+    _dismissing = true;
+    
+    _overlayView.hidden = true;
+    if (_player != nil)
+        [_player pause];
     
     UIView *previewView = _videoView ?: self.previewView;
     UIView *snapshotView = nil;
@@ -470,6 +418,52 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     [previewView pop_addAnimation:previewAlphaAnimation forKey:@"alpha"];
 }
 
+- (void)_finishedTransitionInWithView:(UIView *)transitionView
+{
+    _appeared = true;
+    
+    [transitionView removeFromSuperview];
+    
+    TGPhotoEditorPreviewView *previewView = _previewView;
+    previewView.hidden = false;
+    [previewView performTransitionInIfNeeded];
+}
+
+- (CGRect)transitionOutReferenceFrame
+{
+    TGPhotoEditorPreviewView *previewView = _previewView;
+    return previewView.frame;
+}
+
+- (UIView *)transitionOutReferenceView
+{
+    return _previewView;
+}
+
+- (CGRect)transitionOutSourceFrameForReferenceFrame:(CGRect)referenceFrame orientation:(UIInterfaceOrientation)orientation
+{
+    CGRect containerFrame = [TGPhotoQualityController photoContainerFrameForParentViewFrame:self.view.frame toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorQualityPanelSize];
+    CGSize fittedSize = TGScaleToSize(referenceFrame.size, containerFrame.size);
+    CGRect sourceFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2, containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2, fittedSize.width, fittedSize.height);
+    
+    return sourceFrame;
+}
+
+- (CGRect)_targetFrameForTransitionInFromFrame:(CGRect)fromFrame
+{
+    CGSize referenceSize = [self referenceViewSize];
+    UIInterfaceOrientation orientation = self.interfaceOrientation;
+    
+    if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        orientation = UIInterfaceOrientationPortrait;
+    
+    CGRect containerFrame = [TGPhotoQualityController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorQualityPanelSize];
+    CGSize fittedSize = TGScaleToSize(fromFrame.size, containerFrame.size);
+    CGRect toFrame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2, containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2, fittedSize.width, fittedSize.height);
+    
+    return toFrame;
+}
+
 - (void)viewWillLayoutSubviews
 {
     [super viewWillLayoutSubviews];
@@ -506,11 +500,16 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
         orientation = UIInterfaceOrientationPortrait;
     }
     
-    CGFloat screenSide = MAX(referenceSize.width, referenceSize.height) + 2 * TGPhotoEditorPanelSize;
+    CGFloat panelSize = TGPhotoEditorQualityPanelSize;
+    CGFloat screenSide = MAX(referenceSize.width, referenceSize.height) + 2 * panelSize;
     _wrapperView.frame = CGRectMake((referenceSize.width - screenSide) / 2, (referenceSize.height - screenSide) / 2, screenSide, screenSide);
     
-    CGFloat panelToolbarPortraitSize = TGPhotoEditorPanelSize + TGPhotoEditorToolbarSize;
-    CGFloat panelToolbarLandscapeSize = TGPhotoEditorPanelSize + self.toolbarLandscapeSize;
+    CGFloat panelToolbarPortraitSize = panelSize + TGPhotoEditorToolbarSize;
+    CGFloat panelToolbarLandscapeSize = panelToolbarPortraitSize;
+    
+    
+    if (_dismissing)
+        return;
     
     switch (orientation)
     {
@@ -519,15 +518,12 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             [UIView performWithoutAnimation:^
             {
                 _landscapeToolsWrapperView.frame = CGRectMake(0, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, _landscapeToolsWrapperView.frame.size.height);
-                _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - TGPhotoEditorPanelSize, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-                
-                if (!_dismissing)
-                    _landscapeButtonsView.frame = CGRectMake(0, 0, [_landscapeButtonsView landscapeSize], referenceSize.height);
+                _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - panelSize, 0, panelSize, _landscapeToolsWrapperView.frame.size.height);
             }];
             
             _landscapeToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, referenceSize.height);
             
-            _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - TGPhotoEditorPanelSize, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
+            _landscapeToolControlView.frame = CGRectMake(panelToolbarLandscapeSize - panelSize - 7.0f, 0, panelSize - 7.0f, _landscapeToolsWrapperView.frame.size.height);
             
             _portraitToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, screenSide - panelToolbarPortraitSize, referenceSize.width, panelToolbarPortraitSize);
         }
@@ -538,15 +534,12 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             [UIView performWithoutAnimation:^
             {
                 _landscapeToolsWrapperView.frame = CGRectMake(screenSide - panelToolbarLandscapeSize, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, _landscapeToolsWrapperView.frame.size.height);
-                _landscapeToolControlView.frame = CGRectMake(0, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
-                
-                if (!_dismissing)
-                    _landscapeButtonsView.frame = CGRectMake(panelToolbarLandscapeSize - [_landscapeButtonsView landscapeSize], 0, [_landscapeButtonsView landscapeSize], referenceSize.height);
+                _landscapeToolControlView.frame = CGRectMake(0, 0, panelSize, _landscapeToolsWrapperView.frame.size.height);
             }];
             
             _landscapeToolsWrapperView.frame = CGRectMake((screenSide + referenceSize.width) / 2 - panelToolbarLandscapeSize, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, referenceSize.height);
             
-            _landscapeToolControlView.frame = CGRectMake(0, 0, TGPhotoEditorPanelSize, _landscapeToolsWrapperView.frame.size.height);
+            _landscapeToolControlView.frame = CGRectMake(7.0f, 0, panelSize - 7.0f, _landscapeToolsWrapperView.frame.size.height);
             
             _portraitToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, screenSide - panelToolbarPortraitSize, referenceSize.width, panelToolbarPortraitSize);
         }
@@ -558,15 +551,12 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             if (x < screenSide / 2)
                 x = 0;
             else
-                x = screenSide - TGPhotoEditorPanelSize;
+                x = screenSide - panelSize;
             _landscapeToolsWrapperView.frame = CGRectMake(x, (screenSide - referenceSize.height) / 2, panelToolbarLandscapeSize, referenceSize.height);
             
             _portraitToolsWrapperView.frame = CGRectMake((screenSide - referenceSize.width) / 2, (screenSide + referenceSize.height) / 2 - panelToolbarPortraitSize, referenceSize.width, panelToolbarPortraitSize);
             
-            if (!_dismissing)
-                _portraitButtonsView.frame = CGRectMake(0, _portraitToolsWrapperView.frame.size.height - TGPhotoEditorToolButtonsViewSize, _portraitToolsWrapperView.frame.size.width, TGPhotoEditorToolButtonsViewSize);
-            
-            _portraitToolControlView.frame = CGRectMake(0, 0, _portraitToolsWrapperView.frame.size.width, _portraitToolsWrapperView.frame.size.height - _portraitButtonsView.frame.size.height);
+            _portraitToolControlView.frame = CGRectMake(0, 7.0f, _portraitToolsWrapperView.frame.size.width, _portraitToolsWrapperView.frame.size.height - TGPhotoEditorToolbarSize - 7.0f);
         }
             break;
     }
@@ -574,15 +564,12 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     PGPhotoEditor *photoEditor = self.photoEditor;
     TGPhotoEditorPreviewView *previewView = self.previewView;
     
-    if (_dismissing || previewView.superview != self.view)
+    if (previewView.superview != self.view)
         return;
     
-    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:TGPhotoEditorPanelSize];
+    CGRect containerFrame = [TGPhotoEditorTabController photoContainerFrameForParentViewFrame:CGRectMake(0, 0, referenceSize.width, referenceSize.height) toolbarLandscapeSize:self.toolbarLandscapeSize orientation:orientation panelSize:panelSize];
     CGSize fittedSize = TGScaleToSize(photoEditor.rotatedCropSize, containerFrame.size);
-    previewView.frame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2,
-                                   containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2,
-                                   fittedSize.width,
-                                   fittedSize.height);
+    previewView.frame = CGRectMake(containerFrame.origin.x + (containerFrame.size.width - fittedSize.width) / 2, containerFrame.origin.y + (containerFrame.size.height - fittedSize.height) / 2, fittedSize.width, fittedSize.height);
     
     _videoView.frame = previewView.frame;
     
@@ -599,6 +586,8 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
         _quality.duration = adjustments.trimEndValue - adjustments.trimStartValue;
     else
         _quality.duration = _fileDuration;
+    
+    [self updateInfo];
 }
 
 - (NSURL *)_previewDirectoryURL
@@ -611,12 +600,29 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     [[NSFileManager defaultManager] removeItemAtURL:[self _previewDirectoryURL] error:NULL];
 }
 
+- (void)updateInfo
+{
+    NSUInteger estimatedSize = [TGMediaVideoConverter estimatedSizeForPreset:self.preset duration:_fileDuration hasAudio:_hasAudio];
+    
+    CGRect cropRect = _photoEditor.cropRect;
+    CGSize maxDimensions = [TGMediaVideoConversionPresetSettings maximumSizeForPreset:self.preset];
+    CGSize outputDimensions = TGFitSizeF(cropRect.size, maxDimensions);
+    outputDimensions = CGSizeMake(ceil(outputDimensions.width), ceil(outputDimensions.height));
+    outputDimensions = [TGMediaVideoConverter _renderSizeWithCropSize:outputDimensions];
+
+    NSString *fileSize = [NSString stringWithFormat:@"MP4 • ~%@ • %dx%d", [TGStringUtils stringForFileSize:estimatedSize precision:1], (int)outputDimensions.width, (int)outputDimensions.height];
+    
+    [(TGPhotoEditorController *)self.parentViewController setInfoString:fileSize];
+}
+
 - (void)generateVideoPreview
 {
     if (self.preset == _currentPreset)
         return;
     
     _currentPreset = self.preset;
+    
+    [self updateInfo];
     
     SSignal *assetSignal = [self.item isKindOfClass:[TGMediaAsset class]] ? [TGMediaAssetImageSignals avAssetForVideoAsset:(TGMediaAsset *)self.item] : [SSignal single:(AVAsset *)self.item];
 
@@ -765,6 +771,11 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
     }];
 }
 
+- (TGPhotoEditorTab)availableTabs
+{
+    return TGPhotoEditorNoneTab;
+}
+
 @end
 
 
@@ -877,8 +888,7 @@ const NSTimeInterval TGPhotoQualityPreviewDuration = 15.0f;
             break;
     }
     
-    NSUInteger estimatedSize = [TGMediaVideoConverter estimatedSizeForPreset:(TGMediaVideoConversionPreset)value duration:self.duration hasAudio:self.hasAudio];
-    return [NSString stringWithFormat:@"%@ (~%@)", title, [TGStringUtils stringForFileSize:estimatedSize precision:1]];
+    return title;
 }
 
 - (void)updateParameters

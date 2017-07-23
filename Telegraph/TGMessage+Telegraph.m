@@ -28,10 +28,12 @@
 #import "TGBotSignals.h"
 
 #import "TLMessageFwdHeader$messageFwdHeader.h"
+#import "TLMessageMedia$messageMediaPhoto.h"
+#import "TLMessageMedia$messageMediaDocument.h"
 
 @implementation TGMessage (Telegraph)
 
-+ (NSArray *)parseTelegraphMedia:(id)media
++ (NSArray *)parseTelegraphMedia:(id)media mediaLifetime:(int32_t *)mediaLifetime
 {
     NSMutableArray *mediaAttachments = [[NSMutableArray alloc] init];
     
@@ -39,10 +41,15 @@
     {
         TLMessageMedia$messageMediaPhoto *mediaPhoto = (TLMessageMedia$messageMediaPhoto *)media;
         
+
         TGImageMediaAttachment *imageMediaAttachment = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:mediaPhoto.photo];
         imageMediaAttachment.caption = mediaPhoto.caption;
         
         [mediaAttachments addObject:imageMediaAttachment];
+        
+        if (mediaLifetime != nil) {
+            *mediaLifetime = mediaPhoto.ttl_seconds;
+        }
     }
     else if ([media isKindOfClass:[TLMessageMedia$messageMediaContact class]])
     {
@@ -111,6 +118,8 @@
         TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:documentMedia.document];
         documentAttachment.caption = documentMedia.caption;
         
+        int32_t videoTTLSeconds = documentMedia.ttl_seconds;
+        
         bool isAnimated = false;
         TGVideoMediaAttachment *videoMedia = nil;
         for (id attribute in documentAttachment.attributes) {
@@ -141,10 +150,18 @@
             }
         }
         
+        if (videoTTLSeconds > 0 && videoTTLSeconds <= 60) {
+            isAnimated = false;
+        }
+        
         if (videoMedia != nil && !isAnimated) {
             [mediaAttachments addObject:videoMedia];
         } else {
             [mediaAttachments addObject:documentAttachment];
+        }
+        
+        if (mediaLifetime != nil) {
+            *mediaLifetime = videoTTLSeconds;
         }
     }
     else if ([media isKindOfClass:[TLMessageMedia$messageMediaWebPage class]])
@@ -234,6 +251,7 @@
         NSArray *mediaAttachments = nil;
         TGReplyMarkupAttachment *replyMarkupAttachment = nil;
         TGMessageEntitiesAttachment *entitiesAttachment = nil;
+        TGAuthorSignatureMediaAttachment *signatureAttachment = nil;
         
         if ([desc isKindOfClass:[TLMessage$message class]] || [desc isKindOfClass:[TLMessage$modernMessage class]])
         {
@@ -290,10 +308,10 @@
             if ([desc isKindOfClass:[TLMessage$modernMessage class]])
             {
                 TLMessage$modernMessage *modernMessage = (TLMessage$modernMessage *)desc;
-                if (modernMessage.fwd_header != nil)
+                if (modernMessage.fwd_from != nil)
                 {
                     TGForwardedMessageMediaAttachment *forwardedMessageAttachment = [[TGForwardedMessageMediaAttachment alloc] init];
-                    TLMessageFwdHeader$messageFwdHeader *fwd_header = ((TLMessageFwdHeader$messageFwdHeader *)modernMessage.fwd_header);
+                    TLMessageFwdHeader$messageFwdHeader *fwd_header = ((TLMessageFwdHeader$messageFwdHeader *)modernMessage.fwd_from);
                     
                     if (fwd_header.channel_id != 0) {
                         forwardedMessageAttachment.forwardPeerId = TGPeerIdFromChannelId(fwd_header.channel_id);
@@ -304,6 +322,8 @@
 
                     forwardedMessageAttachment.forwardDate = fwd_header.date;
                     forwardedMessageAttachment.forwardPostId = fwd_header.channel_post;
+                    
+                    forwardedMessageAttachment.forwardAuthorSignature = fwd_header.post_author;
                     
                     if (mediaAttachments == nil)
                         mediaAttachments = [NSArray arrayWithObject:forwardedMessageAttachment];
@@ -355,7 +375,8 @@
             
             if (concreteMessage.media != nil)
             {
-                NSArray *parsedMedia = [TGMessage parseTelegraphMedia:concreteMessage.media];
+                int32_t mediaLifetime = 0;
+                NSArray *parsedMedia = [TGMessage parseTelegraphMedia:concreteMessage.media mediaLifetime:&mediaLifetime];
                 if (mediaAttachments == nil)
                     mediaAttachments = parsedMedia;
                 else
@@ -397,14 +418,19 @@
                     contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
                     self.contentProperties = contentProperties;
                 }
+                
+                if (mediaLifetime > 0) {
+                    self.messageLifetime = mediaLifetime;
+                    self.layer = 70;
+                }
             }
             
-            if ([desc isKindOfClass:[TLMessage$modernMessage class]] && ((TLMessage$modernMessage *)desc).replyMarkup != nil)
+            if ([desc isKindOfClass:[TLMessage$modernMessage class]] && ((TLMessage$modernMessage *)desc).reply_markup != nil)
             {
                 bool hidePreviousMarkup = false;
                 bool forceReply = false;
                 bool onlyIfRelevantToUser = false;
-                TGBotReplyMarkup *replyMarkup = [TGBotSignals botReplyMarkupForMarkup:((TLMessage$modernMessage *)desc).replyMarkup userId:(int32_t)self.fromUid messageId:self.mid hidePreviousMarkup:&hidePreviousMarkup forceReply:&forceReply onlyIfRelevantToUser:&onlyIfRelevantToUser];
+                TGBotReplyMarkup *replyMarkup = [TGBotSignals botReplyMarkupForMarkup:((TLMessage$modernMessage *)desc).reply_markup userId:(int32_t)self.fromUid messageId:self.mid hidePreviousMarkup:&hidePreviousMarkup forceReply:&forceReply onlyIfRelevantToUser:&onlyIfRelevantToUser];
                 
                 if (!onlyIfRelevantToUser || ((TLMessage$modernMessage *)desc).flags & (1 << 4))
                 {
@@ -427,6 +453,11 @@
                     entitiesAttachment = [[TGMessageEntitiesAttachment alloc] init];
                     entitiesAttachment.entities = entities;
                 }
+            }
+            
+            if ([desc isKindOfClass:[TLMessage$modernMessage class]] && ((TLMessage$modernMessage *)desc).post_author != nil)
+            {
+                signatureAttachment = [[TGAuthorSignatureMediaAttachment alloc] initWithSignature:((TLMessage$modernMessage *)desc).post_author];
             }
         }
         else if ([desc isKindOfClass:[TLMessage$modernMessageService class]])
@@ -543,6 +574,17 @@
                 NSMutableArray *array = [[NSMutableArray alloc] init];
                 [array addObjectsFromArray:mediaAttachments];
                 [array addObject:entitiesAttachment];
+                mediaAttachments = array;
+            }
+        }
+        
+        if (signatureAttachment != nil) {
+            if (mediaAttachments == nil) {
+                mediaAttachments = [NSArray arrayWithObject:signatureAttachment];
+            } else {
+                NSMutableArray *array = [[NSMutableArray alloc] init];
+                [array addObjectsFromArray:mediaAttachments];
+                [array addObject:signatureAttachment];
                 mediaAttachments = array;
             }
         }

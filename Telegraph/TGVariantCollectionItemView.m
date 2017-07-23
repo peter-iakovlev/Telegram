@@ -19,6 +19,7 @@
     UIImageView *_variantIconView;
     UIImageView *_disclosureIndicator;
     CGFloat _minLeftPadding;
+    bool _flexibleLayout;
 }
 
 @end
@@ -107,6 +108,11 @@
     [self setNeedsLayout];
 }
 
+- (void)setFlexibleLayout:(bool)flexibleLayout {
+    _flexibleLayout = flexibleLayout;
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -115,6 +121,11 @@
     
     CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width, CGFLOAT_MAX)];
     CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width, CGFLOAT_MAX)];
+    if (_flexibleLayout) {
+        variantSize = [_variantLabel.text sizeWithFont:_variantLabel.font];
+        variantSize.width = CGCeil(variantSize.width);
+        variantSize.height = CGCeil(variantSize.height);
+    }
     
     _disclosureIndicator.frame = CGRectMake(bounds.size.width - _disclosureIndicator.frame.size.width - 15, CGFloor((bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
     
@@ -128,7 +139,15 @@
     CGFloat titleY =  CGFloor((bounds.size.height - titleSize.height) / 2.0f) + TGRetinaPixel;
     CGFloat variantY =  CGFloor((bounds.size.height - variantSize.height) / 2.0f) + TGRetinaPixel;
     
-    if (titleSize.width + labelSpacing + variantSize.width <= availableWidth)
+    if (_flexibleLayout) {
+        _titleLabel.frame = CGRectMake(startingX, titleY, titleSize.width, titleSize.height);
+        
+        CGFloat variantWidth = MIN(CGFloor(availableWidth / 2.0f), MIN(availableWidth - titleSize.width - 25.0f, variantSize.width));
+        
+        CGFloat variantOffset = startingX + availableWidth - variantWidth;
+        _variantLabel.frame = CGRectMake(variantOffset, variantY, variantWidth, variantSize.height);
+    }
+    else if (titleSize.width + labelSpacing + variantSize.width <= availableWidth)
     {
         _titleLabel.frame = CGRectMake(startingX, titleY, titleSize.width, titleSize.height);
         CGFloat variantOffset = startingX + availableWidth - variantSize.width;

@@ -19,7 +19,7 @@
 @property (nonatomic, copy) UIView *(^actionSheetView)();
 @property (nonatomic, copy) UIViewController *(^viewControllerForModalPresentation)();
 @property (nonatomic, copy) void (^dismiss)(bool, bool);
-@property (nonatomic, copy) void (^dismissWhenReady)();
+@property (nonatomic, copy) void (^dismissWhenReady)(bool);
 @property (nonatomic, copy) NSArray *(^visibleItems)();
 
 - (void)_transitionCompleted;

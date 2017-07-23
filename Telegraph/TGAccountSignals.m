@@ -237,7 +237,7 @@
         TGFetchHttpHelper *helper = [[TGFetchHttpHelper alloc] initWithCompletion:^(NSData *data) {
             NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
             text = [text stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
-            NSData *result = [[NSData alloc] initWithBase64EncodedString:text options:NSDataBase64DecodingIgnoreUnknownCharacters];
+            NSData *result = [[NSData alloc] initWithBase64Encoding:text];
             NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
             [finalData setLength:256];
             MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);
@@ -287,7 +287,7 @@
                         finalString = [finalString stringByAppendingString:[string stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]]];
                     }
                     
-                    NSData *result = [[NSData alloc] initWithBase64EncodedString:finalString options:NSDataBase64DecodingIgnoreUnknownCharacters];
+                    NSData *result = [[NSData alloc] initWithBase64Encoding:finalString];
                     NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
                     [finalData setLength:256];
                     MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);

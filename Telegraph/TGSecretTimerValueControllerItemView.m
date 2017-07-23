@@ -16,6 +16,11 @@
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
+    return [self initWithFrame:frame dark:false];
+}
+
+- (instancetype)initWithFrame:(CGRect)frame dark:(bool)dark
+{
     self = [super initWithFrame:frame];
     if (self != nil)
     {
@@ -23,12 +28,16 @@
         _numberLabel.backgroundColor = nil;
         _numberLabel.opaque = false;
         _numberLabel.font = TGSystemFontOfSize(24.0f);
+        if (dark)
+            _numberLabel.textColor = [UIColor whiteColor];
         [self addSubview:_numberLabel];
         
         _unitLabel = [[UILabel alloc] init];
         _unitLabel.backgroundColor = nil;
         _unitLabel.opaque = false;
         _unitLabel.font = TGMediumSystemFontOfSize(16.0f);
+        if (dark)
+            _unitLabel.textColor = [UIColor whiteColor];
         [self addSubview:_unitLabel];
     }
     return self;

@@ -757,9 +757,17 @@ typedef enum {
         }
         case TGMessageImageViewOverlayViewTypeSecretProgress:
         {
-            const CGFloat diameter = self.radius;
+            CGFloat diameter = self.radius;
+            
+            //CGFloat inset = 2.0f;
             
             [_blurredBackgroundImage drawInRect:CGRectMake(0.0f, 0.0f, diameter, diameter) blendMode:kCGBlendModeCopy alpha:1.0f];
+            
+            /*CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0x000000, 0.7f).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(inset, inset, diameter - inset * 2.0f, diameter - inset * 2.0f));
+            
+            diameter -= inset * 2.0f;*/
+            
             CGContextSetFillColorWithColor(context, TGColorWithHexAndAlpha(0xffffffff, 0.5f).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             

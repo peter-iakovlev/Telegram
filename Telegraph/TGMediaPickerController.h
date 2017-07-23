@@ -20,6 +20,8 @@
 @property (nonatomic, assign) bool captionsEnabled;
 @property (nonatomic, assign) bool inhibitDocumentCaptions;
 @property (nonatomic, assign) bool shouldStoreAssets;
+@property (nonatomic, assign) bool hasTimer;
+@property (nonatomic, strong) NSString *recipientName;
 
 @property (nonatomic, readonly) TGMediaSelectionContext *selectionContext;
 @property (nonatomic, readonly) TGMediaEditingContext *editingContext;

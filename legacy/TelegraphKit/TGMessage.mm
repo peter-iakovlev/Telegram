@@ -8,6 +8,7 @@
 #import <objc/runtime.h>
 
 #import "TGTextCheckingResult.h"
+#import "TGPeerIdAdapter.h"
 
 #include <unordered_map>
 
@@ -221,6 +222,9 @@ typedef enum {
 
 - (NSUInteger)layer
 {
+    if (!TGPeerIdIsSecretChat(self.cid)) {
+        return 70;
+    }
     NSUInteger value = [TGMessage layerFromFlags:_flags];
     if (value < 1)
         value = 1;
@@ -870,6 +874,29 @@ typedef enum {
     return nil;
 }
 
+- (NSString *)authorSignature {
+    for (TGMediaAttachment *attachment in _mediaAttachments)
+    {
+        if (attachment.type == TGAuthorSignatureMediaAttachmentType)
+        {
+            return ((TGAuthorSignatureMediaAttachment *)attachment).signature;
+        }
+    }
+    
+    return nil;
+}
+
+- (NSString *)forwardAuthorSignature {
+    for (TGMediaAttachment *attachment in _mediaAttachments)
+    {
+        if (attachment.type == TGForwardedMessageMediaAttachmentType) {
+            return ((TGForwardedMessageMediaAttachment *)attachment).forwardAuthorSignature;
+        }
+    }
+    
+    return nil;
+}
+
 + (void)registerMediaAttachmentParser:(int)type parser:(id<TGMediaAttachmentParser>)parser
 {
     mediaAttachmentParsers.insert(std::pair<int, id<TGMediaAttachmentParser> >(type, parser));
@@ -1055,6 +1082,53 @@ typedef enum {
             }
         }
     }
+}
+
+- (void)filterOutExpiredMedia {
+    if (self.mediaAttachments.count != 0) {
+        NSMutableArray *updatedMedia = [[NSMutableArray alloc] initWithArray:self.mediaAttachments];
+        for (NSUInteger index = 0; index < updatedMedia.count; index++) {
+            if ([updatedMedia[index] isKindOfClass:[TGImageMediaAttachment class]]) {
+                TGImageMediaAttachment *imageMedia = updatedMedia[index];
+                TGImageMediaAttachment *updatedImageMedia = [[TGImageMediaAttachment alloc] init];
+                updatedImageMedia.caption = imageMedia.caption;
+                updatedMedia[index] = updatedImageMedia;
+            } else if ([updatedMedia[index] isKindOfClass:[TGVideoMediaAttachment class]]) {
+                TGVideoMediaAttachment *videoMedia = updatedMedia[index];
+                TGVideoMediaAttachment *updatedVideoMedia = [[TGVideoMediaAttachment alloc] init];
+                updatedVideoMedia.caption = videoMedia.caption;
+                updatedMedia[index] = updatedVideoMedia;
+            } else if ([updatedMedia[index] isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                TGDocumentMediaAttachment *documentMedia = updatedMedia[index];
+                TGDocumentMediaAttachment *updatedDocumentMedia = [[TGDocumentMediaAttachment alloc] init];
+                updatedDocumentMedia.caption = documentMedia.caption;
+                updatedMedia[index] = updatedDocumentMedia;
+            }
+        }
+        self.mediaAttachments = updatedMedia;
+    }
+}
+
+- (bool)hasExpiredMedia {
+    for (id media in self.mediaAttachments) {
+        if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+            TGImageMediaAttachment *imageMedia = media;
+            if (imageMedia.imageId == 0 && imageMedia.localImageId == 0) {
+                return true;
+            }
+        } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+            TGVideoMediaAttachment *videoMedia = media;
+            if (videoMedia.videoId == 0 && videoMedia.localVideoId == 0) {
+                return true;
+            }
+        } if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+            TGDocumentMediaAttachment *documentMedia = media;
+            if (documentMedia.documentId == 0 && documentMedia.localDocumentId == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 @end

@@ -203,7 +203,7 @@
                     }
                     if (isGif)
                     {
-                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api69_DocumentAttribute documentAttributeAnimated], [Api69_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
+                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api70_DocumentAttribute documentAttributeAnimated], [Api70_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
                     }
                     else
                     {
@@ -293,7 +293,7 @@
                 }
                 
                 NSMutableArray *attributes = [[NSMutableArray alloc] init];
-                [attributes addObject:[Api69_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
+                [attributes addObject:[Api70_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
                 
                 uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:audioData name:fileName mimeType:description[@"mimeType"] attributes:attributes];
             }
@@ -325,7 +325,7 @@
                 if (strongSelf == nil)
                     return [SSignal fail:nil];
                 
-                if ([next isKindOfClass:[Api69_InputMedia class]])
+                if ([next isKindOfClass:[Api70_InputMedia class]])
                 {
                     return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:next]];
                 }

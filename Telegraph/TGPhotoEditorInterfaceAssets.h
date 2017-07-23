@@ -28,6 +28,15 @@
 + (UIImage *)gifIcon;
 + (UIImage *)gifActiveIcon;
 + (UIImage *)qualityIconForPreset:(TGMediaVideoConversionPreset)preset;
++ (UIImage *)timerIconForValue:(NSInteger)value;
++ (UIImage *)eraserIcon;
++ (UIImage *)tintIcon;
++ (UIImage *)blurIcon;
++ (UIImage *)curvesIcon;
+
++ (UIImage *)mirrorIcon;
++ (UIImage *)aspectRatioIcon;
++ (UIImage *)aspectRatioActiveIcon;
 
 + (UIColor *)toolbarSelectedIconColor;
 + (UIColor *)toolbarAppliedIconColor;

@@ -28,7 +28,7 @@
 
 @property (nonatomic, copy) void (^handleInternalPan)(UIPanGestureRecognizer *);
 
-- (instancetype)initWithItemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass;
+- (instancetype)initWithItemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass dark:(bool)dark;
 
 - (void)menuWillAppearAnimated:(bool)animated;
 - (void)menuDidAppearAnimated:(bool)animated;

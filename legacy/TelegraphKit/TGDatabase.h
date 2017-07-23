@@ -101,7 +101,8 @@ typedef enum {
     TGDatabaseActionClearConversation = 4,
     TGDatabaseActionDeleteSecretMessage = 5,
     TGDatabaseActionClearSecretConversation = 6,
-    TGDatabaseActionReadMessageContents = 7
+    TGDatabaseActionReadMessageContents = 7,
+    TGDatabaseActionScreenshotMessage = 8
 } TGDatabaseActionType;
 
 typedef struct

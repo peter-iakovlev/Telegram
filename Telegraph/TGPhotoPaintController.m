@@ -459,7 +459,7 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
 
 - (TGPhotoEditorTab)availableTabs
 {
-    return TGPhotoEditorStickerTab | TGPhotoEditorPaintTab | TGPhotoEditorTextTab;
+    return TGPhotoEditorStickerTab | TGPhotoEditorPaintTab | TGPhotoEditorEraserTab | TGPhotoEditorTextTab;
 }
 
 - (void)handleTabAction:(TGPhotoEditorTab)tab
@@ -481,12 +481,37 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
         case TGPhotoEditorPaintTab:
         {
             [self selectEntityView:nil];
+            
+            if (_canvasView.state.eraser)
+                [self toggleEraserMode];
+        }
+            break;
+            
+        case TGPhotoEditorEraserTab:
+        {
+            [self selectEntityView:nil];
+            [self toggleEraserMode];
         }
             break;
             
         default:
             break;
     }
+}
+
+- (TGPhotoEditorTab)activeTab
+{
+    TGPhotoEditorTab tabs = TGPhotoEditorNoneTab;
+    
+    if (_currentEntityView != nil)
+        return tabs;
+    
+    if (_canvasView.state.eraser)
+        tabs |= TGPhotoEditorEraserTab;
+    else
+        tabs |= TGPhotoEditorPaintTab;
+    
+    return tabs;
 }
 
 #pragma mark - Undo & Redo
@@ -1242,6 +1267,8 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
         [self setSettingsButtonIcon:TGPhotoPaintSettingsViewIconMirror];
     else
         [self setSettingsButtonIcon:TGPhotoPaintSettingsViewIconBrush];
+    
+    [self _updateTabs];
 }
 
 - (void)setSettingsButtonIcon:(TGPhotoPaintSettingsViewIcon)icon
@@ -1323,7 +1350,11 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
         if (strongSelf == nil)
             return;
         
+        if (strongSelf->_canvasView.state.eraser && brush.lightSaber)
+            brush = strongSelf->_brushes.firstObject;
+        
         [strongSelf->_canvasView setBrush:brush];
+        
         [strongSelf settingsWrapperPressed];
     };
     _settingsView = view;
@@ -1399,8 +1430,16 @@ const CGFloat TGPhotoPaintStickerKeyboardSize = 260.0f;
 {
     _canvasView.state.eraser = !_canvasView.state.isEraser;
     
+    if (_canvasView.state.eraser)
+    {
+        if (_canvasView.state.brush.lightSaber)
+            [_canvasView setBrush:_brushes.firstObject];
+    }
+    
     [_portraitSettingsView setHighlighted:_canvasView.state.isEraser];
     [_landscapeSettingsView setHighlighted:_canvasView.state.isEraser];
+    
+    [self _updateTabs];
 }
 
 #pragma mark - Scroll View

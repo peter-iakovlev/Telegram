@@ -580,6 +580,12 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     return TGModernConversationTitleViewActivityTyping;
 }
 
+- (NSString *)title
+{
+    TGUser *user = [TGDatabaseInstance() loadUser:_uid];
+    return [self stringForTitle:user isContact:_isContact];
+}
+
 - (void)loadInitialState
 {
     TGUser *user = [TGDatabaseInstance() loadUser:_uid];
@@ -757,6 +763,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     [ActionStageInstance() watchForPaths:@[
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/typing", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/userLink/(%" PRId32 ")", _uid],
+        [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId],
+        [[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"],
         @"/tg/blockedUsers"
     ] watcher:self];
 
@@ -1074,6 +1082,26 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             [self _updatePhoneSharingStatusFromUserLink:userLink];
         });
     }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [(NSMutableDictionary *)resource enumerateKeysAndObjectsUsingBlock:^(NSNumber *nMessageId, NSNumber *nFlags, __unused BOOL *stop)
+            {
+                [self _setMessageFlags:(int32_t)[nMessageId intValue] flags:[nFlags intValue]];
+            }];
+        });
+    }
+    else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            [(NSMutableDictionary *)resource enumerateKeysAndObjectsUsingBlock:^(NSNumber *nMessageId, NSNumber *nViewDate, __unused BOOL *stop)
+            {
+                [self _setMessageViewDate:(int32_t)[nMessageId intValue] viewDate:[nViewDate doubleValue]];
+            }];
+        });
+    }
     else if ([path isEqualToString:@"/tg/calls/enabled"])
     {
         bool enabled = [((SGraphObjectNode *)resource).object boolValue];
@@ -1125,6 +1153,11 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 }
 
 - (bool)allowReplies
+{
+    return true;
+}
+
+- (bool)allowSelfDescructingMedia
 {
     return true;
 }
@@ -1280,6 +1313,84 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (bool)supportsCalls {
     return _supportsCalls;
+}
+
+- (int)messageLifetime
+{
+    return 0;
+}
+
+- (TGMessageModernConversationItem *)_updateMediaStatusData:(TGMessageModernConversationItem *)item
+{
+    if (item->_message.mediaAttachments.count != 0)
+    {
+        bool canBeRead = false;
+        for (TGMediaAttachment *attachment in item->_message.mediaAttachments)
+        {
+            switch (attachment.type)
+            {
+                case TGImageMediaAttachmentType:
+                case TGVideoMediaAttachmentType:
+                    if (attachment.type == TGVideoMediaAttachmentType && ((TGVideoMediaAttachment *)attachment).roundMessage)
+                        canBeRead = true;
+                    else
+                        canBeRead = item->_message.messageLifetime > 0 && item->_message.messageLifetime <= 60;
+                    break;
+                case TGAudioMediaAttachmentType:
+                    canBeRead = true;
+                    break;
+                case TGDocumentMediaAttachmentType:
+                    for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes) {
+                        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                            canBeRead = ((TGDocumentAttributeAudio *)attribute).isVoice;
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        if (canBeRead) {
+            int flags = [TGDatabaseInstance() secretMessageFlags:item->_message.mid];
+            NSTimeInterval viewDate = [TGDatabaseInstance() messageCountdownLocalTime:item->_message.mid enqueueIfNotQueued:false initiatedCountdown:NULL];
+            
+            if (flags != 0 || ABS(viewDate - DBL_EPSILON) > 0.0)
+                [self _setMessageFlagsAndViewDate:item->_message.mid flags:flags viewDate:viewDate];
+        }
+    }
+    
+    return [super _updateMediaStatusData:item];
+}
+
+- (void)markMessagesAsViewed:(NSArray *)messageIds
+{
+    [TGDatabaseInstance() dispatchOnDatabaseThread:^
+     {
+         NSMutableArray *readMessageIds = [[NSMutableArray alloc] init];
+         
+         for (NSNumber *nMessageId in messageIds)
+         {
+             TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[nMessageId intValue] peerId:_conversationId];
+             if (!message.outgoing && message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
+             {
+                 bool initiatedCountdown = false;
+                 [TGDatabaseInstance() messageCountdownLocalTime:[nMessageId intValue] enqueueIfNotQueued:true initiatedCountdown:&initiatedCountdown];
+                 if (initiatedCountdown)
+                     [readMessageIds addObject:nMessageId];
+             }
+         }
+         
+         if (readMessageIds.count != 0)
+         {
+             [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
+         }
+     } synchronous:false];
+}
+
+- (NSUInteger)layer
+{
+    return 70;
 }
 
 @end

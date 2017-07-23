@@ -8,6 +8,11 @@
 
 @implementation TGWebSearchInternalImageResult (TGMediaItem)
 
+- (bool)isVideo
+{
+    return false;
+}
+
 - (NSString *)uniqueIdentifier
 {
     NSString *uniqueId = objc_getAssociatedObject(self, @selector(uniqueIdentifier));

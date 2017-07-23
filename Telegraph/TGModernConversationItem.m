@@ -82,12 +82,12 @@
 {
 }
 
-- (CGSize)sizeForContainerSize:(CGSize)containerSize
+- (CGSize)sizeForContainerSize:(CGSize)containerSize viewStorage:(TGModernViewStorage *)__unused viewStorage
 {
     return CGSizeMake(containerSize.width, 0.0f);
 }
 
-- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged delayAvailability:(bool)__unused delayAvailability
+- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged delayAvailability:(bool)__unused delayAvailability containerSize:(CGSize)__unused containerSize
 {
 }
 

@@ -4,6 +4,11 @@
 
 @implementation TGGiphySearchResultItem (TGMediaItem)
 
+- (bool)isVideo
+{
+    return false;
+}
+
 - (NSString *)uniqueIdentifier
 {
     return self.gifId;

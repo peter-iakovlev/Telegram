@@ -250,57 +250,6 @@
     [_collectionView setContentOffset:contentOffset animated:false];
     
     return;
-//    UIEdgeInsets sectionInsets = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout insetForSectionAtIndex:0];
-//    
-//    CGFloat itemSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumInteritemSpacingForSectionAtIndex:0];
-//    CGFloat lineSpacing = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout minimumLineSpacingForSectionAtIndex:0];
-//    
-//    CGFloat additionalRowWidth = sectionInsets.left + sectionInsets.right;
-//    CGFloat currentRowWidth = 0.0f;
-//    CGFloat maxRowWidth = _collectionView.frame.size.width;
-//    
-//    CGSize itemSize = CGSizeZero;
-//    if ([self collectionView:_collectionView numberOfItemsInSection:0] != 0)
-//    {
-//        itemSize = [self collectionView:_collectionView layout:_collectionView.collectionViewLayout sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
-//    }
-//    
-//    CGFloat contentSize = 0.0f;
-//    
-//    for (NSInteger i = [self numberOfSectionsInCollectionView:_collectionView] - 1; i >= 0; i--)
-//    {
-//        contentSize += sectionInsets.top + sectionInsets.bottom;
-//        
-//        for (NSInteger k = [self collectionView:_collectionView numberOfItemsInSection:i] - 1; k >= 0; k--)
-//        {
-//            if (currentRowWidth + itemSize.width + (currentRowWidth > FLT_EPSILON ? itemSpacing : 0.0f) + additionalRowWidth > maxRowWidth)
-//            {
-//                if (contentSize > FLT_EPSILON)
-//                    contentSize += lineSpacing;
-//                contentSize += itemSize.height;
-//                
-//                currentRowWidth = 0.0f;
-//            }
-//            
-//            if (currentRowWidth > FLT_EPSILON)
-//                currentRowWidth += itemSpacing;
-//            currentRowWidth += itemSize.width;
-//        }
-//        
-//        if (currentRowWidth > FLT_EPSILON)
-//        {
-//            if (contentSize > FLT_EPSILON)
-//                contentSize += lineSpacing;
-//            contentSize += itemSize.height;
-//        }
-//    }
-//    
-//    UIEdgeInsets contentInset = [self controllerInsetForInterfaceOrientation:self.interfaceOrientation];
-//    
-//    CGPoint contentOffset = CGPointMake(0, contentSize - _collectionView.frame.size.height + contentInset.bottom);
-//    if (contentOffset.y < -contentInset.top)
-//        contentOffset.y = -contentInset.top;
-//    [_collectionView setContentOffset:contentOffset animated:false];
 }
 
 - (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration

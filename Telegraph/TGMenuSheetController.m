@@ -40,6 +40,8 @@ typedef enum
 
 @interface TGMenuSheetController () <UIGestureRecognizerDelegate, UIPopoverPresentationControllerDelegate, UIPopoverControllerDelegate, UIViewControllerPreviewingDelegate>
 {
+    bool _dark;
+    
     UIView *_containerView;
     TGMenuSheetDimView *_dimView;
     TGMenuSheetView *_sheetView;
@@ -74,9 +76,15 @@ typedef enum
 
 - (instancetype)init
 {
+    return [self init:false];
+}
+
+- (instancetype)init:(bool)__unused dark
+{
     self = [super init];
     if (self != nil)
     {
+        _dark = dark;
         _disposables = [[SDisposableSet alloc] init];
         _permittedArrowDirections = UIPopoverArrowDirectionDown;
     }
@@ -197,7 +205,7 @@ typedef enum
             [UIView animateWithDuration:0.25 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:changeBlock completion:completionBlock];
         }
         
-        _sheetView = [[TGMenuSheetView alloc] initWithItemViews:itemViews sizeClass:sizeClass];
+        _sheetView = [[TGMenuSheetView alloc] initWithItemViews:itemViews sizeClass:sizeClass dark:_dark];
         _sheetView.menuRelayout = menuRelayout;
         _sheetView.menuWidth = sheetView.menuWidth;
         _sheetView.maxHeight = _maxHeight;
@@ -217,7 +225,7 @@ typedef enum
     {
         void (^configureBlock)(void) = ^
         {
-            _sheetView = [[TGMenuSheetView alloc] initWithItemViews:itemViews sizeClass:sizeClass];
+            _sheetView = [[TGMenuSheetView alloc] initWithItemViews:itemViews sizeClass:sizeClass dark:_dark];
             _sheetView.menuRelayout = menuRelayout;
             _sheetView.maxHeight = _maxHeight;
             if (self.isViewLoaded)
@@ -326,7 +334,7 @@ typedef enum
         if (self.popoverPresentationController == nil)
             return;
         
-        self.popoverPresentationController.backgroundColor = [UIColor whiteColor];
+        self.popoverPresentationController.backgroundColor = _dark ? UIColorRGB(0x161616) : [UIColor whiteColor];
         self.popoverPresentationController.delegate = self;
         self.popoverPresentationController.permittedArrowDirections = self.permittedArrowDirections;
         
@@ -473,6 +481,9 @@ typedef enum
 - (void)dismissAnimated:(bool)animated manual:(bool)manual completion:(void (^)(void))completion
 {
     bool compact = ([self sizeClass] == UIUserInterfaceSizeClassCompact);
+    
+    if (self.willDismiss != nil)
+        self.willDismiss(manual);
     
     if (compact)
     {

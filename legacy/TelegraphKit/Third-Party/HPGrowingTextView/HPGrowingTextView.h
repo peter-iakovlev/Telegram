@@ -86,6 +86,7 @@ extern NSString *TGMentionBoldAttributeName;
 @property (nonatomic) BOOL animateHeightChange;
 @property (nonatomic) NSTimeInterval animationDuration;
 @property (nonatomic, strong) HPTextViewInternal *internalTextView;
+@property (nonatomic, assign) bool disableFormatting;
 
 @property (nonatomic) bool oneTimeLongAnimation;
 

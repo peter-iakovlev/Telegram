@@ -17,5 +17,6 @@
 - (void)setEnabled:(bool)enabled;
 - (void)setHideArrow:(bool)hideArrow;
 - (void)setMinLeftPadding:(CGFloat)minLeftPadding;
+- (void)setFlexibleLayout:(bool)flexibleLayout;
 
 @end

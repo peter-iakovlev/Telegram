@@ -107,6 +107,11 @@ UIFont *TGItalicSystemFontOfSize(CGFloat size)
     return TGBoldSystemFontOfSize(size);
 }
 
++ (UIFont *)roundedFontOfSize:(CGFloat)size
+{
+    return [UIFont fontWithName:@".SFCompactRounded-Semibold" size:size];
+}
+
 @end
 
 static std::map<int, CTFontRef> systemFontCache;

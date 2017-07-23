@@ -507,9 +507,10 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         case TGMessageActionEncryptedChatScreenshot:
         case TGMessageActionEncryptedChatMessageScreenshot:
         {
-            /*if (message.outgoing)
-             actionText = actionMedia.actionType == TGMessageActionEncryptedChatScreenshot ? TGLocalized(@"Notification.SecretChatScreenshotOutgoing") : TGLocalized(@"Notification.SecretChatMessageScreenshotOutgoing");
-             else*/
+            if (message.outgoing) {
+                actionText = TGLocalized(@"Notification.SecretChatMessageScreenshotSelf");
+            }
+            else
             {
                 NSString *authorName = authorShortTitle;
                 
@@ -836,8 +837,18 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             break;
         }
         case TGMessageActionCustom: {
+            TGMediaAttachment *expiredMedia = actionMedia.actionData[@"expiredMedia"];
             id<TGChannelAdminLogEntryContent> content = actionMedia.actionData[@"adminLogEntryContent"];
-            if (content != nil) {
+            
+            if (expiredMedia != nil) {
+                if ([expiredMedia isKindOfClass:[TGImageMediaAttachment class]]) {
+                    actionText = TGLocalized(@"Message.ImageExpired");
+                } else if ([expiredMedia isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                    actionText = TGLocalized(@"Message.VideoExpired");
+                } else if ([expiredMedia isKindOfClass:[TGVideoMediaAttachment class]]) {
+                    actionText = TGLocalized(@"Message.VideoExpired");
+                }
+            } else if (content != nil) {
                 if ([content isKindOfClass:[TGChannelAdminLogEntryToggleBan class]]) {
                     TGChannelAdminLogEntryToggleBan *value = (TGChannelAdminLogEntryToggleBan *)content;
                     

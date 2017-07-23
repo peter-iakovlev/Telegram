@@ -5,7 +5,6 @@
 #import "TGAppDelegate.h"
 
 #import "TGHacks.h"
-#import "TGBlurEffect.h"
 #import <objc/runtime.h>
 
 const CGFloat TGItemMenuSheetPreviewLockThreshold = 45.0f;
@@ -15,7 +14,6 @@ const CGFloat TGItemMenuSheetPreviewArrowVisibleThreshold = -24.0f;
 
 typedef enum
 {
-    TGItemMenuTransitionTypeUsual,
     TGItemMenuTransitionTypeSimplified,
     TGItemMenuTransitionTypeLegacy
 } TGItemMenuTransitionType;
@@ -94,15 +92,6 @@ typedef enum
     return self;
 }
 
-- (void)dealloc
-{
-    if ([self _transitionType] == TGItemMenuTransitionTypeUsual)
-    {
-        for (UIWindow *window in [UIApplication sharedApplication].windows)
-            window.transform = CGAffineTransformIdentity;
-    }
-}
-
 - (void)setupWithMainItemViews:(NSArray *)mainItemViews actionItemViews:(NSArray *)actionItemViews
 {
     [self bringSubviewToFront:self.wrapperView];
@@ -135,7 +124,7 @@ typedef enum
     [_containerView addSubview:_dismissButton];
     
     [_mainSheetView removeFromSuperview];
-    _mainSheetView = [[TGMenuSheetView alloc] initWithItemViews:mainItemViews sizeClass:UIUserInterfaceSizeClassCompact];
+    _mainSheetView = [[TGMenuSheetView alloc] initWithItemViews:mainItemViews sizeClass:UIUserInterfaceSizeClassCompact dark:false];
     
     __weak TGItemMenuSheetPreviewView *weakSelf = self;
     void (^menuRelayout)(void) = ^
@@ -157,7 +146,7 @@ typedef enum
     if (actionItemViews.count > 0)
     {
         [_actionsSheetView removeFromSuperview];
-        _actionsSheetView = [[TGMenuSheetView alloc] initWithItemViews:actionItemViews sizeClass:UIUserInterfaceSizeClassCompact];
+        _actionsSheetView = [[TGMenuSheetView alloc] initWithItemViews:actionItemViews sizeClass:UIUserInterfaceSizeClassCompact dark:false];
         _actionsSheetView.hidden = true;
     }
 }
@@ -176,10 +165,8 @@ typedef enum
         CGSize screenSize = TGScreenSize();
         if (iosMajorVersion() < 8 || (NSInteger)screenSize.height == 480)
             type = TGItemMenuTransitionTypeLegacy;
-        else if (iosMajorVersion() == 8)
-            type = TGItemMenuTransitionTypeSimplified;
         else
-            type = TGItemMenuTransitionTypeUsual;
+            type = TGItemMenuTransitionTypeSimplified;
     });
     
     return type;
@@ -274,26 +261,7 @@ typedef enum
 - (void)performAppearBackgroundTransition:(void (^)(BOOL))completionBlock
 {
     TGItemMenuTransitionType type = [self _transitionType];
-    if (type == TGItemMenuTransitionTypeUsual)
-    {
-        UIBlurEffect *effect = [TGBlurEffect forceTouchBlurEffect];
-        
-        UIView *rootView = TGAppDelegateInstance.rootController.view;
-        rootView.superview.backgroundColor = [UIColor whiteColor];
-        
-        [UIView animateWithDuration:0.22 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^
-        {
-            ((UIVisualEffectView *)_blurView).effect = effect;
-            rootView.transform = CGAffineTransformMakeScale(TGItemMenuSheetPreviewPeekScale, TGItemMenuSheetPreviewPeekScale);
-            for (UIWindow *window in [UIApplication sharedApplication].windows)
-            {
-                if (window != rootView.superview && window.tag != 0xbeef)
-                    window.transform = CGAffineTransformMakeScale(TGItemMenuSheetPreviewPeekScale, TGItemMenuSheetPreviewPeekScale);
-            }
-            _blurDimView.alpha = 1.0f;
-        } completion:completionBlock];
-    }
-    else if (type == TGItemMenuTransitionTypeSimplified)
+    if (type == TGItemMenuTransitionTypeSimplified)
     {
         [UIView animateWithDuration:0.22 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^
         {
@@ -310,30 +278,7 @@ typedef enum
 - (void)performDisappearBackgroundTransition:(void (^)(void))completionBlock
 {
     TGItemMenuTransitionType type = [self _transitionType];
-    if (type == TGItemMenuTransitionTypeUsual)
-    {
-        UIView *rootView = TGAppDelegateInstance.rootController.view;
-        [UIView animateWithDuration:0.22 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^
-        {
-            [TGHacks setApplicationStatusBarAlpha:1.0f];
-            
-            ((UIVisualEffectView *)_blurView).effect = nil;
-            rootView.transform = CGAffineTransformIdentity;
-            
-            for (UIWindow *window in [UIApplication sharedApplication].windows)
-            {
-                if (window != rootView.superview && window.tag != 0xbeef)
-                    window.transform = CGAffineTransformIdentity;
-            }
-            
-            _blurDimView.alpha = 0.0f;
-        } completion:^(__unused BOOL finished)
-        {
-            rootView.superview.backgroundColor = [UIColor blackColor];
-            completionBlock();
-        }];
-    }
-    else if (type == TGItemMenuTransitionTypeSimplified)
+    if (type == TGItemMenuTransitionTypeSimplified)
     {
         [UIView animateWithDuration:0.22 delay:0.0 options:UIViewAnimationOptionCurveEaseOut animations:^
         {

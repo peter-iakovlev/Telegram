@@ -150,6 +150,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerVectorClass([NSArray_Photo new]);
     TLMetaClassStore::registerObjectClass([TLMessage$messageEmpty new]);
     TLMetaClassStore::registerObjectClass([TLMessage$message new]);
+    TLMetaClassStore::registerObjectClass([TLMessage$messageMeta new]);
     TLMetaClassStore::registerObjectClass([TLpayments_PaymentReceipt$payments_paymentReceiptMeta new]);
     TLMetaClassStore::registerObjectClass([TLChatParticipants$chatParticipants new]);
     TLMetaClassStore::registerObjectClass([TLInputNotifyPeer$inputNotifyPeer new]);
@@ -208,6 +209,8 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLInputMedia$inputMediaPhotoExternal new]);
     TLMetaClassStore::registerObjectClass([TLInputMedia$inputMediaDocumentExternal new]);
     TLMetaClassStore::registerObjectClass([TLInputMedia$inputMediaGame new]);
+    TLMetaClassStore::registerObjectClass([TLInputMedia$inputMediaUploadedPhotoMeta new]);
+    TLMetaClassStore::registerObjectClass([TLInputMedia$inputMediaUploadedDocumentMeta new]);
     TLMetaClassStore::registerObjectClass([TLRichText$textEmpty new]);
     TLMetaClassStore::registerObjectClass([TLRichText$textPlain new]);
     TLMetaClassStore::registerObjectClass([TLRichText$textBold new]);
@@ -238,6 +241,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLChat$channelMeta new]);
     TLMetaClassStore::registerObjectClass([TLChat$channelForbiddenMeta new]);
     TLMetaClassStore::registerObjectClass([TLContactRequest$contactRequest new]);
+    TLMetaClassStore::registerObjectClass([TLCdnFileHash$cdnFileHash new]);
     TLMetaClassStore::registerObjectClass([TLLangPackDifference$langPackDifference new]);
     TLMetaClassStore::registerVectorClass([NSArray_InputChannel new]);
     TLMetaClassStore::registerObjectClass([TLaccount_PrivacyRules$account_privacyRules new]);
@@ -367,6 +371,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLScheme$scheme new]);
     TLMetaClassStore::registerObjectClass([TLScheme$schemeNotModified new]);
     TLMetaClassStore::registerVectorClass([NSArray_ChannelParticipant new]);
+    TLMetaClassStore::registerVectorClass([NSArray_InputDocument new]);
     TLMetaClassStore::registerObjectClass([TLmessages_RecentStickers$messages_recentStickersNotModified new]);
     TLMetaClassStore::registerObjectClass([TLmessages_RecentStickers$messages_recentStickers new]);
     TLMetaClassStore::registerObjectClass([TLauth_ExportedAuthorization$auth_exportedAuthorization new]);
@@ -476,6 +481,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionHistoryClear new]);
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionGameScore new]);
     TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionPaymentSent new]);
+    TLMetaClassStore::registerObjectClass([TLMessageAction$messageActionScreenshotTaken new]);
     TLMetaClassStore::registerObjectClass([TLEmbedPostMedia$embedPostPhoto new]);
     TLMetaClassStore::registerObjectClass([TLEmbedPostMedia$embedPostVideo new]);
     TLMetaClassStore::registerObjectClass([TLCdnConfig$cdnConfig new]);
@@ -574,6 +580,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLPhotoSize$photoSize new]);
     TLMetaClassStore::registerObjectClass([TLPhotoSize$photoCachedSize new]);
     TLMetaClassStore::registerObjectClass([TLmessages_ArchivedStickers$messages_archivedStickers new]);
+    TLMetaClassStore::registerVectorClass([NSArray_CdnFileHash new]);
     TLMetaClassStore::registerObjectClass([TLPopularContact$popularContact new]);
     TLMetaClassStore::registerObjectClass([TLAccountDaysTTL$accountDaysTTL new]);
     TLMetaClassStore::registerVectorClass([NSArray_long new]);
@@ -630,16 +637,16 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaContact new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaUnsupported new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaWebPage new]);
-    TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaPhoto new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaVenue new]);
-    TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaDocument new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaGame new]);
     TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaInvoiceMeta new]);
+    TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaPhotoMeta new]);
+    TLMetaClassStore::registerObjectClass([TLMessageMedia$messageMediaDocumentMeta new]);
     TLMetaClassStore::registerObjectClass([TLWebDocument$webDocument new]);
     TLMetaClassStore::registerObjectClass([TLhelp_Support$help_support new]);
+    TLMetaClassStore::registerObjectClass([TLTopPeer$topPeer new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_TopPeers$contacts_topPeersNotModified new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_TopPeers$contacts_topPeers new]);
-    TLMetaClassStore::registerObjectClass([TLTopPeer$topPeer new]);
     TLMetaClassStore::registerObjectClass([TLPostAddress$postAddress new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_Suggested$contacts_suggested new]);
     TLMetaClassStore::registerObjectClass([TLInputContact$inputPhoneContact new]);
@@ -904,7 +911,6 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRPCphone_saveCallDebug$phone_saveCallDebug new]);
     TLMetaClassStore::registerObjectClass([TLRPCphone_confirmCall$phone_confirmCall new]);
     TLMetaClassStore::registerObjectClass([TLRPCupload_getCdnFile$upload_getCdnFile new]);
-    TLMetaClassStore::registerObjectClass([TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile new]);
     TLMetaClassStore::registerObjectClass([TLRPChelp_getCdnConfig$help_getCdnConfig new]);
     TLMetaClassStore::registerObjectClass([TLRPClangpack_getLangPack$langpack_getLangPack new]);
     TLMetaClassStore::registerObjectClass([TLRPClangpack_getStrings$langpack_getStrings new]);
@@ -913,4 +919,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLRPCchannels_editAdmin$channels_editAdmin new]);
     TLMetaClassStore::registerObjectClass([TLRPCchannels_editBanned$channels_editBanned new]);
     TLMetaClassStore::registerObjectClass([TLRPCchannels_getAdminLogMeta$channels_getAdminLogMeta new]);
+    TLMetaClassStore::registerObjectClass([TLRPCupload_reuploadCdnFile$upload_reuploadCdnFile new]);
+    TLMetaClassStore::registerObjectClass([TLRPCupload_getCdnFileHashes$upload_getCdnFileHashes new]);
+    TLMetaClassStore::registerObjectClass([TLRPCmessages_sendScreenshotNotification$messages_sendScreenshotNotification new]);
 }

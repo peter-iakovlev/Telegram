@@ -15,6 +15,9 @@
 @interface TGModernGalleryView : UIView
 
 @property (nonatomic, copy) bool (^transitionOut)(CGFloat velocity);
+@property (nonatomic, copy) void (^instantDismiss)();
+
+@property (nonatomic, strong, readonly) UIView *overlayContainerView;
 
 @property (nonatomic, strong, readonly) UIView<TGModernGalleryInterfaceView> *interfaceView;
 @property (nonatomic, strong, readonly) TGModernGalleryScrollView *scrollView;
@@ -41,5 +44,6 @@
 - (void)setScrollViewVerticalOffset:(CGFloat)offset;
 
 - (void)setPreviewMode:(bool)previewMode;
+- (void)enableInstantDismiss;
 
 @end

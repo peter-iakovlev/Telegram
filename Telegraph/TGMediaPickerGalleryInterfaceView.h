@@ -15,7 +15,10 @@
 
 @property (nonatomic, copy) void (^photoStripItemSelected)(NSInteger index);
 
+@property (nonatomic, copy) void (^timerRequested)(void);
+
 @property (nonatomic, assign) bool hasCaptions;
+@property (nonatomic, assign) bool hasTimer;
 @property (nonatomic, assign) bool inhibitDocumentCaptions;
 @property (nonatomic, assign) bool usesSimpleLayout;
 @property (nonatomic, assign) bool hasSwipeGesture;
@@ -23,7 +26,9 @@
 
 @property (nonatomic, readonly) TGPhotoEditorTab currentTabs;
 
-- (instancetype)initWithFocusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasSelectionPanel:(bool)hasSelectionPanel;
+@property (nonatomic, readonly) UIView *timerButton;
+
+- (instancetype)initWithFocusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasSelectionPanel:(bool)hasSelectionPanel recipientName:(NSString *)recipientName;
 
 - (void)setSelectedItemsModel:(TGMediaPickerGallerySelectedItemsModel *)selectedItemsModel;
 - (void)setEditorTabPressed:(void (^)(TGPhotoEditorTab tab))editorTabPressed;
@@ -34,11 +39,11 @@
 - (void)updateSelectionInterface:(NSUInteger)selectedCount counterVisible:(bool)counterVisible animated:(bool)animated;
 - (void)updateSelectedPhotosView:(bool)reload incremental:(bool)incremental add:(bool)add index:(NSInteger)index;
 - (void)setSelectionInterfaceHidden:(bool)hidden animated:(bool)animated;
+- (void)setAllInterfaceHidden:(bool)hidden delay:(NSTimeInterval)__unused delay animated:(bool)animated;
+- (void)setToolbarsHidden:(bool)hidden animated:(bool)animated;
 
 - (void)editorTransitionIn;
 - (void)editorTransitionOut;
-
-- (void)setToolbarsHidden:(bool)hidden animated:(bool)animated;
 
 - (void)setTabBarUserInteractionEnabled:(bool)enabled;
 

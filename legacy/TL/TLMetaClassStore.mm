@@ -59,6 +59,8 @@
 #import "TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfo.h"
 #import "TLLangPackStringPluralized.h"
 #import "TLChat$channelForbidden.h"
+#import "TLMessageMedia$messageMediaPhoto.h"
+#import "TLMessageMedia$messageMediaDocument.h"
 
 #import "TLDocumentAttributeSticker.h"
 
@@ -488,7 +490,7 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5162463, [[TLResPQ$resPQ_manual alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x62d6b459, [[TLMsgsAck$msgs_ack_manual alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC09BE45F, [[TLMessage$modernMessage alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x90dddc11, [[TLMessage$modernMessage alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9e19a1f6, [[TLMessage$modernMessageService alloc] init]));
         
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >((int32_t)0x5f07b4bc, [[TLWebPage_manual alloc] init]));
@@ -514,7 +516,7 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x35edb4d4, [[TLBotInlineMessage$botInlineMessageMediaContact alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9BEBAEB9, [[TLBotInlineResult$botInlineResult alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9852F9C6, [[TLDocumentAttribute$documentAttributeAudio alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xC786DDCB, [[TLMessageFwdHeader$messageFwdHeader alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xfadff4ac, [[TLMessageFwdHeader$messageFwdHeader alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xf220f3f, [[TLUserFull$userFull alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xeb0467fb, [[TLUpdate$updateChannelTooLong alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x5e002502, [[TLauth_SentCode$auth_sentCode alloc] init]));
@@ -542,6 +544,8 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xd1451883, [[TLpayments_ValidatedRequestedInfo$payments_validatedRequestedInfo alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x6c47ac9f, [[TLLangPackStringPluralized alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x289da732, [[TLChat$channelForbidden alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xb5223b0f, [[TLMessageMedia$messageMediaPhoto alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x7c4414d3, [[TLMessageMedia$messageMediaDocument alloc] init]));
         
         {
             TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];

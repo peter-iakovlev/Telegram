@@ -20,6 +20,8 @@
 
 @property (nonatomic) int64_t forwardSourcePeerId;
 
+@property (nonatomic, strong) NSString *forwardAuthorSignature;
+
 - (instancetype)initWithInnerMessage:(TGMessage *)innerMessage;
 - (instancetype)initWithInnerMessage:(TGMessage *)innerMessage keepForwarded:(bool)keepForwarded;
 

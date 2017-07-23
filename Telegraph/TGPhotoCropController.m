@@ -155,7 +155,7 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
     _rotateButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
     [_rotateButton addTarget:self action:@selector(rotate) forControlEvents:UIControlEventTouchUpInside];
     [_rotateButton setImage:[UIImage imageNamed:@"PhotoEditorRotateIcon"] forState:UIControlStateNormal];
-    [_buttonsWrapperView addSubview:_rotateButton];
+    //[_buttonsWrapperView addSubview:_rotateButton];
     
     _mirrorButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
     _mirrorButton.exclusiveTouch = true;
@@ -163,16 +163,17 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
     _mirrorButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
     [_mirrorButton addTarget:self action:@selector(mirror) forControlEvents:UIControlEventTouchUpInside];
     [_mirrorButton setImage:[UIImage imageNamed:@"PhotoEditorMirrorIcon"] forState:UIControlStateNormal];
-    [_buttonsWrapperView addSubview:_mirrorButton];
+    //[_buttonsWrapperView addSubview:_mirrorButton];
     
     _aspectRatioButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 36, 36)];
     _aspectRatioButton.exclusiveTouch = true;
     _aspectRatioButton.hitTestEdgeInsets = UIEdgeInsetsMake(-10, -10, -10, -10);
     [_aspectRatioButton addTarget:self action:@selector(aspectRatioButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    UIImage *aspectRatioHighlightedImage = TGTintedImage([UIImage imageNamed:@"PhotoEditorAspectRatioIcon"], [TGPhotoEditorInterfaceAssets accentColor]);
     [_aspectRatioButton setImage:[UIImage imageNamed:@"PhotoEditorAspectRatioIcon"] forState:UIControlStateNormal];
-    [_aspectRatioButton setImage:[UIImage imageNamed:@"PhotoEditorAspectRatioIcon_Applied"] forState:UIControlStateSelected];
-    [_aspectRatioButton setImage:[UIImage imageNamed:@"PhotoEditorAspectRatioIcon_Applied"] forState:UIControlStateSelected | UIControlStateHighlighted];
-    [_buttonsWrapperView addSubview:_aspectRatioButton];
+    [_aspectRatioButton setImage:aspectRatioHighlightedImage forState:UIControlStateSelected];
+    [_aspectRatioButton setImage:aspectRatioHighlightedImage forState:UIControlStateSelected | UIControlStateHighlighted];
+    //[_buttonsWrapperView addSubview:_aspectRatioButton];
     
     NSString *resetButtonTitle = TGLocalized(@"PhotoEditor.CropReset");
     _resetButton = [[TGModernButton alloc] init];
@@ -201,6 +202,8 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
         _resetButton.selected = true;
         [_resetButton setTitle:TGLocalized(@"PhotoEditor.CropAuto") forState:UIControlStateNormal];
     }
+    
+    [self _updateTabs];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -554,6 +557,8 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
 - (void)mirror
 {
     [_cropView mirror];
+    
+    [self _updateTabs];
 }
 
 - (void)aspectRatioButtonPressed
@@ -596,12 +601,12 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                     aspectRatio = 1.0f / aspectRatio;
             }
             
-            strongSelf->_aspectRatioButton.selected = true;
-            
             void (^setAspectRatioBlock)(void) = ^
             {
                 [strongSelf setAutoButtonHidden:true];
                 [strongSelf->_cropView setLockedAspectRatio:aspectRatio performResize:true animated:true];
+                
+                [strongSelf _updateTabs];
             };
             
             if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
@@ -675,6 +680,8 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
         };
         [controller presentInViewController:self.parentViewController sourceView:self.view animated:true];
     }
+    
+    [self _updateTabs];
 }
 
 - (void)resetButtonPressed
@@ -699,6 +706,8 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
         if (hasAutorotationAngle)
             [self setAutoButtonHidden:false];
     }
+    
+    [self _updateTabs];
     
     if (self.cropReset != nil)
         self.cropReset();
@@ -867,7 +876,7 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
                                                       _aspectRatioButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
-                _resetButton.frame = CGRectMake((_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width) / 2, 10, _resetButtonWidth, 24);
+                _resetButton.frame = CGRectMake((_buttonsWrapperView.frame.size.width - _resetButton.frame.size.width) / 2, 20, _resetButtonWidth, 24);
             }
                 break;
         }
@@ -882,6 +891,51 @@ NSString * const TGPhotoCropOriginalAspectRatio = @"original";
     {
         [_cropView _layoutRotationView];
     }];
+}
+
+- (TGPhotoEditorTab)availableTabs
+{
+    return TGPhotoEditorRotateTab | TGPhotoEditorMirrorTab | TGPhotoEditorAspectRatioTab;
+}
+
+- (void)handleTabAction:(TGPhotoEditorTab)tab
+{
+    switch (tab)
+    {
+        case TGPhotoEditorRotateTab:
+        {
+            [self rotate];
+        }
+            break;
+            
+        case TGPhotoEditorMirrorTab:
+        {
+            [self mirror];
+        }
+            break;
+            
+        case TGPhotoEditorAspectRatioTab:
+        {
+            [self aspectRatioButtonPressed];
+        }
+            break;
+            
+        default:
+            break;
+    }
+}
+
+- (TGPhotoEditorTab)highlightedTabs
+{
+    TGPhotoEditorTab tabs = TGPhotoEditorNoneTab;
+    
+    if (_cropView.mirrored)
+        tabs |= TGPhotoEditorMirrorTab;
+    if (_cropView.lockedAspectRatio > FLT_EPSILON)
+        tabs |= TGPhotoEditorAspectRatioTab;
+    
+    return tabs;
+
 }
 
 @end

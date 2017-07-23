@@ -74,7 +74,7 @@
 
 - (TGPhotoEditorTab)toolbarTabs
 {
-    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorToolsTab;
+    return TGPhotoEditorCropTab | TGPhotoEditorToolsTab;
 }
 
 - (NSString *)uniqueId

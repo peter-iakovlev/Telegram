@@ -148,12 +148,12 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     return 31.0f;
 }
 
-- (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight
+- (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight viewStorage:(TGModernViewStorage *)viewStorage
 {
-    return [TGModernConversationViewLayout layoutAttributesForItems:items containerWidth:containerWidth maxHeight:maxHeight dateOffset:_dateOffset decorationViewAttributes:decorationViewAttributes contentHeight:contentHeight unreadMessageRange:((TGModernConversationCollectionView *)self.collectionView).unreadMessageRange];
+    return [TGModernConversationViewLayout layoutAttributesForItems:items containerWidth:containerWidth maxHeight:maxHeight dateOffset:_dateOffset decorationViewAttributes:decorationViewAttributes contentHeight:contentHeight unreadMessageRange:((TGModernConversationCollectionView *)self.collectionView).unreadMessageRange viewStorage:viewStorage];
 }
 
-+ (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight dateOffset:(int)dateOffset decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight unreadMessageRange:(TGMessageRange)unreadMessageRange
++ (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight dateOffset:(int)dateOffset decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight unreadMessageRange:(TGMessageRange)unreadMessageRange viewStorage:(TGModernViewStorage *)viewStorage
 {
     NSMutableArray *layoutAttributes = [[NSMutableArray alloc] init];
     
@@ -236,7 +236,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         }
         
         messageItem.collapseFlags = collapseFlags;
-        CGSize itemSize = [messageItem sizeForContainerSize:CGSizeMake(containerWidth, 0.0f)];
+        CGSize itemSize = [messageItem sizeForContainerSize:CGSizeMake(containerWidth, 0.0f) viewStorage:viewStorage];
         
         UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:[NSIndexPath indexPathForItem:index inSection:0]];
         attributes.frame = CGRectMake(0, currentHeight, itemSize.width, itemSize.height);
@@ -274,7 +274,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     __block CGFloat contentHeight = 0.0f;
     dispatch_block_t block = ^
     {
-        [_layoutAttributes addObjectsFromArray:[self layoutAttributesForItems:[(id<TGModernConversationViewLayoutDelegate>)self.collectionView.delegate items] containerWidth:self.collectionView.bounds.size.width maxHeight:FLT_MAX decorationViewAttributes:&_decorationViewAttributes contentHeight:&contentHeight]];
+        [_layoutAttributes addObjectsFromArray:[self layoutAttributesForItems:[(id<TGModernConversationViewLayoutDelegate>)self.collectionView.delegate items] containerWidth:self.collectionView.bounds.size.width maxHeight:FLT_MAX decorationViewAttributes:&_decorationViewAttributes contentHeight:&contentHeight viewStorage:_viewStorage]];
     };
     
     if (_animateLayout)

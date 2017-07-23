@@ -77,7 +77,7 @@
 
 - (TGPhotoEditorTab)toolbarTabs
 {
-    return TGPhotoEditorCaptionTab | TGPhotoEditorCropTab | TGPhotoEditorPaintTab | TGPhotoEditorQualityTab;// TGPhotoEditorGifTab;
+    return TGPhotoEditorCropTab | TGPhotoEditorPaintTab | TGPhotoEditorQualityTab | TGPhotoEditorTimerTab;
 }
 
 - (Class)viewClass

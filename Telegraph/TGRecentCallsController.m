@@ -96,8 +96,8 @@
         {
             _usersModel = [[NSDictionary alloc] init];
             _listModel = [[NSArray alloc] init];
-           
-            TGDispatchAfter(1.0, dispatch_get_main_queue(), ^
+            
+            TGDispatchAfter(1.0, [SQueue concurrentDefaultQueue]._dispatch_queue, ^
             {
                 [self initialize];
             });
@@ -332,7 +332,7 @@
     CGSize boundsSize = CGSizeMake(self.view.bounds.size.width - 20.0f, CGFLOAT_MAX);
     
     CGSize textSize = [_placeholderLabel sizeThatFits:boundsSize];
-    _placeholderLabel.frame = CGRectMake(CGFloor((self.view.bounds.size.width - textSize.width) / 2.0f), CGFloor((self.view.bounds.size.height - textSize.height) / 2.0f), textSize.width, textSize.height);
+    _placeholderLabel.frame = CGRectMake(CGFloor((self.view.bounds.size.width - textSize.width) / 2.0f), _tableView.contentInset.top + CGFloor((self.view.bounds.size.height - _tableView.contentInset.top - textSize.height) / 2.0f), textSize.width, textSize.height);
     
     if (_settingsCommentLabel != nil)
     {

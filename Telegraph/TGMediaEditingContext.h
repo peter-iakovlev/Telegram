@@ -2,6 +2,7 @@
 
 @protocol TGMediaEditableItem <NSObject>
 
+@property (nonatomic, readonly) bool isVideo;
 @property (nonatomic, readonly) NSString *uniqueIdentifier;
 
 @optional
@@ -61,6 +62,14 @@
 - (NSObject<TGMediaEditAdjustments> *)adjustmentsForItem:(NSObject<TGMediaEditableItem> *)item;
 - (SSignal *)adjustmentsSignalForItem:(NSObject<TGMediaEditableItem> *)item;
 - (void)setAdjustments:(NSObject<TGMediaEditAdjustments> *)adjustments forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (NSNumber *)timerForItem:(NSObject<TGMediaEditableItem> *)item;
+- (SSignal *)timerSignalForItem:(NSObject<TGMediaEditableItem> *)item;
+- (void)setTimer:(NSNumber *)timer forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (NSNumber *)timer;
+- (SSignal *)timerSignal;
+- (void)setTimer:(NSNumber *)seconds;
 
 - (UIImage *)paintingImageForItem:(NSObject<TGMediaEditableItem> *)item;
 - (bool)setPaintingData:(NSData *)data image:(UIImage *)image forItem:(NSObject<TGMediaEditableItem> *)item dataUrl:(NSURL **)dataOutUrl imageUrl:(NSURL **)imageOutUrl forVideo:(bool)video;

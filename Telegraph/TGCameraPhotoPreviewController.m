@@ -18,7 +18,10 @@
 #import "TGPhotoEditorController.h"
 #import "TGPhotoEditorTabController.h"
 #import "TGPhotoToolbarView.h"
+#import "TGPhotoEditorButton.h"
 #import "TGPhotoEditorAnimation.h"
+
+#import "TGSecretTimerMenu.h"
 
 #import "TGMediaAssetsLibrary.h"
 #import "UIImage+TGMediaEditableItem.h"
@@ -56,6 +59,9 @@
     TGImageView *_imageView;
     UIView *_temporaryRepView;
     CGSize _imageSize;
+    
+    UIImageView *_arrowView;
+    UILabel *_recipientLabel;
 
     TGPhotoToolbarView *_portraitToolbarView;
     TGPhotoToolbarView *_landscapeToolbarView;
@@ -64,6 +70,7 @@
     bool _dismissing;
     bool _appeared;
     
+    NSString *_recipientName;
     NSString *_backButtonTitle;
     NSString *_doneButtonTitle;
     
@@ -77,12 +84,12 @@
 
 @implementation TGCameraPhotoPreviewController
 
-- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata
+- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata recipientName:(NSString *)recipientName
 {
-    return [self initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
+    return [self initWithImage:image metadata:metadata recipientName:recipientName backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
 }
 
-- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata backButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle
+- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata recipientName:(NSString *)recipientName backButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle
 {
     self = [super init];
     if (self != nil)
@@ -90,6 +97,7 @@
         _image = image;
         _metadata = metadata;
         _imageSize = image.size;
+        _recipientName = recipientName;
         
         _editingContext = [[TGMediaEditingContext alloc] init];
         
@@ -271,9 +279,10 @@
         
         NSString *caption = [editingContext captionForItem:strongSelf->_image];
         NSArray *stickers = [editingContext adjustmentsForItem:strongSelf->_image].paintingData.stickers;
+        NSNumber *timer = [editingContext timerForItem:strongSelf->_image];
         [[imageSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *result)
         {
-            strongSelf.sendPressed(self, result, caption, stickers);
+            strongSelf.sendPressed(self, result, caption, stickers, timer);
             strongSelf.view.userInteractionEnabled = true;
             strongSelf->_dismissing = false;
         }];
@@ -285,34 +294,21 @@
         if (strongSelf == nil)
             return;
         
-        [strongSelf presentPhotoEditorWithTab:tab];
+        if (tab == TGPhotoEditorTimerTab)
+            [strongSelf openTimerSetup];
+        else
+            [strongSelf presentPhotoEditorWithTab:tab];
     };
     
-    TGPhotoEditorTab tabs = TGPhotoEditorNoneTab;
-    if (self.allowCaptions)
-        tabs |= TGPhotoEditorCaptionTab;
-    
-    tabs |= TGPhotoEditorCropTab;
-    
+    TGPhotoEditorTab tabs = TGPhotoEditorCropTab;    
     if (iosMajorVersion() >= 7)
     {
         tabs |= TGPhotoEditorPaintTab;
         tabs |= TGPhotoEditorToolsTab;
     }
     
-    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:_doneButtonTitle accentedDone:false solidBackground:false];
-    [_portraitToolbarView setToolbarTabs:tabs animated:false];
-    _portraitToolbarView.cancelPressed = cancelPressed;
-    _portraitToolbarView.donePressed = donePressed;
-    _portraitToolbarView.tabPressed = tabPressed;
-    [_wrapperView addSubview:_portraitToolbarView];
-    
-    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButtonTitle:_backButtonTitle doneButtonTitle:_doneButtonTitle accentedDone:false solidBackground:false];
-    [_landscapeToolbarView setToolbarTabs:tabs animated:false];
-    _landscapeToolbarView.cancelPressed = cancelPressed;
-    _landscapeToolbarView.donePressed = donePressed;
-    _landscapeToolbarView.tabPressed = tabPressed;
-    [_wrapperView addSubview:_landscapeToolbarView];
+    if (self.hasTimer)
+        tabs |= TGPhotoEditorTimerTab;
     
     _captionMixin = [[TGPhotoCaptionInputMixin alloc] init];
     _captionMixin.panelParentView = ^UIView *
@@ -326,6 +322,8 @@
         __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
+        
+        [strongSelf setInterfaceHidden:true animated:true];
     };
     
     _captionMixin.finishedWithCaption = ^(NSString *caption)
@@ -338,6 +336,8 @@
         
         PGPhotoEditorValues *values = (PGPhotoEditorValues *)[strongSelf->_editingContext adjustmentsForItem:strongSelf->_image];
         [strongSelf updateEditorButtonsForEditorValues:values];
+        
+        [strongSelf setInterfaceHidden:false animated:true];
     };
     
     _captionMixin.keyboardHeightChanged = ^(CGFloat keyboardHeight, NSTimeInterval duration, NSInteger animationCurve)
@@ -357,6 +357,89 @@
     };
     _captionMixin.suggestionContext = self.suggestionContext;
     [_captionMixin createInputPanelIfNeeded];
+    
+    _portraitToolbarView = [[TGPhotoToolbarView alloc] initWithBackButton:TGPhotoEditorBackButtonBack doneButton:TGPhotoEditorDoneButtonSend solidBackground:false];
+    [_portraitToolbarView setToolbarTabs:tabs animated:false];
+    _portraitToolbarView.cancelPressed = cancelPressed;
+    _portraitToolbarView.donePressed = donePressed;
+    _portraitToolbarView.tabPressed = tabPressed;
+    [_wrapperView addSubview:_portraitToolbarView];
+    
+    _landscapeToolbarView = [[TGPhotoToolbarView alloc] initWithBackButton:TGPhotoEditorBackButtonBack doneButton:TGPhotoEditorDoneButtonSend solidBackground:false];
+    [_landscapeToolbarView setToolbarTabs:tabs animated:false];
+    _landscapeToolbarView.cancelPressed = cancelPressed;
+    _landscapeToolbarView.donePressed = donePressed;
+    _landscapeToolbarView.tabPressed = tabPressed;
+    [_wrapperView addSubview:_landscapeToolbarView];
+    
+    if (_recipientName.length > 0)
+    {
+        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PhotoPickerArrow"]];
+        _arrowView.alpha = 0.45f;
+        [_wrapperView addSubview:_arrowView];
+        
+        _recipientLabel = [[UILabel alloc] init];
+        _recipientLabel.backgroundColor = [UIColor clearColor];
+        _recipientLabel.font = TGBoldSystemFontOfSize(13.0f);
+        _recipientLabel.textColor = UIColorRGBA(0xffffff, 0.45f);
+        _recipientLabel.text = _recipientName;
+        _recipientLabel.userInteractionEnabled = false;
+        [_recipientLabel sizeToFit];
+        [_wrapperView addSubview:_recipientLabel];
+    }
+}
+
+- (void)openTimerSetup
+{
+    id<TGMediaEditableItem> editableMediaItem = _image;
+    
+    NSString *description = TGLocalized(@"SecretTimer.ImageDescription");
+    
+    NSString *lastValueKey = @"mediaPickerLastTimerValue_v0";
+    NSNumber *value = [_editingContext timerForItem:editableMediaItem];
+    if (value == nil)
+        value = [[NSUserDefaults standardUserDefaults] objectForKey:lastValueKey];
+
+    __strong TGCameraPhotoPreviewController *weakSelf = self;
+    [TGSecretTimerMenu presentInParentController:self dark:true description:description values:[TGSecretTimerMenu secretMediaTimerValues] value:value completed:^(NSNumber *value)
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            if (value == nil)
+                [[NSUserDefaults standardUserDefaults] removeObjectForKey:lastValueKey];
+            else
+                [[NSUserDefaults standardUserDefaults] setObject:value forKey:lastValueKey];
+            
+            [strongSelf->_editingContext setTimer:value forItem:editableMediaItem];
+
+            PGPhotoEditorValues *values = (PGPhotoEditorValues *)[strongSelf->_editingContext adjustmentsForItem:strongSelf->_image];
+            [strongSelf updateEditorButtonsForEditorValues:values];
+        }
+    } dismissed:^
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf setAllInterfaceHidden:false animated:true];
+    } sourceView:self.view sourceRect:^CGRect
+    {
+        __strong TGCameraPhotoPreviewController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [[strongSelf timerButton] convertRect:[strongSelf timerButton].bounds toView:strongSelf.view];
+    }];
+    
+    if (!TGIsPad())
+        [self setAllInterfaceHidden:true animated:true];
+}
+
+- (UIView *)timerButton
+{
+    if (UIInterfaceOrientationIsPortrait(self.interfaceOrientation))
+        return [_portraitToolbarView buttonForTab:TGPhotoEditorTimerTab];
+    else
+        return [_landscapeToolbarView buttonForTab:TGPhotoEditorTimerTab];
 }
 
 - (void)_setTemporaryRepView:(UIView *)view
@@ -370,6 +453,62 @@
     view.frame = CGRectMake((self.view.frame.size.width - _imageSize.width) / 2.0f, (self.view.frame.size.height - _imageSize.height) / 2.0f, _imageSize.width, _imageSize.height);
     
     [self.view insertSubview:view belowSubview:_wrapperView];
+}
+
+- (void)setInterfaceHidden:(bool)hidden animated:(bool)animated
+{
+    CGFloat alpha = (hidden ? 0.0f : 1.0f);
+    if (animated)
+    {
+        [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState animations:^
+        {
+            _arrowView.alpha = alpha * 0.45f;
+            _recipientLabel.alpha = alpha;
+        } completion:nil];
+    }
+    else
+    {
+        _arrowView.alpha = alpha * 0.45f;
+        _recipientLabel.alpha = alpha;
+    }
+}
+
+- (void)setAllInterfaceHidden:(bool)hidden animated:(bool)animated
+{
+    CGFloat alpha = (hidden ? 0.0f : 1.0f);
+    if (animated)
+    {
+        [UIView animateWithDuration:0.2 delay:0.0 options:UIViewAnimationOptionCurveLinear | UIViewAnimationOptionBeginFromCurrentState animations:^
+        {
+            _arrowView.alpha = alpha * 0.45f;
+            _recipientLabel.alpha = alpha;
+            _portraitToolbarView.alpha = alpha;
+            _landscapeToolbarView.alpha = alpha;
+            _captionMixin.inputPanel.alpha = alpha;
+        } completion:^(BOOL finished)
+        {
+            if (finished)
+            {
+                _portraitToolbarView.userInteractionEnabled = !hidden;
+                _landscapeToolbarView.userInteractionEnabled = !hidden;
+                _captionMixin.inputPanel.userInteractionEnabled = !hidden;
+            }
+        }];
+    }
+    else
+    {
+        _arrowView.alpha = alpha * 0.45f;
+        _recipientLabel.alpha = alpha;
+        
+        _portraitToolbarView.alpha = alpha;
+        _portraitToolbarView.userInteractionEnabled = !hidden;
+        
+        _landscapeToolbarView.alpha = alpha;
+        _landscapeToolbarView.userInteractionEnabled = !hidden;
+        
+        _captionMixin.inputPanel.alpha = alpha;
+        _captionMixin.inputPanel.userInteractionEnabled = !hidden;
+    }
 }
 
 - (void)dismiss
@@ -430,12 +569,16 @@
     _captionMixin.inputPanel.alpha = 0.0f;
     _portraitToolbarView.alpha = 0.0f;
     _landscapeToolbarView.alpha = 0.0f;
+    _arrowView.alpha = 0.0f;
+    _recipientLabel.alpha = 0.0f;
     
     [UIView animateWithDuration:0.3f delay:0.1f options:UIViewAnimationOptionCurveLinear animations:^
     {
         _captionMixin.inputPanel.alpha = 1.0f;
         _portraitToolbarView.alpha = 1.0f;
         _landscapeToolbarView.alpha = 1.0f;
+        _arrowView.alpha = 0.45f;
+        _recipientLabel.alpha = 1.0f;
     } completion:nil];
     
     CGSize referenceSize = [self referenceViewSizeForOrientation:self.interfaceOrientation];
@@ -570,6 +713,8 @@
         _portraitToolbarView.alpha = 0.0f;
         _landscapeToolbarView.alpha = 0.0f;
         _captionMixin.inputPanel.alpha = 0.0f;
+        _arrowView.alpha = 0.0f;
+        _recipientLabel.alpha = 0.0f;
     } completion:^(__unused BOOL finished)
     {
         if (completion != nil)
@@ -667,6 +812,23 @@
 - (void)updateEditorButtonsForEditorValues:(PGPhotoEditorValues *)editorValues
 {
     TGPhotoEditorTab highlightedButtons = [TGPhotoEditorTabController highlightedButtonsForEditorValues:editorValues forAvatar:false];
+
+    TGPhotoEditorButton *timerButton = [_portraitToolbarView buttonForTab:TGPhotoEditorTimerTab];
+    if (timerButton != nil)
+    {
+        NSInteger value = [[_editingContext timerForItem:_image] integerValue];
+        
+        UIImage *defaultIcon = [TGPhotoEditorInterfaceAssets timerIconForValue:0];
+        UIImage *icon = [TGPhotoEditorInterfaceAssets timerIconForValue:value];
+        [timerButton setIconImage:defaultIcon activeIconImage:icon];
+        
+        timerButton = [_landscapeToolbarView buttonForTab:TGPhotoEditorTimerTab];
+        [timerButton setIconImage:defaultIcon activeIconImage:icon];
+        
+        if (value > 0)
+            highlightedButtons |= TGPhotoEditorTimerTab;
+    }
+    
     [_portraitToolbarView setEditButtonsHighlighted:highlightedButtons];
     [_landscapeToolbarView setEditButtonsHighlighted:highlightedButtons];
 }
@@ -862,6 +1024,8 @@
 {
     [UIView animateWithDuration:0.2 animations:^
     {
+        _arrowView.alpha = 0.0f;
+        _recipientLabel.alpha = 0.0f;
         _captionMixin.inputPanel.alpha = 0.0f;
     }];
 }
@@ -870,6 +1034,8 @@
 {
     [UIView animateWithDuration:0.3 animations:^
     {
+        _arrowView.alpha = 0.45f;
+        _recipientLabel.alpha = 1.0f;
         _captionMixin.inputPanel.alpha = 1.0f;
     }];
 }
@@ -895,6 +1061,31 @@
     CGRect scrollViewFrame = _scrollView.frame;
     scrollViewFrame.origin.y = offset;
     _scrollView.frame = scrollViewFrame;
+}
+
+- (void)_layoutRecipientLabelForOrientation:(UIInterfaceOrientation)orientation screenEdges:(UIEdgeInsets)screenEdges
+{
+    CGFloat screenWidth = MIN(self.view.frame.size.width, self.view.frame.size.height);
+    CGFloat recipientWidth = MIN(_recipientLabel.frame.size.width, screenWidth - 100.0f);
+    
+    CGRect frame = CGRectZero;
+    switch (orientation)
+    {
+        case UIInterfaceOrientationLandscapeLeft:
+            frame = CGRectMake(screenEdges.right - recipientWidth - 28.0f, screenEdges.bottom - 24, _arrowView.frame.size.width, _arrowView.frame.size.height);
+            break;
+            
+        case UIInterfaceOrientationLandscapeRight:
+            frame = CGRectMake(screenEdges.left + 14, screenEdges.bottom - 24, _arrowView.frame.size.width, _arrowView.frame.size.height);
+            break;
+            
+        default:
+            frame = CGRectMake(screenEdges.left + 14, screenEdges.top + 16, _arrowView.frame.size.width, _arrowView.frame.size.height);
+            break;
+    }
+    
+    _arrowView.frame = frame;
+    _recipientLabel.frame = CGRectMake(CGRectGetMaxX(_arrowView.frame) + 6.0f, _arrowView.frame.origin.y - 2.0f, recipientWidth, _recipientLabel.frame.size.height);
 }
 
 - (void)updateLayout:(UIInterfaceOrientation)orientation
@@ -932,7 +1123,7 @@
         {
             [UIView performWithoutAnimation:^
             {
-                _landscapeToolbarView.frame = CGRectMake(screenEdges.left, screenEdges.top, [_landscapeToolbarView landscapeSize], referenceSize.height);
+                _landscapeToolbarView.frame = CGRectMake(screenEdges.left, screenEdges.top, TGPhotoEditorToolbarSize, referenceSize.height);
             }];
         }
             break;
@@ -941,17 +1132,19 @@
         {
             [UIView performWithoutAnimation:^
             {
-                _landscapeToolbarView.frame = CGRectMake(screenEdges.right - [_landscapeToolbarView landscapeSize], screenEdges.top, [_landscapeToolbarView landscapeSize], referenceSize.height);
+                _landscapeToolbarView.frame = CGRectMake(screenEdges.right - TGPhotoEditorToolbarSize, screenEdges.top, TGPhotoEditorToolbarSize, referenceSize.height);
             }];
         }
             break;
             
         default:
         {
-            _landscapeToolbarView.frame = CGRectMake(_landscapeToolbarView.frame.origin.x, screenEdges.top, [_landscapeToolbarView landscapeSize], referenceSize.height);
+            _landscapeToolbarView.frame = CGRectMake(_landscapeToolbarView.frame.origin.x, screenEdges.top, TGPhotoEditorToolbarSize, referenceSize.height);
         }
             break;
     }
+    
+    [self _layoutRecipientLabelForOrientation:orientation screenEdges:screenEdges];
     
     if (_transitionInProgress)
         return;

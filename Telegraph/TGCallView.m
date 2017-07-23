@@ -214,7 +214,7 @@ const CGFloat TGCallSwipeDistanceThreshold = 128.0f;
     {
         bool animated = state.state == TGCallStateAccepting && previousState == TGCallStateReady;
      
-        bool backHidden = (_currentState == TGCallStateHandshake || _currentState == TGCallStateReady || _currentState == TGCallStateBusy) || ((_currentState == TGCallStateEnded || _currentState == TGCallStateEnding || _currentState == TGCallStateBusy || _currentState == TGCallStateMissed) && duration < DBL_EPSILON && !state.outgoing);
+        bool backHidden = (_currentState == TGCallStateHandshake || _currentState == TGCallStateReady || _currentState == TGCallStateBusy || _currentState == TGCallStateNoAnswer) || ((_currentState == TGCallStateEnded || _currentState == TGCallStateEnding || _currentState == TGCallStateBusy || _currentState == TGCallStateMissed) && duration < DBL_EPSILON && !state.outgoing);
         [self setBackButtonHidden:backHidden];
         
         if ((_currentState == TGCallStateEnding || _currentState == TGCallStateEnded || _currentState == TGCallStateMissed) && _wrapperView.alpha > 1.0f - FLT_EPSILON)

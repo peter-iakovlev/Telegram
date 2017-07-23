@@ -1043,7 +1043,7 @@
             focusItem = galleryItem;
     }];
 
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled inhibitDocumentCaptions:false hasSelectionPanel:false];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled hasTimer:false inhibitDocumentCaptions:false hasSelectionPanel:false recipientName:self.recipientName];
     model.suggestionContext = self.suggestionContext;
     model.controller = modernGallery;
     model.externalSelectionCount = ^NSInteger

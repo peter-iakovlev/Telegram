@@ -84,6 +84,13 @@ NSString *TGMentionBoldAttributeName = @"TGMentionBoldAttributeName";
     _internalTextView.attributedText = [[NSAttributedString alloc] initWithString:@"" attributes:[self defaultAttributes]];
 }
 
+- (void)setDisableFormatting:(bool)disableFormatting
+{
+    _disableFormatting = disableFormatting;
+    if (iosMajorVersion() >= 7)
+        _internalTextView.allowsEditingTextAttributes = !disableFormatting;
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];

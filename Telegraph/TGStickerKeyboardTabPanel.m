@@ -276,7 +276,7 @@
             if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]])
             {
                 TGStickerKeyboardTabSettingsCell *settingsCell = (TGStickerKeyboardTabSettingsCell *)cell;
-                [settingsCell setInnerAlpha:_expanded ? 0.0f : 1.0f];
+                [settingsCell setInnerAlpha:_expanded && settingsCell.mode == TGStickerKeyboardTabSettingsCellGifs ? 0.0f : 1.0f];
             }
         }
     }
@@ -292,7 +292,30 @@
             if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]])
             {
                 TGStickerKeyboardTabSettingsCell *settingsCell = (TGStickerKeyboardTabSettingsCell *)cell;
-                [settingsCell setInnerAlpha:_expanded ? 0.0f : 1.0f];
+                [settingsCell setInnerAlpha:_expanded && settingsCell.mode == TGStickerKeyboardTabSettingsCellGifs ? 0.0f : 1.0f];
+            }
+        }
+    }
+}
+
+- (void)updateCellsVisibility
+{
+    if (!_expanded)
+        return;
+    
+    for (UICollectionViewCell *cell in _collectionView.visibleCells)
+    {
+        if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]])
+        {
+            TGStickerKeyboardTabSettingsCell *settingsCell = (TGStickerKeyboardTabSettingsCell *)cell;
+            [settingsCell setInnerAlpha:settingsCell.mode == TGStickerKeyboardTabSettingsCellGifs ? 0.0f : 1.0f];
+        }
+        else
+        {
+            if ([cell isKindOfClass:[TGStickerKeyboardTabCell class]])
+            {
+                TGStickerKeyboardTabCell *tabCell = (TGStickerKeyboardTabCell *)cell;
+                [tabCell setInnerAlpha:1.0f];
             }
         }
     }
@@ -433,23 +456,20 @@
         return;
     
     [UIView animateWithDuration:0.2 animations:^
-     {
-         _collectionView.contentInset = expanded ? UIEdgeInsetsMake(0.0f, -48.0f, 0.0f, 0.0f) : UIEdgeInsetsZero;
-         
-         if (!expanded && _collectionView.contentOffset.x <= 60.0f)
-             [_collectionView setContentOffset:CGPointZero];
-         
-         TGStickerKeyboardTabSettingsCell *cell = (TGStickerKeyboardTabSettingsCell *)[_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
-         if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]] && _showGifs && !expanded)
-             [cell setInnerAlpha:1.0f];
-     } completion:^(BOOL finished) {
-         if (expanded && finished)
-         {
-             TGStickerKeyboardTabSettingsCell *cell = (TGStickerKeyboardTabSettingsCell *)[_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
-             if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]] && _showGifs)
-                 [cell setInnerAlpha:0.0f];
-         }
-     }];
+    {
+        _collectionView.contentInset = expanded ? UIEdgeInsetsMake(0.0f, -48.0f, 0.0f, 0.0f) : UIEdgeInsetsZero;
+        
+        if (!expanded && _collectionView.contentOffset.x <= 60.0f)
+            [_collectionView setContentOffset:CGPointZero];
+        
+        TGStickerKeyboardTabSettingsCell *cell = (TGStickerKeyboardTabSettingsCell *)[_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+        if ([cell isKindOfClass:[TGStickerKeyboardTabSettingsCell class]] && _showGifs && !expanded)
+            [cell setInnerAlpha:1.0f];
+    } completion:^(BOOL finished)
+    {
+        if (expanded && finished)
+            [self updateCellsVisibility];
+    }];
 }
 
 @end

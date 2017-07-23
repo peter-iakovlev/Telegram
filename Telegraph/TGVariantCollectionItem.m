@@ -55,6 +55,7 @@
     [((TGVariantCollectionItemView *)view) setEnabled:_enabled];
     [((TGVariantCollectionItemView *)view) setHideArrow:_hideArrow];
     [((TGVariantCollectionItemView *)view) setMinLeftPadding:_minLeftPadding];
+    [((TGVariantCollectionItemView *)view) setFlexibleLayout:_flexibleLayout];
 }
 
 - (void)itemSelected:(id)actionTarget

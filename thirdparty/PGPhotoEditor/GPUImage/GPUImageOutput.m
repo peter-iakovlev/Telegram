@@ -192,7 +192,7 @@ void reportAvailableMemoryForGPUImage(NSString *tag)
 
 - (void)addTarget:(id<GPUImageInput>)newTarget atTextureLocation:(NSInteger)textureLocation
 {
-    if([targets containsObject:newTarget])
+    if (newTarget == nil || [targets containsObject:newTarget])
     {
         return;
     }

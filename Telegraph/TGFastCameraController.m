@@ -329,10 +329,11 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     __weak TGFastCameraController *weakSelf = self;
     TGOverlayController *overlayController = nil;
     
-    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Common.Cancel") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
+    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata recipientName:self.recipientName backButtonTitle:TGLocalized(@"Common.Cancel") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
     controller.allowCaptions = self.allowCaptions;
     controller.shouldStoreAssets = self.shouldStoreCapturedAssets;
     controller.suggestionContext = self.suggestionContext;
+    controller.hasTimer = self.hasTimer;
     
     __weak TGCameraPhotoPreviewController *weakController = controller;
     controller.beginTransitionIn = ^CGRect
@@ -370,14 +371,14 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
             [strongSelf dismissTransitionForResultController:strongController success:false];
     };
     
-    controller.sendPressed = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
+    controller.sendPressed = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __strong TGFastCameraController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
         if (strongSelf.finishedWithPhoto != nil)
-            strongSelf.finishedWithPhoto(resultImage, caption, stickers);
+            strongSelf.finishedWithPhoto(resultImage, caption, stickers, timer);
         
         __strong TGOverlayController *strongController = weakController;
         if (strongController != nil)
@@ -424,7 +425,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     galleryController.adjustsStatusBarVisibility = false;
     galleryController.hasFadeOutTransition = true;
     
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions hasTimer:self.hasTimer inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false recipientName:self.recipientName];
     model.controller = galleryController;
     model.suggestionContext = self.suggestionContext;
     
@@ -482,6 +483,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         
         TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[strongSelf->_editingContext adjustmentsForItem:videoItem.avAsset];
         NSString *caption = [strongSelf->_editingContext captionForItem:videoItem.avAsset];
+        NSNumber *timer = [strongSelf->_editingContext timerForItem:videoItem.avAsset];
         
         SSignal *thumbnailSignal = [SSignal single:thumbnailImage];
         if (adjustments.trimStartValue > FLT_EPSILON)
@@ -502,7 +504,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [[thumbnailSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *thumbnailImage)
         {
             if (strongSelf.finishedWithVideo != nil)
-                strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers);
+                strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers, timer);
         }];
         
         if (strongSelf.shouldStoreCapturedAssets)

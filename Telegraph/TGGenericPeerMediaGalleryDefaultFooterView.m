@@ -9,6 +9,8 @@
 #import "TGDateUtils.h"
 
 #import "TGItemCollectionGalleryItem.h"
+#import "TGSecretPeerMediaGalleryImageItem.h"
+#import "TGSecretPeerMediaGalleryVideoItem.h"
 
 const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f, -8.0f };
 
@@ -63,7 +65,7 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
 
 - (void)setItem:(id<TGModernGalleryItem>)item
 {
-    if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)] && ![item isKindOfClass:[TGItemCollectionGalleryItem class]])
+    if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)] && ![item isKindOfClass:[TGItemCollectionGalleryItem class]] && ![item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]] && ![item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]])
         return;
 
     NSString *newCaption = nil;
@@ -82,6 +84,26 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
             newCaption = [concreteItem performSelector:@selector(caption) withObject:nil];
     } else if ([item isKindOfClass:[TGItemCollectionGalleryItem class]]) {
         newCaption = [((TGItemCollectionGalleryItem *)item).media caption];
+    } else if ([item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]]) {
+        TGSecretPeerMediaGalleryImageItem *concreteItem = (TGSecretPeerMediaGalleryImageItem *)item;
+        NSString *title = nil;
+        if ([[concreteItem author] isKindOfClass:[TGUser class]]) {
+            title = ((TGUser *)[concreteItem author]).displayName;
+        } else if ([[concreteItem author] isKindOfClass:[TGConversation class]]) {
+            title = ((TGConversation *)[concreteItem author]).chatTitle;
+        }
+        _nameLabel.text = title;
+        _dateLabel.text = [TGDateUtils stringForApproximateDate:(int)[concreteItem date]];
+    } else if ([item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]]) {
+        TGSecretPeerMediaGalleryVideoItem *concreteItem = (TGSecretPeerMediaGalleryVideoItem *)item;
+        NSString *title = nil;
+        if ([[concreteItem author] isKindOfClass:[TGUser class]]) {
+            title = ((TGUser *)[concreteItem author]).displayName;
+        } else if ([[concreteItem author] isKindOfClass:[TGConversation class]]) {
+            title = ((TGConversation *)[concreteItem author]).chatTitle;
+        }
+        _nameLabel.text = title;
+        _dateLabel.text = [TGDateUtils stringForApproximateDate:(int)[concreteItem date]];
     }
     
     if ([_captionLabel.text isEqualToString:newCaption])

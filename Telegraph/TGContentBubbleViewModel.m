@@ -148,7 +148,6 @@ bool debugShowMessageIds = false;
             } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
                 title = ((TGConversation *)authorPeer).chatTitle;
             }
-            //title = @"QFHEWPIHPIQEWHFIOHQEWIOFHQWHFIOQEWHPOIFHQWEOIHF";
             _authorNameModel = [[TGModernTextViewModel alloc] initWithText:title font:[assetsSource messageAuthorNameFont]];
             [_contentModel addSubmodel:_authorNameModel];
             
@@ -377,7 +376,7 @@ bool debugShowMessageIds = false;
     _authorSignature = authorSignature;
 }
 
-- (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId
+- (void)setForwardHeader:(id)forwardPeer forwardAuthor:(id)forwardAuthor messageId:(int32_t)messageId forwardSignature:(NSString *)forwardSignature
 {
     if (_forwardedHeaderModel == nil)
     {
@@ -409,6 +408,8 @@ bool debugShowMessageIds = false;
         
         if ([forwardAuthor isKindOfClass:[TGUser class]]) {
             authorName = [[NSString alloc] initWithFormat:@"%@ (%@)", authorName, ((TGUser *)forwardAuthor).displayName];
+        } else if (forwardSignature != nil) {
+            authorName = [[NSString alloc] initWithFormat:@"%@ (%@)", authorName, forwardSignature];
         }
         
         NSMutableArray *additionalAttributes = [[NSMutableArray alloc] init];

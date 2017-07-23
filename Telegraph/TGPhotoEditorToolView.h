@@ -11,6 +11,7 @@
 @property (nonatomic, strong) id value;
 
 @property (nonatomic, readonly) bool isTracking;
+@property (nonatomic, copy) void(^interactionBegan)(void);
 @property (nonatomic, copy) void(^interactionEnded)(void);
 
 @property (nonatomic, assign) bool isLandscape;

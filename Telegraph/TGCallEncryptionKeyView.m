@@ -4,7 +4,6 @@
 #import "TGImageUtils.h"
 #import "TGCallUtils.h"
 #import "TGFont.h"
-#import "TGBlurEffect.h"
 #import "TGTimerTarget.h"
 
 #import "TGViewController.h"
@@ -122,10 +121,8 @@ typedef enum
         CGSize screenSize = TGScreenSize();
         if (iosMajorVersion() < 8 || (NSInteger)screenSize.height == 480)
             type = TGCallKeyViewTransitionTypeLegacy;
-        else if (iosMajorVersion() == 8)
-            type = TGCallKeyViewTransitionTypeSimplified;
         else
-            type = TGCallKeyViewTransitionTypeUsual;
+            type = TGCallKeyViewTransitionTypeSimplified;
     });
     return type;
 }
@@ -140,14 +137,9 @@ typedef enum
     
     _backButton.hidden = false;
     
-    TGCallKeyViewTransitionType type = [self _transitionType];
     [UIView animateWithDuration:0.3 animations:^
     {
-        if (type == TGCallKeyViewTransitionTypeUsual)
-            ((UIVisualEffectView *)_backgroundView).effect = [TGBlurEffect callBlurEffect];
-        else
-            _backgroundView.alpha = 1.0f;
-
+        _backgroundView.alpha = 1.0f;
         _wrapperView.alpha = 1.0f;
     }];
     
@@ -177,14 +169,9 @@ typedef enum
     _animating = true;
     _backButton.hidden = true;
     
-    TGCallKeyViewTransitionType type = [self _transitionType];
     [UIView animateWithDuration:0.3 animations:^
     {
-        if (type == TGCallKeyViewTransitionTypeUsual)
-            ((UIVisualEffectView *)_backgroundView).effect = nil;
-        else
-            _backgroundView.alpha = 0.0f;
-        
+        _backgroundView.alpha = 0.0f;
         _wrapperView.alpha = 0.0f;
     } completion:nil];
     

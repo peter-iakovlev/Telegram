@@ -15,6 +15,8 @@
 
 #import "PGPhotoEditorValues.h"
 
+#import "TGSecretTimerMenu.h"
+
 @interface TGMediaPickerGalleryModel ()
 {
     id<TGModernGalleryEditableItem> _itemBeingEdited;
@@ -27,7 +29,7 @@
 
 @implementation TGMediaPickerGalleryModel
 
-- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions inhibitDocumentCaptions:(bool)inhibitDocumentCaptions hasSelectionPanel:(bool)hasSelectionPanel
+- (instancetype)initWithItems:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions hasTimer:(bool)hasTimer inhibitDocumentCaptions:(bool)inhibitDocumentCaptions hasSelectionPanel:(bool)hasSelectionPanel recipientName:(NSString *)recipientName
 {
     self = [super init];
     if (self != nil)
@@ -52,8 +54,9 @@
             };
         }
         
-        _interfaceView = [[TGMediaPickerGalleryInterfaceView alloc] initWithFocusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasSelectionPanel:hasSelectionPanel];
+        _interfaceView = [[TGMediaPickerGalleryInterfaceView alloc] initWithFocusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasSelectionPanel:hasSelectionPanel recipientName:recipientName];
         _interfaceView.hasCaptions = hasCaptions;
+        _interfaceView.hasTimer = hasTimer;
         _interfaceView.inhibitDocumentCaptions = inhibitDocumentCaptions;
         [_interfaceView setEditorTabPressed:^(TGPhotoEditorTab tab)
         {
@@ -82,6 +85,62 @@
             __strong TGModernGalleryController *controller = strongSelf.controller;
             if ([controller.currentItem conformsToProtocol:@protocol(TGModernGalleryEditableItem)])
                 strongSelf.saveItemCaption(((id<TGModernGalleryEditableItem>)item).editableMediaItem, caption);
+        };
+        _interfaceView.timerRequested = ^
+        {
+            __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            __strong TGModernGalleryController *controller = strongSelf.controller;
+            id<TGMediaEditableItem> editableMediaItem = ((id<TGModernGalleryEditableItem>)controller.currentItem).editableMediaItem;
+            
+            NSString *description = editableMediaItem.isVideo ? TGLocalized(@"SecretTimer.VideoDescription") : TGLocalized(@"SecretTimer.ImageDescription");
+            
+            NSString *lastValueKey = @"mediaPickerLastTimerValue_v0";
+            NSNumber *value = [strongSelf->_editingContext timerForItem:editableMediaItem];
+            if (value == nil)
+                value = [[NSUserDefaults standardUserDefaults] objectForKey:lastValueKey];
+            
+            [TGSecretTimerMenu presentInParentController:controller dark:true description:description values:[TGSecretTimerMenu secretMediaTimerValues] value:value completed:^(NSNumber *value)
+            {
+                __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return;
+                
+                if (value == nil)
+                    [[NSUserDefaults standardUserDefaults] removeObjectForKey:lastValueKey];
+                else
+                    [[NSUserDefaults standardUserDefaults] setObject:value forKey:lastValueKey];
+                
+                [strongSelf->_editingContext setTimer:value forItem:editableMediaItem];
+                
+                if (value.integerValue != 0)
+                {
+                    __strong TGModernGalleryController *controller = strongSelf.controller;
+                    id<TGMediaSelectableItem> selectableItem = nil;
+                    if ([controller.currentItem conformsToProtocol:@protocol(TGModernGallerySelectableItem)])
+                    {
+                        selectableItem = ((id<TGModernGallerySelectableItem>)controller.currentItem).selectableMediaItem;
+                        
+                        if (selectableItem != nil)
+                            [strongSelf->_selectionContext setItem:selectableItem selected:true animated:false sender:nil];
+                    }
+                }
+            } dismissed:^
+            {
+                __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf->_interfaceView setAllInterfaceHidden:false delay:0.0f animated:true];
+            } sourceView:controller.view sourceRect:^CGRect
+            {
+                __strong TGMediaPickerGalleryModel *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return CGRectZero;
+                
+                __strong TGModernGalleryController *controller = strongSelf.controller;
+                return [strongSelf->_interfaceView.timerButton convertRect:strongSelf->_interfaceView.timerButton.bounds toView:controller.view];
+            }];
         };
     }
     return self;

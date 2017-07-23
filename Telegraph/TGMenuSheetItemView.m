@@ -12,6 +12,11 @@
     return self;
 }
 
+- (void)setDark
+{
+    
+}
+
 - (void)setHidden:(bool)hidden animated:(bool)animated
 {
     void (^changeBlock)(void) = ^

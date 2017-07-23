@@ -2,13 +2,13 @@
 
 #import "TLMetaClassStore.h"
 
-//inputMediaUploadedPhoto flags:# file:InputFile caption:string stickers:flags.0?Vector<InputDocument> = InputMedia
+//inputMediaUploadedPhoto flags:# file:InputFile caption:string stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
 
 @implementation TLInputMediaUploadedPhoto
 
 - (int32_t)TLconstructorSignature
 {
-    return 0x630c9af1;
+    return 0x2f37e231;
 }
 
 - (int32_t)TLconstructorName
@@ -34,6 +34,10 @@
         for (TLInputDocument *sticker in self.stickers) {
             TLMetaClassStore::serializeObject(os, sticker, true);
         }
+    }
+    
+    if (self.flags & (1 << 1)) {
+        [os writeInt32:self.ttl_seconds];
     }
 }
 

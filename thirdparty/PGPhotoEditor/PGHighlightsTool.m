@@ -65,7 +65,7 @@
 {
     return PGShaderString
     (
-        mediump float hsLuminance = dot(result.rgb, hsLuminanceWeighting);
+         mediump float hsLuminance = dot(result.rgb, hsLuminanceWeighting);
 
          mediump float shadow = clamp((pow(hsLuminance, 1.0 / shadows) + (-0.76) * pow(hsLuminance, 2.0 / shadows)) - hsLuminance, 0.0, 1.0);
          mediump float highlight = clamp((1.0 - (pow(1.0 - hsLuminance, 1.0 / (2.0 - highlights)) + (-0.8) * pow(1.0 - hsLuminance, 2.0 / (2.0 - highlights)))) - hsLuminance, -1.0, 0.0);

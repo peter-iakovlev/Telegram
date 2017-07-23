@@ -10,7 +10,11 @@
 
 #import "PGTintTool.h"
 
-@interface TGPhotoEditorTintToolView ()
+@interface TGPhotoEditorTintButtonsWrapperView : UIView
+
+@end
+
+@interface TGPhotoEditorTintToolView () <UIGestureRecognizerDelegate>
 {
     UIView *_buttonsWrapper;
     NSArray *_swatchViews;
@@ -37,6 +41,7 @@
 
 @synthesize valueChanged = _valueChanged;
 @synthesize value = _value;
+@dynamic interactionBegan;
 @dynamic interactionEnded;
 @synthesize actualAreaSize;
 @synthesize isLandscape;
@@ -49,7 +54,21 @@
     {
         self.backgroundColor = [UIColor redColor];
         
-        _buttonsWrapper = [[UIView alloc] initWithFrame:self.bounds];
+        _sliderView = [[TGPhotoEditorSliderView alloc] initWithFrame:CGRectZero];
+        _sliderView.backgroundColor = [UIColor clearColor];
+        _sliderView.layer.rasterizationScale = TGScreenScaling();
+        _sliderView.minimumValue = editorItem.minimumValue;
+        _sliderView.maximumValue = editorItem.maximumValue;
+        _sliderView.startValue = 0;
+        _sliderView.lineSize = 2.0f;
+        _sliderView.trackCornerRadius = 1.0f;
+        _sliderView.trackColor = [UIColor whiteColor];
+        if (editorItem.value != nil && [editorItem.value isKindOfClass:[NSNumber class]])
+            _sliderView.value = [(NSNumber *)editorItem.value integerValue];
+        [_sliderView addTarget:self action:@selector(sliderValueChanged:) forControlEvents:UIControlEventValueChanged];
+        [self addSubview:_sliderView];
+        
+        _buttonsWrapper = [[TGPhotoEditorTintButtonsWrapperView alloc] initWithFrame:self.bounds];
         _buttonsWrapper.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [self addSubview:_buttonsWrapper];
         
@@ -74,19 +93,8 @@
         _swatchViews = swatchViews;
         
         _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        _panGestureRecognizer.delegate = self;
         [_buttonsWrapper addGestureRecognizer:_panGestureRecognizer];
-        
-        _sliderView = [[TGPhotoEditorSliderView alloc] initWithFrame:CGRectZero];
-        _sliderView.alpha = 0.0f;
-        _sliderView.hidden = true;
-        _sliderView.layer.rasterizationScale = TGScreenScaling();
-        _sliderView.minimumValue = editorItem.minimumValue;
-        _sliderView.maximumValue = editorItem.maximumValue;
-        _sliderView.startValue = 0;
-        if (editorItem.value != nil && [editorItem.value isKindOfClass:[NSNumber class]])
-            _sliderView.value = [(NSNumber *)editorItem.value integerValue];
-        [_sliderView addTarget:self action:@selector(sliderValueChanged:) forControlEvents:UIControlEventValueChanged];
-        [self addSubview:_sliderView];
         
         if ([editorItem isKindOfClass:[PGTintTool class]])
         {
@@ -95,22 +103,11 @@
             [self setValue:editorItem.value];
         }
         
-        _intensityTitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 8, 160, 20)];
-        _intensityTitleLabel.alpha = 0.0f;
-        _intensityTitleLabel.backgroundColor = [UIColor clearColor];
-        _intensityTitleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-        _intensityTitleLabel.text = [TGLocalized(@"PhotoEditor.TintIntensity") uppercaseString];
-        _intensityTitleLabel.textAlignment = NSTextAlignmentCenter;
-        _intensityTitleLabel.textColor = [TGPhotoEditorInterfaceAssets editorItemTitleColor];
-        _intensityTitleLabel.userInteractionEnabled = false;
-        _intensityTitleLabel.hidden = true;
-        [self addSubview:_intensityTitleLabel];
-        
         _shadowsButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 120, 20)];
         _shadowsButton.selected = true;
         _shadowsButton.backgroundColor = [UIColor clearColor];
         _shadowsButton.titleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-        [_shadowsButton setTitle:[TGLocalized(@"PhotoEditor.ShadowsTint") uppercaseString] forState:UIControlStateNormal];
+        [_shadowsButton setTitle:TGLocalized(@"PhotoEditor.ShadowsTint") forState:UIControlStateNormal];
         [_shadowsButton setTitleColor:UIColorRGB(0x808080) forState:UIControlStateNormal];
         [_shadowsButton setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected];
         [_shadowsButton setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected | UIControlStateHighlighted];
@@ -120,7 +117,7 @@
         _highlightsButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 120, 20)];
         _highlightsButton.backgroundColor = [UIColor clearColor];
         _highlightsButton.titleLabel.font = [TGPhotoEditorInterfaceAssets editorItemTitleFont];
-        [_highlightsButton setTitle:[TGLocalized(@"PhotoEditor.HighlightsTint") uppercaseString] forState:UIControlStateNormal];
+        [_highlightsButton setTitle:TGLocalized(@"PhotoEditor.HighlightsTint") forState:UIControlStateNormal];
         [_highlightsButton setTitleColor:UIColorRGB(0x808080) forState:UIControlStateNormal];
         [_highlightsButton setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected];
         [_highlightsButton setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected | UIControlStateHighlighted];
@@ -199,6 +196,8 @@
         
         self.valueChanged(value, false);
     }
+    
+    [self updateSliderView];
 }
 
 - (void)swatchPressed:(TGPhotoEditorTintSwatchView *)sender
@@ -207,30 +206,14 @@
     
     for (TGPhotoEditorTintSwatchView *swatchView in _swatchViews)
     {
-        bool wasSelected = swatchView.selected;
         swatchView.selected = (swatchView == sender);
         
         if (swatchView.selected)
         {
-            if (wasSelected && ![swatchView.color isEqual:[UIColor clearColor]])
-            {
-                _editingIntensity = true;
-                if (_editingHighlights)
-                    _startIntensity = value.highlightsIntensity;
-                else
-                    _startIntensity = value.shadowsIntensity;
-                
-                value.editingIntensity = true;
-                
-                [self setIntensitySliderHidden:false animated:true completion:nil];
-            }
+            if (_editingHighlights)
+                value.highlightsColor = sender.color;
             else
-            {
-                if (_editingHighlights)
-                    value.highlightsColor = sender.color;
-                else
-                    value.shadowsColor = sender.color;
-            }
+                value.shadowsColor = sender.color;
             
             _value = value;
             
@@ -238,6 +221,34 @@
                 self.valueChanged(value, false);
         }
     }
+    
+    [self updateSliderView];
+}
+
+- (bool)buttonPressed:(bool)__unused cancelButton
+{
+    return true;
+}
+
+- (void)updateSliderView
+{
+    UIColor *color = [UIColor whiteColor];
+    for (TGPhotoEditorTintSwatchView *swatchView in _swatchViews)
+    {
+        if (swatchView.selected)
+        {
+            color = swatchView.color;
+            break;
+        }
+    }
+    
+    bool enabled = ![color isEqual:[UIColor clearColor]];
+    _sliderView.trackColor = enabled ? color : [UIColor whiteColor];
+
+    _sliderView.layer.rasterizationScale = TGScreenScaling();
+    _sliderView.layer.shouldRasterize = !enabled;
+    _sliderView.alpha = enabled ? 1.0f : 0.3f;
+    _sliderView.userInteractionEnabled = enabled;
 }
 
 - (void)handlePan:(UIPanGestureRecognizer *)gestureRecognizer
@@ -265,114 +276,25 @@
     }
 }
 
-- (bool)buttonPressed:(bool)cancelButton
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
-    if (_editingIntensity)
+    CGPoint point = [gestureRecognizer locationInView:gestureRecognizer.view];
+    
+    if (self.frame.size.width > self.frame.size.height)
     {
-        PGTintToolValue *value = [(PGTintToolValue *)self.value copy];
-        if (cancelButton)
-        {
-            if (_editingHighlights)
-                value.highlightsIntensity = _startIntensity;
-            else
-                value.shadowsIntensity = _startIntensity;
-            
-            _sliderView.value = _startIntensity;
-        }
-
-        value.editingIntensity = false;
-
-        _value = value;
-
-        if (self.valueChanged != nil)
-            self.valueChanged(value, false);
-
-        _editingIntensity = false;
-        
-        __weak TGPhotoEditorTintToolView *weakSelf = self;
-        [self setIntensitySliderHidden:true animated:true completion:^
-        {
-            __strong TGPhotoEditorTintToolView *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            if (cancelButton)
-                strongSelf->_sliderView.value =strongSelf->_startIntensity;
-        }];
-
-        return false;
+        return point.y < _sliderView.frame.origin.y;
     }
     else
     {
-        return true;
-    }
-}
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        if (orientation == UIInterfaceOrientationLandscapeLeft)
+            return point.x < _sliderView.frame.origin.x;
+        else
+            return point.x > CGRectGetMaxX(_sliderView.frame);
 
-- (void)setIntensitySliderHidden:(bool)hidden animated:(bool)animated completion:(void (^)(void))completion
-{
-    if (animated)
-    {
-        CGFloat buttonsDelay = hidden ? 0.07f : 0.0f;
-        CGFloat sliderDelay = hidden ? 0.0f : 0.07f;
-        
-        CGFloat buttonsDuration = hidden ? 0.23f : 0.1f;
-        CGFloat sliderDuration = hidden ? 0.1f : 0.23f;
-        
-        _buttonsWrapper.hidden = false;
-        _shadowsButton.hidden = false;
-        _highlightsButton.hidden = false;
-        [UIView animateWithDuration:buttonsDuration delay:buttonsDelay options:UIViewAnimationOptionCurveLinear animations:^
-        {
-            _buttonsWrapper.alpha = hidden ? 1.0f : 0.0f;
-            _shadowsButton.alpha = hidden ? 1.0f : 0.0f;
-            _highlightsButton.alpha = hidden ? 1.0f : 0.0f;
-        } completion:^(BOOL finished)
-        {
-            if (finished)
-            {
-                _buttonsWrapper.hidden = !hidden;
-                _shadowsButton.hidden = !hidden;
-                _highlightsButton.hidden = !hidden;
-            }
-        }];
-        
-        _sliderView.hidden = false;
-        _sliderView.layer.shouldRasterize = true;
-        _intensityTitleLabel.hidden = false;
-        [UIView animateWithDuration:sliderDuration delay:sliderDelay options:UIViewAnimationOptionCurveLinear animations:^
-        {
-            _sliderView.alpha = hidden ? 0.0f : 1.0f;
-            _intensityTitleLabel.alpha = hidden ? 0.0f : 1.0f;
-        } completion:^(BOOL finished)
-        {
-            _sliderView.layer.shouldRasterize = false;
-            if (finished)
-            {
-                _sliderView.hidden = hidden;
-                _intensityTitleLabel.hidden = hidden;
-            }
-            
-            if (completion != nil)
-                completion();
-        }];
     }
-    else
-    {
-        _buttonsWrapper.hidden = !hidden;
-        _buttonsWrapper.alpha = hidden ? 1.0f : 0.0f;
-        _shadowsButton.hidden = !hidden;
-        _shadowsButton.alpha = hidden ? 1.0f : 0.0f;
-        _highlightsButton.hidden = !hidden;
-        _highlightsButton.alpha = hidden ? 1.0f : 0.0f;
-        
-        _sliderView.hidden = hidden;
-        _sliderView.alpha = hidden ? 0.0f : 1.0f;
-        _intensityTitleLabel.hidden = hidden;
-        _intensityTitleLabel.alpha = hidden ? 0.0f : 1.0f;
-        
-        if (completion != nil)
-            completion();
-    }
+    
+    return true;
 }
 
 - (void)setInteractionEnded:(void (^)(void))interactionEnded
@@ -419,12 +341,6 @@
         [self setHighlightsColors:_editingHighlights];
     }
     
-    if (tintValue.editingIntensity != _editingIntensity)
-    {
-        _editingIntensity = tintValue.editingIntensity;
-        [self setIntensitySliderHidden:!_editingIntensity animated:false completion:nil];
-    }
-    
     if (_editingHighlights)
     {
         [_sliderView setValue:tintValue.highlightsIntensity];
@@ -435,6 +351,8 @@
         [_sliderView setValue:tintValue.shadowsIntensity];
         [self setSelectedColor:tintValue.shadowsColor];
     }
+    
+    [self updateSliderView];
 }
 
 - (void)setHighlightsColors:(bool)highlightsColors
@@ -475,60 +393,54 @@
         
         for (UIView *view in _swatchViews)
         {
-            view.frame = CGRectMake(leftEdge + (view.frame.size.width + spacing) * i, 51, view.frame.size.width, view.frame.size.height);
+            view.frame = CGRectMake(leftEdge + (view.frame.size.width + spacing) * i, 38.0f, view.frame.size.width, view.frame.size.height);
             i++;
         }
         
-        _sliderView.frame = CGRectMake(TGPhotoEditorSliderViewMargin, (self.frame.size.height - 32) / 2, self.frame.size.width - 2 * TGPhotoEditorSliderViewMargin, 32);
+        _sliderView.frame = CGRectMake(TGPhotoEditorSliderViewMargin, 70.0f, self.frame.size.width - 2 * TGPhotoEditorSliderViewMargin, 32);
         
-        _intensityTitleLabel.frame = CGRectMake((self.frame.size.width - _intensityTitleLabel.frame.size.width) / 2, 8, _intensityTitleLabel.frame.size.width, _intensityTitleLabel.frame.size.height);
+        _shadowsButton.frame = CGRectMake(floor(self.frame.size.width / 4 - _shadowsButton.frame.size.width / 2 + 20), 10, _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
         
-        _shadowsButton.frame = CGRectMake(floor(self.frame.size.width / 4 - _shadowsButton.frame.size.width / 2 + 20), 8, _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
-        
-        _highlightsButton.frame = CGRectMake(floor(self.frame.size.width / 4 * 3 - _highlightsButton.frame.size.width / 2 - 20), 8, _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
+        _highlightsButton.frame = CGRectMake(floor(self.frame.size.width / 4 * 3 - _highlightsButton.frame.size.width / 2 - 20), 10, _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
     }
     else
     {
         CGFloat topEdge = 30;
         CGFloat spacing = (self.frame.size.height - 30 * 2 - TGPhotoEditorTintSwatchSize * _swatchViews.count) / (_swatchViews.count - 1);
         
-        _sliderView.frame = CGRectMake((self.frame.size.width - 32) / 2, TGPhotoEditorSliderViewMargin, 32, self.frame.size.height - 2 * TGPhotoEditorSliderViewMargin);
-        
         CGFloat swatchOffset = 0;
         
         if (orientation == UIInterfaceOrientationLandscapeLeft)
         {
-            swatchOffset = self.frame.size.width - 51 - TGPhotoEditorTintSwatchSize;
+            swatchOffset = self.frame.size.width - 38 - TGPhotoEditorTintSwatchSize;
             
             [UIView performWithoutAnimation:^
             {
-                _intensityTitleLabel.transform = CGAffineTransformMakeRotation(M_PI_2);
                 _shadowsButton.transform = CGAffineTransformMakeRotation(M_PI_2);
                 _highlightsButton.transform = CGAffineTransformMakeRotation(M_PI_2);
-                
-                _intensityTitleLabel.frame = CGRectMake(self.frame.size.width - _intensityTitleLabel.frame.size.width - 8, (self.frame.size.height - _intensityTitleLabel.frame.size.height) / 2, _intensityTitleLabel.frame.size.width, _intensityTitleLabel.frame.size.height);
 
-                _shadowsButton.frame = CGRectMake(self.frame.size.width - _shadowsButton.frame.size.width - 8, floor(self.frame.size.height / 4 - _shadowsButton.frame.size.height / 2 + 20), _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
+                _shadowsButton.frame = CGRectMake(self.frame.size.width - _shadowsButton.frame.size.width - 10, floor(self.frame.size.height / 4 - _shadowsButton.frame.size.height / 2 + 20), _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
                 
-                _highlightsButton.frame = CGRectMake(self.frame.size.width - _highlightsButton.frame.size.width - 8, floor(self.frame.size.height / 4 * 3 - _highlightsButton.frame.size.height / 2 - 20), _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
+                _highlightsButton.frame = CGRectMake(self.frame.size.width - _highlightsButton.frame.size.width - 10, floor(self.frame.size.height / 4 * 3 - _highlightsButton.frame.size.height / 2 - 20), _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
             }];
+            
+            _sliderView.frame = CGRectMake(self.frame.size.width - 70.0f - 32.0f, TGPhotoEditorSliderViewMargin, 32, self.frame.size.height - 2 * TGPhotoEditorSliderViewMargin);
         }
         else if (orientation == UIInterfaceOrientationLandscapeRight)
         {
-            swatchOffset = 51;
+            swatchOffset = 38;
             
             [UIView performWithoutAnimation:^
             {
-                _intensityTitleLabel.transform = CGAffineTransformMakeRotation(-M_PI_2);
                 _shadowsButton.transform = CGAffineTransformMakeRotation(-M_PI_2);
                 _highlightsButton.transform = CGAffineTransformMakeRotation(-M_PI_2);
                 
-                _intensityTitleLabel.frame = CGRectMake(8, (self.frame.size.height - _intensityTitleLabel.frame.size.height) / 2, _intensityTitleLabel.frame.size.width, _intensityTitleLabel.frame.size.height);
-            
-                _shadowsButton.frame = CGRectMake(8, floor(self.frame.size.height / 4 * 3 - _shadowsButton.frame.size.height / 2 - 20), _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
+                _shadowsButton.frame = CGRectMake(10, floor(self.frame.size.height / 4 * 3 - _shadowsButton.frame.size.height / 2 - 20), _shadowsButton.frame.size.width, _shadowsButton.frame.size.height);
                 
-                _highlightsButton.frame = CGRectMake(8, floor(self.frame.size.height / 4 - _highlightsButton.frame.size.height / 2 + 20), _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
+                _highlightsButton.frame = CGRectMake(10, floor(self.frame.size.height / 4 - _highlightsButton.frame.size.height / 2 + 20), _highlightsButton.frame.size.width, _highlightsButton.frame.size.height);
             }];
+            
+            _sliderView.frame = CGRectMake(70.0f, TGPhotoEditorSliderViewMargin, 32, self.frame.size.height - 2 * TGPhotoEditorSliderViewMargin);
         }
         
         [UIView performWithoutAnimation:^
@@ -542,10 +454,21 @@
         }];
     }
     
-    _sliderView.hitTestEdgeInsets = UIEdgeInsetsMake(-_sliderView.frame.origin.x,
-                                                     -_sliderView.frame.origin.y,
-                                                     -(self.frame.size.height - _sliderView.frame.origin.y - _sliderView.frame.size.height),
-                                                     -_sliderView.frame.origin.x);
+    _sliderView.hitTestEdgeInsets = UIEdgeInsetsMake(-_sliderView.frame.origin.x, -_sliderView.frame.origin.y, -(self.frame.size.height - _sliderView.frame.origin.y - _sliderView.frame.size.height), -_sliderView.frame.origin.x);
+}
+
+@end
+
+
+@implementation TGPhotoEditorTintButtonsWrapperView
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    UIView *result = [super hitTest:point withEvent:event];
+    if (result == self)
+        return nil;
+    
+    return result;
 }
 
 @end

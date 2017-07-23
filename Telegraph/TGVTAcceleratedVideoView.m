@@ -185,6 +185,14 @@ static int32_t nextSessionId = 0;
         
         _queue = queue;
         
+        if ([path hasSuffix:@".gif"])
+        {
+            NSString *movPath = [path stringByReplacingCharactersInRange:NSMakeRange(path.length - 4, 4) withString:@".mp4"];
+            [[NSFileManager defaultManager] removeItemAtPath:movPath error:nil];
+            [[NSFileManager defaultManager] createSymbolicLinkAtPath:movPath withDestinationPath:path error:nil];
+            path = movPath;
+        }
+        
         _path = path;
         _frameReady = [frameReady copy];
         

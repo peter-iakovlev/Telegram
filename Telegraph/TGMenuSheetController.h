@@ -19,6 +19,7 @@
 @property (nonatomic, readonly) NSArray *itemViews;
 
 @property (nonatomic, copy) void (^willPresent)(CGFloat offset);
+@property (nonatomic, copy) void (^willDismiss)(bool manual);
 @property (nonatomic, copy) void (^didDismiss)(bool manual);
 
 @property (nonatomic, assign) UIPopoverArrowDirection permittedArrowDirections;
@@ -37,6 +38,7 @@
 @property (nonatomic) bool packIsArchived;
 @property (nonatomic) bool packIsMask;
 
+- (instancetype)init:(bool)dark;
 - (instancetype)initWithItemViews:(NSArray *)itemViews;
 - (void)setItemViews:(NSArray *)itemViews;
 - (void)setItemViews:(NSArray *)itemViews animated:(bool)animated;

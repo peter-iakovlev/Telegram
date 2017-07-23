@@ -1221,6 +1221,10 @@
                                 NSMutableDictionary *dict = [[(TGMediaVideoConversionResult *)value dictionary] mutableCopy];
                                 return @{ @"convertResult": dict };
                             }
+                            else if ([value isKindOfClass:[NSDictionary class]])
+                            {
+                                return @{ @"convertResult": value };
+                            }
                             else if ([value isKindOfClass:[NSNumber class]])
                             {
                                 return @{ @"convertProgress": value };

@@ -82,3 +82,26 @@
 
 @end
 
+@interface TLInputMedia$inputMediaUploadedPhotoMeta : TLInputMedia
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLInputFile *file;
+@property (nonatomic, retain) NSString *caption;
+@property (nonatomic, retain) NSArray *stickers;
+@property (nonatomic) int32_t ttl_seconds;
+
+@end
+
+@interface TLInputMedia$inputMediaUploadedDocumentMeta : TLInputMedia
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLInputFile *file;
+@property (nonatomic, retain) TLInputFile *thumb;
+@property (nonatomic, retain) NSString *mime_type;
+@property (nonatomic, retain) NSArray *attributes;
+@property (nonatomic, retain) NSString *caption;
+@property (nonatomic, retain) NSArray *stickers;
+@property (nonatomic) int32_t ttl_seconds;
+
+@end
+

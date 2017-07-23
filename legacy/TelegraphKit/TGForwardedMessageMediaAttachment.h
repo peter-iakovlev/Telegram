@@ -20,6 +20,8 @@
 @property (nonatomic) int32_t forwardAuthorUserId;
 @property (nonatomic) int32_t forwardPostId;
 
+@property (nonatomic) NSString *forwardAuthorSignature;
+
 @property (nonatomic) int forwardMid;
 
 @end

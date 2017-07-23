@@ -11,7 +11,6 @@
     value.highlightsColor = self.highlightsColor;
     value.highlightsIntensity = self.highlightsIntensity;
     value.editingHighlights = self.editingHighlights;
-    value.editingIntensity = self.editingIntensity;
     
     return value;
 }
@@ -100,7 +99,7 @@
     return [UIImage imageNamed:@"PhotoEditorTintTool"];
 }
 
-- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id, bool))changeBlock
+- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id, bool))changeBlock explicit:(bool)explicit nameWidth:(CGFloat)__unused nameWidth
 {
     __weak PGTintTool *weakSelf = self;
     
@@ -111,10 +110,16 @@
         if (strongSelf == nil)
             return;
         
-        if ([strongSelf.tempValue isEqual:newValue])
+        if (!explicit && [strongSelf.tempValue isEqual:newValue])
             return;
         
-        strongSelf.tempValue = newValue;
+        if (explicit && [strongSelf.value isEqual:newValue])
+            return;
+        
+        if (!explicit)
+            strongSelf.tempValue = newValue;
+        else
+            strongSelf.value = newValue;
         
         if (changeBlock != nil)
             changeBlock(newValue, animated);
@@ -222,6 +227,11 @@
          result.rgb = tintHighlights(result.rgb, highlightsTintColor, highlightsTintIntensity * 2.0);
      }
     );
+}
+
+- (bool)isSimple
+{
+    return false;
 }
 
 @end

@@ -71,7 +71,7 @@
 
 - (bool)shouldFastScrollDown;
 
-- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage;
+- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage animated:(bool)animated;
 
 - (SSignal *)primaryTitlePanel;
 

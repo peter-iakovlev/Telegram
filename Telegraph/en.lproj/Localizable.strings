@@ -2,7 +2,9 @@
 "MESSAGE_TEXT" = "%1$@: %2$@";
 "MESSAGE_NOTEXT" = "%1$@ sent you a message";
 "MESSAGE_PHOTO" = "%1$@ sent you a photo";
+"MESSAGE_PHOTO_SECRET" = "%1$@ sent you a self-destructing photo";
 "MESSAGE_VIDEO" = "%1$@ sent you a video";
+"MESSAGE_VIDEO_SECRET" = "%1$@ sent you a self-destructing video";
 "MESSAGE_ROUND" = "%1$@ sent you a video message";
 "MESSAGE_CONTACT" = "%1$@ shared a contact with you";
 "MESSAGE_GEO" = "%1$@ sent you a map";
@@ -11,6 +13,7 @@
 "MESSAGE_GIF" = "%1$@ sent you a GIF";
 "ENCRYPTED_MESSAGE" = "You have a new message%1$@";
 "LOCKED_MESSAGE" = "You have a new message%1$@";
+"MESSAGE_SCREENSHOT" = "%1$@ took a screenshot!";
 "ENCRYPTION_REQUEST" = "New encryption request%1$@";
 "ENCRYPTION_ACCEPT" = "Your encryption request was accepted%1$@";
 "DC_UPDATE" = "Open this notification to update app settings";
@@ -828,7 +831,7 @@
 "Contacts.GlobalSearch" = "Global Search";
 "Profile.Username" = "username";
 "Settings.Username" = "Username";
-"Settings.UsernameEmpty" = "None";
+"Settings.UsernameEmpty" = "Add";
 
 "Username.Title" = "Username";
 "Username.Placeholder" = "Your Username";
@@ -918,7 +921,7 @@
 "PhotoEditor.CropAspectRatioSquare" = "Square";
 
 "PhotoEditor.EnhanceTool" = "Enhance";
-"PhotoEditor.ExposureTool" = "Exposure";
+"PhotoEditor.ExposureTool" = "Brightness";
 "PhotoEditor.ContrastTool" = "Contrast";
 "PhotoEditor.WarmthTool" = "Warmth";
 "PhotoEditor.SaturationTool" = "Saturation";
@@ -2076,7 +2079,7 @@
 "Conversation.UnpinMessageAlert" = "Would you like to unpin this message?";
 
 "Settings.About.Title" = "Bio";
-"Settings.About.Help" = "You can add a few lines about yourself. Anyone who opens your profile will see this text.";
+"Settings.About.Help" = "Any details such as age, occupation or city.\nExample: 23 y.o. designer from San Francisco.";
 
 "Profile.About" = "bio";
 
@@ -2918,3 +2921,24 @@ Unused sets are archived when you add more.";
 "Invite.LargeRecipientsCountWarning" = "Please note that it may take some time for your device to send all of these invitations";
 
 "Contacts.InviteSearchLabel" = "Search for contacts";
+
+"Message.ImageExpired" = "Photo has expired";
+"Message.VideoExpired" = "Video has expired";
+
+"SecretImage.Title" = "Disappearing Photo";
+"SecretVideo.Title" = "Disappearing Video";
+"SecretTimer.ImageDescription" = "If you set a timer, the photo will self-destruct after it was viewed.";
+"SecretTimer.VideoDescription" = "If you set a timer, the video will self-destruct after it was viewed.";
+
+"PhotoEditor.TiltShift" = "Tilt Shift";
+
+"Notification.SecretChatMessageScreenshotSelf" = "You took a screenshot!";
+
+"Settings.AboutEmpty" = "Add";
+
+"SecretImage.NotViewedYet" = "%@ hasn't opened this photo yet";
+"SecretVideo.NotViewedYet" = "%@ hasn't played this video yet";
+
+"UserInfo.About.Placeholder" = "Bio";
+
+"Call.StatusNoAnswer" = "No Answer";

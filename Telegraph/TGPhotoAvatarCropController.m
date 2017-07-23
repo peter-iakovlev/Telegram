@@ -532,7 +532,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        TGPhotoAvatarCropButtonsWrapperSize,
                                                        referenceSize.height);
                  
-                _rotateButton.frame = CGRectMake(25, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _rotateButton.frame = CGRectMake(25 + 2.0f, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
                 _mirrorButton.frame = CGRectMake(25, 60, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
@@ -563,7 +563,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        TGPhotoAvatarCropButtonsWrapperSize,
                                                        referenceSize.height);
                  
-                _rotateButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _rotateButton.frame.size.width - 25, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _rotateButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _rotateButton.frame.size.width - 25 + 2.0f, 10, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
                 _mirrorButton.frame = CGRectMake(_buttonsWrapperView.frame.size.width - _mirrorButton.frame.size.width - 25, 60, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
@@ -593,7 +593,7 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                                        referenceSize.width,
                                                        TGPhotoAvatarCropButtonsWrapperSize);
                  
-                _rotateButton.frame = CGRectMake(10, _buttonsWrapperView.frame.size.height - _rotateButton.frame.size.height - 25, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
+                _rotateButton.frame = CGRectMake(10, _buttonsWrapperView.frame.size.height - _rotateButton.frame.size.height - 25 + 2.0f, _rotateButton.frame.size.width, _rotateButton.frame.size.height);
                 _mirrorButton.frame = CGRectMake(60, _buttonsWrapperView.frame.size.height - _mirrorButton.frame.size.height - 25, _mirrorButton.frame.size.width, _mirrorButton.frame.size.height);
                 
                 _resetButton.transform = CGAffineTransformIdentity;
@@ -619,6 +619,11 @@ const CGFloat TGPhotoAvatarCropButtonsWrapperSize = 61.0f;
                                  containerFrame.origin.y + (containerFrame.size.height - diameter) / 2,
                                  diameter,
                                  diameter);
+}
+
+- (TGPhotoEditorTab)availableTabs
+{
+    return TGPhotoEditorPaintTab | TGPhotoEditorToolsTab;
 }
 
 @end

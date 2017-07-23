@@ -21,6 +21,7 @@ typedef enum
 
 - (instancetype)initWithType:(TGMenuSheetItemType)type;
 
+- (void)setDark;
 - (void)setHidden:(bool)hidden animated:(bool)animated;
 
 @property (nonatomic, readonly) CGFloat contentHeightCorrection;

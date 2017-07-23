@@ -2,21 +2,40 @@
 
 typedef enum
 {
-    TGPhotoEditorNoneTab    = 0,
-    TGPhotoEditorCropTab    = 1 << 0,
-    TGPhotoEditorToolsTab   = 1 << 1,
-    TGPhotoEditorCaptionTab = 1 << 2,
-    TGPhotoEditorRotateTab  = 1 << 3,
-    TGPhotoEditorPaintTab   = 1 << 4,
-    TGPhotoEditorStickerTab = 1 << 5,
-    TGPhotoEditorTextTab    = 1 << 6,
-    TGPhotoEditorGifTab     = 1 << 7,
-    TGPhotoEditorQualityTab = 1 << 8
+    TGPhotoEditorNoneTab        = 0,
+    TGPhotoEditorCropTab        = 1 << 0,
+    TGPhotoEditorToolsTab       = 1 << 1,
+    TGPhotoEditorRotateTab      = 1 << 3,
+    TGPhotoEditorPaintTab       = 1 << 4,
+    TGPhotoEditorStickerTab     = 1 << 5,
+    TGPhotoEditorTextTab        = 1 << 6,
+    TGPhotoEditorQualityTab     = 1 << 7,
+    TGPhotoEditorEraserTab      = 1 << 8,
+    TGPhotoEditorMirrorTab      = 1 << 9,
+    TGPhotoEditorAspectRatioTab = 1 << 10,
+    TGPhotoEditorBlurTab        = 1 << 11,
+    TGPhotoEditorCurvesTab      = 1 << 12,
+    TGPhotoEditorTintTab        = 1 << 13,
+    TGPhotoEditorTimerTab       = 1 << 14
 } TGPhotoEditorTab;
+
+typedef enum
+{
+    TGPhotoEditorBackButtonBack,
+    TGPhotoEditorBackButtonCancel
+} TGPhotoEditorBackButton;
+
+typedef enum
+{
+    TGPhotoEditorDoneButtonSend,
+    TGPhotoEditorDoneButtonCheck
+} TGPhotoEditorDoneButton;
 
 @interface TGPhotoToolbarView : UIView
 
 @property (nonatomic, assign) UIInterfaceOrientation interfaceOrientation;
+
+@property (nonatomic, readonly) UIButton *doneButton;
 
 @property (nonatomic, copy) void(^cancelPressed)(void);
 @property (nonatomic, copy) void(^donePressed)(void);
@@ -27,7 +46,7 @@ typedef enum
 
 @property (nonatomic, readonly) CGRect cancelButtonFrame;
 
-- (instancetype)initWithBackButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle accentedDone:(bool)accentedDone solidBackground:(bool)solidBackground;
+- (instancetype)initWithBackButton:(TGPhotoEditorBackButton)backButton doneButton:(TGPhotoEditorDoneButton)doneButton solidBackground:(bool)solidBackground;
 
 - (void)transitionInAnimated:(bool)animated;
 - (void)transitionInAnimated:(bool)animated transparent:(bool)transparent;
@@ -38,15 +57,15 @@ typedef enum
 - (void)setEditButtonsEnabled:(bool)enabled animated:(bool)animated;
 - (void)setEditButtonsHidden:(bool)hidden animated:(bool)animated;
 - (void)setEditButtonsHighlighted:(TGPhotoEditorTab)buttons;
+- (void)setEditButtonsDisabled:(TGPhotoEditorTab)buttons;
 
 @property (nonatomic, readonly) TGPhotoEditorTab currentTabs;
 - (void)setToolbarTabs:(TGPhotoEditorTab)tabs animated:(bool)animated;
 
 - (void)setActiveTab:(TGPhotoEditorTab)tab;
 
-- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab;
+- (void)setInfoString:(NSString *)string;
 
-- (void)calculateLandscapeSizeForPossibleButtonTitles:(NSArray *)possibleButtonTitles;
-- (CGFloat)landscapeSize;
+- (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab;
 
 @end

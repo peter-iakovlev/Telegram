@@ -41,10 +41,16 @@ typedef enum
 @property (nonatomic, readonly) NSString *ancillaryShaderString;
 @property (nonatomic, readonly) PGPhotoProcessPass *pass;
 
+@property (nonatomic, readonly) bool isSimple;
+
 @property (nonatomic, weak) PGPhotoToolComposer *toolComposer;
 
 - (void)invalidate;
 
 - (NSString *)stringValue;
+- (NSString *)stringValue:(bool)includeZero;
+
+- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id newValue, bool animated))changeBlock explicit:(bool)explicit nameWidth:(CGFloat)nameWidth;
+- (UIView <TGPhotoEditorToolView> *)itemAreaViewWithChangeBlock:(void (^)(id))changeBlock explicit:(bool)explicit;
 
 @end

@@ -208,6 +208,7 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
                     break;
                     
                 case TGCallTransmissionStateEstablished:
+                case TGCallTransmissionStateReconnecting:
                 {
                     NSString *durationString = duration >= 60 * 60 ? [NSString stringWithFormat:@"%02d:%02d:%02d", (int)(duration / 3600.0), (int)(duration / 60.0) % 60, (int)duration % 60] : [NSString stringWithFormat:@"%02d:%02d", (int)(duration / 60.0) % 60, (int)duration % 60];
                     _statusLabel.text = [NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), durationString];
@@ -229,12 +230,15 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         case TGCallStateEnding:
         case TGCallStateEnded:
         case TGCallStateBusy:
+        case TGCallStateNoAnswer:
         case TGCallStateMissed:
         {
             if (state.stateData.error.length > 0 || state.transmissionState == TGCallTransmissionStateFailed)
                 _statusLabel.text = TGLocalized(@"Call.StatusFailed");
             else if (state.state == TGCallStateBusy)
                 _statusLabel.text = TGLocalized(@"Call.StatusBusy");
+            else if (state.state == TGCallStateNoAnswer)
+                _statusLabel.text = TGLocalized(@"Call.StatusNoAnswer");
             else
                 _statusLabel.text = TGLocalized(@"Call.StatusEnded");
         }

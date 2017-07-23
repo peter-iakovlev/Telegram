@@ -216,6 +216,11 @@ typedef enum {
     return TGGroupParticipationStatusMember;
 }
 
+- (NSString *)title
+{
+    return _conversation.chatTitle;
+}
+
 - (void)loadInitialState
 {
     [super loadInitialState];

@@ -1667,7 +1667,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                         TGMessageModernConversationItem *updatedItem = [item copy];
                         updatedItem->_mediaAvailabilityStatus = isContact;
                         
-                        [item updateToItem:updatedItem viewStorage:nil sizeChanged:NULL delayAvailability:false];
+                        [item updateToItem:updatedItem viewStorage:nil sizeChanged:NULL delayAvailability:false containerSize:CGSizeZero];
                     }
                     
                     break;
@@ -1793,13 +1793,17 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     return [NSURL fileURLWithPath:path];
 }
 
-- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image stickers:(NSArray *)stickers caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl
+- (NSDictionary *)imageDescriptionFromImage:(UIImage *)image stickers:(NSArray *)stickers caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl allowRemoteCache:(bool)allowRemoteCache timer:(int32_t)timer
 {
     if (image == nil)
         return nil;
     
+    if (timer > 0) {
+        allowRemoteCache = false;
+    }
+    
     NSDictionary *serverData = [self _shouldCacheRemoteAssetUris] ? [TGImageDownloadActor serverMediaDataForAssetUrl:assetUrl] : nil;
-    if (serverData != nil)
+    if (serverData != nil && allowRemoteCache)
     {
         if ([serverData objectForKey:@"imageId"] != nil && [serverData objectForKey:@"imageAttachment"] != nil)
         {
@@ -1817,6 +1821,10 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                     dict[@"caption"] = caption;
                 } else {
                     [dict removeObjectForKey:@"caption"];
+                }
+                
+                if (timer != 0) {
+                    dict[@"timer"] = @(timer);
                 }
                 
                 return @{@"remoteImage": dict};
@@ -1859,6 +1867,10 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
             
             if (assetUrl != nil)
                 dict[@"assetUrl"] = assetUrl;
+            
+            if (timer != 0) {
+                dict[@"timer"] = @(timer);
+            }
             
             return @{@"localImage": dict};
         }
@@ -2005,7 +2017,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     return nil;
 }
 
-- (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage document:(bool)document fileName:(NSString *)fileName caption:(NSString *)caption
+- (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage document:(bool)document fileName:(NSString *)fileName caption:(NSString *)caption allowRemoteCache:(bool)__unused allowRemoteCache
 {
     if (asset == nil)
         return nil;
@@ -2036,7 +2048,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     return @{@"assetImage": dict};
 }
 
-- (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage adjustments:(TGVideoEditAdjustments *)adjustments document:(bool)document fileName:(NSString *)fileName stickers:(NSArray *)stickers caption:(NSString *)caption
+- (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)asset previewImage:(UIImage *)previewImage adjustments:(TGVideoEditAdjustments *)adjustments document:(bool)document fileName:(NSString *)fileName stickers:(NSArray *)stickers caption:(NSString *)caption timer:(int32_t)timer
 {
     if (asset == nil)
         return nil;
@@ -2065,6 +2077,11 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     
     bool isAnimation = adjustments.sendAsGif;
     
+    if (timer > 0 && timer <= 60) {
+        isAnimation = false;
+        document = false;
+    }
+    
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@
     {
         @"assetIdentifier": asset.uniqueIdentifier,
@@ -2072,7 +2089,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
         @"dimensions": [NSValue valueWithCGSize:dimensions],
         @"thumbnailData": thumbnailData,
         @"thumbnailSize": [NSValue valueWithCGSize:dimensions],
-        @"document": @(document || isAnimation)
+        @"document": @((document || isAnimation))
     }];
     
     if (adjustments != nil)
@@ -2103,10 +2120,14 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     if (stickers != nil)
         dict[@"stickerDocuments"] = stickers;
     
+    if (timer != 0) {
+        dict[@"timer"] = @(timer);
+    }
+    
     return @{@"assetVideo": dict};
 }
 
-- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)videoURL previewImage:(UIImage *)previewImage dimensions:(CGSize)dimensions duration:(NSTimeInterval)duration adjustments:(TGVideoEditAdjustments *)adjustments stickers:(NSArray *)stickers caption:(NSString *)caption roundMessage:(bool)roundMessage liveUploadData:(id)liveUploadData
+- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)videoURL previewImage:(UIImage *)previewImage dimensions:(CGSize)dimensions duration:(NSTimeInterval)duration adjustments:(TGVideoEditAdjustments *)adjustments stickers:(NSArray *)stickers caption:(NSString *)caption roundMessage:(bool)roundMessage liveUploadData:(id)liveUploadData timer:(int32_t)timer
 {
     if (videoURL == nil)
         return nil;
@@ -2134,6 +2155,9 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     }
     
     bool isAnimation = adjustments.sendAsGif;
+    if (timer > 0 && timer <= 60) {
+        isAnimation = false;
+    }
     
     NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@
     {
@@ -2169,6 +2193,10 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
     
     if (liveUploadData != nil)
         dict[@"liveUploadData"] = liveUploadData;
+    
+    if (timer != 0) {
+        dict[@"timer"] = @(timer);
+    }
     
     return @{@"cameraVideo": dict};
 }
@@ -2340,7 +2368,8 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
             if (imageDescription[@"localImage"] != nil)
             {
                 NSDictionary *localImage = imageDescription[@"localImage"];
-                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:localImage[@"imageData"] imageSize:[localImage[@"imageSize"] CGSizeValue] thumbnailData:localImage[@"thumbnailData"] thumbnailSize:[localImage[@"thumbnailSize"] CGSizeValue] assetUrl:localImage[@"assetUrl"] caption:localImage[@"caption"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup] stickerDocuments:localImage[@"stickerDocuments"]];
+                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:localImage[@"imageData"] imageSize:[localImage[@"imageSize"] CGSizeValue] thumbnailData:localImage[@"thumbnailData"] thumbnailSize:[localImage[@"thumbnailSize"] CGSizeValue] assetUrl:localImage[@"assetUrl"] caption:localImage[@"caption"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup] stickerDocuments:localImage[@"stickerDocuments"] messageLifetime:[self messageLifetime]];
+                imageMessage.messageLifetime = localImage[@"timer"] != nil ? [localImage[@"timer"] intValue] : [self messageLifetime];
                 
                 [preparedMessages addObject:imageMessage];
                 
@@ -2450,8 +2479,10 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                 int64_t localDocumentId = 0;
                 if (asDocument)
                     arc4random_buf(&localDocumentId, 8);
+                
+                int32_t timer = [imageDescription[@"timer"] intValue];
 
-                TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:assetImage[@"assetIdentifier"] imageInfo:nil caption:assetImage[@"caption"] useMediaCache:[self controllerShouldCacheServerAssets] isCloud:[assetImage[@"cloud"] boolValue] document:asDocument localDocumentId:localDocumentId fileSize:INT_MAX mimeType:assetImage[@"mimeType"] attributes:assetImage[@"attributes"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup]];
+                TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:assetImage[@"assetIdentifier"] imageInfo:nil caption:assetImage[@"caption"] useMediaCache:[self controllerShouldCacheServerAssets] && timer <= 0 isCloud:[assetImage[@"cloud"] boolValue] document:asDocument localDocumentId:localDocumentId fileSize:INT_MAX mimeType:assetImage[@"mimeType"] attributes:assetImage[@"attributes"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup] messageLifetime:timer != 0 ? timer : [self messageLifetime]];
                 assetImageMessage.uploadQueue = [self mediaUploadQueue];
                 [assetImageMessage setImageInfoWithThumbnailData:assetImage[@"thumbnailData"] thumbnailSize:[assetImage[@"thumbnailSize"] CGSizeValue]];
                 [preparedMessages addObject:assetImageMessage];
@@ -2467,6 +2498,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                 int64_t localDocumentId = asDocument ? localId : 0;
                 
                 TGPreparedAssetVideoMessage *assetVideoMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:assetVideo[@"assetIdentifier"] assetURL:nil localVideoId:localVideoId imageInfo:nil duration:[assetVideo[@"duration"] doubleValue] dimensions:[assetVideo[@"dimensions"] CGSizeValue] adjustments:[assetVideo[@"adjustments"] dictionary] useMediaCache:[self controllerShouldCacheServerAssets] liveUpload:[self controllerShouldLiveUploadVideo] passthrough:false caption:assetVideo[@"caption"] isCloud:[assetVideo[@"cloud"] boolValue] document:asDocument localDocumentId:localDocumentId fileSize:INT_MAX mimeType:assetVideo[@"mimeType"] attributes:assetVideo[@"attributes"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup] stickerDocuments:assetVideo[@"stickerDocuments"] roundMessage:false];
+                assetVideoMessage.messageLifetime = assetVideo[@"timer"] != nil ? [assetVideo[@"timer"] intValue] : [self messageLifetime];
                 assetVideoMessage.uploadQueue = [self mediaUploadQueue];
                 [assetVideoMessage setImageInfoWithThumbnailData:assetVideo[@"thumbnailData"] thumbnailSize:[assetVideo[@"thumbnailSize"] CGSizeValue]];
                 [preparedMessages addObject:assetVideoMessage];
@@ -2482,6 +2514,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                 int64_t localDocumentId = asDocument ? localId : 0;
                 
                 TGPreparedAssetVideoMessage *assetVideoMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:nil assetURL:cameraVideo[@"videoURL"] localVideoId:localVideoId imageInfo:nil duration:[cameraVideo[@"duration"] doubleValue] dimensions:[cameraVideo[@"dimensions"] CGSizeValue] adjustments:[cameraVideo[@"adjustments"] dictionary] useMediaCache:[self controllerShouldCacheServerAssets] liveUpload:[self controllerShouldLiveUploadVideo] passthrough:false caption:cameraVideo[@"caption"] isCloud:false document:asDocument localDocumentId:localDocumentId fileSize:INT_MAX mimeType:cameraVideo[@"mimeType"] attributes:cameraVideo[@"attributes"] replyMessage:replyMessage replyMarkup:botReplyMarkup == nil ? nil : [[TGReplyMarkupAttachment alloc] initWithReplyMarkup:botReplyMarkup] stickerDocuments:cameraVideo[@"stickerDocuments"] roundMessage:[cameraVideo[@"roundMessage"] boolValue]];
+                assetVideoMessage.messageLifetime = cameraVideo[@"timer"] != nil ? [cameraVideo[@"timer"] intValue] : [self messageLifetime];
                 assetVideoMessage.uploadQueue = [self mediaUploadQueue];
                 [assetVideoMessage setImageInfoWithThumbnailData:cameraVideo[@"thumbnailData"] thumbnailSize:[cameraVideo[@"thumbnailSize"] CGSizeValue]];
                 assetVideoMessage.liveData = cameraVideo[@"liveUploadData"];
@@ -3026,7 +3059,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                         else if (message.contentProperties[@"mediaAsset"] != nil)
                         {
                             TGMediaAssetContentProperty *info = message.contentProperties[@"mediaAsset"];
-                            TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:info.assetIdentifier imageInfo:imageAttachment.imageInfo caption:imageAttachment.caption useMediaCache:info.useMediaCache isCloud:info.isCloud document:false localDocumentId:0 fileSize:INT_MAX mimeType:nil attributes:nil replyMessage:replyMessage replyMarkup:replyMarkup];
+                            TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:info.assetIdentifier imageInfo:imageAttachment.imageInfo caption:imageAttachment.caption useMediaCache:info.useMediaCache isCloud:info.isCloud document:false localDocumentId:0 fileSize:INT_MAX mimeType:nil attributes:nil replyMessage:replyMessage replyMarkup:replyMarkup messageLifetime:[self messageLifetime]];
                             assetImageMessage.uploadQueue = [self mediaUploadQueue];
                             if (!copyAssetsData)
                                 assetImageMessage.replacingMid = message.mid;
@@ -3067,7 +3100,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                                         
                                         if (imageData != nil && thumbnailData != nil)
                                         {
-                                            TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage replyMarkup:replyMarkup stickerDocuments:imageAttachment.embeddedStickerDocuments];
+                                            TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage replyMarkup:replyMarkup stickerDocuments:imageAttachment.embeddedStickerDocuments messageLifetime:[self messageLifetime]];
                                             if (!copyAssetsData)
                                                 localImageMessage.replacingMid = message.mid;
                                             [preparedMessages addObject:localImageMessage];
@@ -3075,7 +3108,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                                     }
                                     else
                                     {
-                                        TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithLocalImageDataPath:imageUrl imageSize:imageSize localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage replyMarkup:replyMarkup stickerDocuments:imageAttachment.embeddedStickerDocuments];
+                                        TGPreparedLocalImageMessage *localImageMessage = [TGPreparedLocalImageMessage messageWithLocalImageDataPath:imageUrl imageSize:imageSize localThumbnailDataPath:thumbnailUrl thumbnailSize:thumbnailSize assetUrl:nil caption:imageAttachment.caption replyMessage:replyMessage replyMarkup:replyMarkup stickerDocuments:imageAttachment.embeddedStickerDocuments messageLifetime:[self messageLifetime]];
                                         if (!copyAssetsData)
                                             localImageMessage.replacingMid = message.mid;
                                         [preparedMessages addObject:localImageMessage];
@@ -3194,7 +3227,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                             TGPreparedMessage *preparedAssetMessage = nil;
                             if (!info.isVideo)
                             {
-                                TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:info.assetIdentifier imageInfo:documentAttachment.thumbnailInfo caption:documentAttachment.caption useMediaCache:false isCloud:info.isCloud document:true localDocumentId:documentAttachment.localDocumentId fileSize:documentAttachment.size mimeType:documentAttachment.mimeType attributes:documentAttachment.attributes replyMessage:replyMessage replyMarkup:replyMarkup];
+                                TGPreparedAssetImageMessage *assetImageMessage = [[TGPreparedAssetImageMessage alloc] initWithAssetIdentifier:info.assetIdentifier imageInfo:documentAttachment.thumbnailInfo caption:documentAttachment.caption useMediaCache:false isCloud:info.isCloud document:true localDocumentId:documentAttachment.localDocumentId fileSize:documentAttachment.size mimeType:documentAttachment.mimeType attributes:documentAttachment.attributes replyMessage:replyMessage replyMarkup:replyMarkup messageLifetime:[self messageLifetime]];
                                 assetImageMessage.uploadQueue = [self mediaUploadQueue];
                                 preparedAssetMessage = assetImageMessage;
                             }
@@ -3409,7 +3442,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                 previewImage = nil;
                 fullImage = nil;
                 
-                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage replyMarkup:nil stickerDocuments:nil];
+                TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage replyMarkup:nil stickerDocuments:nil messageLifetime:[self messageLifetime]];
                 [preparedMessages addObject:imageMessage];
             }
         }
@@ -3459,7 +3492,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                         UIImage *previewImage = TGScaleImageToPixelSize(image, TGFitSize(imageSize, [TGGenericModernConversationCompanion preferredInlineThumbnailSize]));
                         NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
                         
-                        TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage replyMarkup:nil stickerDocuments:nil];
+                        TGPreparedLocalImageMessage *imageMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:nil replyMessage:replyMessage replyMarkup:nil stickerDocuments:nil messageLifetime:[self messageLifetime]];
                         [preparedMessages addObject:imageMessage];
                     }
                 }
@@ -3585,7 +3618,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
             minLifetime = (int32_t)ceil(((TGPreparedAssetVideoMessage *)preparedMessage).duration);
         
         {
-            preparedMessage.messageLifetime = [self messageLifetime] == 0 ? 0 : MAX([self messageLifetime], minLifetime);
+            preparedMessage.messageLifetime = MAX(preparedMessage.messageLifetime, [self messageLifetime] == 0 ? 0 : MAX([self messageLifetime], minLifetime));
             
             if (preparedMessage.randomId == 0)
             {
@@ -4422,7 +4455,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                         [[TGInterfaceManager instance] navigateToConversationWithId:peerId conversation:conversation performActions:@{} atMessage:@{@"mid": @(messageId)} clearStack:false openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
                     } error:^(id error) {
                         NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
-                        if ([errorType isEqualToString:@"PEER_ID_INVALID"]) {
+                        if ([errorType isEqualToString:@"PEER_ID_INVALID"] || [errorType isEqualToString:@"CHANNEL_PRIVATE"]) {
                             [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.ErrorAccessDenied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                         }
                     } completed:nil];
@@ -5523,7 +5556,7 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
             for (TGMessage *message in resource) {
                 messageIdToMessage[@(message.mid)] = message;
             }
-            [self updateMessagesLive:messageIdToMessage];
+            [self updateMessagesLive:messageIdToMessage animated:false];
         }];
     } else if ([path isEqualToString:[NSString stringWithFormat:@"/tg/peerDraft/%lld", _conversationId]]) {
         TGDispatchOnMainThread(^{
@@ -6235,9 +6268,11 @@ static id mediaIdForMessage(TGMessage *message)
     return !_moreMessagesAvailableBelow;
 }
 
-- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage {
+- (void)updateMessagesLive:(NSDictionary *)messageIdToMessage animated:(bool)animated {
     NSMutableArray *updatedItems = [[NSMutableArray alloc] init];
     NSMutableArray *atIndices = [[NSMutableArray alloc] init];
+    
+    NSMutableSet *forceAnimated = nil;
     
     NSInteger itemIndex = -1;
     for (TGMessageModernConversationItem *item in _items)
@@ -6251,6 +6286,14 @@ static id mediaIdForMessage(TGMessage *message)
             updatedItem->_message.mediaAttachments = message.mediaAttachments;
             updatedItem->_message.text = message.text;
             updatedItem->_message.flags = message.flags;
+            
+            bool animateExpiration = [item->_message hasExpiredMedia] != [updatedItem->_message hasExpiredMedia];
+            if (animateExpiration) {
+                if (forceAnimated == nil) {
+                    forceAnimated = [[NSMutableSet alloc] init];
+                }
+                [forceAnimated addObject:@(message.mid)];
+            }
             
             [updatedItems addObject:updatedItem];
             [atIndices addObject:@(itemIndex)];
@@ -6268,7 +6311,6 @@ static id mediaIdForMessage(TGMessage *message)
         for (NSNumber *nIndex in atIndices) {
             [indexSet addIndex:[nIndex intValue]];
         }
-        [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false forceforceCheckDownload:true];
         
         TGDispatchOnMainThread(^{
             TGModernConversationController *controller = self.controller;
@@ -6276,9 +6318,12 @@ static id mediaIdForMessage(TGMessage *message)
             for (TGMessageModernConversationItem *messageItem in updatedItems)
             {
                 index++;
-                [controller updateItemAtIndex:[atIndices[index] unsignedIntegerValue] toItem:messageItem delayAvailability:false animated:false];
+                bool animateExpiration = [forceAnimated containsObject:@(messageItem->_message.mid)];
+                [controller updateItemAtIndex:[atIndices[index] unsignedIntegerValue] toItem:messageItem delayAvailability:false animated:animated || animateExpiration animateTransition:animateExpiration];
             }
         });
+        
+        [self _updateMediaStatusDataForItemsInIndexSet:indexSet animated:false forceforceCheckDownload:true];
     }
     
     if (_callbackInProgressMessageId != 0 && messageIdToMessage[@(_callbackInProgressMessageId)] != nil) {
@@ -6338,7 +6383,7 @@ static id mediaIdForMessage(TGMessage *message)
         }] deliverOn:[TGModernConversationCompanion messageQueue]] onNext:^(TGMessage *message) {
             __strong TGGenericModernConversationCompanion *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf updateMessagesLive:@{@(message.mid): message}];
+                [strongSelf updateMessagesLive:@{@(message.mid): message} animated:false];
             }
         }];
     }];
@@ -6421,5 +6466,6 @@ static id mediaIdForMessage(TGMessage *message)
     
     return false;
 }
+
 
 @end

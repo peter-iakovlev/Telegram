@@ -4,7 +4,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
-#import <MtProtoKit/MTProtoKit.h>
+#import <MTProtoKit/MTProtoKit.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegramNetworking.h"
@@ -361,12 +361,12 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
                 for (TGCallConnectionDescription *connection in connections) {
                     struct in_addr addrIpV4;
                     if (!inet_aton(connection.ipv4.UTF8String, &addrIpV4)) {
-                        NSLog(@"CallSession: invalid ipv4 address");
+                        TGLog(@"CallSession: invalid ipv4 address");
                     }
                     
                     struct in6_addr addrIpV6;
                     if (!inet_pton(AF_INET6, connection.ipv6.UTF8String, &addrIpV6)) {
-                        NSLog(@"CallSession: invalid ipv6 address");
+                        TGLog(@"CallSession: invalid ipv6 address");
                     }
                     
                     tgvoip::IPv4Address address(std::string(connection.ipv4.UTF8String));
@@ -1017,18 +1017,21 @@ static id<SDisposable> audioSession;
 
         case TGCallStateHandshake:
         {
+            [self startTimeout:[TGCallSession callRingTimeout] discardReason:TGCallDiscardReasonMissedTimeout];
             [self playRingtone];
         }
             break;
 
         case TGCallStateReady:
         {
+            [self startTimeout:[TGCallSession callRingTimeout] discardReason:TGCallDiscardReasonMissedTimeout];
             [self playRingtone];
         }
             break;
 
         case TGCallStateAccepting:
         {
+            [self invalidateTimeout];
             [self stopAudio];
         }
             break;
@@ -1044,6 +1047,7 @@ static id<SDisposable> audioSession;
         case TGCallStateEnded:
         case TGCallStateEnding:
         case TGCallStateBusy:
+        case TGCallStateNoAnswer:
         case TGCallStateMissed:
         {
             if (!_hungUpOutside)
@@ -1074,7 +1078,7 @@ static id<SDisposable> audioSession;
                 }];
             };
 
-            if (_outgoing && state.state == TGCallStateBusy)
+            if (_outgoing && (state.state == TGCallStateBusy || state.state == TGCallStateNoAnswer))
             {
                 [self playTone:TGCallToneBusy];
                 TGDispatchAfter(2.0, dispatch_get_main_queue(), ^
@@ -1112,7 +1116,10 @@ static id<SDisposable> audioSession;
         default:
             break;
     }
-
+    
+    if (state.error != nil)
+        TGLog(@"Call Session: failed with error: %@", state.error);
+    
     _statePipe.sink(state);
 }
 
@@ -1157,7 +1164,7 @@ static id<SDisposable> audioSession;
         TGCallState currentState = stateData.state;
         
         AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-        NSArray *inputs = audioSession.availableInputs;
+        NSArray *inputs = iosMajorVersion() >= 7 ? audioSession.availableInputs : nil;
         NSArray *outputs = audioSession.currentRoute.outputs;
         
         NSMutableArray *audioRoutes = [[NSMutableArray alloc] init];

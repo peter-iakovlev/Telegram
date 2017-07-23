@@ -119,7 +119,7 @@
 
 - (TGMediaPickerModernGalleryMixin *)_galleryMixinForItem:(id)item thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaption asFile:(bool)asFile
 {
-    return [[TGMediaPickerModernGalleryMixin alloc] initWithItem:item momentList:_momentList parentController:self thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaption inhibitDocumentCaptions:false asFile:asFile itemsLimit:0];
+    return [[TGMediaPickerModernGalleryMixin alloc] initWithItem:item momentList:_momentList parentController:self thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaption hasTimer:false inhibitDocumentCaptions:false asFile:asFile itemsLimit:0];
 }
 
 - (id)_itemAtIndexPath:(NSIndexPath *)indexPath

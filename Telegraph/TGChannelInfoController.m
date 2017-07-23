@@ -188,6 +188,7 @@
         _aboutItem = [[TGUserInfoTextCollectionItem alloc] init];
         _aboutItem.title = TGLocalized(@"Channel.Info.Description");
         _aboutItem.text = _conversation.about;
+        _aboutItem.highlightLinks = true;
         _aboutItem.followLink = ^(NSString *link) {
             TGChannelInfoController *strongSelf = weakSelf;
             if (strongSelf != nil) {

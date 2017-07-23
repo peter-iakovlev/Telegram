@@ -37,6 +37,8 @@
     
     id<SDisposable> _playerStatusDisposable;
     CGFloat _currentAdditionalStatusBarHeight;
+    
+    UIPanGestureRecognizer *_panGestureRecognizer;
 }
 
 @property (nonatomic) bool wasShowingNavigationBar;
@@ -108,7 +110,7 @@
 {
     [super loadView];
     
-    if (iosMajorVersion() >= 8) {
+    if (false && iosMajorVersion() >= 8) {
         SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
         if ([self respondsToSelector:selector])
         {
@@ -116,23 +118,54 @@
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
             UIScreenEdgePanGestureRecognizer *screenPanRecognizer = [self performSelector:selector];
 #pragma clang diagnostic pop
-            if (screenPanRecognizer != nil)
+            
+            screenPanRecognizer.enabled = false;
+            
+            Ivar targetsIvar = class_getInstanceVariable([UIGestureRecognizer class], "_targets");
+            id targetActionPairs = object_getIvar(screenPanRecognizer, targetsIvar);
+            
+            Class targetActionPairClass = NSClassFromString(@"UIGestureRecognizerTarget");
+            Ivar targetIvar = class_getInstanceVariable(targetActionPairClass, "_target");
+            Ivar actionIvar = class_getInstanceVariable(targetActionPairClass, "_action");
+            
+            for (id targetActionPair in targetActionPairs)
             {
-                if (iosMajorVersion() >= 9 && [UIView userInterfaceLayoutDirectionForSemanticContentAttribute:self.view.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft)
-                {
-                    screenPanRecognizer.edges = UIRectEdgeRight;
-                }
-                object_setClass(screenPanRecognizer, [TGRTLScreenEdgePanGestureRecognizer class]);
-                id delegate = screenPanRecognizer.delegate;
-                if (delegate != nil) {
-                    //Class subclass = freedomMakeClass([delegate class], [TGRTLScreenEdgePanGestureRecognizerDelegate class]);
-                    //object_setClass(delegate, subclass);
-                    //objc_setAssociatedObject(delegate, TGRTLScreenEdgePanGestureRecognizerDelegateEnableGestureKey, @false, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-                }
+                id target = object_getIvar(targetActionPair, targetIvar);
+                SEL action = (__bridge void *)object_getIvar(targetActionPair, actionIvar);
+                
+                _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:target action:action];
+                _panGestureRecognizer.delegate = self;
+                _panGestureRecognizer.delaysTouchesBegan = true;
+                [screenPanRecognizer.view addGestureRecognizer:_panGestureRecognizer];
+                
+                break;
             }
         }
     }
 }
+
+//- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)__unused gestureRecognizer
+//{
+//    SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
+//    if ([self respondsToSelector:selector])
+//    {
+//#pragma clang diagnostic push
+//#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+//        UIScreenEdgePanGestureRecognizer *screenPanRecognizer = [self performSelector:selector];
+//        
+//        bool shouldBegin = [screenPanRecognizer.delegate gestureRecognizerShouldBegin:screenPanRecognizer];
+//        if (self.viewControllers.count == 1)
+//            shouldBegin = false;
+//        
+//        return shouldBegin;
+//    }
+//    return true;
+//}
+
+//- (UIGestureRecognizer *)interactivePopGestureRecognizer
+//{
+//    return _panGestureRecognizer;
+//}
 
 - (void)setDisplayPlayer:(bool)displayPlayer
 {

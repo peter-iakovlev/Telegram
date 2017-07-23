@@ -5,12 +5,17 @@
 #import "TGPhotoFilterCell.h"
 #import "TGPhotoToolCell.h"
 
+#import "TGPhotoEditorSliderView.h"
+
 const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
 
-@interface TGPhotoEditorCollectionView () <UICollectionViewDelegateFlowLayout>
+@interface TGPhotoEditorCollectionView () <UICollectionViewDelegateFlowLayout, UIGestureRecognizerDelegate>
 {
     NSIndexPath *_selectedItemIndexPath;
     UICollectionViewFlowLayout *_layout;
+    
+    bool _landscape;
+    CGFloat _nameWidth;
 }
 
 @property (nonatomic, weak) id<UICollectionViewDelegate> realDelegate;
@@ -19,21 +24,18 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
 
 @implementation TGPhotoEditorCollectionView
 
-- (instancetype)initWithOrientation:(UIInterfaceOrientation)orientation cellWidth:(CGFloat)cellWidth
+- (instancetype)initWithLandscape:(bool)landscape nameWidth:(CGFloat)nameWidth
 {
     UICollectionViewFlowLayout *layout = [UICollectionViewFlowLayout new];
-    layout.itemSize = CGSizeMake(cellWidth, 80);
-    if (UIInterfaceOrientationIsLandscape(orientation))
-        layout.minimumLineSpacing = 12;
-    else
-        layout.minimumLineSpacing = 3;
-
-    layout.scrollDirection = UIInterfaceOrientationIsLandscape(orientation) ? UICollectionViewScrollDirectionVertical : UICollectionViewScrollDirectionHorizontal;
+    layout.minimumLineSpacing = 6.0f;
+    layout.scrollDirection = UICollectionViewScrollDirectionVertical;
     
     self = [super initWithFrame:CGRectZero collectionViewLayout:layout];
     if (self != nil)
     {
         _layout = layout;
+        _landscape = landscape;
+        _nameWidth = nameWidth;
         self.dataSource = self;
         self.delegate = self;
         self.showsHorizontalScrollIndicator = false;
@@ -45,15 +47,37 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
     return self;
 }
 
+- (BOOL)touchesShouldCancelInContentView:(UIView *)view
+{
+    if ([view isKindOfClass:[TGPhotoEditorSliderView class]] && !((TGPhotoEditorSliderView *)view).knobStartedDragging)
+        return true;
+    
+    return [super touchesShouldCancelInContentView:view];
+}
+
 - (void)dealloc
 {
     self.dataSource = nil;
     self.delegate = nil;
 }
 
+- (bool)hasAnyTracking
+{
+    if (self.isTracking)
+        return true;
+    
+    for (UICollectionViewCell *cell in self.visibleCells)
+    {
+        if ([cell isKindOfClass:[TGPhotoToolCell class]] && [(TGPhotoToolCell *)cell isTracking])
+            return true;
+    }
+    
+    return false;
+}
+
 - (void)setDelegate:(id<UICollectionViewDelegate>)delegate
 {
-    if(delegate == nil)
+    if (delegate == nil)
     {
         [super setDelegate:nil];
         self.realDelegate = nil;
@@ -107,6 +131,11 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
 
 #pragma mark - Collection View Data Source & Delegate
 
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
+{
+    return CGSizeMake(collectionView.frame.size.width, 46.0f);
+}
+
 - (NSInteger)collectionView:(UICollectionView *)__unused collectionView numberOfItemsInSection:(NSInteger)__unused section
 {
     id <TGPhotoEditorCollectionViewFiltersDataSource> filtersDataSource = self.filtersDataSource;
@@ -147,16 +176,62 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
     else if ([toolsDataSource respondsToSelector:@selector(collectionView:toolAtIndex:)])
     {
         cell = [self dequeueReusableCellWithReuseIdentifier:TGPhotoToolCellKind forIndexPath:indexPath];
-        [(TGPhotoToolCell *)cell setPhotoTool:[toolsDataSource collectionView:self toolAtIndex:indexPath.row]];
+        cell.alpha = 1.0f;
+        void (^changeBlock)(PGPhotoTool *, id, bool) = [toolsDataSource changeBlockForCollectionView:self];
+        
+        __weak TGPhotoEditorCollectionView *weakSelf = self;
+        __weak TGPhotoToolCell *weakCell = (TGPhotoToolCell *)cell;
+        void (^interactionBegan)(void) = ^
+        {
+            __strong TGPhotoEditorCollectionView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (strongSelf.interactionBegan != nil)
+                strongSelf.interactionBegan();
+            
+            __strong TGPhotoToolCell *strongCell = weakCell;
+            if (strongCell != nil)
+                [strongSelf setCellsHidden:true excludeCell:strongCell animated:false];
+        };
+        
+        void (^interactionEnded)(void) = ^
+        {
+            __strong TGPhotoEditorCollectionView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (strongSelf.interactionEnded != nil)
+                strongSelf.interactionEnded();
+            
+            __strong TGPhotoToolCell *strongCell = weakCell;
+            if (strongCell != nil)
+                [strongSelf setCellsHidden:false excludeCell:strongCell animated:true];
+        };
+        
+        [(TGPhotoToolCell *)cell setPhotoTool:[toolsDataSource collectionView:self toolAtIndex:indexPath.row] landscape:_landscape nameWidth:_nameWidth changeBlock:changeBlock interactionBegan:interactionBegan interactionEnded:interactionEnded];
     }
     
     return cell;
 }
 
+- (void)setCellsHidden:(bool)hidden excludeCell:(UICollectionViewCell *)excludeCell animated:(bool)animated
+{
+    void (^block)(void) = ^
+    {
+        for (UICollectionViewCell *cell in self.visibleCells)
+            cell.alpha = (cell == excludeCell || !hidden) ? 1.0f : 0.0f;
+    };
+    
+    if (animated)
+        [UIView animateWithDuration:0.15 animations:block];
+    else
+        block();
+}
+
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
     id<TGPhotoEditorCollectionViewFiltersDataSource> filtersDataSource = self.filtersDataSource;
-    id<TGPhotoEditorCollectionViewToolsDataSource> toolsDataSource = self.toolsDataSource;
     
     if ([filtersDataSource respondsToSelector:@selector(collectionView:didSelectFilterWithIndex:)])
     {
@@ -216,7 +291,7 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
                 else
                     [self setContentOffset:CGPointMake(-self.contentInset.left, targetContentOffset) animated:YES];
                 
-                self.scrollEnabled = NO;
+                self.scrollEnabled = false;
             }
         }
         else if (itemsScreenPosition > screenSize - triggerOffset)
@@ -234,7 +309,7 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
                 else
                     [self setContentOffset:CGPointMake(-self.contentInset.left, targetContentOffset) animated:YES];
                 
-                self.scrollEnabled = NO;
+                self.scrollEnabled = false;
             }
         }
         
@@ -243,37 +318,11 @@ const CGPoint TGPhotoEditorEdgeScrollTriggerOffset = { 100, 150 };
         _selectedItemIndexPath = indexPath;
         [self setSelectedItemIndexPath:indexPath];
     }
-    else if ([toolsDataSource respondsToSelector:@selector(collectionView:didSelectToolWithIndex:)])
-    {
-        [toolsDataSource collectionView:self didSelectToolWithIndex:indexPath.row];
-        [self deselectItemAtIndexPath:indexPath animated:false];
-    }
 }
 
 - (BOOL)collectionView:(UICollectionView *)__unused collectionView shouldSelectItemAtIndexPath:(NSIndexPath *)__unused indexPath
 {
-    return self.scrollEnabled;
-}
-
-- (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section
-{
-    NSInteger numberOfItems = [self numberOfItemsInSection:0];
-    
-    UIEdgeInsets inset = UIEdgeInsetsZero;
-    if (self.frame.size.width > self.frame.size.height)
-    {
-        CGFloat size = numberOfItems * _layout.itemSize.width + MAX(0, (numberOfItems - 1)) * _layout.minimumLineSpacing;
-        CGFloat edge = MAX(0, (collectionView.frame.size.width - size) / 2);
-        inset = UIEdgeInsetsMake(0, MAX(0, edge - collectionView.contentInset.left), 0, MAX(0, edge - collectionView.contentInset.right));
-    }
-    else
-    {
-        CGFloat size = numberOfItems * _layout.itemSize.height + MAX(0, (numberOfItems - 1)) * _layout.minimumLineSpacing;
-        CGFloat edge = MAX(0, (collectionView.frame.size.height - size) / 2);
-        inset = UIEdgeInsetsMake(MAX(0, edge - collectionView.contentInset.top), 0, MAX(0, edge - collectionView.contentInset.bottom), 0);
-    }
-    
-    return inset;
+    return false;
 }
 
 #pragma mark - Scroll View Delegate

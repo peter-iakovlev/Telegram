@@ -15,6 +15,8 @@
 @property (nonatomic, assign) bool captionsEnabled;
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 
+@property (nonatomic, strong) NSString *recipientName;
+
 - (instancetype)initForAvatarSelection:(bool)avatarSelection embedded:(bool)embedded;
 
 - (NSArray *)selectedItemSignals:(id (^)(id, NSString *))imageDescriptionGenerator;

@@ -259,6 +259,9 @@
 
 #import "TGCallController.h"
 
+#import "TGSecretPeerMediaGalleryImageItem.h"
+#import "TGSecretPeerMediaGalleryVideoItem.h"
+
 #if TARGET_IPHONE_SIMULATOR
 NSInteger TGModernConversationControllerUnloadHistoryLimit = 500;
 NSInteger TGModernConversationControllerUnloadHistoryThreshold = 200;
@@ -640,6 +643,7 @@ typedef enum {
     CGSize collectionViewSize = _view.bounds.size;
     
     _collectionLayout = [[TGModernConversationViewLayout alloc] init];
+    _collectionLayout.viewStorage = _viewStorage;
     _collectionView = [[TGModernConversationCollectionView alloc] initWithFrame:CGRectMake(0, -210.0f, collectionViewSize.width, collectionViewSize.height + 210.0f) collectionViewLayout:_collectionLayout];
     _collectionView.hidden = _loadingMessages;
     [_companion _setControllerWidthForItemCalculation:_collectionView.frame.size.width];
@@ -768,8 +772,10 @@ typedef enum {
 
 - (void)setInitialSnapshot:(CGImageRef)image backgroundView:(TGModernTemporaryView *)backgroundView viewStorage:(TGModernViewStorage *)viewStorage topEdge:(CGFloat)topEdge displayScrollDownButton:(bool)displayScrollDownButton
 {
-    if (_viewStorage == nil && viewStorage != nil)
+    if (_viewStorage == nil && viewStorage != nil) {
         _viewStorage = viewStorage;
+        _collectionLayout.viewStorage = viewStorage;
+    }
     
     if (_snapshotImage != NULL)
     {
@@ -3206,10 +3212,10 @@ typedef enum {
 }
 
 - (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability {
-    [self updateItemAtIndex:index toItem:updatedItem delayAvailability:delayAvailability animated:true];
+    [self updateItemAtIndex:index toItem:updatedItem delayAvailability:delayAvailability animated:true animateTransition:false];
 }
 
-- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability animated:(bool)animated
+- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability animated:(bool)animated animateTransition:(bool)animateTransition
 {
     CGFloat containerWidth = _collectionView == nil ? _view.frame.size.width : _collectionView.frame.size.width;
     
@@ -3220,12 +3226,12 @@ typedef enum {
     }
     
     bool sizeChanged = false;
-    CGSize lastSize = [(TGMessageModernConversationItem *)_items[index] sizeForContainerSize:CGSizeMake(containerWidth, CGFLOAT_MAX)];
-    [_items[index] updateToItem:updatedItem viewStorage:_viewStorage sizeChanged:&sizeChanged delayAvailability:delayAvailability];
+    CGSize lastSize = [(TGMessageModernConversationItem *)_items[index] sizeForContainerSize:CGSizeMake(containerWidth, CGFLOAT_MAX) viewStorage:_viewStorage];
+    [_items[index] updateToItem:updatedItem viewStorage:_viewStorage sizeChanged:&sizeChanged delayAvailability:delayAvailability containerSize:CGSizeMake(containerWidth, CGFLOAT_MAX)];
     CGSize updatedSize = lastSize;
     if (sizeChanged)
     {
-        updatedSize = [(TGMessageModernConversationItem *)_items[index] sizeForContainerSize:CGSizeMake(containerWidth, CGFLOAT_MAX)];
+        updatedSize = [(TGMessageModernConversationItem *)_items[index] sizeForContainerSize:CGSizeMake(containerWidth, CGFLOAT_MAX) viewStorage:_viewStorage];
     }
     
     if (sizeChanged && ABS(lastSize.height - updatedSize.height) > FLT_EPSILON)
@@ -3238,7 +3244,8 @@ typedef enum {
         }
         else
         {
-            if (animated && [_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]] != nil) {
+            UICollectionViewCell *cell = [_collectionView cellForItemAtIndexPath:[NSIndexPath indexPathForRow:index inSection:0]];
+            if (animated && cell != nil) {
                 std::vector<TGDecorationViewAttrubutes> decorationAttributes;
                 
                 CGPoint contentOffset = _collectionView.contentOffset;
@@ -3427,7 +3434,7 @@ typedef enum {
         [editingPanel setActionsEnabled:[_companion checkedMessageCount] != 0];
         [editingPanel setDeleteEnabled:[self canDeleteSelectedMessages]];
         [editingPanel setForwardingEnabled:[_companion allowMessageForwarding] && [self canForwardAllSelectedMessages]];
-        [editingPanel setShareEnabled:[_companion allowMessageExternalSharing]];
+        [editingPanel setShareEnabled:[_companion allowMessageExternalSharing] && [self canShareAllSelectedMessages]];
     }
 }
 
@@ -3494,7 +3501,7 @@ typedef enum {
     for (NSNumber *nIndex in indices)
     {
         index++;
-        [(TGModernConversationItem *)_items[[nIndex intValue]] updateToItem:updatedItems[index] viewStorage:_viewStorage sizeChanged:&sizeChanged delayAvailability:false];
+        [(TGModernConversationItem *)_items[[nIndex intValue]] updateToItem:updatedItems[index] viewStorage:_viewStorage sizeChanged:&sizeChanged delayAvailability:false containerSize:_collectionView.bounds.size];
     }
 }
 
@@ -4134,9 +4141,10 @@ typedef enum {
             if ([_companion isKindOfClass:[TGAdminLogConversationCompanion class]]) {
                 modernGallery.model = [[TGGenericPeerMediaGalleryModel alloc] initWithPeerId:mediaMessageItem->_message.cid allowActions:false messages:@[mediaMessageItem->_message] atMessageId:mediaMessageItem->_message.mid];
                 ((TGGenericPeerMediaGalleryModel *)modernGallery.model).disableActions = true;
-            } else if (mediaMessageItem->_message.messageLifetime > 0 && mediaMessageItem->_message.messageLifetime <= 60 && mediaMessageItem->_message.layer >= 17)
+            } else if (mediaMessageItem->_message.messageLifetime > 0 && mediaMessageItem->_message.messageLifetime <= 60 && (mediaMessageItem->_message.layer >= 17 || _companion.allowMessageForwarding))
             {
                 modernGallery.model = [[TGSecretPeerMediaGalleryModel alloc] initWithPeerId:((TGGenericModernConversationCompanion *)_companion).conversationId messageId:mediaMessageItem->_message.mid];
+                modernGallery.isImportant = true;
             }
             else if (!_companion.allowMessageForwarding)
             {
@@ -4267,6 +4275,27 @@ typedef enum {
                         [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
                     }
                 }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]]) {
+                    TGSecretPeerMediaGalleryImageItem *concreteItem = (TGSecretPeerMediaGalleryImageItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    
+                    strongSelf.companion.mediaHiddenMessageId = messageId;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                    }
+                }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]]) {
+                    TGSecretPeerMediaGalleryVideoItem *concreteItem = (TGSecretPeerMediaGalleryVideoItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    strongSelf.companion.mediaHiddenMessageId = messageId;
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        [(TGMessageModernConversationItem *)[cell boundItem] updateMediaVisibility];
+                    }
+                }
                 else
                 {
                     int32_t messageId = webPageMessageId;
@@ -4344,6 +4373,34 @@ typedef enum {
                         }
                     }
                 }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]]) {
+                    TGSecretPeerMediaGalleryImageItem *concreteItem = (TGSecretPeerMediaGalleryImageItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem != nil && cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]]) {
+                    TGSecretPeerMediaGalleryVideoItem *concreteItem = (TGSecretPeerMediaGalleryVideoItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    
+                    [((TGModernGalleryVideoItemView *)itemView) hidePlayButton];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem != nil && cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
                 else
                 {
                     int32_t messageId = webPageMessageId;
@@ -4398,6 +4455,32 @@ typedef enum {
                         }
                     }
                 }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]]) {
+                    TGSecretPeerMediaGalleryImageItem *concreteItem = (TGSecretPeerMediaGalleryImageItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem != nil && cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
+                else if ([item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]]) {
+                    TGSecretPeerMediaGalleryVideoItem *concreteItem = (TGSecretPeerMediaGalleryVideoItem *)item;
+                    int32_t messageId = [strongSelf convertMessageId:[concreteItem messageId] fromPeerId:peerId];
+                    
+                    for (TGModernCollectionCell *cell in strongSelf->_collectionView.visibleCells)
+                    {
+                        TGMessageModernConversationItem *cellItem = [cell boundItem];
+                        if (cellItem != nil && cellItem->_message.mid == messageId)
+                        {
+                            return [cellItem referenceViewForImageTransition];
+                        }
+                    }
+                }
                 else
                 {
                     int32_t messageId = webPageMessageId;
@@ -4429,17 +4512,17 @@ typedef enum {
             }
         };
         
-        modernGallery.animateTransition = !instant;
-        modernGallery.showInterface = !instant && !previewMode;
+        modernGallery.animateTransition = true;
+        modernGallery.showInterface = !previewMode;
         
         [self closeExistingMediaGallery];
         
         if (!previewMode)
         {
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery keepKeyboard:instant];
-            if (instant) {
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery keepKeyboard:false];
+            /*if (instant) {
                 controllerWindow.windowLevel = 10000000000.0f;
-            }
+            }*/
             controllerWindow.hidden = false;
         }
         
@@ -4798,7 +4881,7 @@ typedef enum {
                 addedForward = true;
             }
             
-            if (!addedForward && TGPeerIdIsChannel(messageItem->_message.fromUid) && messageItem->_message.actionInfo == nil) {
+            if (!addedForward && TGPeerIdIsChannel(messageItem->_message.fromUid) && messageItem->_message.actionInfo == nil && messageItem->_message.messageLifetime == 0) {
                 addedForward = true;
                 copyAction = [[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"Conversation.ContextMenuForward"), @"title", @"forward", @"action", nil];
             }
@@ -4826,7 +4909,7 @@ typedef enum {
                     saveAction = [[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"Conversation.ContextMenuStickerPackAdd"), @"title", @"stickerPackInfo", @"action", nil];
                 }
             }
-            else if (messageItem->_message.actionInfo == nil && [_companion allowMessageForwarding] && !addedForward) {
+            else if (messageItem->_message.actionInfo == nil && [_companion allowMessageForwarding] && !addedForward && messageItem->_message.messageLifetime == 0) {
                 copyAction = [[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"Conversation.ContextMenuForward"), @"title", @"forward", @"action", nil];
             }
             
@@ -4840,6 +4923,22 @@ typedef enum {
             }
             
             NSMutableArray *actions = [[NSMutableArray alloc] init];
+            
+            if ([messageItem->_message hasExpiredMedia]) {
+                replyAction = nil;
+                copyAction = nil;
+                saveAction = nil;
+                moreAction = nil;
+                editAction = nil;
+                pinAction = nil;
+                sendCallLogAction = nil;
+                banAction = nil;
+            }
+            
+            if (messageItem->_message.messageLifetime > 0 && messageItem->_message.messageLifetime <= 60) {
+                copyAction = nil;
+                saveAction = nil;
+            }
             
             if (moreAction != nil) {
                 NSMutableDictionary *updatedMoreAction = [[NSMutableDictionary alloc] initWithDictionary:moreAction];
@@ -6080,11 +6179,12 @@ typedef enum {
             if (strongSelf != nil)
                 [strongSelf _leaveEditingModeAnimated:true];
         }];
-        
-        activityController.popoverPresentationController.sourceView = strongSelf.view;
-        activityController.popoverPresentationController.sourceRect = strongSelf.view.bounds;
-        activityController.popoverPresentationController.permittedArrowDirections = 0;
-        
+        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        {
+            activityController.popoverPresentationController.sourceView = strongSelf.view;
+            activityController.popoverPresentationController.sourceRect = strongSelf.view.bounds;
+            activityController.popoverPresentationController.permittedArrowDirections = 0;
+        }
         [progressWindow dismiss:true];
     }];
 }
@@ -6773,40 +6873,54 @@ typedef enum {
     }]];
 }
 
-- (NSDictionary *)_descriptionForItem:(id)item caption:(NSString *)caption hash:(NSString *)hash
+- (NSDictionary *)_descriptionForItem:(id)item caption:(NSString *)caption hash:(NSString *)hash allowRemoteCache:(bool)allowRemoteCache
 {
     if (item == nil)
         return nil;
     
     if ([item isKindOfClass:[UIImage class]])
     {
-        return [self.companion imageDescriptionFromImage:(UIImage *)item stickers:nil caption:caption optionalAssetUrl:hash != nil ? [[NSString alloc] initWithFormat:@"image-%@", hash] : nil];
+        return [self.companion imageDescriptionFromImage:(UIImage *)item stickers:nil caption:caption optionalAssetUrl:hash != nil ? [[NSString alloc] initWithFormat:@"image-%@", hash] : nil allowRemoteCache:allowRemoteCache timer:0];
     }
     else if ([item isKindOfClass:[NSDictionary class]])
     {
         NSDictionary *dict = (NSDictionary *)item;
         NSString *type = dict[@"type"];
         
-        if ([type isEqualToString:@"editedPhoto"]) {
-            return [self.companion imageDescriptionFromImage:dict[@"image"] stickers:dict[@"stickers"] caption:caption optionalAssetUrl:hash != nil ? [[NSString alloc] initWithFormat:@"image-%@", hash] : nil];
+        int32_t timer = [dict[@"timer"] intValue];
+        if (timer > 0) {
+            allowRemoteCache = false;
         }
-        if ([type isEqualToString:@"cloudPhoto"])
+        
+        NSDictionary *description = nil;
+        if ([type isEqualToString:@"editedPhoto"]) {
+            description = [self.companion imageDescriptionFromImage:dict[@"image"] stickers:dict[@"stickers"] caption:caption optionalAssetUrl:hash != nil ? [[NSString alloc] initWithFormat:@"image-%@", hash] : nil allowRemoteCache:allowRemoteCache timer:[dict[@"timer"] intValue]];
+        }
+        else if ([type isEqualToString:@"cloudPhoto"])
         {
-            return [self.companion imageDescriptionFromMediaAsset:dict[@"asset"] previewImage:dict[@"previewImage"] document:[dict[@"document"] boolValue] fileName:dict[@"fileName"] caption:caption];
+            description = [self.companion imageDescriptionFromMediaAsset:dict[@"asset"] previewImage:dict[@"previewImage"] document:[dict[@"document"] boolValue] fileName:dict[@"fileName"] caption:caption allowRemoteCache:allowRemoteCache];
         }
         else if ([type isEqualToString:@"video"])
         {
-            return [self.companion videoDescriptionFromMediaAsset:dict[@"asset"] previewImage:dict[@"previewImage"] adjustments:dict[@"adjustments"] document:[dict[@"document"] boolValue] fileName:dict[@"fileName"] stickers:dict[@"stickers"] caption:caption];
-            return dict;
+            description = [self.companion videoDescriptionFromMediaAsset:dict[@"asset"] previewImage:dict[@"previewImage"] adjustments:dict[@"adjustments"] document:[dict[@"document"] boolValue] fileName:dict[@"fileName"] stickers:dict[@"stickers"] caption:caption timer:timer];
         }
         else if ([type isEqualToString:@"file"])
         {
-            return [self.companion documentDescriptionFromFileAtTempUrl:dict[@"tempFileUrl"] fileName:dict[@"fileName"] mimeType:dict[@"mimeType"] isAnimation:dict[@"isAnimation"] caption:caption];
+            description = [self.companion documentDescriptionFromFileAtTempUrl:dict[@"tempFileUrl"] fileName:dict[@"fileName"] mimeType:dict[@"mimeType"] isAnimation:dict[@"isAnimation"] caption:caption];
         }
         else if ([type isEqualToString:@"webPhoto"])
         {
-            return [self.companion imageDescriptionFromImage:dict[@"image"] stickers:dict[@"stickers"] caption:caption optionalAssetUrl:nil];
+            description = [self.companion imageDescriptionFromImage:dict[@"image"] stickers:dict[@"stickers"] caption:caption optionalAssetUrl:nil allowRemoteCache:allowRemoteCache && timer == 0 timer:timer];
         }
+        
+        if (dict[@"timer"] != nil)
+        {
+            NSMutableDictionary *timedDescription = [description mutableCopy];
+            timedDescription[@"timer"] = dict[@"timer"];
+            description = timedDescription;
+        }
+        
+        return description;
     }
     if ([item isKindOfClass:[TGBingSearchResultItem class]])
     {
@@ -6868,11 +6982,13 @@ typedef enum {
     controller.allowCaptions = [_companion allowCaptionedMedia];
     controller.inhibitDocumentCaptions = [_companion encryptUploads];
     controller.suggestionContext = [self _suggestionContext];
+    controller.recipientName = [_companion title];
+    controller.hasTimer = [_companion allowSelfDescructingMedia];
     
     _fastCameraController = controller;
     
     __weak TGModernConversationController *weakSelf = self;
-    controller.finishedWithPhoto = ^(UIImage *resultImage, NSString *caption, NSArray *stickers)
+    controller.finishedWithPhoto = ^(UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __strong TGModernConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -6885,14 +7001,21 @@ typedef enum {
             return;
         }
         
-        NSDictionary *imageDescription = [strongSelf->_companion imageDescriptionFromImage:resultImage stickers:stickers caption:caption optionalAssetUrl:nil];
+        NSDictionary *imageDescription = [strongSelf->_companion imageDescriptionFromImage:resultImage stickers:stickers caption:caption optionalAssetUrl:nil allowRemoteCache:false timer:[timer intValue]];
+        if (timer != nil)
+        {
+            NSMutableDictionary *timedDescription = [imageDescription mutableCopy];
+            timedDescription[@"timer"] = timer;
+            imageDescription = timedDescription;
+        }
+        
         NSMutableArray *descriptions = [[NSMutableArray alloc] init];
         if (imageDescription != nil)
             [descriptions addObject:imageDescription];
         [strongSelf->_companion controllerWantsToSendImagesWithDescriptions:descriptions asReplyToMessageId:[strongSelf currentReplyMessageId] botReplyMarkup:nil];
     };
 
-    controller.finishedWithVideo = ^(NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers)
+    controller.finishedWithVideo = ^(NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __strong TGModernConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -6905,7 +7028,14 @@ typedef enum {
             return;
         }
         
-        NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:stickers caption:caption roundMessage:false liveUploadData:nil];
+        NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:stickers caption:caption roundMessage:false liveUploadData:nil timer:[timer intValue]];
+        if (timer != nil)
+        {
+            NSMutableDictionary *timedDescription = [desc mutableCopy];
+            timedDescription[@"timer"] = timer;
+            desc = timedDescription;
+        }
+        
         [strongSelf->_companion controllerWantsToSendImagesWithDescriptions:@[ desc ] asReplyToMessageId:[strongSelf currentReplyMessageId] botReplyMarkup:nil];
     };
 }
@@ -6983,7 +7113,9 @@ typedef enum {
     carouselItem.condensed = !hasContactItem;
     carouselItem.parentController = self;
     carouselItem.allowCaptions = [_companion allowCaptionedMedia];
+    carouselItem.hasTimer = [_companion allowSelfDescructingMedia];
     carouselItem.inhibitDocumentCaptions = [_companion encryptUploads];
+    carouselItem.recipientName = [_companion title];
     
     __weak TGAttachmentCarouselItemView *weakCarouselItem = carouselItem;
     carouselItem.suggestionContext = [self _suggestionContext];
@@ -7015,6 +7147,7 @@ typedef enum {
         
         [strongController dismissAnimated:true];
         
+        bool allowRemoteCache = [strongSelf->_companion controllerShouldCacheServerAssets];
         TGMediaAssetsControllerIntent intent = asFiles ? TGMediaAssetsControllerSendFileIntent : TGMediaAssetsControllerSendMediaIntent;
         [strongSelf _asyncProcessMediaAssetSignals:[TGMediaAssetsController resultSignalsForSelectionContext:strongCarouselItem.selectionContext editingContext:strongCarouselItem.editingContext intent:intent currentItem:currentItem storeAssets:[strongSelf->_companion controllerShouldStoreCapturedAssets] useMediaCache:[strongSelf->_companion controllerShouldCacheServerAssets] descriptionGenerator:^id(id result, NSString *caption, NSString *hash)
         {
@@ -7022,7 +7155,7 @@ typedef enum {
             if (strongSelf == nil)
                 return nil;
             
-            return [strongSelf _descriptionForItem:result caption:caption hash:hash];
+            return [strongSelf _descriptionForItem:result caption:caption hash:hash allowRemoteCache:allowRemoteCache];
         }]];
     };
     carouselItem.editorOpened = ^
@@ -7294,7 +7427,7 @@ typedef enum {
             return;
 
         TGMediaAssetsControllerIntent intent = file ? TGMediaAssetsControllerSendFileIntent : TGMediaAssetsControllerSendMediaIntent;
-        TGMediaAssetsController *assetsController = [TGMediaAssetsController controllerWithAssetGroup:group intent:intent];
+        TGMediaAssetsController *assetsController = [TGMediaAssetsController controllerWithAssetGroup:group intent:intent recipientName:[strongSelf->_companion title]];
         assetsController.captionsEnabled = [strongSelf->_companion allowCaptionedMedia];
         assetsController.inhibitDocumentCaptions = [strongSelf->_companion encryptUploads];
         assetsController.suggestionContext = [strongSelf _suggestionContext];
@@ -7302,13 +7435,15 @@ typedef enum {
         assetsController.localMediaCacheEnabled = [strongSelf->_companion controllerShouldCacheServerAssets];
         assetsController.shouldStoreAssets = [strongSelf->_companion controllerShouldStoreCapturedAssets];
         assetsController.shouldShowFileTipIfNeeded = (file && !fromFileMenu);
+        bool allowRemoteCache = [strongSelf->_companion controllerShouldCacheServerAssets];
+        assetsController.hasTimer = [strongSelf->_companion allowSelfDescructingMedia];
         assetsController.descriptionGenerator = ^NSDictionary *(id result, NSString *caption, NSString *hash)
         {
             __strong TGModernConversationController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return nil;
             
-            return [strongSelf _descriptionForItem:result caption:caption hash:hash];
+            return [strongSelf _descriptionForItem:result caption:caption hash:hash allowRemoteCache:allowRemoteCache];
         };
         assetsController.completionBlock = ^(NSArray *signals)
         {
@@ -7383,6 +7518,8 @@ typedef enum {
     controller.allowCaptions = [_companion allowCaptionedMedia];
     controller.inhibitDocumentCaptions = [_companion encryptUploads];
     controller.suggestionContext = [self _suggestionContext];
+    controller.recipientName = [_companion title];
+    controller.hasTimer = [_companion allowSelfDescructingMedia];
     
     TGCameraControllerWindow *controllerWindow = [[TGCameraControllerWindow alloc] initWithParentController:self contentController:controller];
     controllerWindow.hidden = false;
@@ -7436,7 +7573,7 @@ typedef enum {
         [strongCameraView attachPreviewViewAnimated:true];
     };
     
-    controller.finishedWithPhoto = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
+    controller.finishedWithPhoto = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __strong TGModernConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -7449,7 +7586,14 @@ typedef enum {
             return;
         }
         
-        NSDictionary *imageDescription = [strongSelf->_companion imageDescriptionFromImage:resultImage stickers:stickers caption:caption optionalAssetUrl:nil];
+        NSDictionary *imageDescription = [strongSelf->_companion imageDescriptionFromImage:resultImage stickers:stickers caption:caption optionalAssetUrl:nil allowRemoteCache:false timer:[timer intValue]];
+        if (timer != nil)
+        {
+            NSMutableDictionary *timedDescription = [imageDescription mutableCopy];
+            timedDescription[@"timer"] = timer;
+            imageDescription = timedDescription;
+        }
+        
         NSMutableArray *descriptions = [[NSMutableArray alloc] init];
         if (imageDescription != nil)
             [descriptions addObject:imageDescription];
@@ -7458,7 +7602,7 @@ typedef enum {
         [menuController dismissAnimated:false];
     };
     
-    controller.finishedWithVideo = ^(__unused TGOverlayController *controller, NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers)
+    controller.finishedWithVideo = ^(__unused TGOverlayController *controller, NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __strong TGModernConversationController *strongSelf = weakSelf;
         if (strongSelf == nil)
@@ -7471,7 +7615,14 @@ typedef enum {
             return;
         }
 
-        NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:stickers caption:caption roundMessage:false liveUploadData:nil];
+        NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:stickers caption:caption roundMessage:false liveUploadData:nil timer:[timer intValue]];
+        if (timer != nil)
+        {
+            NSMutableDictionary *timedDescription = [desc mutableCopy];
+            timedDescription[@"timer"] = timer;
+            desc = timedDescription;
+        }
+        
         [strongSelf->_companion controllerWantsToSendImagesWithDescriptions:@[ desc ] asReplyToMessageId:[strongSelf currentReplyMessageId] botReplyMarkup:nil];
         
         [menuController dismissAnimated:true];
@@ -7737,7 +7888,7 @@ typedef enum {
         {
             @autoreleasepool
             {
-                NSDictionary *imageDescription = [_companion imageDescriptionFromImage:abstractAsset stickers:nil caption:nil optionalAssetUrl:nil];
+                NSDictionary *imageDescription = [_companion imageDescriptionFromImage:abstractAsset stickers:nil caption:nil optionalAssetUrl:nil allowRemoteCache:false timer:0];
                 if (imageDescription != nil)
                     [imageDescriptions addObject:imageDescription];
             }
@@ -7750,7 +7901,7 @@ typedef enum {
                 
                 if (image != nil)
                 {
-                    NSDictionary *imageDescription = [_companion imageDescriptionFromImage:image stickers:nil caption:nil optionalAssetUrl:nil];
+                    NSDictionary *imageDescription = [_companion imageDescriptionFromImage:image stickers:nil caption:nil optionalAssetUrl:nil allowRemoteCache:false timer:0];
                     if (imageDescription != nil)
                         [imageDescriptions addObject:imageDescription];
                 }
@@ -7779,6 +7930,7 @@ typedef enum {
     TGWebSearchController *searchController = [[TGWebSearchController alloc] init];
     searchController.captionsEnabled = [_companion allowCaptionedMedia];
     searchController.suggestionContext = [self _suggestionContext];
+    searchController.recipientName = [_companion title];
     searchController.dismiss = ^
     {
         __strong TGModernConversationController *strongSelf = weakSelf;
@@ -7794,12 +7946,13 @@ typedef enum {
         if (strongSelf == nil)
             return;
         
+        bool allowRemoteCache = [strongSelf->_companion controllerShouldCacheServerAssets];
         [strongSelf _asyncProcessMediaAssetSignals:[sender selectedItemSignals:^id (id item, NSString *caption)
         {
             if (item == nil)
                 return nil;
             
-            return [strongSelf _descriptionForItem:item caption:caption hash:nil];
+            return [strongSelf _descriptionForItem:item caption:caption hash:nil allowRemoteCache:allowRemoteCache];
         }]];
     };
     
@@ -7851,7 +8004,7 @@ typedef enum {
         {
             @autoreleasepool
             {
-                NSDictionary *imageDescription = [_companion imageDescriptionFromImage:abstractAsset stickers:nil caption:nil optionalAssetUrl:nil];
+                NSDictionary *imageDescription = [_companion imageDescriptionFromImage:abstractAsset stickers:nil caption:nil optionalAssetUrl:nil allowRemoteCache:false timer:0];
                 if (imageDescription != nil)
                     [imageDescriptions addObject:imageDescription];
             }
@@ -8048,7 +8201,7 @@ typedef enum {
                         __strong TGModernConversationController *strongSelf = weakSelf;
                         if (strongSelf != nil)
                         {
-                            NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:nil caption:nil roundMessage:true liveUploadData:liveUploadData];
+                            NSDictionary *desc = [strongSelf->_companion videoDescriptionFromVideoURL:videoURL previewImage:previewImage dimensions:dimensions duration:duration adjustments:adjustments stickers:nil caption:nil roundMessage:true liveUploadData:liveUploadData timer:0];
                             [strongSelf->_companion controllerWantsToSendImagesWithDescriptions:@[ desc ] asReplyToMessageId:[strongSelf currentReplyMessageId] botReplyMarkup:nil];
                         }
                     };
@@ -8783,6 +8936,9 @@ typedef enum {
             if ([nMid intValue] == mid) {
                 if (message.actionInfo.actionType == TGMessageActionPhoneCall)
                     return false;
+                if (message.messageLifetime != 0) {
+                    return false;
+                }
             }
         }
     }
@@ -8790,6 +8946,21 @@ typedef enum {
 }
 
 - (bool)canShareAllSelectedMessages {
+    NSArray *checkedMessageIds = [_companion checkedMessageIds];
+    
+    for (TGMessageModernConversationItem *item in _items) {
+        int32_t mid = item->_message.mid;
+        TGMessage *message = item->_message;
+        for (NSNumber *nMid in checkedMessageIds) {
+            if ([nMid intValue] == mid) {
+                if (message.actionInfo.actionType == TGMessageActionPhoneCall)
+                    return false;
+                if (message.messageLifetime != 0) {
+                    return false;
+                }
+            }
+        }
+    }
     return true;
 }
 
@@ -9241,7 +9412,7 @@ static UIView *_findBackArrow(UIView *view)
     NSMutableSet *previousVisibleItemIndices = [[NSMutableSet alloc] init];
     
     std::vector<TGDecorationViewAttrubutes> previousDecorationAttributes;
-    NSArray *previousLayoutAttributes = [_collectionLayout layoutAttributesForItems:_items containerWidth:previousCollectionFrame.size.width maxHeight:FLT_MAX decorationViewAttributes:&previousDecorationAttributes contentHeight:NULL];
+    NSArray *previousLayoutAttributes = [_collectionLayout layoutAttributesForItems:_items containerWidth:previousCollectionFrame.size.width maxHeight:FLT_MAX decorationViewAttributes:&previousDecorationAttributes contentHeight:NULL viewStorage:_viewStorage];
     
     int collectionItemCount = (int)_items.count;
     for (int i = 0; i < collectionItemCount; i++)
@@ -9284,7 +9455,7 @@ static UIView *_findBackArrow(UIView *view)
     
     CGFloat newContentHeight = 0.0f;
     std::vector<TGDecorationViewAttrubutes> newDecorationAttributes;
-    NSArray *newLayoutAttributes = [_collectionLayout layoutAttributesForItems:_items containerWidth:_collectionView.frame.size.width maxHeight:FLT_MAX decorationViewAttributes:&newDecorationAttributes contentHeight:&newContentHeight];
+    NSArray *newLayoutAttributes = [_collectionLayout layoutAttributesForItems:_items containerWidth:_collectionView.frame.size.width maxHeight:FLT_MAX decorationViewAttributes:&newDecorationAttributes contentHeight:&newContentHeight viewStorage:_viewStorage];
     
     CGPoint newContentOffset = _collectionView.contentOffset;
     newContentOffset.y = - _collectionView.contentInset.top;
@@ -9372,7 +9543,7 @@ static UIView *_findBackArrow(UIView *view)
                 cell.frame = CGRectOffset(previousFrame, widthDifference, contentOffsetDifference);
                 
                 TGModernConversationItem *item = _items[i];
-                [item sizeForContainerSize:CGSizeMake(previousFrame.size.width, 0.0f)];
+                [item sizeForContainerSize:CGSizeMake(previousFrame.size.width, 0.0f) viewStorage:_viewStorage];
             }
         }
         
@@ -9393,7 +9564,7 @@ static UIView *_findBackArrow(UIView *view)
                 cell.frame = [frameDesc[1] CGRectValue];
                 
                 TGModernConversationItem *item = _items[[frameDesc[0] intValue]];
-                [item sizeForContainerSize:CGSizeMake(_collectionView.frame.size.width, 0.0f)];
+                [item sizeForContainerSize:CGSizeMake(_collectionView.frame.size.width, 0.0f) viewStorage:_viewStorage];
             }
             
             for (auto it = newDecorationAttributes.begin(); it != newDecorationAttributes.end(); it++)

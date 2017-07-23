@@ -181,7 +181,11 @@ const UIEdgeInsets TGWidgetCollectionSmallInsets = { 16.0f, 4.0f, 8.0f, 4.0f };
 
 - (bool)isCompactDisplayMode
 {
-    return self.extensionContext.widgetActiveDisplayMode == NCWidgetDisplayModeCompact;
+    if ([self.extensionContext respondsToSelector:@selector(widgetActiveDisplayMode)]) {
+        return self.extensionContext.widgetActiveDisplayMode == NCWidgetDisplayModeCompact;
+    } else {
+        return true;
+    }
 }
 
 - (void)updateExpandedCellsVisibilityAnimated:(bool)animated

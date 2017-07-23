@@ -12,10 +12,8 @@
 {
     UIView *_snapshotView;
     UIView *_transitionView;
-    
-    UIImageView *_originalBackgroundView;
-    UILabel *_originalLabel;
-    
+
+    UITapGestureRecognizer *_tapGestureRecognizer;
     UILongPressGestureRecognizer *_pressGestureRecognizer;
     
     bool _needsTransitionIn;
@@ -51,37 +49,14 @@
         _paintingView = [[UIImageView alloc] init];
         [_paintingContainerView addSubview:_paintingView];
         
+        _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+        [_imageView addGestureRecognizer:_tapGestureRecognizer];
+        
         _pressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handlePress:)];
-        _pressGestureRecognizer.minimumPressDuration = 0.1f;
+        _pressGestureRecognizer.minimumPressDuration = 0.175;
         [_imageView addGestureRecognizer:_pressGestureRecognizer];
         
-        static UIImage *background = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(21, 21), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.7f).CGColor);
-
-            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, 21, 21) cornerRadius:6];
-
-            [path fill];
-
-            background = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(5, 5, 5, 5)];
-            UIGraphicsEndImageContext();
-        });
-        
-        _originalBackgroundView = [[UIImageView alloc] initWithFrame:CGRectZero];
-        _originalBackgroundView.alpha = 0.0f;
-        _originalBackgroundView.image = background;
-        [self addSubview:_originalBackgroundView];
-        
-        _originalLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        _originalLabel.backgroundColor = [UIColor clearColor];
-        _originalLabel.font = TGSystemFontOfSize(13);
-        _originalLabel.textAlignment = NSTextAlignmentCenter;
-        _originalLabel.textColor = [UIColor whiteColor];
-        [_originalBackgroundView addSubview:_originalLabel];
+        [_tapGestureRecognizer requireGestureRecognizerToFail:_pressGestureRecognizer];
     }
     return self;
 }
@@ -235,6 +210,12 @@
     }
 }
 
+- (void)handleTap:(UITapGestureRecognizer *)__unused gestureRecognizer
+{
+    if (self.tapped != nil)
+        self.tapped();
+}
+
 - (void)handlePress:(UILongPressGestureRecognizer *)gestureRecognizer
 {
     switch (gestureRecognizer.state)
@@ -244,19 +225,9 @@
             _isTracking = true;
             
             if (self.touchedDown != nil)
-            {
                 self.touchedDown();
-                
-                [self setOriginalLabelText:TGLocalized(@"PhotoEditor.Current")];
-            }
-            else
-            {
-                [self setActualImageHidden:true animated:false];
-                
-                [self setOriginalLabelText:TGLocalized(@"PhotoEditor.Original")];
-            }
-            
-            [self setOriginalLabelHidden:false animated:true];
+
+            [self setActualImageHidden:true animated:false];
         }
             break;
             
@@ -266,48 +237,17 @@
             _isTracking = false;
             
             if (self.touchedUp != nil)
-            {
                 self.touchedUp();
-            }
-            else
-            {
-                [self setActualImageHidden:false animated:false];
-            }
+            
+            [self setActualImageHidden:false animated:false];
             
             if (self.interactionEnded != nil)
                 self.interactionEnded();
-            
-            [self setOriginalLabelHidden:true animated:true];
         }
             break;
             
         default:
             break;
-    }
-}
-
-- (void)setOriginalLabelText:(NSString *)text
-{
-    _originalLabel.text = text;
-    [_originalLabel sizeToFit];
-    _originalLabel.frame = CGRectMake(8, 6, CGCeil(_originalLabel.frame.size.width), CGCeil(_originalLabel.frame.size.height));
-    
-    CGFloat backWidth = _originalLabel.frame.size.width + 16;
-    _originalBackgroundView.frame = CGRectMake((self.frame.size.width - backWidth) / 2, 15, backWidth, 28);
-}
-
-- (void)setOriginalLabelHidden:(bool)hidden animated:(bool)animated
-{
-    if (animated)
-    {
-        [UIView animateWithDuration:0.1f delay:0 options:UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionBeginFromCurrentState animations:^
-        {
-            _originalBackgroundView.alpha = hidden ? 0.0f : 1.0f;
-        } completion:nil];
-    }
-    else
-    {
-        _originalBackgroundView.alpha = hidden ? 0.0f : 1.0f;
     }
 }
 

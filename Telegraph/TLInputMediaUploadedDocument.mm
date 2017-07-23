@@ -2,13 +2,13 @@
 
 #import "TLMetaClassStore.h"
 
-//inputMediaUploadedDocument flags:# file:InputFile mime_type:string attributes:Vector<DocumentAttribute> caption:string stickers:flags.0?Vector<InputDocument> = InputMedia;
+//inputMediaUploadedDocument flags:# file:InputFile thumb:flags.2?InputFile mime_type:string attributes:Vector<DocumentAttribute> caption:string stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
 
 @implementation TLInputMediaUploadedDocument
 
 - (int32_t)TLconstructorSignature
 {
-    return 0xd070f1e9;
+    return 0xe39621fd;
 }
 
 - (int32_t)TLconstructorName
@@ -22,6 +22,10 @@
     
     {
         TLMetaClassStore::serializeObject(os, self.file, true);
+    }
+    
+    if (self.flags & (1 << 2)) {
+        TLMetaClassStore::serializeObject(os, self.thumb, true);
     }
     
     [os writeString:self.mime_type];
@@ -46,6 +50,10 @@
         for (TLInputDocument *sticker in self.stickers) {
             TLMetaClassStore::serializeObject(os, sticker, true);
         }
+    }
+    
+    if (self.flags & (1 << 1)) {
+        [os writeInt32:self.ttl_seconds];
     }
 }
 

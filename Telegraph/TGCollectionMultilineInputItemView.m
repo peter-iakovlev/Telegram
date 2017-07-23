@@ -6,6 +6,7 @@
 @interface TGCollectionMultilineInputItemView () <UITextViewDelegate> {
     UILabel *_placeholderLabel;
     UITextView *_textView;
+    UILabel *_countLabel;
 }
 
 @end
@@ -33,6 +34,14 @@
         _placeholderLabel.font = _textView.font;
         _placeholderLabel.textColor = UIColorRGB(0xc7c7cd);
         [self.contentView addSubview:_placeholderLabel];
+        
+        _countLabel = [[UILabel alloc] init];
+        _countLabel.font = _textView.font;
+        _countLabel.textColor = UIColorRGB(0xc7c7cd);
+        _countLabel.userInteractionEnabled = false;
+        _countLabel.hidden = true;
+        _countLabel.textAlignment = NSTextAlignmentRight;
+        [self.contentView addSubview:_countLabel];
     }
     return self;
 }
@@ -61,6 +70,12 @@
     _text = text;
     _textView.text = text;
     _placeholderLabel.hidden = _text.length != 0;
+    [self updateRemainingCount];
+}
+
+- (void)setMaxLength:(NSUInteger)maxLength {
+    _maxLength = maxLength;
+    [self updateRemainingCount];
 }
 
 - (void)setEditable:(bool)editable {
@@ -69,7 +84,54 @@
     _textView.userInteractionEnabled = editable;
 }
 
+- (void)setReturnKeyType:(UIReturnKeyType)returnKeyType {
+    _textView.returnKeyType = returnKeyType;
+}
+
+- (void)setShowRemainingCount:(bool)showRemainingCount
+{
+    _showRemainingCount = showRemainingCount;
+    _countLabel.hidden = !showRemainingCount;
+}
+
+- (void)updateRemainingCount {
+    _countLabel.text = [NSString stringWithFormat:@"%ld", _maxLength - _text.length];
+    [_countLabel sizeToFit];
+    [self setNeedsLayout];
+}
+
+- (void)setInsets:(UIEdgeInsets)insets
+{
+    _insets = insets;
+    [self setNeedsLayout];
+}
+
 - (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+    if (_disallowNewLines && [text rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location != NSNotFound)
+    {
+        if ([text isEqualToString:@"\n"])
+        {
+            [textView resignFirstResponder];
+            if (self.returned)
+                self.returned();
+        }
+        else
+        {
+            NSString *newReplacementText = [[text componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "];
+            NSString *newText = [textView.text stringByReplacingCharactersInRange:range withString:newReplacementText];
+            NSUInteger length = newText.length;
+            if (length > _maxLength)
+            {
+                NSUInteger difference = length - _maxLength;
+                newText = [textView.text stringByReplacingCharactersInRange:range withString:[newReplacementText substringToIndex:length - difference]];
+            }
+            
+            _textView.text = newText;
+            [self textViewDidChange:textView];
+        }
+        return false;
+    }
+
     NSString *result = [textView.text stringByReplacingCharactersInRange:range withString:text];
     if (_maxLength != 0 && result.length > _maxLength) {
         _textView.text = [result substringToIndex:_maxLength];
@@ -85,14 +147,23 @@
     if (_textChanged) {
         _textChanged(_text);
     }
+    [self updateRemainingCount];
 }
 
 - (void)layoutSubviews {
     [super layoutSubviews];
     
     UIEdgeInsets insets = [TGCollectionMultilineInputItemView insets];
-    _placeholderLabel.frame = CGRectOffset(_placeholderLabel.bounds, insets.left + 5.0f, insets.top + TGRetinaPixel);
-    _textView.frame = self.bounds;
+    UIEdgeInsets additionalInsets = self.insets;
+    _placeholderLabel.frame = CGRectOffset(_placeholderLabel.bounds, insets.left + additionalInsets.left + 5.0f, insets.top + additionalInsets.top + TGRetinaPixel);
+    CGRect frame = self.bounds;
+    if (!_countLabel.hidden)
+        frame.size.width -= 30.0f;
+    frame.size.width -= additionalInsets.left + additionalInsets.right;
+    frame.origin.x += additionalInsets.left;
+    
+    _textView.frame = frame;
+    _countLabel.frame = CGRectMake(self.bounds.size.width - insets.right - 30.0f - 4.0f, insets.top + TGRetinaPixel, 30.0f, _countLabel.frame.size.height);
 }
 
 - (BOOL)becomeFirstResponder {

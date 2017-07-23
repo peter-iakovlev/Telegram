@@ -85,7 +85,7 @@
         {
             self.isSecret = true;
             
-            [self enableInstantPreview];
+            //[self enableInstantPreview];
         }
         
         if (self.isSecret)
@@ -194,6 +194,10 @@
 - (void)layoutForContainerSize:(CGSize)containerSize
 {
     [super layoutForContainerSize:containerSize];
+}
+
+- (bool)isInstant {
+    return self.isSecret;
 }
 
 @end

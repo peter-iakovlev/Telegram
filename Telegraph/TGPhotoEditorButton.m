@@ -29,7 +29,7 @@
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, [TGPhotoEditorInterfaceAssets editorButtonSelectionBackgroundColor].CGColor);
             
-            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, frame.size.width, frame.size.height) cornerRadius:2];
+            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0, 0, frame.size.width, frame.size.height) cornerRadius:8];
             [path fill];
             
             selectionBackground = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(frame.size.height / 4.0f, frame.size.height / 4.0f, frame.size.height / 4.0f, frame.size.height / 4.0f)];
@@ -66,7 +66,7 @@
 {
     _iconImage = image;
     _activeIconImage = activeIconImage;
-    [self setActive:_active];
+    [self updateButton];
     
     UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -84,7 +84,26 @@
 
 - (void)setActive:(bool)active
 {
-    [_button setImage:(active ? [self _activeIconImage] : _iconImage) forState:UIControlStateNormal];
+    _active = active;
+    [self updateButton];
+}
+
+- (void)setDisabled:(bool)disabled
+{
+    _disabled = disabled;
+    [self updateButton];
+}
+
+- (void)updateButton
+{
+    _button.alpha = _disabled ? 0.2f : 1.0f;
+    _button.userInteractionEnabled = !_disabled;
+    
+    UIImage *image = _iconImage;
+    if (!_disabled)
+        image = _active ? [self _activeIconImage] : _iconImage;
+    
+    [_button setImage:image forState:UIControlStateNormal];
 }
 
 - (UIImage *)_activeIconImage

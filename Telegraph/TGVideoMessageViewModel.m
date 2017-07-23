@@ -27,6 +27,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGPeerIdAdapter.h"
+
 @interface TGVideoMessageViewModel ()
 {
     TGVideoMediaAttachment *_video;
@@ -99,7 +101,7 @@
         {
             self.isSecret = true;
             
-            [self enableInstantPreview];
+            //[self enableInstantPreview];
         }
         
         int minutes = video.duration / 60;
@@ -218,6 +220,10 @@
         return [super defaultOverlayActionType];
     
     return TGMessageImageViewOverlayPlay;
+}
+
+- (bool)isInstant {
+    return self.isSecret;
 }
 
 @end

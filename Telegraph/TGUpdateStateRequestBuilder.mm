@@ -317,7 +317,7 @@ static bool _initialUpdatesScheduled = false;
     return [[[TGTelegramNetworking instance] requestSignal:getWebPagePreview] mapToSignal:^SSignal *(TLMessageMedia *media)
     {
         TGWebPageMediaAttachment *webPage = nil;
-        for (id attachment in [TGMessage parseTelegraphMedia:media])
+        for (id attachment in [TGMessage parseTelegraphMedia:media mediaLifetime:nil])
         {
             if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
             {
@@ -590,7 +590,7 @@ static bool _initialUpdatesScheduled = false;
                                     }
                                     
                                     if (updateServiceNotification.media != nil) {
-                                        NSArray *medias = [TGMessage parseTelegraphMedia:updateServiceNotification.media];
+                                        NSArray *medias = [TGMessage parseTelegraphMedia:updateServiceNotification.media mediaLifetime:nil];
                                         if (medias.count != 0) {
                                             [mediaAttachments addObjectsFromArray:medias];
                                         }
@@ -1571,6 +1571,9 @@ static bool _initialUpdatesScheduled = false;
                     NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
                     contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
                     message.contentProperties = contentProperties;
+                }
+                if (message.messageLifetime != 0) {
+                    [message filterOutExpiredMedia];
                 }
             }
             

@@ -77,6 +77,8 @@
 - (void)setPlaceholder:(NSString *)placeholder
 {
     _placeholderView.text = placeholder;
+    [_placeholderView sizeToFit];
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews

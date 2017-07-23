@@ -717,15 +717,23 @@
     {
         [_jsQueue dispatch:^
         {
-            [_wkWebView evaluateJavaScript:jsString completionHandler:^(id result, __unused NSError *error)
+            void (^block)(void) = ^
             {
-                dispatch_semaphore_signal(_sema);
-                TGDispatchOnMainThread(^
+                [_wkWebView evaluateJavaScript:jsString completionHandler:^(id result, __unused NSError *error)
                 {
-                    if (completion != nil)
-                        completion(result);
-                });
-            }];
+                    dispatch_semaphore_signal(_sema);
+                    TGDispatchOnMainThread(^
+                    {
+                        if (completion != nil)
+                            completion(result);
+                    });
+                 }];
+            };
+            
+            if (iosMajorVersion() >= 11)
+                TGDispatchOnMainThread(block);
+            else
+                block();
             
             dispatch_semaphore_wait(_sema, DISPATCH_TIME_FOREVER);
         }];

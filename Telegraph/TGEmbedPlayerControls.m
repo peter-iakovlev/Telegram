@@ -5,7 +5,6 @@
 #import "TGTimerTarget.h"
 #import "TGModernButton.h"
 #import "UIControl+HitTestEdgeInsets.h"
-#import "TGBlurEffect.h"
 
 #import "TGEmbedPlayerScrubber.h"
 
@@ -216,7 +215,7 @@ const CGFloat TGEmbedPlayerControlsPanelHeight = 32.0f;
     
     if (iosMajorVersion() >= 8)
     {
-        UIBlurEffect *effect = (iosMajorVersion() >= 9) ? [TGBlurEffect effectWithStyle:UIBlurEffectStyleLight radius:10.0f] : [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
         
         UIVisualEffectView *effectView = [[UIVisualEffectView alloc] initWithEffect:effect];
         effectView.alpha = 1.0f;

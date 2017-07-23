@@ -1,6 +1,6 @@
 #import "TGShareLocationSignals.h"
 
-#import "ApiLayer69.h"
+#import "ApiLayer70.h"
 #import "TGUploadedMessageContentText.h"
 #import "TGUploadedMessageContentMedia.h"
 
@@ -184,8 +184,8 @@ NSArray * TGQueryStringComponentsFromKeyAndArrayValue(NSString *key, NSArray *va
     double latitude = [coordComponents.firstObject floatValue];
     double longitude = [coordComponents.lastObject floatValue];
     
-    Api69_InputGeoPoint *geoPoint = [Api69_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
-    Api69_InputMedia *inputMedia = nil;
+    Api70_InputGeoPoint *geoPoint = [Api70_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
+    Api70_InputMedia *inputMedia = nil;
     
     if (address == nil)
         address = @"";
@@ -194,9 +194,9 @@ NSArray * TGQueryStringComponentsFromKeyAndArrayValue(NSString *key, NSArray *va
         venueId = @"";
     
     if (name.length > 0)
-        inputMedia = [Api69_InputMedia inputMediaVenueWithGeoPoint:geoPoint title:name address:address provider:TGShareAppleMapsProvider venueId:venueId];
+        inputMedia = [Api70_InputMedia inputMediaVenueWithGeoPoint:geoPoint title:name address:address provider:TGShareAppleMapsProvider venueId:venueId];
     else
-        inputMedia = [Api69_InputMedia inputMediaGeoPointWithGeoPoint:geoPoint];
+        inputMedia = [Api70_InputMedia inputMediaGeoPointWithGeoPoint:geoPoint];
     
     return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputMedia]];
 }
@@ -248,8 +248,8 @@ NSArray * TGQueryStringComponentsFromKeyAndArrayValue(NSString *key, NSArray *va
         if (name.length == 0)
             return [SSignal fail:nil];
 
-        Api69_InputGeoPoint *geoPoint = [Api69_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
-        Api69_InputMedia_inputMediaVenue *inputVenue = [Api69_InputMedia inputMediaVenueWithGeoPoint:geoPoint title:name address:address provider:TGShareFoursquareProvider venueId:venueId];
+        Api70_InputGeoPoint *geoPoint = [Api70_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
+        Api70_InputMedia_inputMediaVenue *inputVenue = [Api70_InputMedia inputMediaVenueWithGeoPoint:geoPoint title:name address:address provider:TGShareFoursquareProvider venueId:venueId];
         
         return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputVenue]];
     }];
@@ -304,8 +304,8 @@ NSArray * TGQueryStringComponentsFromKeyAndArrayValue(NSString *key, NSArray *va
         if (fabs(latitude) < DBL_EPSILON && fabs(longitude) < DBL_EPSILON)
             return [SSignal fail:nil];
         
-        Api69_InputGeoPoint *geoPoint = [Api69_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
-        return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:[Api69_InputMedia inputMediaGeoPointWithGeoPoint:geoPoint]]];
+        Api70_InputGeoPoint *geoPoint = [Api70_InputGeoPoint inputGeoPointWithLat:@(latitude) plong:@(longitude)];
+        return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:[Api70_InputMedia inputMediaGeoPointWithGeoPoint:geoPoint]]];
     };
     
     SSignal *signal = nil;

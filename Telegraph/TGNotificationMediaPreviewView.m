@@ -111,6 +111,9 @@ const int32_t TGNotificationMediaCornerRadius = 5;
                     if (legacyFilePath != nil)
                         [previewUri appendFormat:@"&legacy-file-path=%@", legacyFilePath];
                     
+                    if (message.messageLifetime > 0 && message.messageLifetime <= 60)
+                        [previewUri appendString:@"&secret=1"];
+                    
                     if (legacyThumbnailCacheUrl != nil)
                         [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:legacyThumbnailCacheUrl]];
                     
@@ -161,7 +164,7 @@ const int32_t TGNotificationMediaCornerRadius = 5;
                     if (legacyThumbnailCacheUri != nil)
                         [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
                     
-                    if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
+                    if (message.messageLifetime > 0 && message.messageLifetime <= 60)
                         [previewUri appendString:@"&secret=1"];
                     
                     [previewUri appendFormat:@"&flat=1&cornerRadius=%d", !video.roundMessage ? TGNotificationMediaCornerRadius : (int)imageSize.width / 2];

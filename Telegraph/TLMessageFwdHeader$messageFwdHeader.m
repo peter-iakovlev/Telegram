@@ -1,6 +1,6 @@
 #import "TLMessageFwdHeader$messageFwdHeader.h"
 
-//messageFwdHeader flags:# from_id:flags.0?int date:int channel_id:flags.1?int channel_post:flags.2?int = MessageFwdHeader
+//messageFwdHeader flags:# from_id:flags.0?int date:int channel_id:flags.1?int channel_post:flags.2?int post_author:flags.3?string = MessageFwdHeader;
 
 @implementation TLMessageFwdHeader$messageFwdHeader
 
@@ -28,6 +28,10 @@
     
     if (flags & (1 << 2)) {
         result.channel_post = [is readInt32];
+    }
+    
+    if (flags & (1 << 3)) {
+        result.post_author = [is readString];
     }
     
     return result;

@@ -709,7 +709,7 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     if ([cell isKindOfClass:[TGAttachmentAssetCell class]])
         thumbnailImage = cell.imageView.image;
     
-    TGMediaPickerModernGalleryMixin *mixin = [[TGMediaPickerModernGalleryMixin alloc] initWithItem:asset fetchResult:_fetchResult parentController:self.parentController thumbnailImage:thumbnailImage selectionContext:_selectionContext editingContext:_editingContext suggestionContext:self.suggestionContext hasCaptions:(_allowCaptions && !_forProfilePhoto) inhibitDocumentCaptions:_inhibitDocumentCaptions asFile:false itemsLimit:TGAttachmentDisplayedAssetLimit];
+    TGMediaPickerModernGalleryMixin *mixin = [[TGMediaPickerModernGalleryMixin alloc] initWithItem:asset fetchResult:_fetchResult parentController:self.parentController thumbnailImage:thumbnailImage selectionContext:_selectionContext editingContext:_editingContext suggestionContext:self.suggestionContext hasCaptions:(_allowCaptions && !_forProfilePhoto) hasTimer:self.hasTimer inhibitDocumentCaptions:_inhibitDocumentCaptions asFile:false itemsLimit:TGAttachmentDisplayedAssetLimit recipientName:self.recipientName];
     
     __weak TGAttachmentCarouselItemView *weakSelf = self;
     mixin.thumbnailSignalForItem = ^SSignal *(id item)

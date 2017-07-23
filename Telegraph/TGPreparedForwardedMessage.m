@@ -50,6 +50,7 @@
                     _forwardPostId = forwardedMessageAttachment.forwardPostId;
                     _forwardSourcePeerId = forwardedMessageAttachment.forwardSourcePeerId;
                 }
+                _forwardAuthorSignature = forwardedMessageAttachment.forwardAuthorSignature;
             }
             else if ([attachment isKindOfClass:[TGReplyMessageMediaAttachment class]])
             {
@@ -70,6 +71,7 @@
                 if (!TGPeerIdIsChannel(innerMessage.fromUid) && innerMessage.fromUid != 0) {
                     _forwardAuthorUserId = (int32_t)innerMessage.fromUid;
                 }
+                _forwardAuthorSignature = innerMessage.authorSignature;
             } else {
                 _forwardPeerId = innerMessage.fromUid;
             }
@@ -97,6 +99,7 @@
         forwardAttachment.forwardPostId = _forwardPostId;
         forwardAttachment.forwardAuthorUserId = _forwardAuthorUserId;
         forwardAttachment.forwardSourcePeerId = _forwardSourcePeerId;
+        forwardAttachment.forwardAuthorSignature = _forwardAuthorSignature;
     }
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];

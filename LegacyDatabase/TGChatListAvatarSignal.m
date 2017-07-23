@@ -14,14 +14,14 @@ static OSSpinLock imageDataLock;
 + (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize
 {
     NSString *key = [NSString stringWithFormat:@"%@-%d", [location description], (int)imageSize.width];
-    Api69_InputFileLocation_inputFileLocation *inputFileLocation = [Api69_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
-    return [[context datacenter:location.datacenterId function:[Api69 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api69_upload_File *result)
+    Api70_InputFileLocation_inputFileLocation *inputFileLocation = [Api70_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
+    return [[context datacenter:location.datacenterId function:[Api70 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api70_upload_File *result)
     {
-        if ([result isKindOfClass:[Api69_upload_File_upload_file class]]) {
-            [context.persistentCache setValue:((Api69_upload_File_upload_file *)result).bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
+        if ([result isKindOfClass:[Api70_upload_File_upload_file class]]) {
+            [context.persistentCache setValue:((Api70_upload_File_upload_file *)result).bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
             
             OSSpinLockLock(&imageDataLock);
-            UIImage *image = [[UIImage alloc] initWithData:((Api69_upload_File_upload_file *)result).bytes];
+            UIImage *image = [[UIImage alloc] initWithData:((Api70_upload_File_upload_file *)result).bytes];
             OSSpinLockUnlock(&imageDataLock);
             
             image = TGRoundImage(image, imageSize);

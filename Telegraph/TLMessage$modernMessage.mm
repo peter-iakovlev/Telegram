@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//message flags:# unread:flags.0?true out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int = Message
+//message flags:# out:flags.1?true mentioned:flags.4?true media_unread:flags.5?true silent:flags.13?true post:flags.14?true id:int from_id:flags.8?int to_id:Peer fwd_from:flags.2?MessageFwdHeader via_bot_id:flags.11?int reply_to_msg_id:flags.3?int date:int message:string media:flags.9?MessageMedia reply_markup:flags.6?ReplyMarkup entities:flags.7?Vector<MessageEntity> views:flags.10?int edit_date:flags.15?int post_author:flags.16?string = Message;
 
 @implementation TLMessage$modernMessage
 
@@ -34,7 +34,7 @@
     if (flags & (1 << 2))
     {
         int32_t signature = [is readInt32];
-        result.fwd_header = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        result.fwd_from = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
         if (error != nil && *error != nil) {
             return nil;
         }
@@ -66,7 +66,7 @@
     if (flags & (1 << 6))
     {
         int32_t replyMarkupSignature = [is readInt32];
-        result.replyMarkup = TLMetaClassStore::constructObject(is, replyMarkupSignature, environment, nil, error);
+        result.reply_markup = TLMetaClassStore::constructObject(is, replyMarkupSignature, environment, nil, error);
         if (error != nil && *error != nil) {
             return nil;
         }
@@ -96,6 +96,10 @@
     
     if (flags & (1 << 15)) {
         result.edit_date = [is readInt32];
+    }
+    
+    if (flags & (1 << 16)) {
+        result.post_author = [is readString];
     }
     
     return result;

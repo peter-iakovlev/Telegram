@@ -14,7 +14,7 @@
 
 @implementation TGPreparedLocalImageMessage
 
-+ (instancetype)messageWithImageData:(NSData *)imageData imageSize:(CGSize)imageSize thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments
++ (instancetype)messageWithImageData:(NSData *)imageData imageSize:(CGSize)imageSize thumbnailData:(NSData *)thumbnailData thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments messageLifetime:(int32_t)messageLifetime
 {
 #ifdef DEBUG
     NSAssert(imageData != nil, @"imageData should not be nil");
@@ -37,10 +37,12 @@
     
     message.stickerDocuments = stickerDocuments;
     
+    message.messageLifetime = messageLifetime;
+    
     return message;
 }
 
-+ (instancetype)messageWithLocalImageDataPath:(NSString *)localImageDataPath imageSize:(CGSize)imageSize localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments
++ (instancetype)messageWithLocalImageDataPath:(NSString *)localImageDataPath imageSize:(CGSize)imageSize localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)thumbnailSize assetUrl:(NSString *)assetUrl caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments messageLifetime:(int32_t)messageLifetime
 {
 #ifdef DEBUG
     NSAssert(localImageDataPath != nil, @"localImageDataPath should not be nil");
@@ -63,6 +65,8 @@
     
     message.stickerDocuments = stickerDocuments;
     
+    message.messageLifetime = messageLifetime;
+    
     return message;
 }
 
@@ -83,6 +87,8 @@
     message.replyMarkup = source.replyMarkup;
     
     message.stickerDocuments = source.stickerDocuments;
+    
+    message.messageLifetime = source.messageLifetime;
     
     return message;
 }
@@ -157,6 +163,8 @@
     }
     
     message.mediaAttachments = attachments;
+    
+    message.messageLifetime = self.messageLifetime;
     
     return message;
 }

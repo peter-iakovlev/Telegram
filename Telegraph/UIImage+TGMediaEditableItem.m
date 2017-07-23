@@ -6,6 +6,11 @@
 
 @implementation UIImage (TGMediaEditableItem)
 
+- (bool)isVideo
+{
+    return false;
+}
+
 - (NSString *)uniqueIdentifier
 {
     NSString *cachedIdentifier = objc_getAssociatedObject(self, @selector(uniqueIdentifier));

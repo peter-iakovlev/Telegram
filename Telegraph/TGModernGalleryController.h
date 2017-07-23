@@ -46,6 +46,7 @@ typedef enum {
 - (void)setCurrentItemIndex:(NSUInteger)index direction:(TGModernGalleryScrollAnimationDirection)direction animated:(bool)animated;
 
 - (void)dismissWhenReady;
+- (void)dismissWhenReadyAnimated:(bool)animated;
 
 - (bool)isFullyOpaque;
 

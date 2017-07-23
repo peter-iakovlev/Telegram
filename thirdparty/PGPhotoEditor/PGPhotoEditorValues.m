@@ -105,7 +105,7 @@
     if (![self.toolValues isEqual:values.toolValues])
         return false;
     
-    if (![self.paintingData isEqual:values.paintingData])
+    if (self.paintingData != values.paintingData && ![self.paintingData isEqual:values.paintingData])
         return false;
     
     return true;

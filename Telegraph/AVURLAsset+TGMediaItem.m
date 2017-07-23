@@ -5,6 +5,11 @@
 
 @implementation AVURLAsset (TGMediaItem)
 
+- (bool)isVideo
+{
+    return true;
+}
+
 - (NSString *)uniqueIdentifier
 {
     return self.URL.absoluteString;

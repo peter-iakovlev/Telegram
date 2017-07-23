@@ -133,3 +133,8 @@
 
 @end
 
+@interface TLMessageAction$messageActionScreenshotTaken : TLMessageAction
+
+
+@end
+

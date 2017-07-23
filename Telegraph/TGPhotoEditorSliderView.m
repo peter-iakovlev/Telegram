@@ -4,19 +4,19 @@
 
 const CGFloat TGPhotoEditorSliderViewLineSize = 3.0f;
 const CGFloat TGPhotoEditorSliderViewMargin = 15.0f;
-const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
+const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
 
-@interface TGPhotoEditorSliderView ()
+@interface TGPhotoEditorSliderView () <UIGestureRecognizerDelegate>
 {
     UIImageView *_knobView;
     
     CGFloat _knobTouchStart;
-    
     CGFloat _knobTouchCenterStart;
     CGFloat _knobDragCenter;
     
     UIPanGestureRecognizer *_panGestureRecognizer;
     UITapGestureRecognizer *_tapGestureRecognizer;
+    UITapGestureRecognizer *_doubleTapGestureRecognizer;
     
     UIColor *_backColor;
     UIColor *_trackColor;
@@ -65,12 +65,13 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
         _knobView.image = knobViewImage;
         [self addSubview:_knobView];
         
-        _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
-        [self addGestureRecognizer:_panGestureRecognizer];
-        
         _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
         _tapGestureRecognizer.enabled = false;
         [self addGestureRecognizer:_tapGestureRecognizer];
+        
+        _doubleTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTap:)];
+        _doubleTapGestureRecognizer.numberOfTapsRequired = 2;
+        [self addGestureRecognizer:_doubleTapGestureRecognizer];
         
         if (iosMajorVersion() >= 10)
             _feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
@@ -84,6 +85,21 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
 {
     _positionsCount = positionsCount;
     _tapGestureRecognizer.enabled = _positionsCount > 1;
+    _doubleTapGestureRecognizer.enabled = !_tapGestureRecognizer.enabled;
+}
+
+- (void)drawRectangle:(CGRect)rect cornerRadius:(CGFloat)cornerRadius context:(CGContextRef)context
+{
+    if (cornerRadius > FLT_EPSILON)
+    {
+        CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:rect cornerRadius:cornerRadius].CGPath);
+        CGContextClosePath(context);
+        CGContextFillPath(context);
+    }
+    else
+    {
+        CGContextFillRect(context, rect);
+    }
 }
 
 - (void)drawRect:(CGRect)__unused rect
@@ -91,12 +107,15 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
     CGContextRef context = UIGraphicsGetCurrentContext();
     
     CGFloat margin = TGPhotoEditorSliderViewInternalMargin;
+    CGFloat visualMargin = _positionsCount > 1 ? margin : 1.0f;
     CGFloat totalLength = self.frame.size.width - margin * 2;
+    CGFloat visualTotalLength = self.frame.size.width - 2 * (_positionsCount > 1 ? margin : visualMargin);
     CGFloat sideLength = self.frame.size.height;
     bool vertical = false;
     if (self.frame.size.width < self.frame.size.height)
     {
         totalLength = self.frame.size.height - margin * 2;
+        visualTotalLength = self.frame.size.height - 2 * (_positionsCount > 1 ? margin : visualMargin);
         sideLength = self.frame.size.width;
         vertical = true;
     }
@@ -104,9 +123,9 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
     CGFloat knobPosition = _knobPadding + (_knobView.highlighted ? _knobDragCenter : [self centerPositionForValue:_value totalLength:totalLength knobSize:_knobView.image.size.width vertical:vertical]);
     knobPosition = MAX(_knobPadding, MIN(knobPosition, _knobPadding + totalLength));
     
-    CGFloat startPosition = margin + totalLength / (_maximumValue - _minimumValue) * (ABS(_minimumValue) + _startValue);
+    CGFloat startPosition = visualMargin + visualTotalLength / (_maximumValue - _minimumValue) * (ABS(_minimumValue) + _startValue);
     if (vertical)
-        startPosition = 2 * margin + totalLength - startPosition;
+        startPosition = 2 * visualMargin + visualTotalLength - startPosition;
     
     CGFloat origin = startPosition;
     CGFloat track = knobPosition - startPosition;
@@ -116,46 +135,46 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
         origin -= track;
     }
     
-    CGRect backFrame = CGRectMake(margin, (sideLength - _lineSize) / 2, totalLength, _lineSize);
+    CGRect backFrame = CGRectMake(visualMargin, (sideLength - _lineSize) / 2, visualTotalLength, _lineSize);
     CGRect trackFrame = CGRectMake(origin, (sideLength - _lineSize) / 2, track, _lineSize);
     CGRect startFrame = CGRectMake(startPosition - 2 / 2, (sideLength - 13) / 2, 2, 13);
+    CGRect knobFrame = CGRectMake(knobPosition - _knobView.image.size.width / 2, (sideLength - _knobView.image.size.height) / 2, _knobView.image.size.width, _knobView.image.size.height);
     if (vertical)
     {
         backFrame = CGRectMake(backFrame.origin.y, backFrame.origin.x, backFrame.size.height, backFrame.size.width);
         trackFrame = CGRectMake(trackFrame.origin.y, trackFrame.origin.x, trackFrame.size.height, trackFrame.size.width);
         startFrame = CGRectMake(startFrame.origin.y, startFrame.origin.x, startFrame.size.height, startFrame.size.width);
+        knobFrame = CGRectMake(knobFrame.origin.y, knobFrame.origin.x, knobFrame.size.width, knobFrame.size.height);
+    }
+    
+    if (_bordered)
+    {
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.6f).CGColor);
+        [self drawRectangle:CGRectInset(backFrame, -1.0f, -1.0f) cornerRadius:self.trackCornerRadius * 2.0f context:context];
+        if (!_startHidden)
+            [self drawRectangle:CGRectInset(startFrame, -1.0f, -1.0f) cornerRadius:self.trackCornerRadius * 2.0f context:context];
+        
+        CGContextSetBlendMode(context, kCGBlendModeCopy);
     }
     
     CGContextSetFillColorWithColor(context, _backColor.CGColor);
-    
-    if (self.trackCornerRadius > FLT_EPSILON)
-    {
-        CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:backFrame cornerRadius:self.trackCornerRadius].CGPath);
-        CGContextClosePath(context);
-        CGContextFillPath(context);
-    }
-    else
-    {
-        CGContextFillRect(context, backFrame);
-    }
+    [self drawRectangle:backFrame cornerRadius:self.trackCornerRadius context:context];
+
+    CGContextSetBlendMode(context, kCGBlendModeNormal);
     
     CGContextSetFillColorWithColor(context, _trackColor.CGColor);
-    
-    if (self.trackCornerRadius > FLT_EPSILON)
-    {
-        CGContextAddPath(context, [UIBezierPath bezierPathWithRoundedRect:trackFrame cornerRadius:self.trackCornerRadius].CGPath);
-        CGContextClosePath(context);
-        CGContextFillPath(context);
-    }
-    else
-    {
-        CGContextFillRect(context, trackFrame);
-    }
+    [self drawRectangle:trackFrame cornerRadius:self.trackCornerRadius context:context];
     
     if (!_startHidden)
     {
         CGContextSetFillColorWithColor(context, _startColor.CGColor);
-        CGContextFillRect(context, startFrame);
+        [self drawRectangle:startFrame cornerRadius:self.trackCornerRadius context:context];
+    }
+    
+    if (_bordered)
+    {
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.6f).CGColor);
+        CGContextFillEllipseInRect(context, CGRectInset(knobFrame, 1.0f, 1.0f));
     }
     
     if (self.positionsCount > 1)
@@ -232,6 +251,12 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
 {
     _knobView.image = knobImage;
     [self setNeedsLayout];
+}
+
+- (void)setBordered:(bool)bordered
+{
+    _bordered = bordered;
+    [self setNeedsDisplay];
 }
 
 #pragma mark - Properties
@@ -362,88 +387,6 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
 
 #pragma mark - Touch Handling
 
-- (void)handlePan:(UIPanGestureRecognizer *)gestureRecognizer
-{
-    CGPoint touchLocation = [gestureRecognizer locationInView:self];
-    
-    switch (gestureRecognizer.state)
-    {
-        case UIGestureRecognizerStateBegan:
-        {
-            _knobView.highlighted = true;
-            
-            if (self.frame.size.width > self.frame.size.height)
-            {
-                _knobTouchCenterStart = _knobView.center.x;
-                _knobTouchStart = _knobDragCenter = touchLocation.x;
-            }
-            else
-            {
-                _knobTouchCenterStart = _knobView.center.y;
-                _knobTouchStart = _knobDragCenter = touchLocation.y;
-            }
-            
-            if (self.interactionBegan != nil)
-                self.interactionBegan();
-            
-            [_feedbackGenerator prepare];
-        }
-        case UIGestureRecognizerStateChanged:
-        {
-            _knobDragCenter = _knobTouchCenterStart - _knobTouchStart - _knobPadding;
-            
-            CGFloat totalLength = self.frame.size.width;
-            bool vertical = false;
-            
-            if (self.frame.size.width > self.frame.size.height)
-            {
-                _knobDragCenter += touchLocation.x;
-            }
-            else
-            {
-                vertical = true;
-                totalLength = self.frame.size.height;
-                _knobDragCenter += touchLocation.y;
-            }
-            totalLength -= _knobPadding * 2;
-            
-            CGFloat previousValue = self.value;
-            if (self.positionsCount > 1)
-            {
-                NSInteger position = (NSInteger)round((_knobDragCenter / totalLength) * (self.positionsCount - 1));
-                _knobDragCenter = position * totalLength / (self.positionsCount - 1);
-            }
-            
-            [self setValue:[self valueForCenterPosition:_knobDragCenter totalLength:totalLength knobSize:_knobView.image.size.width vertical:vertical]];
-            if (previousValue != self.value && (self.positionsCount > 1 || self.value == self.minimumValue || self.value == self.maximumValue || (self.minimumValue != self.startValue && self.value == self.startValue)))
-            {
-                [_feedbackGenerator selectionChanged];
-                [_feedbackGenerator prepare];
-            }
-            
-            [self setNeedsLayout];
-            [self sendActionsForControlEvents:UIControlEventValueChanged];
-        }
-            break;
-            
-        case UIGestureRecognizerStateEnded:
-        case UIGestureRecognizerStateCancelled:
-        {
-            _knobView.highlighted = false;
-            
-            [self sendActionsForControlEvents:UIControlEventValueChanged];
-            [self setNeedsLayout];
-            
-            if (self.interactionEnded != nil)
-                self.interactionEnded();
-        }
-            break;
-            
-        default:
-            break;
-    }
-}
-
 - (void)handleTap:(UITapGestureRecognizer *)gestureRecognizer
 {
     CGPoint touchLocation = [gestureRecognizer locationInView:self];
@@ -486,6 +429,106 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 14.0f / 2.0f;
         [_feedbackGenerator selectionChanged];
         [_feedbackGenerator prepare];
     }
+}
+
+- (void)handleDoubleTap:(UITapGestureRecognizer *)__unused gestureRecognizer
+{
+    if (self.reset != nil)
+        self.reset();
+}
+
+- (BOOL)beginTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)__unused event
+{
+    CGPoint touchLocation = [touch locationInView:self];
+    
+    _knobView.highlighted = true;
+    
+    if (self.frame.size.width > self.frame.size.height)
+    {
+        _knobTouchCenterStart = _knobView.center.x;
+        _knobTouchStart = _knobDragCenter = touchLocation.x;
+    }
+    else
+    {
+        _knobTouchCenterStart = _knobView.center.y;
+        _knobTouchStart = _knobDragCenter = touchLocation.y;
+    }
+    
+    _knobStartedDragging = false;
+    
+    [_feedbackGenerator prepare];
+    
+    return true;
+}
+
+- (BOOL)continueTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)__unused event
+{
+    CGPoint touchLocation = [touch locationInView:self];
+    
+    if (fabs(touchLocation.x - _knobTouchStart) > 1.0f && !_knobStartedDragging)
+    {
+        _knobStartedDragging = true;
+        
+        if (self.interactionBegan != nil)
+            self.interactionBegan();
+    }
+    
+    _knobDragCenter = _knobTouchCenterStart - _knobTouchStart - _knobPadding;
+    
+    CGFloat totalLength = self.frame.size.width;
+    bool vertical = false;
+    
+    if (self.frame.size.width > self.frame.size.height)
+    {
+        _knobDragCenter += touchLocation.x;
+    }
+    else
+    {
+        vertical = true;
+        totalLength = self.frame.size.height;
+        _knobDragCenter += touchLocation.y;
+    }
+    totalLength -= _knobPadding * 2;
+    
+    CGFloat previousValue = self.value;
+    if (self.positionsCount > 1)
+    {
+        NSInteger position = (NSInteger)round((_knobDragCenter / totalLength) * (self.positionsCount - 1));
+        _knobDragCenter = position * totalLength / (self.positionsCount - 1);
+    }
+    
+    [self setValue:[self valueForCenterPosition:_knobDragCenter totalLength:totalLength knobSize:_knobView.image.size.width vertical:vertical]];
+    if (previousValue != self.value && (self.positionsCount > 1 || self.value == self.minimumValue || self.value == self.maximumValue || (self.minimumValue != self.startValue && self.value == self.startValue)))
+    {
+        [_feedbackGenerator selectionChanged];
+        [_feedbackGenerator prepare];
+    }
+    
+    [self setNeedsLayout];
+    [self sendActionsForControlEvents:UIControlEventValueChanged];
+    
+    return true;
+}
+
+- (void)endTrackingWithTouch:(UITouch *)__unused touch withEvent:(UIEvent *)__unused event
+{
+    _knobView.highlighted = false;
+    
+    [self sendActionsForControlEvents:UIControlEventValueChanged];
+    [self setNeedsLayout];
+    
+    if (self.interactionEnded != nil)
+        self.interactionEnded();
+}
+
+- (void)cancelTrackingWithEvent:(UIEvent *)__unused event
+{
+    _knobView.highlighted = false;
+    
+    [self setNeedsLayout];
+    
+    if (self.interactionEnded != nil)
+        self.interactionEnded();
 }
 
 @end

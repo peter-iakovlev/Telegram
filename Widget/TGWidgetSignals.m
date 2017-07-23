@@ -103,17 +103,17 @@ static NSDictionary *cachedUnreadCounts;
     NSMutableArray *peers = [[NSMutableArray alloc] init];
     for (TGLegacyUser *user in users)
     {
-        [peers addObject:[Api69_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)]];
+        [peers addObject:[Api70_InputPeer inputPeerUserWithUserId:@(user.userId) accessHash:@(user.accessHash)]];
     }
     
-    return [[context function:[Api69 messages_getPeerDialogsWithPeers:peers]] map:^id(Api69_messages_PeerDialogs *dialogs)
+    return [[context function:[Api70 messages_getPeerDialogsWithPeers:peers]] map:^id(Api70_messages_PeerDialogs *dialogs)
     {
         NSMutableDictionary *counts = [[NSMutableDictionary alloc] init];
-        for (Api69_Dialog *dialog in dialogs.dialogs)
+        for (Api70_Dialog *dialog in dialogs.dialogs)
         {
             int32_t peerId = 0;
-            if ([dialog.peer isKindOfClass:[Api69_Peer_peerUser class]])
-                peerId = (int32_t)[[(Api69_Peer_peerUser *)dialog.peer userId] integerValue];
+            if ([dialog.peer isKindOfClass:[Api70_Peer_peerUser class]])
+                peerId = (int32_t)[[(Api70_Peer_peerUser *)dialog.peer userId] integerValue];
             
             if (peerId != 0)
                 counts[@(peerId)] = dialog.unreadCount;

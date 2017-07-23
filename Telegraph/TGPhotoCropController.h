@@ -17,6 +17,8 @@
 - (void)setAutorotationAngle:(CGFloat)autorotationAngle;
 
 - (void)rotate;
+- (void)mirror;
+- (void)aspectRatioButtonPressed;
 
 - (void)setImage:(UIImage *)image;
 - (void)setSnapshotImage:(UIImage *)snapshotImage;

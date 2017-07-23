@@ -3,23 +3,24 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
+#import "NSArray_CdnFileHash.h"
 
 @implementation TLRPCupload_reuploadCdnFile
 
 
 - (Class)responseClass
 {
-    return [NSNumber class];
+    return [NSArray class];
 }
 
 - (int)impliedResponseSignature
 {
-    return 0;
+    return (int)0xc05bcc69;
 }
 
 - (int)layerVersion
 {
-    return 66;
+    return 70;
 }
 
 - (int32_t)TLconstructorSignature
@@ -53,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x2e7a2020;
+    return (int32_t)0x1af91c09;
 }
 
 - (int32_t)TLconstructorName

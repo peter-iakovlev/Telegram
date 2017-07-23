@@ -1050,7 +1050,7 @@ TGStaticBackdropAreaData *createAdditionalDataBackdropArea(uint8_t *sourceImageM
 
 UIImage *TGBlurredAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder)
 {
-    return TGBlurredAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, 14);
+    return TGBlurredAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, attachmentBorder ? 14 : 13);
 }
 
 UIImage *TGBlurredAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, int cornerRadius)
@@ -1564,7 +1564,7 @@ UIImage *TGBlurredRectangularImage(UIImage *source, CGSize size, CGSize renderSi
 
 UIImage *TGLoadedAttachmentImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder)
 {
-    return TGLoadedAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, 14, 0);
+    return TGLoadedAttachmentWithCornerRadiusImage(source, size, averageColor, attachmentBorder, attachmentBorder ? 14 : 13, 0);
 }
 
 UIImage *TGLoadedAttachmentWithCornerRadiusImage(UIImage *source, CGSize size, uint32_t *averageColor, bool attachmentBorder, int cornerRadius, int inset)
@@ -1794,7 +1794,7 @@ UIImage *TGLoadedFileImage(UIImage *source, CGSize size, uint32_t *averageColor,
 
 UIImage *TGReducedAttachmentImage(UIImage *source, CGSize originalSize, bool attachmentBorder)
 {
-    return TGReducedAttachmentWithCornerRadiusImage(source, originalSize, attachmentBorder, 14);
+    return TGReducedAttachmentWithCornerRadiusImage(source, originalSize, attachmentBorder, attachmentBorder ? 14 : 13);
 }
 
 UIImage *TGReducedAttachmentWithCornerRadiusImage(UIImage *source, CGSize originalSize, bool attachmentBorder, int cornerRadius)

@@ -2,7 +2,7 @@
 
 @implementation TGUploadedMessageContentMedia
 
-- (instancetype)initWithInputMedia:(Api69_InputMedia *)inputMedia
+- (instancetype)initWithInputMedia:(Api70_InputMedia *)inputMedia
 {
     self = [super init];
     if (self != nil)

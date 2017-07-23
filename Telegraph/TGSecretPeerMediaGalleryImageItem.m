@@ -52,6 +52,7 @@
     if (self != nil)
     {
         _legacyImageInfo = legacyImageInfo;
+        _messageId = messageId;
         _messageLifetime = messageLifetime;
         _messageCountdownTime = messageCountdownTime;
     }

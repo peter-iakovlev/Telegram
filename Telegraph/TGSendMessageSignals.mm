@@ -78,7 +78,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
                             break;
                         }
                     }
-                    [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media]];
+                    [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media mediaLifetime:nil]];
                     updatedMessage.mediaAttachments = attachments;
                 }
                 

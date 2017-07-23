@@ -105,6 +105,10 @@
     
     for (TGMessage *message in messages)
     {
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60) {
+            continue;
+        }
+        
         if ([currentMessageIds containsObject:@(message.mid)])
             continue;
         

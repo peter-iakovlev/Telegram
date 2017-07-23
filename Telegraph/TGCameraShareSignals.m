@@ -4,7 +4,7 @@
 #import "TGCache.h"
 
 #import "TLInputMediaUploadedPhoto.h"
-#import "TLInputMediaUploadedThumbDocument.h"
+#import "TLInputMediaUploadedDocument.h"
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
@@ -103,7 +103,7 @@
             UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, preferredThumnailSize));
             NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
 
-            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:description[@"caption"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"]];
+            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:description[@"caption"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] messageLifetime:0];
             
             NSArray *messages = [self _setupMessages:preparedMessage peerIds:peerIds];
             
@@ -339,9 +339,10 @@
                         TLInputFile *videoFile = values.firstObject;
                         TLInputFile *thumbnailFile = values.lastObject;
                         
-                        TLInputMediaUploadedThumbDocument *uploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                        TLInputMediaUploadedDocument *uploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
                         uploadedDocument.file = videoFile;
                         uploadedDocument.thumb = thumbnailFile;
+                        uploadedDocument.flags |= (1 << 2);
                         
                         TLDocumentAttribute$documentAttributeVideo *video = [[TLDocumentAttribute$documentAttributeVideo alloc] init];
                         video.duration = (int32_t)preparedMessage.duration;

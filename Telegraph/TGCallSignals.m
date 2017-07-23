@@ -7,7 +7,7 @@
 
 #import "TGRequestEncryptedChatActor.h"
 
-#import <MtProtoKit/MTProtoKit.h>
+#import <MTProtoKit/MTProtoKit.h>
 
 #import "TGAppDelegate.h"
 #import "TGUploadFileSignals.h"

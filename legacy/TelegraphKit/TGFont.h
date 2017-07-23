@@ -37,4 +37,6 @@ CTFontRef TGCoreTextItalicFontOfSize(CGFloat size);
 + (UIFont *)systemFontOfSize:(CGFloat)size;
 + (UIFont *)boldSystemFontOfSize:(CGFloat)size;
 
++ (UIFont *)roundedFontOfSize:(CGFloat)size;
+
 @end

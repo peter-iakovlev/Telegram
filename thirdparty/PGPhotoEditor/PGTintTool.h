@@ -8,7 +8,6 @@
 @property (nonatomic, assign) CGFloat highlightsIntensity;
 
 @property (nonatomic, assign) bool editingHighlights;
-@property (nonatomic, assign) bool editingIntensity;
 
 @end
 

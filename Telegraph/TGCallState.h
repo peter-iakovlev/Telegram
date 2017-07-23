@@ -18,6 +18,7 @@ typedef enum {
     TGCallStateEnding,
     TGCallStateEnded,
     TGCallStateBusy,
+    TGCallStateNoAnswer,
     TGCallStateMissed
 } TGCallState;
     

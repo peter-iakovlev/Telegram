@@ -3,6 +3,7 @@
 #import "pop/POP.h"
 
 #import "TGStringUtils.h"
+#import "TGImageUtils.h"
 #import "TGFont.h"
 
 const CGFloat TGPhotoCounterButtonMaskFade = 18;
@@ -38,17 +39,39 @@ const CGFloat TGPhotoCounterButtonMaskFade = 18;
         [self addSubview:_wrapperView];
         
         _backgroundView = [[UIImageView alloc] initWithFrame:CGRectMake(13, 0, 38, 38)];
-        _backgroundView.image = [[UIImage imageNamed:@"ImagePickerPhotoCounter"] resizableImageWithCapInsets:UIEdgeInsetsMake(19, 19, 19, 19)];
+    
+        static dispatch_once_t onceToken;
+        static UIImage *backgroundImage;
+        dispatch_once(&onceToken, ^
+        {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(38.0f, 38.0f), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.7f).CGColor);
+            
+            CGContextFillEllipseInRect(context, CGRectMake(3.5f, 1.0f, 31.0f, 31.0f));
+            
+            CGFloat lineWidth = 1.5f;
+            if (TGScreenScaling() == 3.0f)
+                lineWidth = 5.0f / 3.0f;
+            CGContextSetLineWidth(context, lineWidth);
+            CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+            CGContextStrokeEllipseInRect(context, CGRectMake(3.0f, 1.0f, 31.0f, 31.0f));
+            
+            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(38.0f / 4.0f, 38.0f / 4.0f, 38.0f / 4.0f, 38.0f / 4.0f)];
+            UIGraphicsEndImageContext();
+        });
+        
+        _backgroundView.image = backgroundImage;
         [_wrapperView addSubview:_backgroundView];
     
         _countLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, -0.5f, frame.size.width, frame.size.height)];
         _countLabel.backgroundColor = [UIColor clearColor];
-        _countLabel.font = [TGFont systemFontOfSize:16];
+        _countLabel.font = [TGFont roundedFontOfSize:17];
         _countLabel.text = [TGStringUtils stringWithLocalizedNumber:0];
         _countLabel.textColor = [UIColor whiteColor];
         [_wrapperView addSubview:_countLabel];
         
-        _crossIconView = [[UIImageView alloc] initWithFrame:_wrapperView.bounds];
+        _crossIconView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _wrapperView.bounds.size.width - 1.0f, _wrapperView.bounds.size.height - 5.0f)];
         _crossIconView.alpha = 0.0f;
         _crossIconView.contentMode = UIViewContentModeCenter;
         _crossIconView.hidden = true;
@@ -267,15 +290,22 @@ const CGFloat TGPhotoCounterButtonMaskFade = 18;
     if (sizeToFit)
         [_countLabel sizeToFit];
     
-    CGFloat labelWidth = CGCeil(_countLabel.frame.size.width);
+    CGFloat labelWidth = CGRound(_countLabel.frame.size.width);
     CGFloat labelOrigin = 0.0f;
 
     if (![self _useRtlLayout])
-        labelOrigin = 13 + (38 - labelWidth) / 2;
+    {
+        labelOrigin = 12 + TGScreenPixel + (38 - labelWidth) / 2;
+        
+        if ([_countLabel.text isEqualToString:@"1"] || [_countLabel.text isEqualToString:@"4"])
+            labelOrigin -= 2 * TGScreenPixel;
+    }
     else
-        labelOrigin = (processingLabelWidth > 0) ? -processingLabelWidth + 19 + 13 - 4.5f: 64 - 38 + (38 - labelWidth) / 2 - 13;
+    {
+        labelOrigin = (processingLabelWidth > 0) ? -processingLabelWidth + 19 + 13 - 4.5f: 64 - 38 + (38 - labelWidth) / 2.0f - 13;
+    }
     
-    _countLabel.frame = CGRectMake(labelOrigin, 9, labelWidth, _countLabel.frame.size.height);
+    _countLabel.frame = CGRectMake(labelOrigin, 6.0f, labelWidth, _countLabel.frame.size.height);
     _countLabel.transform = transform;
 }
 

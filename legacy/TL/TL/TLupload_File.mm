@@ -86,7 +86,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x1508485a;
+    return (int32_t)0xea52fe5a;
 }
 
 - (int32_t)TLconstructorName
@@ -101,6 +101,7 @@
     object.file_token = metaObject->getBytes((int32_t)0x12624663);
     object.encryption_key = metaObject->getBytes((int32_t)0x6b414b69);
     object.encryption_iv = metaObject->getBytes((int32_t)0x551a79cf);
+    object.cdn_file_hashes = metaObject->getArray((int32_t)0xc93a8c46);
     return object;
 }
 
@@ -129,6 +130,12 @@
         value.type = TLConstructedValueTypeBytes;
         value.nativeObject = self.encryption_iv;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x551a79cf, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.cdn_file_hashes;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc93a8c46, value));
     }
 }
 

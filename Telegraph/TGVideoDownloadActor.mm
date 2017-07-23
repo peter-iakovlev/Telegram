@@ -125,6 +125,9 @@ public:
     
     SMetaDisposable *_reuploadDisposable;
     bool _isReuploading;
+    
+    NSDictionary<NSNumber *, NSData *> *_cdnFilePartHashes;
+    SMetaDisposable *_partHashesDisposable;
 }
 
 @property (nonatomic, strong) NSString *storeFilePath;
@@ -296,6 +299,8 @@ public:
         [_fileStream close];
         _fileStream = nil;
     }
+    
+    [_partHashesDisposable dispose];
 }
 
 - (void)prepare:(NSDictionary *)options
@@ -833,6 +838,54 @@ public:
         }
     }
 }
+
+- (void)switchToCdnWithFileData:(TGCdnFileData *)fileData partHashes:(NSDictionary *)partHashes {
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    if (partHashes != nil) {
+        [dict addEntriesFromDictionary:partHashes];
+    }
+    int32_t maxOffset = 0;
+    for (NSNumber *nOffset in dict.keyEnumerator) {
+        maxOffset = MAX(maxOffset, [nOffset intValue] + 128 * 1024);
+    }
+    if (maxOffset < _videoFileLength) {
+        if (_partHashesDisposable == nil) {
+            _partHashesDisposable = [[SMetaDisposable alloc] init];
+        }
+        __weak TGVideoDownloadActor *weakSelf = self;
+        
+        [_partHashesDisposable setDisposable:[[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:_datacenterId type:TGNetworkMediaTypeTagGeneric] mapToSignal:^SSignal *(TGNetworkWorkerGuard *worker) {
+            TLRPCupload_getCdnFileHashes$upload_getCdnFileHashes *getCdnFileHashes = [[TLRPCupload_getCdnFileHashes$upload_getCdnFileHashes alloc] init];
+            getCdnFileHashes.file_token = fileData.token;
+            getCdnFileHashes.offset = maxOffset;
+            return [[TGTelegramNetworking instance] requestSignal:getCdnFileHashes worker:worker];
+        }] startWithNext:^(NSArray *hashes) {
+            [ActionStageInstance() dispatchOnStageQueue:^{
+                __strong TGVideoDownloadActor *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    for (TLCdnFileHash$cdnFileHash *nHash in hashes) {
+                        dict[@(nHash.offset)] = nHash.n_hash;
+                    }
+                    
+                    int32_t maxOffset = 0;
+                    for (NSNumber *nOffset in dict.keyEnumerator) {
+                        maxOffset = MAX(maxOffset, [nOffset intValue] + 128 * 1024);
+                    }
+                    
+                    if (maxOffset < strongSelf->_videoFileLength) {
+                        [strongSelf switchToCdnWithFileData:fileData partHashes:dict];
+                    } else {
+                        strongSelf->_cdnFilePartHashes = dict;
+                        [strongSelf switchToCdn:fileData];
+                    }
+                }
+            }];
+        } error:nil completed:nil]];
+    } else {
+        _cdnFilePartHashes = dict;
+        [self switchToCdn:fileData];
+    }
+}
     
 - (void)switchToCdn:(TGCdnFileData *)fileData {
     if (_cdnFileData != nil) {
@@ -999,6 +1052,30 @@ public:
                         if (_finalSize != 0 && _finalSize >= _downloadedFileSize && _downloadedFileSize + (int)decryptedData.length > _finalSize)
                         {
                             [decryptedData setLength:_finalSize - _downloadedFileSize];
+                        }
+                    }
+                    
+                    if (_cdnFilePartHashes != nil) {
+                        int32_t basePartOffset = *it;
+                        for (int32_t localOffset = 0; localOffset < (int32_t)dataToWrite.length; localOffset += 128 * 1024) {
+                            int32_t partOffset = basePartOffset + localOffset;
+                            NSData *hashData = _cdnFilePartHashes[@(partOffset)];
+                            if (hashData == nil) {
+                                TGLog(@"File CDN part hash missing at %d", partOffset);
+                                [ActionStageInstance() actionFailed:self.path reason:-1];
+                                return;
+                            }
+                            NSData *localHash = nil;
+                            if (partOffset + 128 * 1024 > (int32_t)dataToWrite.length) {
+                                localHash = MTSha256([[NSData alloc] initWithBytesNoCopy:(uint8_t *)dataToWrite.bytes + localOffset length:(int32_t)dataToWrite.length - localOffset freeWhenDone:false]);
+                            } else {
+                                localHash = MTSha256([[NSData alloc] initWithBytesNoCopy:(uint8_t *)dataToWrite.bytes + localOffset length:128 * 1024 freeWhenDone:false]);
+                            }
+                            if (![localHash isEqual:hashData]) {
+                                TGLog(@"File CDN part hash mismatch at %d", partOffset);
+                                [ActionStageInstance() actionFailed:self.path reason:-1];
+                                return;
+                            }
                         }
                     }
                     

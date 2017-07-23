@@ -989,8 +989,14 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
 #pragma mark - Photo Result
 
 - (void)presentPhotoResultControllerWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata completion:(void (^)(void))completion
-{    
+{
     [[UIApplication sharedApplication] setIdleTimerDisabled:false];
+ 
+    if (image == nil || image.size.width < FLT_EPSILON)
+    {
+        [self beginTransitionOutWithVelocity:0.0f];
+        return;
+    }
     
     __weak TGCameraController *weakSelf = self;
     TGOverlayController *overlayController = nil;
@@ -1048,7 +1054,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 TGDispatchOnMainThread(^
                 {
                     if (strongSelf.finishedWithPhoto != nil)
-                        strongSelf.finishedWithPhoto(nil, resultImage, nil, nil);
+                        strongSelf.finishedWithPhoto(nil, resultImage, nil, nil, nil);
                     
                     if (self.shouldStoreCapturedAssets)
                     {
@@ -1085,10 +1091,11 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             
         default:
         {
-            TGCameraPhotoPreviewController *controller = _shortcut ? [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"Common.Next")] : [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata];
+            TGCameraPhotoPreviewController *controller = _shortcut ? [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata recipientName:self.recipientName backButtonTitle:TGLocalized(@"Camera.Retake") doneButtonTitle:TGLocalized(@"Common.Next")] : [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata recipientName:self.recipientName];
             controller.allowCaptions = self.allowCaptions;
             controller.shouldStoreAssets = self.shouldStoreCapturedAssets;
             controller.suggestionContext = self.suggestionContext;
+            controller.hasTimer = self.hasTimer;
             
             __weak TGCameraPhotoPreviewController *weakController = controller;
             controller.beginTransitionIn = ^CGRect
@@ -1129,14 +1136,14 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
                 [[UIApplication sharedApplication] setIdleTimerDisabled:true];
             };
             
-            controller.sendPressed = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
+            controller.sendPressed = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
             {
                 __strong TGCameraController *strongSelf = weakSelf;
                 if (strongSelf == nil)
                     return;
                 
                 if (strongSelf.finishedWithPhoto != nil)
-                    strongSelf.finishedWithPhoto(controller, resultImage, caption, stickers);
+                    strongSelf.finishedWithPhoto(controller, resultImage, caption, stickers, timer);
                 
                 if (strongSelf->_shortcut)
                     return;
@@ -1263,7 +1270,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     galleryController.adjustsStatusBarVisibility = false;
     galleryController.hasFadeOutTransition = true;
     
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions hasTimer:self.hasTimer inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false recipientName:self.recipientName];
     model.controller = galleryController;
     model.suggestionContext = self.suggestionContext;
     
@@ -1318,6 +1325,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         
         TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[strongSelf->_editingContext adjustmentsForItem:videoItem.avAsset];
         NSString *caption = [strongSelf->_editingContext captionForItem:videoItem.avAsset];
+        NSNumber *timer = [strongSelf->_editingContext timerForItem:videoItem.avAsset];
         
         SSignal *thumbnailSignal = [SSignal single:thumbnailImage];
         if (adjustments.trimStartValue > FLT_EPSILON)
@@ -1338,7 +1346,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
         [[thumbnailSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *thumbnailImage)
         {
             if (strongSelf.finishedWithVideo != nil)
-                strongSelf.finishedWithVideo(strongController, url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers);
+                strongSelf.finishedWithVideo(strongController, url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers, timer);
         }];
         
         if (strongSelf->_shortcut)
@@ -1974,7 +1982,7 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
     [controller beginTransitionInFromRect:startFrame];
     
     __weak TGCameraController *weakCameraController = controller;
-    controller.finishedWithPhoto = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers)
+    controller.finishedWithPhoto = ^(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __autoreleasing NSString *disabledMessage = nil;
         if (![TGApplicationFeatures isPhotoUploadEnabledForPeerType:TGApplicationFeaturePeerPrivate disabledMessage:&disabledMessage])
@@ -1990,12 +1998,14 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             dict[@"caption"] = caption;
         if (stickers.count > 0)
             dict[@"stickers"] = stickers;
+        if (timer != nil)
+            dict[@"timer"] = timer;
         
         __strong TGCameraController *strongCameraController = weakCameraController;
         [TGCameraController showTargetController:@[dict] cameraController:strongCameraController resultController:controller navigationController:(TGNavigationController *)controller.navigationController];
     };
     
-    controller.finishedWithVideo = ^(TGOverlayController *controller, NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers)
+    controller.finishedWithVideo = ^(TGOverlayController *controller, NSURL *videoURL, UIImage *previewImage, NSTimeInterval duration, CGSize dimensions, TGVideoEditAdjustments *adjustments, NSString *caption, NSArray *stickers, NSNumber *timer)
     {
         __autoreleasing NSString *disabledMessage = nil;
         if (![TGApplicationFeatures isFileUploadEnabledForPeerType:TGApplicationFeaturePeerPrivate disabledMessage:&disabledMessage])
@@ -2017,6 +2027,8 @@ static CGPoint TGCameraControllerClampPointToScreenSize(__unused id self, __unus
             dict[@"caption"] = caption;
         if (stickers.count > 0)
             dict[@"stickers"] = stickers;
+        if (timer != nil)
+            dict[@"timer"] = timer;
         
         __strong TGCameraController *strongCameraController = weakCameraController;
         [TGCameraController showTargetController:@[dict] cameraController:strongCameraController resultController:controller navigationController:(TGNavigationController *)controller.navigationController];

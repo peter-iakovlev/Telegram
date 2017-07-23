@@ -28,7 +28,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
 {
     CGSize size = CGSizeMake(32.0f, 32.0f);
     if (style == TGCheckButtonStyleGallery)
-        size = CGSizeMake(42.0f, 42.0f);
+        size = CGSizeMake(39.0f, 39.0f);
     
     self = [super initWithFrame:CGRectMake(0, 0, size.width, size.height)];
     if (self != nil)
@@ -36,11 +36,13 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
         static dispatch_once_t onceToken;
         static NSMutableDictionary *backgroundImages;
         static NSMutableDictionary *fillImages;
+        static CGFloat screenScale = 2.0f;
         dispatch_once(&onceToken, ^
         {
             TGCheckButtonDefaultTransform = CGAffineTransformMakeRotation(-M_PI_4);
             backgroundImages = [[NSMutableDictionary alloc] init];
             fillImages = [[NSMutableDictionary alloc] init];
+            screenScale = [UIScreen mainScreen].scale;
         });
         
         bool borderOnTop = false;
@@ -91,7 +93,12 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
                     CGContextRef context = UIGraphicsGetCurrentContext();
                     CGContextSetShadowWithColor(context, CGSizeZero, 2.5f, [UIColor colorWithWhite:0.0f alpha:0.22f].CGColor);
-                    CGContextSetLineWidth(context, 1.5f);
+                    
+                    CGFloat lineWidth = 1.5f;
+                    if (screenScale == 3.0f)
+                        lineWidth = 5.0f / 3.0f;
+                    CGContextSetLineWidth(context, lineWidth);
+                    
                     CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
                     CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
                     
@@ -240,8 +247,8 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     
     if (_style == TGCheckButtonStyleGallery)
     {
-        shortFragmentFrame = CGRectMake(9.0f, 12.5f, 2.0f, 8.0f);
-        longFragmentFrame = CGRectMake(9.5f, 18.5f, 17.0f, 2.0f);
+        shortFragmentFrame = CGRectMake(9.0f, 10.5f, 2.0f, 8.0f);
+        longFragmentFrame = CGRectMake(9.5f, 16.5f, 14.5f, 2.0f);
     }
     
     _checkShortFragment = [[UIView alloc] init];

@@ -24,6 +24,7 @@
 #import "TGModernButton.h"
 #import "TGMessageImageViewOverlayView.h"
 #import "TGMediaPickerGalleryVideoScrubber.h"
+#import "TGMediaPickerScrubberHeaderView.h"
 
 #import "TGModernGalleryVideoView.h"
 #import "TGModernGalleryVideoContentView.h"
@@ -172,22 +173,25 @@
         _contentView.button = _actionButton;
         [_contentView addSubview:_actionButton];
         
-        _headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 44)];
+        TGMediaPickerScrubberHeaderView *headerView = [[TGMediaPickerScrubberHeaderView alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, 44)];
+        _headerView = headerView;
         _headerView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         
         _scrubberPanelView = [[UIView alloc] initWithFrame:CGRectMake(0, -64, _headerView.frame.size.width, 64)];
         _scrubberPanelView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _scrubberPanelView.backgroundColor = [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor];
         _scrubberPanelView.hidden = true;
+        headerView.panelView = _scrubberPanelView;
         [_headerView addSubview:_scrubberPanelView];
         
         _scrubberView = [[TGMediaPickerGalleryVideoScrubber alloc] initWithFrame:_scrubberPanelView.bounds];
         _scrubberView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _scrubberView.dataSource = self;
         _scrubberView.delegate = self;
+        headerView.scrubberView = _scrubberView;
         [_scrubberPanelView addSubview:_scrubberView];
         
-        _fileInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 4, _scrubberPanelView.frame.size.width, 15)];
+        _fileInfoLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 10.0f, _scrubberPanelView.frame.size.width, 21)];
         _fileInfoLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _fileInfoLabel.backgroundColor = [UIColor clearColor];
         _fileInfoLabel.font = TGSystemFontOfSize(13.0f);
@@ -431,11 +435,14 @@
         if (strongSelf == nil)
             return;
         
-        NSString *extension = next.fileName.pathExtension.uppercaseString;
-        NSString *fileSize = [TGStringUtils stringForFileSize:next.fileSize precision:2];
-        NSString *dimensions = [TGMediaPickerGalleryVideoItemView _stringForDimensions:next.dimensions];
+        NSMutableArray *components = [[NSMutableArray alloc] init];
+        if (next.fileName.length > 0)
+            [components addObject:next.fileName.pathExtension.uppercaseString];
+        if (next.fileSize > 0)
+            [components addObject:[TGStringUtils stringForFileSize:next.fileSize precision:2]];
+        [components addObject:[TGMediaPickerGalleryVideoItemView _stringForDimensions:next.dimensions]];
         
-        strongSelf->_fileInfoLabel.text = [NSString stringWithFormat:@"%@ • %@ • %@", extension, fileSize, dimensions];
+        strongSelf->_fileInfoLabel.text = [components componentsJoinedByString:@" • "];
     }]];
 }
 

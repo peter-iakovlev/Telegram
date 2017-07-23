@@ -2562,18 +2562,21 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
         
         UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:@[body] applicationActivities:nil];
         [self presentViewController:activityController animated:true completion:nil];
-        activityController.popoverPresentationController.sourceView = self.view;
-        
-        CGRect rect = self.view.bounds;
-        for (UITableViewCell *cell in _tableView.visibleCells)
+        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
         {
-            if ([cell isKindOfClass:[TGFlatActionCell class]] && ((TGFlatActionCell *)cell).mode == TGFlatActionCellModeShareApp)
+            activityController.popoverPresentationController.sourceView = self.view;
+            
+            CGRect rect = self.view.bounds;
+            for (UITableViewCell *cell in _tableView.visibleCells)
             {
-                rect = [_tableView convertRect:cell.frame toView:self.view];
-                break;
+                if ([cell isKindOfClass:[TGFlatActionCell class]] && ((TGFlatActionCell *)cell).mode == TGFlatActionCellModeShareApp)
+                {
+                    rect = [_tableView convertRect:cell.frame toView:self.view];
+                    break;
+                }
             }
+            activityController.popoverPresentationController.sourceRect = rect;
         }
-        activityController.popoverPresentationController.sourceRect = rect;
         
         [_tableView deselectRowAtIndexPath:[_tableView indexPathForSelectedRow] animated:true];
     }

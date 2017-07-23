@@ -39,6 +39,9 @@
 - (void)_updateText {
     NSArray *attributes = @[];
     NSArray *textCheckingResults = [TGMessage textCheckingResultsForText:_text highlightMentionsAndTags:true highlightCommands:false entities:nil];
+    if (!_highlightLinks) {
+        textCheckingResults = @[];
+    }
     NSString *string = _text;
     
     _textModel = [[TGModernTextViewModel alloc] initWithText:string font:TGCoreTextSystemFontOfSize(17.0f)];

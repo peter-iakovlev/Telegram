@@ -49,7 +49,7 @@
         _variantLabel.textColor = UIColorRGB(0x8e8e93);
         [self addSubview:_variantLabel];
         
-        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicatorSmall.png"]];
+        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
         [self addSubview:_arrowView];
     }
     return self;
@@ -109,7 +109,7 @@
     }
     
     CGSize arrowSize = _arrowView.bounds.size;
-    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 18.0f, arrowSize.width, arrowSize.height);
+    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 15.0f, arrowSize.width, arrowSize.height);
 }
 
 @end

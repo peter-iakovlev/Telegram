@@ -8,6 +8,7 @@
 @property (nonatomic, readonly) PGPhotoEditorView *imageView;
 @property (nonatomic, readonly) UIImageView *paintingView;
 
+@property (nonatomic, copy) void(^tapped)(void);
 @property (nonatomic, copy) void(^touchedDown)(void);
 @property (nonatomic, copy) void(^touchedUp)(void);
 @property (nonatomic, copy) void(^interactionEnded)(void);

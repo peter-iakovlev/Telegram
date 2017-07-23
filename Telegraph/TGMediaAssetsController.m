@@ -50,7 +50,7 @@
 
 @implementation TGMediaAssetsController
 
-+ (instancetype)controllerWithAssetGroup:(TGMediaAssetGroup *)assetGroup intent:(TGMediaAssetsControllerIntent)intent
++ (instancetype)controllerWithAssetGroup:(TGMediaAssetGroup *)assetGroup intent:(TGMediaAssetsControllerIntent)intent recipientName:(NSString *)recipientName
 {
     TGMediaAssetsController *assetsController = [[TGMediaAssetsController alloc] initWithIntent:intent];
     
@@ -101,6 +101,8 @@
         pickerController.inhibitDocumentCaptions = strongController.inhibitDocumentCaptions;
         pickerController.liveVideoUploadEnabled = strongController.liveVideoUploadEnabled;
         pickerController.catchToolbarView = catchToolbarView;
+        pickerController.recipientName = recipientName;
+        pickerController.hasTimer = strongController.hasTimer;
         [strongController pushViewController:pickerController animated:true];
     };
     [groupsController loadViewIfNeeded];
@@ -113,6 +115,8 @@
     
     [assetsController setViewControllers:@[ groupsController, pickerController ]];
     ((TGNavigationBar *)assetsController.navigationBar).navigationController = assetsController;
+    
+    assetsController.recipientName = recipientName;
     
     return assetsController;
 }
@@ -151,6 +155,18 @@
 {
     _shouldStoreAssets = shouldStoreAssets;
     self.pickerController.shouldStoreAssets = shouldStoreAssets;
+}
+
+- (void)setRecipientName:(NSString *)recipientName
+{
+    _recipientName = recipientName;
+    self.pickerController.recipientName = recipientName;
+}
+
+- (void)setHasTimer:(bool)hasTimer
+{
+    _hasTimer = hasTimer;
+    self.pickerController.hasTimer = hasTimer;
 }
 
 - (TGMediaAssetsPickerController *)pickerController
@@ -441,6 +457,7 @@
                 {
                     NSString *caption = [editingContext captionForItem:asset];
                     id<TGMediaEditAdjustments> adjustments = [editingContext adjustmentsForItem:asset];
+                    NSNumber *timer = [editingContext timerForItem:asset];
                     
                     SSignal *inlineSignal = [inlineThumbnailSignal(asset) map:^id(UIImage *image)
                     {
@@ -449,6 +466,9 @@
                         dict[@"document"] = @false;
                         dict[@"asset"] = asset;
                         dict[@"previewImage"] = image;
+                        
+                        if (timer != nil)
+                            dict[@"timer"] = timer;
                         
                         id generatedItem = descriptionGenerator(dict, caption, nil);
                         return generatedItem;
@@ -491,6 +511,9 @@
                         if (adjustments.paintingData.stickers.count > 0)
                             dict[@"stickers"] = adjustments.paintingData.stickers;
                         
+                        if (timer != nil)
+                            dict[@"timer"] = timer;
+                        
                         id generatedItem = descriptionGenerator(dict, caption, nil);
                         return generatedItem;
                     }] catch:^SSignal *(__unused id error)
@@ -526,14 +549,9 @@
                 }
                 else
                 {
-                    TGVideoEditAdjustments *adjustments = nil;
-                    NSString *caption = nil;
-                    
-                    if (editingContext != nil)
-                    {
-                        caption = [editingContext captionForItem:asset];
-                        adjustments = (TGVideoEditAdjustments *)[editingContext adjustmentsForItem:asset];
-                    }
+                    TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[editingContext adjustmentsForItem:asset];
+                    NSString *caption = [editingContext captionForItem:asset];
+                    NSNumber *timer = [editingContext timerForItem:asset];
                     
                     UIImage *(^cropVideoThumbnail)(UIImage *, CGSize, CGSize, bool) = ^UIImage *(UIImage *image, CGSize targetSize, CGSize sourceSize, bool resize)
                     {
@@ -573,6 +591,9 @@
                         
                         if (adjustments.paintingData.stickers.count > 0)
                             dict[@"stickers"] = adjustments.paintingData.stickers;
+                        
+                        if (timer != nil)
+                            dict[@"timer"] = timer;
                         
                         id generatedItem = descriptionGenerator(dict, caption, nil);
                         return generatedItem;

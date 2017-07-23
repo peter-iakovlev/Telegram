@@ -42,6 +42,17 @@
 @end
 
 
+@interface TGMediaTimerUpdate : NSObject
+
+@property (nonatomic, readonly, strong) id<TGMediaEditableItem> item;
+@property (nonatomic, readonly, strong) NSNumber *timer;
+
++ (instancetype)timerUpdateWithItem:(id<TGMediaEditableItem>)item timer:(NSNumber *)timer;
++ (instancetype)timerUpdate:(NSNumber *)timer;
+
+@end
+
+
 @interface TGModernCache (Private)
 
 - (void)cleanup;
@@ -54,6 +65,8 @@
     
     NSMutableDictionary *_captions;
     NSMutableDictionary *_adjustments;
+    NSMutableDictionary *_timers;
+    NSNumber *_timer;
  
     SQueue *_queue;
     
@@ -81,6 +94,7 @@
     SPipe *_thumbnailImagePipe;
     SPipe *_adjustmentsPipe;
     SPipe *_captionPipe;
+    SPipe *_timerPipe;
     SPipe *_fullSizePipe;
     SPipe *_cropPipe;
 }
@@ -98,6 +112,7 @@
 
         _captions = [[NSMutableDictionary alloc] init];
         _adjustments = [[NSMutableDictionary alloc] init];
+        _timers = [[NSMutableDictionary alloc] init];
         
         _imageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:[[self class] imageSoftMemoryLimit]
                                                           hardMemoryLimit:[[self class] imageHardMemoryLimit]];
@@ -137,6 +152,7 @@
         _thumbnailImagePipe = [[SPipe alloc] init];
         _adjustmentsPipe = [[SPipe alloc] init];
         _captionPipe = [[SPipe alloc] init];
+        _timerPipe = [[SPipe alloc] init];
         _fullSizePipe = [[SPipe alloc] init];
         _cropPipe = [[SPipe alloc] init];
     }
@@ -415,6 +431,69 @@
 - (SSignal *)cropAdjustmentsUpdatedSignal
 {
     return _cropPipe.signalProducer();
+}
+
+#pragma mark -
+
+- (NSNumber *)timerForItem:(NSObject<TGMediaEditableItem> *)item
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    if (itemId == nil)
+        return nil;
+    
+    return [self _timerForItemId:itemId];
+}
+
+- (NSNumber *)_timerForItemId:(NSString *)itemId
+{
+    if (itemId == nil)
+        return nil;
+    
+    return _timers[itemId];
+}
+
+- (void)setTimer:(NSNumber *)timer forItem:(NSObject<TGMediaEditableItem> *)item
+{
+    NSString *itemId = [self _contextualIdForItemId:item.uniqueIdentifier];
+    if (itemId == nil)
+        return;
+    
+    if (timer.integerValue != 0)
+        _timers[itemId] = timer;
+    else
+        [_timers removeObjectForKey:itemId];
+
+    _timerPipe.sink([TGMediaTimerUpdate timerUpdateWithItem:item timer:timer]);
+}
+
+- (SSignal *)timerSignalForItem:(NSObject<TGMediaEditableItem> *)item
+{
+    SSignal *updateSignal = [[_timerPipe.signalProducer() filter:^bool(TGMediaTimerUpdate *update)
+    {
+        return [update.item.uniqueIdentifier isEqualToString:item.uniqueIdentifier];
+    }] map:^NSNumber *(TGMediaTimerUpdate *update)
+    {
+        return update.timer;
+    }];
+    
+    return [[SSignal single:[self timerForItem:item]] then:updateSignal];
+}
+
+- (NSNumber *)timer
+{
+    return _timer;
+}
+
+- (void)setTimer:(NSNumber *)seconds
+{
+    _timer = seconds;
+    
+    _timerPipe.sink([TGMediaTimerUpdate timerUpdate:seconds]);
+}
+
+- (SSignal *)timerSignal
+{
+    return [[SSignal single:[self timer]] then:_timerPipe.signalProducer()];
 }
 
 #pragma mark -
@@ -864,6 +943,25 @@
     TGMediaCaptionUpdate *update = [[TGMediaCaptionUpdate alloc] init];
     update->_item = item;
     update->_caption = caption;
+    return update;
+}
+
+@end
+
+@implementation TGMediaTimerUpdate
+
++ (instancetype)timerUpdateWithItem:(id<TGMediaEditableItem>)item timer:(NSNumber *)timer
+{
+    TGMediaTimerUpdate *update = [[TGMediaTimerUpdate alloc] init];
+    update->_item = item;
+    update->_timer = timer;
+    return update;
+}
+
++ (instancetype)timerUpdate:(NSNumber *)timer
+{
+    TGMediaTimerUpdate *update = [[TGMediaTimerUpdate alloc] init];
+    update->_timer = timer;
     return update;
 }
 

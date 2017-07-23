@@ -39,14 +39,23 @@
         [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
         
         _inputItem = [[TGCollectionMultilineInputItem alloc] init];
-        _inputItem.maxLength = 200;
-        _inputItem.placeholder = TGLocalized(@"Channel.About.Placeholder");
+        _inputItem.maxLength = 70;
+        _inputItem.disallowNewLines = true;
+        _inputItem.placeholder = TGLocalized(@"UserInfo.About.Placeholder");
+        _inputItem.showRemainingCount = true;
+        _inputItem.returnKeyType = UIReturnKeyDone;
         __weak TGUserAboutSetupController *weakSelf = self;
         _inputItem.heightChanged = ^ {
             __strong TGUserAboutSetupController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf.collectionLayout invalidateLayout];
                 [strongSelf.collectionView layoutSubviews];
+            }
+        };
+        _inputItem.returned = ^ {
+            __strong TGUserAboutSetupController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf donePressed];
             }
         };
         
@@ -59,10 +68,14 @@
         
         _updatedCachedDataDisposable = [[TGUserSignal updatedUserCachedDataWithUserId:TGTelegraphInstance.clientUserId] startWithNext:nil];
         
-        _currentAboutDisposable = [[[[TGDatabaseInstance() userCachedData:TGTelegraphInstance.clientUserId] take:1] deliverOn:[SQueue mainQueue]] startWithNext:^(TGCachedUserData *data) {
+        _currentAboutDisposable = [[[[[[TGDatabaseInstance() userCachedData:TGTelegraphInstance.clientUserId] map:^NSString *(TGCachedUserData *data) {
+            return data.about ?: @"";
+        }] ignoreRepeated] take:2] deliverOn:[SQueue mainQueue]] startWithNext:^(NSString *about) {
             __strong TGUserAboutSetupController *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf->_inputItem setText:data.about];
+                [strongSelf->_inputItem setText:about];
+                [strongSelf.collectionLayout invalidateLayout];
+                [strongSelf.collectionView layoutSubviews];
             }
         }];
     }
@@ -79,8 +92,9 @@
     return true;
 }
 
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
     
     [_inputItem becomeFirstResponder];
 }
@@ -95,9 +109,11 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
     [progressWindow show:true];
     
+    NSString *text = [_inputItem.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
     __weak TGUserAboutSetupController *weakSelf = self;
     
-    [_updateAboutDisposable setDisposable:[[[[TGAccountSignals updateAbout:_inputItem.text] deliverOn:[SQueue mainQueue]] onDispose:^{
+    [_updateAboutDisposable setDisposable:[[[[TGAccountSignals updateAbout:text] deliverOn:[SQueue mainQueue]] onDispose:^{
         [progressWindow dismiss:true];
     }] startWithNext:nil error:^(__unused id error) {
         [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.About.Error") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];

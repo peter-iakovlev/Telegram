@@ -9,6 +9,11 @@
 
 @implementation TGBingSearchResultItem (TGMediaItem)
 
+- (bool)isVideo
+{
+    return false;
+}
+
 - (NSString *)uniqueIdentifier
 {
     return [TGStringUtils stringByEscapingForURL:self.imageUrl];

@@ -27,6 +27,7 @@
 #import "TGViaUserAttachment.h"
 #import "TGGameMediaAttachment.h"
 #import "TGInvoiceMediaAttachment.h"
+#import "TGAuthorSignatureMediaAttachment.h"
 
 #import "TGMessageViewCountContentProperty.h"
 
@@ -234,6 +235,8 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 @property (nonatomic, strong) TGMessageViewCountContentProperty *viewCount;
 
 @property (nonatomic, strong) NSArray *entities;
+@property (nonatomic, strong, readonly) NSString *authorSignature;
+@property (nonatomic, strong, readonly) NSString *forwardAuthorSignature;
 
 @property (nonatomic, strong) NSDictionary *contentProperties;
 
@@ -259,6 +262,9 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 + (NSDictionary *)parseContentProperties:(NSData *)data;
 
 - (void)removeReplyAndMarkup;
+
+- (void)filterOutExpiredMedia;
+- (bool)hasExpiredMedia;
 
 @end
 

@@ -1443,6 +1443,9 @@
     
     for (TGMessage *message in messages)
     {
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60) {
+            continue;
+        }
         bool found = false;
         for (id attachment in message.mediaAttachments)
         {
@@ -2677,9 +2680,12 @@
             if (strongSelf != nil)
                 [strongSelf cancelPressed];
         }];
-        activityController.popoverPresentationController.sourceView = strongSelf.view;
-        activityController.popoverPresentationController.sourceRect = strongSelf.view.bounds;
-        activityController.popoverPresentationController.permittedArrowDirections = 0;
+        if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        {
+            activityController.popoverPresentationController.sourceView = strongSelf.view;
+            activityController.popoverPresentationController.sourceRect = strongSelf.view.bounds;
+            activityController.popoverPresentationController.permittedArrowDirections = 0;
+        }
         [progressWindow dismiss:true];
     }];
 }
@@ -3400,8 +3406,10 @@ static id mediaIdForItem(id<TGSharedMediaItem> item)
         return nil;
     }
     
-    CGPoint collectionPoint = [self.view convertPoint:location toView:_collectionView];
-    for (UICollectionViewCell *cell in _collectionView.visibleCells) {
+    UICollectionView *collectionView = _searchCollectionContainer.hidden ? _collectionView : _searchCollectionView;
+    
+    CGPoint collectionPoint = [self.view convertPoint:location toView:collectionView];
+    for (UICollectionViewCell *cell in collectionView.visibleCells) {
         if (CGRectContainsPoint(cell.frame, collectionPoint) && [cell isKindOfClass:[TGSharedMediaItemView class]]) {
             id<TGSharedMediaItem> item = [(TGSharedMediaItemView *)cell item];
     
@@ -3421,7 +3429,7 @@ static id mediaIdForItem(id<TGSharedMediaItem> item)
             if ([item isKindOfClass:[TGSharedMediaLinkItem class]])
             {
                 TGSharedMediaLinkItemView *linkItemView = (TGSharedMediaLinkItemView *)cell;
-                NSURL *link = [linkItemView urlForLocation:[_collectionView convertPoint:collectionPoint toView:linkItemView]];
+                NSURL *link = [linkItemView urlForLocation:[collectionView convertPoint:collectionPoint toView:linkItemView]];
                 if (link != nil)
                 {
                     NSString *linkString = link.absoluteString;
@@ -3439,7 +3447,7 @@ static id mediaIdForItem(id<TGSharedMediaItem> item)
             }
             else if ([item isKindOfClass:[TGSharedMediaImageItem class]] || [item isKindOfClass:[TGSharedMediaVideoItem class]])
             {
-                previewingContext.sourceRect = [_collectionView convertRect:cell.frame toView:self.view];
+                previewingContext.sourceRect = [collectionView convertRect:cell.frame toView:self.view];
                 
                 TGModernGalleryController *controller = [self createGalleryControllerForItem:item hideItem:^(id<TGSharedMediaItem> item)
                 {
@@ -3457,7 +3465,7 @@ static id mediaIdForItem(id<TGSharedMediaItem> item)
                     __strong TGSharedMediaController *strongSelf = weakSelf;
                     if (strongSelf != nil)
                     {
-                        for (TGSharedMediaItemView *itemView in [strongSelf->_collectionView visibleCells])
+                        for (TGSharedMediaItemView *itemView in [collectionView visibleCells])
                         {
                             if ([itemView.item isEqual:item])
                                 return [itemView transitionView];

@@ -93,7 +93,6 @@
 
 #import "TLInputMediaUploadedPhoto.h"
 #import "TLInputMediaUploadedDocument.h"
-#import "TLInputMediaUploadedThumbDocument.h"
 
 #import "TGRecentMaskStickersSignal.h"
 
@@ -974,6 +973,14 @@
 
                                     return @{ @"convertResult": dict };
                                 }
+                                else if ([value isKindOfClass:[NSDictionary class]])
+                                {
+                                    NSMutableDictionary *dict = [value mutableCopy];
+                                    if (hash != nil)
+                                        dict[@"hash"] = hash;
+
+                                    return @{ @"convertResult": dict };
+                                }
                                 else if ([value isKindOfClass:[NSNumber class]])
                                 {
                                     return @{ @"convertProgress": value };
@@ -982,7 +989,7 @@
                             }];
                         };
                         
-                        if (useMediaCache)
+                        if (useMediaCache && assetVideoMessage.messageLifetime == 0)
                         {
                             SSignal *innerHashSignal = iosMajorVersion() < 8 ? [TGVideoConverter hashSignalForAVAsset:avAsset] : [TGMediaVideoConverter hashForAVAsset:avAsset adjustments:adjustments];
                             return [innerHashSignal mapToSignal:^SSignal *(NSString *hash)
@@ -1665,6 +1672,10 @@
             TLInputMediaUploadedPhoto *uploadedPhoto = [[TLInputMediaUploadedPhoto alloc] init];
             uploadedPhoto.file = fileInfo[@"file"];
             uploadedPhoto.caption = localImageMessage.caption;
+            if (localImageMessage.messageLifetime > 0) {
+                uploadedPhoto.flags |= (1 << 1);
+                uploadedPhoto.ttl_seconds = localImageMessage.messageLifetime;
+            }
             
             if (localImageMessage.stickerDocuments.count != 0) {
                 NSMutableArray *inputStickers = [[NSMutableArray alloc] init];
@@ -1693,9 +1704,14 @@
         NSDictionary *thumbnailFileInfo = filePathToUploadedFile[@"embedded-data://0"];
         if (videoFileInfo != nil && thumbnailFileInfo != nil)
         {
-            TLInputMediaUploadedThumbDocument *uploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+            TLInputMediaUploadedDocument *uploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
             uploadedDocument.file = videoFileInfo[@"file"];
             uploadedDocument.thumb = thumbnailFileInfo[@"file"];
+            uploadedDocument.flags |= (1 << 2);
+            if (localVideoMessage.messageLifetime > 0) {
+                uploadedDocument.flags |= (1 << 1);
+                uploadedDocument.ttl_seconds = localVideoMessage.messageLifetime;
+            }
             
             TLDocumentAttribute$documentAttributeVideo *video = [[TLDocumentAttribute$documentAttributeVideo alloc] init];
             video.duration = (int32_t)localVideoMessage.duration;
@@ -1729,7 +1745,8 @@
             
             if (localDocumentMessage.localThumbnailDataPath != nil && thumbnailFileInfo != nil)
             {
-                TLInputMediaUploadedThumbDocument *thumbUploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                TLInputMediaUploadedDocument *thumbUploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                thumbUploadedDocument.flags |= (1 << 2);
                 thumbUploadedDocument.file = documentFileInfo[@"file"];
                 thumbUploadedDocument.attributes = [self attributesForNativeAttributes:localDocumentMessage.attributes];
                 thumbUploadedDocument.mime_type = localDocumentMessage.mimeType.length == 0 ? @"application/octet-stream" : localDocumentMessage.mimeType;
@@ -1782,6 +1799,10 @@
                 TLInputMediaUploadedPhoto *uploadedPhoto = [[TLInputMediaUploadedPhoto alloc] init];
                 uploadedPhoto.file = fileInfo[@"file"];
                 uploadedPhoto.caption = assetImageMessage.caption;
+                if (assetImageMessage.messageLifetime > 0) {
+                    uploadedPhoto.flags |= (1 << 1);
+                    uploadedPhoto.ttl_seconds = assetImageMessage.messageLifetime;
+                }
                 
                 self.cancelToken = [TGTelegraphInstance doConversationSendMedia:_conversationId accessHash:_accessHash media:uploadedPhoto messageGuid:nil tmpId:assetImageMessage.randomId replyMessageId:assetImageMessage.replyMessage.mid postAsChannel:_postAsChannel notifyMembers:_notifyMembers actor:self];
             }
@@ -1799,7 +1820,8 @@
                 
                 if (assetImageMessage.localThumbnailDataPath != nil && thumbnailFileInfo != nil)
                 {
-                    TLInputMediaUploadedThumbDocument *thumbUploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                    TLInputMediaUploadedDocument *thumbUploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                    thumbUploadedDocument.flags |= (1 << 2);
                     thumbUploadedDocument.file = documentFileInfo[@"file"];
                     thumbUploadedDocument.attributes = [self attributesForNativeAttributes:assetImageMessage.attributes];
                     thumbUploadedDocument.mime_type = assetImageMessage.mimeType.length == 0 ? @"application/octet-stream" : assetImageMessage.mimeType;
@@ -1837,9 +1859,14 @@
             NSDictionary *thumbnailFileInfo = filePathToUploadedFile[@"embedded-data://0"];
             if (videoFileInfo != nil && thumbnailFileInfo != nil)
             {
-                TLInputMediaUploadedThumbDocument *uploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                TLInputMediaUploadedDocument *uploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                uploadedDocument.flags |= (1 << 2);
                 uploadedDocument.file = videoFileInfo[@"file"];
                 uploadedDocument.thumb = thumbnailFileInfo[@"file"];
+                if (assetVideoMessage.messageLifetime > 0) {
+                    uploadedDocument.flags |= (1 << 1);
+                    uploadedDocument.ttl_seconds = assetVideoMessage.messageLifetime;
+                }
                 
                 TLDocumentAttribute$documentAttributeVideo *video = [[TLDocumentAttribute$documentAttributeVideo alloc] init];
                 if (assetVideoMessage.roundMessage)
@@ -1889,7 +1916,12 @@
                 
                 if (assetVideoMessage.localThumbnailDataPath != nil && thumbnailFileInfo != nil)
                 {
-                    TLInputMediaUploadedThumbDocument *thumbUploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                    TLInputMediaUploadedDocument *thumbUploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                    if (assetVideoMessage.messageLifetime > 0) {
+                        thumbUploadedDocument.flags |= (1 << 1);
+                        thumbUploadedDocument.ttl_seconds = assetVideoMessage.messageLifetime;
+                    }
+                    thumbUploadedDocument.flags |= (1 << 2);
                     thumbUploadedDocument.file = documentFileInfo[@"file"];
                     thumbUploadedDocument.attributes = [self attributesForNativeAttributes:assetVideoMessage.attributes];
                     thumbUploadedDocument.mime_type = mimeType;
@@ -1902,6 +1934,10 @@
                 else
                 {
                     TLInputMediaUploadedDocument *plainUploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                    if (assetVideoMessage.messageLifetime > 0) {
+                        plainUploadedDocument.flags |= (1 << 1);
+                        plainUploadedDocument.ttl_seconds = assetVideoMessage.messageLifetime;
+                    }
                     plainUploadedDocument.file = documentFileInfo[@"file"];
                     plainUploadedDocument.attributes = [self attributesForNativeAttributes:assetVideoMessage.attributes];
                     plainUploadedDocument.mime_type = mimeType;
@@ -1929,7 +1965,8 @@
             
             if (thumbnailFileInfo != nil)
             {
-                TLInputMediaUploadedThumbDocument *thumbUploadedDocument = [[TLInputMediaUploadedThumbDocument alloc] init];
+                TLInputMediaUploadedDocument *thumbUploadedDocument = [[TLInputMediaUploadedDocument alloc] init];
+                thumbUploadedDocument.flags |= (1 << 2);
                 thumbUploadedDocument.file = documentFileInfo[@"file"];
                 thumbUploadedDocument.attributes = [self attributesForNativeAttributes:downloadDocumentMessage.attributes];
                 thumbUploadedDocument.mime_type = downloadDocumentMessage.mimeType.length == 0 ? @"application/octet-stream" : downloadDocumentMessage.mimeType;
@@ -1981,7 +2018,7 @@
                         break;
                     }
                 }
-                [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media]];
+                [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media mediaLifetime:nil]];
                 updatedMessage.mediaAttachments = attachments;
             }
         }

@@ -613,7 +613,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
-- (NSDictionary *)imageDescriptionFromImage:(UIImage *)__unused image stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption optionalAssetUrl:(NSString *)__unused assetUrl
+- (NSDictionary *)imageDescriptionFromImage:(UIImage *)__unused image stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption optionalAssetUrl:(NSString *)__unused assetUrl allowRemoteCache:(bool)__unused allowRemoteCache timer:(int32_t)__unused timer
 {
     return nil;
 }
@@ -640,17 +640,17 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
-- (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)__unused asset previewImage:(UIImage *)__unused previewImage document:(bool)__unused document fileName:(NSString *)__unused fileName caption:(NSString *)__unused caption
+- (NSDictionary *)imageDescriptionFromMediaAsset:(TGMediaAsset *)__unused asset previewImage:(UIImage *)__unused previewImage document:(bool)__unused document fileName:(NSString *)__unused fileName caption:(NSString *)__unused caption allowRemoteCache:(bool)__unused allowRemoteCache
 {
     return nil;
 }
 
-- (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)__unused asset previewImage:(UIImage *)__unused previewImage adjustments:(TGVideoEditAdjustments *)__unused adjustments document:(bool)__unused document fileName:(NSString *)__unused fileName stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption
+- (NSDictionary *)videoDescriptionFromMediaAsset:(TGMediaAsset *)__unused asset previewImage:(UIImage *)__unused previewImage adjustments:(TGVideoEditAdjustments *)__unused adjustments document:(bool)__unused document fileName:(NSString *)__unused fileName stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption timer:(int32_t)__unused timer
 {
     return nil;
 }
 
-- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)__unused videoURL previewImage:(UIImage *)__unused previewImage dimensions:(CGSize)__unused dimensions duration:(NSTimeInterval)__unused duration adjustments:(TGVideoEditAdjustments *)__unused adjustments stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption roundMessage:(bool)__unused roundMessage liveUploadData:(id)__unused liveUploadData
+- (NSDictionary *)videoDescriptionFromVideoURL:(NSURL *)__unused videoURL previewImage:(UIImage *)__unused previewImage dimensions:(CGSize)__unused dimensions duration:(NSTimeInterval)__unused duration adjustments:(TGVideoEditAdjustments *)__unused adjustments stickers:(NSArray *)__unused stickers caption:(NSString *)__unused caption roundMessage:(bool)__unused roundMessage liveUploadData:(id)__unused liveUploadData  timer:(int32_t)__unused timer
 {
     return nil;
 }
@@ -863,6 +863,11 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return iosMajorVersion() >= 8;
 }
 
+- (bool)allowSelfDescructingMedia
+{
+    return false;
+}
+
 - (bool)encryptUploads
 {
     return false;
@@ -1015,6 +1020,11 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 }
 
 #pragma mark -
+
+- (NSString *)title
+{
+    return nil;
+}
 
 - (void)_setTitle:(NSString *)title
 {
@@ -1236,7 +1246,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         CGFloat contentHeight = 0.0f;
         
         std::vector<TGDecorationViewAttrubutes> visibleDecorationViewAttributes;
-        NSArray *visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange];
+        NSArray *visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil];
         
         CGFloat contentOffsetY = 0.0f;
         if (scrollItemIndex != -1)
@@ -1283,7 +1293,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             [self setUnreadMessageRange:TGMessageRangeEmpty()];
             
             visibleDecorationViewAttributes.clear();
-            visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange];
+            visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil];
         }
         
         TG_TIMESTAMP_MEASURE(_createInitialSnapshot);
@@ -1897,7 +1907,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         
         for (TGModernConversationItem *item in insertItems)
         {
-            [item sizeForContainerSize:CGSizeMake(_controllerWidthForItemCalculation, 0.0f)];
+            [item sizeForContainerSize:CGSizeMake(_controllerWidthForItemCalculation, 0.0f) viewStorage:nil];
         }
         
         TGDispatchOnMainThread(^

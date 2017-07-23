@@ -11,7 +11,6 @@
 #import "TGImageUtils.h"
 #import "TGPhotoEditorUtils.h"
 #import "TGTimerTarget.h"
-#import "TGBlurEffect.h"
 #import "TGObserverProxy.h"
 
 #import "TGAudioSessionManager.h"
@@ -338,7 +337,7 @@ typedef enum
     TGVideoMessageTransitionType type = [self _transitionType];
     if (type == TGVideoMessageTransitionTypeUsual)
     {
-        UIBlurEffect *effect = [TGBlurEffect forceTouchBlurEffect];
+        UIBlurEffect *effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
         
         UIView *rootView = TGAppDelegateInstance.rootController.view;
         rootView.superview.backgroundColor = [UIColor whiteColor];

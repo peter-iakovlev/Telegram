@@ -766,6 +766,11 @@ typedef enum {
     }
 }
 
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
+{
+    [self scrollViewDidEndDragging:scrollView willDecelerate:false];
+}
+
 - (void)updateCurrentSection {
     if (_mode == TGStickerKeyboardViewModeGifs) {
         [_tabPanel setCurrentGifsModeSelected];
@@ -1165,16 +1170,16 @@ typedef enum {
                                                            }];
                     [actions addObject:sendItem];
                     
-                    //                    TGMenuSheetButtonItemView *favoriteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
-                    //                    {
-                    //                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                    //                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
-                    //                        if (strongSelf == nil || strongPreviewView == nil)
-                    //                            return;
-                    //
-                    //                        [strongPreviewView performDismissal];
-                    //                    }];
-                    //                    [actions addObject:favoriteItem];
+//                    TGMenuSheetButtonItemView *favoriteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+//                    {
+//                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+//                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+//                        if (strongSelf == nil || strongPreviewView == nil)
+//                            return;
+//
+//                        [strongPreviewView performDismissal];
+//                    }];
+//                    [actions addObject:favoriteItem];
                     
                     TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
                                                            {

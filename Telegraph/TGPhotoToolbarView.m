@@ -11,21 +11,21 @@
     TGModernButton *_cancelButton;
     TGModernButton *_doneButton;
     
-    CGFloat _landscapeSize;
+    UILabel *_infoLabel;
     
     UILongPressGestureRecognizer *_longPressGestureRecognizer;
+    
+    bool _transitionedOut;
 }
 @end
 
 @implementation TGPhotoToolbarView
 
-- (instancetype)initWithBackButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle accentedDone:(bool)accentedDone solidBackground:(bool)solidBackground
+- (instancetype)initWithBackButton:(TGPhotoEditorBackButton)backButton doneButton:(TGPhotoEditorDoneButton)doneButton solidBackground:(bool)solidBackground
 {
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
     {
-        self.clipsToBounds = true;
-        
         _backgroundView = [[UIView alloc] initWithFrame:CGRectZero];
         _backgroundView.backgroundColor = (solidBackground ? [TGPhotoEditorInterfaceAssets toolbarBackgroundColor] : [TGPhotoEditorInterfaceAssets toolbarTransparentBackgroundColor]);
         [self addSubview:_backgroundView];
@@ -33,28 +33,44 @@
         _buttonsWrapperView = [[UIView alloc] initWithFrame:_backgroundView.bounds];
         [_backgroundView addSubview:_buttonsWrapperView];
         
-        _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
+        _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 49, 49)];
         _cancelButton.exclusiveTouch = true;
-        [_cancelButton setTitle:backButtonTitle forState:UIControlStateNormal];
-        [_cancelButton setTitleColor:[UIColor whiteColor]];
-        _cancelButton.titleLabel.font = TGSystemFontOfSize(17);
-        _cancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 0);
-        [_cancelButton sizeToFit];
-        _cancelButton.frame = CGRectMake(0, 0.5f, MAX(60.0f, _cancelButton.frame.size.width), 44);
-        _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        _cancelButton.adjustsImageWhenHighlighted = false;
+        
+        UIImage *cancelImage = nil;
+        switch (backButton)
+        {
+            case TGPhotoEditorBackButtonCancel:
+                cancelImage = [UIImage imageNamed:@"PhotoPickerCancelIcon"];
+                break;
+                
+            default:
+                cancelImage = [UIImage imageNamed:@"PhotoPickerBackIcon"];
+                break;
+        }
+        [_cancelButton setImage:cancelImage forState:UIControlStateNormal];
         [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_cancelButton];
         
-        _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 40, 44)];
+        UIImage *doneImage = nil;
+        CGSize buttonSize = CGSizeMake(49.0f, 49.0f);
+        switch (doneButton)
+        {
+            case TGPhotoEditorDoneButtonCheck:
+                doneImage = [UIImage imageNamed:@"PhotoPickerDoneIcon"];
+                break;
+                
+            default:
+                doneImage = [UIImage imageNamed:@"PhotoPickerSendIcon"];
+                //buttonSize = CGSizeMake(52.0f, 52.0f);
+                break;
+        }
+        
+        _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, buttonSize.width, buttonSize.height)];
         _doneButton.exclusiveTouch = true;
-        [_doneButton setTitle:doneButtonTitle forState:UIControlStateNormal];
-        [_doneButton setTitleColor:(accentedDone ? [TGPhotoEditorInterfaceAssets accentColor] : [UIColor whiteColor])];
-        _doneButton.titleLabel.font = TGMediumSystemFontOfSize(17);
-        _doneButton.contentEdgeInsets = UIEdgeInsetsMake(0, 27, 0, 10);
-        [_doneButton sizeToFit];
-        CGFloat doneButtonWidth = MAX(40, _doneButton.frame.size.width);
-        _doneButton.frame = CGRectMake(self.frame.size.width - doneButtonWidth, 0.5f, doneButtonWidth, 44);
-        _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+        _doneButton.adjustsImageWhenHighlighted = false;
+        
+        [_doneButton setImage:doneImage forState:UIControlStateNormal];
         [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_doneButton];
         
@@ -65,19 +81,19 @@
     return self;
 }
 
+- (UIButton *)doneButton
+{
+    return _doneButton;
+}
+
 - (TGPhotoEditorButton *)createButtonForTab:(TGPhotoEditorTab)editorTab
 {
-    TGPhotoEditorButton *button = [[TGPhotoEditorButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
+    TGPhotoEditorButton *button = [[TGPhotoEditorButton alloc] initWithFrame:CGRectMake(0, 0, 33, 33)];
     button.tag = editorTab;
     [button addTarget:self action:@selector(tabButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
     switch (editorTab)
     {
-        case TGPhotoEditorCaptionTab:
-            button.iconImage = [TGPhotoEditorInterfaceAssets captionIcon];
-            button.dontHighlightOnSelection = true;
-            break;
-
         case TGPhotoEditorCropTab:
             button.iconImage = [TGPhotoEditorInterfaceAssets cropIcon];
             break;
@@ -105,14 +121,40 @@
             button.dontHighlightOnSelection = true;
             break;
             
-        case TGPhotoEditorGifTab:
-            [button setIconImage:[TGPhotoEditorInterfaceAssets gifIcon] activeIconImage:[TGPhotoEditorInterfaceAssets gifActiveIcon]];
-            button.dontHighlightOnSelection = true;
-            break;
-            
         case TGPhotoEditorQualityTab:
             button.iconImage = [TGPhotoEditorInterfaceAssets qualityIconForPreset:TGMediaVideoConversionPresetCompressedMedium];
             button.dontHighlightOnSelection = true;
+            break;
+            
+        case TGPhotoEditorTimerTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets timerIconForValue:0.0];
+            button.dontHighlightOnSelection = true;
+            break;
+            
+        case TGPhotoEditorEraserTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets eraserIcon];
+            break;
+            
+        case TGPhotoEditorMirrorTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets mirrorIcon];
+            button.dontHighlightOnSelection = true;
+            break;
+            
+        case TGPhotoEditorAspectRatioTab:
+            [button setIconImage:[TGPhotoEditorInterfaceAssets aspectRatioIcon] activeIconImage:[TGPhotoEditorInterfaceAssets aspectRatioActiveIcon]];
+            button.dontHighlightOnSelection = true;
+            break;
+        
+        case TGPhotoEditorTintTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets tintIcon];
+            break;
+            
+        case TGPhotoEditorBlurTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets blurIcon];
+            break;
+            
+        case TGPhotoEditorCurvesTab:
+            button.iconImage = [TGPhotoEditorInterfaceAssets curvesIcon];
             break;
             
         default:
@@ -121,6 +163,15 @@
     }
     
     return button;
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    bool inside = [super pointInside:point withEvent:event];
+    if ([_doneButton pointInside:[self convertPoint:point toView:_doneButton] withEvent:nil])
+        return true;
+    
+    return inside;
 }
 
 - (void)setToolbarTabs:(TGPhotoEditorTab)tabs animated:(bool)animated
@@ -148,16 +199,28 @@
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorStickerTab]];
     if (_currentTabs & TGPhotoEditorPaintTab)
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorPaintTab]];
+    if (_currentTabs & TGPhotoEditorEraserTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorEraserTab]];
     if (_currentTabs & TGPhotoEditorTextTab)
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorTextTab]];
     if (_currentTabs & TGPhotoEditorToolsTab)
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorToolsTab]];
     if (_currentTabs & TGPhotoEditorRotateTab)
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorRotateTab]];
-    if (_currentTabs & TGPhotoEditorGifTab)
-        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorGifTab]];
     if (_currentTabs & TGPhotoEditorQualityTab)
         [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorQualityTab]];
+    if (_currentTabs & TGPhotoEditorTimerTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorTimerTab]];
+    if (_currentTabs & TGPhotoEditorMirrorTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorMirrorTab]];
+    if (_currentTabs & TGPhotoEditorAspectRatioTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorAspectRatioTab]];
+    if (_currentTabs & TGPhotoEditorTintTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorTintTab]];
+    if (_currentTabs & TGPhotoEditorBlurTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorBlurTab]];
+    if (_currentTabs & TGPhotoEditorCurvesTab)
+        [_buttonsWrapperView addSubview:[self createButtonForTab:TGPhotoEditorCurvesTab]];
     
     [self setNeedsLayout];
     
@@ -283,6 +346,12 @@
         button.active = (buttons & button.tag);
 }
 
+- (void)setEditButtonsDisabled:(TGPhotoEditorTab)buttons
+{
+    for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
+        button.disabled = (buttons & button.tag);
+}
+
 - (TGPhotoEditorButton *)buttonForTab:(TGPhotoEditorTab)tab
 {
     for (TGPhotoEditorButton *button in _buttonsWrapperView.subviews)
@@ -295,7 +364,29 @@
 
 - (void)layoutSubviews
 {
-    _backgroundView.frame = self.bounds;
+    CGRect backgroundFrame = self.bounds;
+    if (!_transitionedOut)
+    {
+        _backgroundView.frame = backgroundFrame;
+    }
+    else
+    {
+        if (self.frame.size.width > self.frame.size.height)
+        {
+            _backgroundView.frame = CGRectMake(backgroundFrame.origin.x, backgroundFrame.size.height, backgroundFrame.size.width, backgroundFrame.size.height);
+        }
+        else
+        {
+            if (_interfaceOrientation == UIInterfaceOrientationLandscapeLeft)
+            {
+                _backgroundView.frame = CGRectMake(-backgroundFrame.size.width, backgroundFrame.origin.y, backgroundFrame.size.width, backgroundFrame.size.height);
+            }
+            else
+            {
+                _backgroundView.frame = CGRectMake(backgroundFrame.size.width, backgroundFrame.origin.y, backgroundFrame.size.width, backgroundFrame.size.height);
+            }
+        }
+    }
     _buttonsWrapperView.frame = _backgroundView.bounds;
     
     NSArray *buttons = _buttonsWrapperView.subviews;
@@ -323,23 +414,34 @@
             
             centerButton.frame = CGRectMake(CGFloor(self.frame.size.width / 2 - centerButton.frame.size.width / 2), (self.frame.size.height - centerButton.frame.size.height) / 2, centerButton.frame.size.width, centerButton.frame.size.height);
 
-            leftButton.frame = CGRectMake(CGFloor(self.frame.size.width / 6 * 2 - 5 - leftButton.frame.size.width / 2), (self.frame.size.height - leftButton.frame.size.height) / 2, leftButton.frame.size.width, leftButton.frame.size.height);
+            leftButton.frame = CGRectMake(CGFloor(self.frame.size.width / 6 * 2 - 10 - leftButton.frame.size.width / 2), (self.frame.size.height - leftButton.frame.size.height) / 2, leftButton.frame.size.width, leftButton.frame.size.height);
             
             rightButton.frame = CGRectMake(CGCeil(self.frame.size.width - leftButton.frame.origin.x - rightButton.frame.size.width), (self.frame.size.height - rightButton.frame.size.height) / 2, rightButton.frame.size.width, rightButton.frame.size.height);
         }
-    
-        _cancelButton.titleLabel.font = TGSystemFontOfSize(17);
-        _cancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 0);
-        [_cancelButton sizeToFit];
-        _cancelButton.frame = CGRectMake(0, 0, MAX(60.0f, CGCeil(_cancelButton.frame.size.width)), 44);
-        _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        else if (buttons.count == 4)
+        {
+            UIView *leftButton = buttons.firstObject;
+            UIView *centerLeftButton = [buttons objectAtIndex:1];
+            UIView *centerRightButton = [buttons objectAtIndex:2];
+            UIView *rightButton = buttons.lastObject;
+            
+            leftButton.frame = CGRectMake(CGFloor(self.frame.size.width / 8 * 2 - 3 - leftButton.frame.size.width / 2), (self.frame.size.height - leftButton.frame.size.height) / 2, leftButton.frame.size.width, leftButton.frame.size.height);
+            
+            centerLeftButton.frame = CGRectMake(CGFloor(self.frame.size.width / 10 * 4 + 5 - centerLeftButton.frame.size.width / 2), (self.frame.size.height - centerLeftButton.frame.size.height) / 2, centerLeftButton.frame.size.width, centerLeftButton.frame.size.height);
+            
+            centerRightButton.frame = CGRectMake(CGCeil(self.frame.size.width - centerLeftButton.frame.origin.x - centerRightButton.frame.size.width), (self.frame.size.height - centerRightButton.frame.size.height) / 2, centerRightButton.frame.size.width, centerRightButton.frame.size.height);
+            
+            rightButton.frame = CGRectMake(CGCeil(self.frame.size.width - leftButton.frame.origin.x - rightButton.frame.size.width), (self.frame.size.height - rightButton.frame.size.height) / 2, rightButton.frame.size.width, rightButton.frame.size.height);
+        }
         
-        _doneButton.titleLabel.font = TGMediumSystemFontOfSize(17);
-        _doneButton.contentEdgeInsets = UIEdgeInsetsMake(0, 27, 0, 10);
-        [_doneButton sizeToFit];
-        CGFloat doneButtonWidth = MAX(40, CGCeil(_doneButton.frame.size.width));
-        _doneButton.frame = CGRectMake(self.frame.size.width - doneButtonWidth, 0, doneButtonWidth, 44);
-        _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
+        _cancelButton.frame = CGRectMake(0, 0, 49, 49);
+        CGFloat offset = 49.0f;
+        if (_doneButton.frame.size.width > 49.0f)
+            offset = 60.0f;
+        
+        _doneButton.frame = CGRectMake(self.frame.size.width - offset, 49.0f - offset, _doneButton.frame.size.width, _doneButton.frame.size.height);
+        
+        _infoLabel.frame = CGRectMake(49.0f + 10.0f, 0.0f, self.frame.size.width - (49.0f + 10.0f) * 2.0f, self.frame.size.height);
     }
     else
     {
@@ -366,18 +468,39 @@
             centerButton.frame = CGRectMake((self.frame.size.width - centerButton.frame.size.width) / 2, CGFloor((self.frame.size.height - centerButton.frame.size.height) / 2), centerButton.frame.size.width, centerButton.frame.size.height);
             bottomButton.frame = CGRectMake((self.frame.size.width - bottomButton.frame.size.width) / 2, CGCeil(self.frame.size.height - topButton.frame.origin.y - bottomButton.frame.size.height), bottomButton.frame.size.width, bottomButton.frame.size.height);
         }
+        else if (buttons.count == 4)
+        {
+            UIView *topButton = buttons.firstObject;
+            UIView *centerTopButton = [buttons objectAtIndex:1];
+            UIView *centerBottonButton = [buttons objectAtIndex:2];
+            UIView *bottomButton = buttons.lastObject;
+            
+            topButton.frame = CGRectMake((self.frame.size.width - topButton.frame.size.width) / 2, CGFloor(self.frame.size.height / 8 * 2 - 3 - topButton.frame.size.height / 2), topButton.frame.size.width, topButton.frame.size.height);
+            
+            centerTopButton.frame = CGRectMake((self.frame.size.width - centerTopButton.frame.size.width) / 2, CGFloor(self.frame.size.height / 10 * 4 + 5 - centerTopButton.frame.size.height / 2), centerTopButton.frame.size.width, centerTopButton.frame.size.height);
+            
+            centerBottonButton.frame = CGRectMake((self.frame.size.width - centerBottonButton.frame.size.width) / 2, CGCeil(self.frame.size.height - centerTopButton.frame.origin.y - centerBottonButton.frame.size.height), centerBottonButton.frame.size.width, centerBottonButton.frame.size.height);
+            
+            bottomButton.frame = CGRectMake((self.frame.size.width - bottomButton.frame.size.width) / 2, CGCeil(self.frame.size.height - topButton.frame.origin.y - bottomButton.frame.size.height), bottomButton.frame.size.width, bottomButton.frame.size.height);
+        }
     
-        _cancelButton.titleLabel.font = TGSystemFontOfSize(13);
-        _cancelButton.contentEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 0);
-        [_cancelButton sizeToFit];
-        _cancelButton.frame = CGRectMake(0, self.frame.size.height - 44, self.frame.size.width, 44);
+        _cancelButton.frame = CGRectMake(0, self.frame.size.height - 49, 49, 49);
         _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
         
-        _doneButton.titleLabel.font = TGMediumSystemFontOfSize(13);
-        _doneButton.contentEdgeInsets = UIEdgeInsetsMake(0, 0, 0, 0);
-        [_doneButton sizeToFit];
-        _doneButton.frame = CGRectMake(0, 0, self.frame.size.width, 44);
+        _doneButton.frame = CGRectMake(0, 0, 49, 49);
         _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
+        
+        _infoLabel.transform = CGAffineTransformIdentity;
+        _infoLabel.frame = CGRectMake(49.0f + 10.0f, 0.0f, self.frame.size.width - (49.0f + 10.0f) * 2.0f, self.frame.size.height);
+        
+        if (self.interfaceOrientation == UIInterfaceOrientationLandscapeLeft)
+        {
+            _infoLabel.transform = CGAffineTransformMakeRotation(M_PI_2);
+        }
+        else if (self.interfaceOrientation == UIInterfaceOrientationLandscapeRight)
+        {
+            _infoLabel.transform = CGAffineTransformMakeRotation(-M_PI_2);
+        }
     }
 }
 
@@ -388,18 +511,15 @@
 
 - (void)transitionInAnimated:(bool)animated transparent:(bool)transparent
 {
+    _transitionedOut = false;
     self.backgroundColor = transparent ? [UIColor clearColor] : [UIColor blackColor];
     
     void (^animationBlock)(void) = ^
     {
         if (self.frame.size.width > self.frame.size.height)
-        {
             _backgroundView.frame = CGRectMake(_backgroundView.frame.origin.x, 0, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
-        }
         else
-        {
             _backgroundView.frame = CGRectMake(0, _backgroundView.frame.origin.y, _backgroundView.frame.size.width, _backgroundView.frame.size.height);
-        }
     };
     
     void (^completionBlock)(BOOL) = ^(BOOL finished)
@@ -445,6 +565,8 @@
 
 - (void)transitionOutAnimated:(bool)animated transparent:(bool)transparent hideOnCompletion:(bool)hideOnCompletion
 {
+    _transitionedOut = true;
+    
     void (^animationBlock)(void) = ^
     {
         if (self.frame.size.width > self.frame.size.height)
@@ -486,33 +608,21 @@
     }
 }
 
-- (void)calculateLandscapeSizeForPossibleButtonTitles:(NSArray *)possibleButtonTitles
+- (void)setInfoString:(NSString *)string
 {
-    CGFloat maxWidth = 0.0f;
-    
-    for (NSString *title in possibleButtonTitles)
+    if (_infoLabel == nil)
     {
-        CGFloat width = 0.0f;
-        if ([title respondsToSelector:@selector(sizeWithAttributes:)])
-            width = CGCeil([title sizeWithAttributes:@{ NSFontAttributeName:TGSystemFontOfSize(17) }].width - 1);
-        else
-            width = CGCeil([title sizeWithFont:TGSystemFontOfSize(17)].width - 1);
+        _infoLabel = [[UILabel alloc] init];
+        _infoLabel.backgroundColor = [UIColor clearColor];
+        _infoLabel.font = TGSystemFontOfSize(13.0f);
+        _infoLabel.textAlignment = NSTextAlignmentCenter;
+        _infoLabel.textColor = [UIColor whiteColor];
+        [_backgroundView addSubview:_infoLabel];
         
-        if (width > maxWidth)
-            maxWidth = width;
+        [self setNeedsLayout];
     }
     
-    _landscapeSize = maxWidth;
-}
-
-- (CGFloat)landscapeSize
-{
-    if (_landscapeSize < FLT_EPSILON)
-    {
-        [self calculateLandscapeSizeForPossibleButtonTitles:@[ [_cancelButton titleForState:UIControlStateNormal], [_doneButton titleForState:UIControlStateNormal] ]];
-    }
-         
-    return _landscapeSize;
+    _infoLabel.text = string;
 }
 
 @end

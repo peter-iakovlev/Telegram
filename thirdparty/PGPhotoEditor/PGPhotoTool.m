@@ -33,6 +33,11 @@
     return _type;
 }
 
+- (bool)isSimple
+{
+    return true;
+}
+
 - (NSInteger)order
 {
     return _order;
@@ -131,19 +136,30 @@
 
 - (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id newValue, bool animated))changeBlock
 {
+    return [self itemControlViewWithChangeBlock:changeBlock explicit:false nameWidth:0.0f];
+}
+
+- (UIView <TGPhotoEditorToolView> *)itemControlViewWithChangeBlock:(void (^)(id newValue, bool animated))changeBlock explicit:(bool)explicit nameWidth:(CGFloat)nameWidth
+{
     __weak PGPhotoTool *weakSelf = self;
     
-    UIView <TGPhotoEditorToolView> *view = [[TGPhotoEditorGenericToolView alloc] initWithEditorItem:self];
+    UIView <TGPhotoEditorToolView> *view = [[TGPhotoEditorGenericToolView alloc] initWithEditorItem:self explicit:explicit nameWidth:nameWidth];
     view.valueChanged = ^(id newValue, bool animated)
     {
         __strong PGPhotoTool *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        if ([strongSelf.tempValue isEqual:newValue])
+        if (!explicit && [strongSelf.tempValue isEqual:newValue])
             return;
         
-        strongSelf.tempValue = newValue;
+        if (explicit && [strongSelf.value isEqual:newValue])
+            return;
+        
+        if (!explicit)
+            strongSelf.tempValue = newValue;
+        else
+            strongSelf.value = newValue;
         
         if (changeBlock != nil)
             changeBlock(newValue, animated);
@@ -153,17 +169,27 @@
 
 - (UIView <TGPhotoEditorToolView> *)itemAreaViewWithChangeBlock:(void (^)(id newValue))__unused changeBlock
 {
+    return [self itemAreaViewWithChangeBlock:changeBlock explicit:false];
+}
+
+- (UIView<TGPhotoEditorToolView> *)itemAreaViewWithChangeBlock:(void (^)(id))__unused changeBlock explicit:(bool)__unused explicit
+{
     return nil;
 }
 
 - (NSString *)stringValue
+{
+    return [self stringValue:false];
+}
+
+- (NSString *)stringValue:(bool)includeZero
 {
     if ([self.displayValue isKindOfClass:[NSNumber class]])
     {
         NSNumber *value = (NSNumber *)self.displayValue;
         CGFloat fractValue = value.floatValue / ABS(self.maximumValue);
         if (floorf(ABS(value.floatValue)) == 0)
-            return nil;
+            return includeZero ? @"0.00" : nil;
         else if (fractValue > 0)
             return [NSString stringWithFormat:@"+%0.2f", fractValue];
         else if (fractValue < 0)

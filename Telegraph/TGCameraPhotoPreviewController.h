@@ -17,13 +17,14 @@
 @property (nonatomic, copy) void (^photoEditorHidden)(void);
 
 @property (nonatomic, copy) void(^retakePressed)(void);
-@property (nonatomic, copy) void(^sendPressed)(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers);
+@property (nonatomic, copy) void(^sendPressed)(TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer);
 
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 @property (nonatomic, assign) bool shouldStoreAssets;
+@property (nonatomic, assign) bool hasTimer;
 
-- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata;
-- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata backButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle;
+- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata recipientName:(NSString *)recipientName;
+- (instancetype)initWithImage:(UIImage *)image metadata:(PGCameraShotMetadata *)metadata recipientName:(NSString *)recipientName backButtonTitle:(NSString *)backButtonTitle doneButtonTitle:(NSString *)doneButtonTitle;
 
 
 @end

@@ -18,7 +18,7 @@
 #import "TGAnimationBlockDelegate.h"
 
 const CGFloat TGPhotoEditorPanelSize = 115.0f;
-const CGFloat TGPhotoEditorToolbarSize = 44.0f;
+const CGFloat TGPhotoEditorToolbarSize = 49.0f;
 
 @interface TGPhotoEditorTabController ()
 {
@@ -392,6 +392,22 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     return nil;
 }
 
+- (void)_updateTabs
+{
+    if (self.tabsChanged != nil)
+        self.tabsChanged();
+}
+
+- (TGPhotoEditorTab)activeTab
+{
+    return TGPhotoEditorNoneTab;
+}
+
+- (TGPhotoEditorTab)highlightedTabs
+{
+    return TGPhotoEditorNoneTab;
+}
+
 + (CGRect)photoContainerFrameForParentViewFrame:(CGRect)parentViewFrame toolbarLandscapeSize:(CGFloat)toolbarLandscapeSize orientation:(UIInterfaceOrientation)orientation panelSize:(CGFloat)panelSize
 {
     CGFloat panelToolbarPortraitSize = TGPhotoEditorToolbarSize + panelSize;
@@ -414,7 +430,6 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
 {
     TGPhotoEditorTab highlightedButtons = TGPhotoEditorNoneTab;
     
-    
     if ([editorValues cropAppliedForAvatar:forAvatar])
         highlightedButtons |= TGPhotoEditorCropTab;
     
@@ -425,11 +440,6 @@ const CGFloat TGPhotoEditorToolbarSize = 44.0f;
     {
         if ([(PGPhotoEditorValues *)editorValues toolsApplied])
             highlightedButtons |= TGPhotoEditorToolsTab;
-    }
-    else if ([editorValues isKindOfClass:[TGVideoEditAdjustments class]])
-    {        
-        if ([(TGVideoEditAdjustments *)editorValues sendAsGif])
-            highlightedButtons |= TGPhotoEditorGifTab;
     }
     
     return highlightedButtons;

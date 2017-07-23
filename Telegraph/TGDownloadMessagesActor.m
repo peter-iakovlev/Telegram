@@ -8,6 +8,8 @@
 
 #import "TGDownloadMessagesActor.h"
 
+#import "TGUserDataRequestBuilder.h"
+
 #import "ActionStage.h"
 
 #import "TGTelegraph.h"
@@ -32,15 +34,18 @@
 
 - (void)messagesRequestSuccess:(TLmessages_Messages *)messages
 {
-    NSMutableArray *parsedMessages = [[NSMutableArray alloc] init];
+    NSMutableArray *messageUpdates = [[NSMutableArray alloc] init];
     NSMutableDictionary *messagesByConversation = [[NSMutableDictionary alloc] init];
+    
+    [TGUserDataRequestBuilder executeUserDataUpdate:messages.users];
     
     for (TLMessage *messageDesc in messages.messages)
     {
         TGMessage *message = [[TGMessage alloc] initWithTelegraphMessageDesc:messageDesc];
         if (message.mid != 0)
         {
-            [parsedMessages addObject:message];
+            [messageUpdates addObject:[[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:message.cid messageId:message.mid message:message dispatchEdited:false]];
+            
             NSMutableArray *conversationMessages = messagesByConversation[@(message.cid)];
             if (conversationMessages == nil)
             {
@@ -52,7 +57,7 @@
         }
     }
     
-    [TGDatabaseInstance() transactionAddMessages:parsedMessages updateConversationDatas:nil notifyAdded:false];
+    [TGDatabaseInstance() transactionUpdateMessages:messageUpdates updateConversationDatas:@{}];
     
     [ActionStageInstance() actionCompleted:self.path result:@{@"messagesByConversation": messagesByConversation}];
 }
