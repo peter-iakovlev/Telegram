@@ -1,24 +1,18 @@
 #import "TGModernConversationGenericContextResultsAssociatedPanel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBotContextResults.h"
 #import "TGGenericContextResultCell.h"
-
-#import "TGImageUtils.h"
 
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"
 
-#import "TGBotContextResultAttachment.h"
-
 #import "TGBotSignals.h"
-
-#import "TGViewController.h"
 
 #import "TGPreviewMenu.h"
 
-#import "TGModernButton.h"
-
-#import "TGFont.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGModernConversationGenericContextResultsAssociatedPanelSwitchPm.h"
 
@@ -106,6 +100,8 @@
         [self addSubview:_tableViewBackground];
         
         _tableView = [[UITableView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _tableView.delegate = self;
         _tableView.dataSource = self;
         _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
@@ -155,11 +151,10 @@
 
 - (TGItemPreviewController *)presentPreviewForResultIfAvailable:(TGBotContextResult *)result immediately:(bool)immediately
 {
-    if (self.onResultPreview != nil)
-        self.onResultPreview();
+    void (^resultPreviewDisappeared)(bool) = self.resultPreviewDisappeared;
     
     __weak TGModernConversationGenericContextResultsAssociatedPanel *weakSelf = self;
-    return [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
+    TGItemPreviewController *controller = [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
     {
         __strong TGModernConversationGenericContextResultsAssociatedPanel *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf.resultSelected != nil)
@@ -172,6 +167,16 @@
                 
         return CGPointZero;
     } sourceView:nil sourceRect:nil];
+    controller.onDismiss = ^{
+        if (resultPreviewDisappeared != nil)
+            resultPreviewDisappeared(true);
+    };
+    if (controller != nil)
+    {
+        if (self.resultPreviewAppeared != nil)
+            self.resultPreviewAppeared();
+    }
+    return controller;
 }
 
 - (void)updatePreferredHeight {
@@ -431,7 +436,7 @@
         if (_resetOffsetOnLayout) {
             _resetOffsetOnLayout = false;
             _tableView.contentInset = finalInset;
-            _tableView.contentOffset = CGPointMake(0.0f, -_tableView.contentInset.top);
+            [_tableView setContentOffset:CGPointMake(0.0f, -finalInset.top) animated:false];
         } else if (ABS(insetDifference) > FLT_EPSILON) {
             //if (ABS(insetDifference) <= 36.0f + 0.1) {
             {
@@ -505,6 +510,11 @@
 
 - (CGRect)tableBackgroundFrame {
     return _tableViewBackground.frame;
+}
+
+- (bool)hasSelectedItem
+{
+    return _tableView.indexPathForSelectedRow != nil;
 }
 
 - (void)selectPreviousItem

@@ -1,7 +1,7 @@
 #import "TGShareChatListCell.h"
 
 #import "TGShareImageView.h"
-#import "TGCheckButtonView.h"
+#import "TGShareCheckButtonView.h"
 
 #import "TGChatModel.h"
 #import "TGPrivateChatModel.h"
@@ -42,7 +42,7 @@
         _checkButton.frame = CGRectMake(0.0f, (CGFloat)ceil((self.contentView.frame.size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);
         _checkButton.userInteractionEnabled = false;
         [_checkButton addTarget:self action:@selector(checkButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:_checkButton];
+        [self.contentView addSubview:_checkButton];
     }
     return self;
 }
@@ -70,9 +70,13 @@
             }
         }
         
-        _titleLabel.text = [userModel displayName];
+        _titleLabel.text = privateChatModel.peerId.peerId == shareContext.clientUserId ? NSLocalizedString(@"Share.SavedMessages", nil) :  [userModel displayName];
         
-        if (userModel.avatarLocation == nil)
+        if (privateChatModel.peerId.peerId == shareContext.clientUserId)
+        {
+            [_avatarView setSignal:[TGChatListAvatarSignal chatListAvatarForSavedMessagesWithContext:shareContext imageSize:imageSize]];
+        }
+        else if (userModel.avatarLocation == nil)
         {
             NSString *letters = @"";
             if (userModel.firstName.length != 0 && userModel.lastName.length != 0)
@@ -157,20 +161,16 @@
 
 - (void)layoutSubviews
 {
-    CGSize size = self.contentView.frame.size;
     CGFloat leftPadding = 10.0f;
     CGFloat avatarWidth = 40.0f;
     CGFloat avatarSpacing = 8.0f;
     CGFloat rightPadding = _checkButton.frame.size.width + 16.0f;
     
-    CGRect checkFrame = CGRectMake(size.width - _checkButton.frame.size.width - 10.0f, (CGFloat)ceil((size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);
-    
     [self setSeparatorInset:UIEdgeInsetsMake(0, leftPadding + avatarWidth + avatarSpacing, 0, 0)];
-    
     [super layoutSubviews];
-    
-
-    _checkButton.frame = checkFrame;
+ 
+    CGSize size = self.contentView.frame.size;
+    _checkButton.frame = CGRectMake(size.width - _checkButton.frame.size.width - 10.0f, (CGFloat)ceil((size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);
     
     CGSize titleSize = [_titleLabel.text sizeWithAttributes:@{NSFontAttributeName: _titleLabel.font}];
     titleSize.width = MIN(size.width - leftPadding - avatarSpacing - avatarWidth - rightPadding, (CGFloat)ceil(titleSize.width));

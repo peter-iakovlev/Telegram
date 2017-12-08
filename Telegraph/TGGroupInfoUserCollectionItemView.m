@@ -1,23 +1,14 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGGroupInfoUserCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
-
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGDialogListCellEditingControls.h"
 
 #import "TGCollectionMenuView.h"
+
+#import "TGPresentation.h"
 
 @interface TGGroupInfoUserCollectionItemViewContent : UIView
 
@@ -80,7 +71,7 @@
     if (!self.editing) {
         if (_label.length != 0) {
             CGContextSetFillColorWithColor(context, regularStatusColor);
-            [_label drawAtPoint:CGPointMake(availableWidth - labelSize.width + 6.0f, 11.0f + TGRetinaPixel) withFont:statusFont];
+            [_label drawAtPoint:CGPointMake(availableWidth - labelSize.width + 6.0f, 11.0f + TGScreenPixel) withFont:statusFont];
         }
     }
     
@@ -91,11 +82,11 @@
     
     CGContextSetFillColorWithColor(context, _isSecretChat ? secretNameColor : nameColor);
     [_firstName drawInRect:CGRectMake(1.0f, 1.0f, firstNameSize.width, firstNameSize.height) withFont:regularNameFont lineBreakMode:NSLineBreakByTruncatingTail];
-    [_lastName drawInRect:CGRectMake(1.0f + firstNameSize.width + nameSpacing, TGRetinaPixel, lastNameSize.width, lastNameSize.height) withFont:boldNameFont lineBreakMode:NSLineBreakByTruncatingTail];
+    [_lastName drawInRect:CGRectMake(1.0f + firstNameSize.width + nameSpacing, TGScreenPixel, lastNameSize.width, lastNameSize.height) withFont:boldNameFont lineBreakMode:NSLineBreakByTruncatingTail];
     
     CGSize statusSize = [_status sizeWithFont:statusFont];
     CGContextSetFillColorWithColor(context, _statusIsActive ? activeStatusColor : regularStatusColor);
-    [_status drawInRect:CGRectMake(1.0f, 23.0f - TGRetinaPixel, MIN(statusSize.width, availableWidth), statusSize.height) withFont:statusFont lineBreakMode:NSLineBreakByTruncatingTail];
+    [_status drawInRect:CGRectMake(1.0f, 23.0f - TGScreenPixel, MIN(statusSize.width, availableWidth), statusSize.height) withFont:statusFont lineBreakMode:NSLineBreakByTruncatingTail];
 }
 
 @end
@@ -190,6 +181,13 @@
     [_wrapView setExpanded:false animated:false];
     
     [super prepareForReuse];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _checkView.image = presentation.images.collectionMenuCheckImage;
 }
 
 - (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation canPromote:(bool)canPromote canRestrict:(bool)canRestrict canBan:(bool)canBan canDelete:(bool)canDelete
@@ -323,7 +321,8 @@
 
 - (void)setDisplayCheck:(bool)displayCheck {
     if (displayCheck && _checkView == nil) {
-        _checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _checkView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
+        _checkView.image = self.presentation.images.collectionMenuCheckImage;
     }
     if (displayCheck) {
         if (_checkView.superview == nil) {
@@ -424,14 +423,14 @@
         rightInset = _switchView.frame.size.width + 20.0f;
         
         CGSize switchSize = _switchView.bounds.size;
-        _switchView.frame = CGRectMake(self.bounds.size.width - switchSize.width - 15.0f, 6.0f, switchSize.width, switchSize.height);
+        _switchView.frame = CGRectMake(self.bounds.size.width - switchSize.width - 15.0f - self.safeAreaInset.right, 6.0f, switchSize.width, switchSize.height);
     }
     
     if (_checkView != nil && _checkView.superview != nil) {
         rightInset = _checkView.frame.size.width + 22.0f;
         
         CGSize checkSize = _checkView.frame.size;
-        _checkView.frame = CGRectMake(self.bounds.size.width - 15.0f - checkSize.width, 16.0f, checkSize.width, checkSize.height);
+        _checkView.frame = CGRectMake(self.bounds.size.width - 15.0f - checkSize.width - self.safeAreaInset.right, 16.0f, checkSize.width, checkSize.height);
     }
     
     [super layoutSubviews];
@@ -441,9 +440,9 @@
     if (_disabledOverlayView != nil)
         [_disabledOverlayView setFrame:CGRectInset(bounds, 0.0f, 1.0f)];
     
-    _avatarView.frame = CGRectMake(leftInset + 14.0f, 4.0f + TGRetinaPixel, 40.0f, 40.0f);
+    _avatarView.frame = CGRectMake(leftInset + 14.0f + self.safeAreaInset.left, 4.0f + TGScreenPixel, 40.0f, 40.0f);
     
-    CGRect contentFrame = CGRectMake(65.0f + leftInset, 4.0f, bounds.size.width - 65.0f - rightInset, bounds.size.height - 8.0f);
+    CGRect contentFrame = CGRectMake(65.0f + leftInset + self.safeAreaInset.left, 4.0f, bounds.size.width - 65.0f - rightInset, bounds.size.height - 8.0f);
     if (!CGSizeEqualToSize(_content.frame.size, contentFrame.size))
         [_content setNeedsDisplay];
     _content.frame = contentFrame;

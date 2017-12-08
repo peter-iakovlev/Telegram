@@ -1,20 +1,17 @@
 #import "TGSharedPhotoSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedMediaSignals.h"
 
-#import "TGImageMediaAttachment.h"
-#import "TGImageUtils.h"
-
 #import "TGImageInfo+Telegraph.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGRemoteHttpLocationSignal.h"
 
 #import "TGAppDelegate.h"
 
 #import "TGImageInfo+Telegraph.h"
-
-#import "TGDocumentMediaAttachment.h"
 
 #import "TGSharedMediaUtils.h"
 
@@ -278,7 +275,12 @@
     } threadPool:threadPool memoryCache:memoryCache];
 }
 
-+ (SSignal *)squarePhotoThumbnail:(TGImageMediaAttachment *)imageAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock downloadLargeImage:(bool)downloadLargeImage placeholder:(SSignal *)__unused placeholder
++ (SSignal *)squarePhotoThumbnail:(TGImageMediaAttachment *)imageAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock downloadLargeImage:(bool)downloadLargeImage placeholder:(SSignal *) placeholder
+{
+    return [self squarePhotoThumbnail:imageAttachment ofSize:size threadPool:threadPool memoryCache:memoryCache pixelProcessingBlock:pixelProcessingBlock downloadLargeImage:downloadLargeImage inhibitBlur:false placeholder:placeholder];
+}
+
++ (SSignal *)squarePhotoThumbnail:(TGImageMediaAttachment *)imageAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock downloadLargeImage:(bool)downloadLargeImage inhibitBlur:(bool)inhibitBlur placeholder:(SSignal *)__unused placeholder
 {
     CGSize imageSize = CGSizeZero;
     [imageAttachment.imageInfo imageUrlForLargestSize:&imageSize];
@@ -324,7 +326,7 @@
     } localCachedImageSignalGenerator:^SSignal *(CGSize size, CGSize renderSize, bool lowQuality)
     {
         return [self localCachedImageForPhotoThumbnail:imageAttachment ofSize:size renderSize:renderSize lowQuality:lowQuality];
-    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[imageAttachment.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:highQualityUrl highQualityImageIdentifier:highQualityIdentifier threadPool:threadPool memoryCache:memoryCache placeholder:nil blurLowQuality:size.width > 40 || size.height > 40];
+    } lowQualityImagePath:genericThumbnailPath lowQualityImageUrl:[imageAttachment.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL] highQualityImageUrl:highQualityUrl highQualityImageIdentifier:highQualityIdentifier threadPool:threadPool memoryCache:memoryCache placeholder:nil blurLowQuality:!inhibitBlur && (size.width > 40 || size.height > 40)];
 }
 
 + (SSignal *)cachedRemoteThumbnail:(TGImageInfo *)imageInfo size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock cacheVariantKey:(NSString *)cacheVariantKey threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache {

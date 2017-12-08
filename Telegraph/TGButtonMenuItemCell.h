@@ -10,7 +10,7 @@
 
 #import "TGButtonMenuItem.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGButtonMenuItemCell : UITableViewCell
 

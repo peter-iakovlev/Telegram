@@ -1,4 +1,4 @@
-#import "TGModernGalleryImageItem.h"
+#import <LegacyComponents/TGModernGalleryImageItem.h>
 
 #import "TGGenericPeerGalleryItem.h"
 

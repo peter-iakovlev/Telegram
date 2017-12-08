@@ -29,7 +29,7 @@
         UIView *sectionView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 10, 10)];
         sectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
-        sectionView.backgroundColor = TGColorWithHex(0xf7f7f7);
+        sectionView.backgroundColor = [UIColor hexColor:0xf7f7f7];
         [sectionContainer addSubview:sectionView];
         
         UILabel *sectionLabel = [[UILabel alloc] init];
@@ -38,7 +38,7 @@
         sectionLabel.numberOfLines = 1;
         sectionLabel.font = [UIFont systemFontOfSize:12.0f weight:UIFontWeightSemibold];
         sectionLabel.text = [NSLocalizedString(@"Share.PeopleSection", nil) uppercaseString];
-        sectionLabel.textColor = TGColorWithHex(0x8e8e93);
+        sectionLabel.textColor = [UIColor hexColor:0x8e8e93];
         [sectionLabel sizeToFit];
         sectionLabel.frame = CGRectMake(14.0f, 6.0f, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
         [sectionContainer addSubview:sectionLabel];
@@ -48,6 +48,8 @@
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if ([_collectionView respondsToSelector:@selector(setContentInsetAdjustmentBehavior:)])
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.opaque = false;
@@ -58,6 +60,17 @@
         [self addSubview:_collectionView];
     }
     return self;
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    _collectionView.contentInset = UIEdgeInsetsMake(0.0f, safeAreaInset.left, 0.0f, safeAreaInset.right);
+    if (_collectionView.contentOffset.x < 44.0f + FLT_EPSILON)
+        _collectionView.contentOffset = CGPointMake(-safeAreaInset.left, 0.0f);
+    
+    UIView *sectionLabel = [_sectionContainer viewWithTag:100];
+    sectionLabel.frame = CGRectMake(14.0f + safeAreaInset.left, 6.0f, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
 }
 
 - (void)setPeers:(NSArray *)peers shareContext:(TGShareContext *)shareContext

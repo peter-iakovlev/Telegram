@@ -1,8 +1,7 @@
 #import "TGModernDateViewModel.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
 #import <CoreText/CoreText.h>
 
 @interface TGModernDateViewModel ()

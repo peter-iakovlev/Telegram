@@ -1,5 +1,7 @@
 #import "TGBotSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
 
@@ -13,8 +15,6 @@
 #import "TGMessage+Telegraph.h"
 #import "TGConversation+Telegraph.h"
 #import "TGConversationAddMessagesActor.h"
-
-#import "TGPeerIdAdapter.h"
 
 #import "TGBotContextResults.h"
 #import "TGBotContextExternalResult.h"
@@ -47,17 +47,16 @@
 
 #import "TLRPCmessages_getInlineBotResults.h"
 
-#import "TGLocationSignals.h"
+#import <LegacyComponents/TGLocationSignals.h>
 
 #import "TLBotInlineResult$botInlineMediaResult.h"
-
-#import "TGStringUtils.h"
 
 #import "TGAppDelegate.h"
 #import "TGAlertView.h"
 
 #import "TLRPCmessages_getBotCallbackAnswer.h"
 #import "TLRPCmessages_sendMedia_manual.h"
+#import "TLRPCmessages_forwardMessages.h"
 
 #import "TLpayments_PaymentForm$payments_paymentForm.h"
 #import "TLInvoice$invoice.h"
@@ -535,6 +534,7 @@
             TLGeoPoint$geoPoint *concreteGeo = (TLGeoPoint$geoPoint *)concreteMessage.geo_point;
             locationMediaAttachment.latitude = concreteGeo.lat;
             locationMediaAttachment.longitude = concreteGeo.n_long;
+            locationMediaAttachment.period = concreteMessage.period;
             
             TGBotReplyMarkup *replyMarkup = nil;
             if (concreteMessage.reply_markup != nil) {
@@ -552,7 +552,7 @@
             locationMediaAttachment.latitude = concreteGeo.lat;
             locationMediaAttachment.longitude = concreteGeo.n_long;
             
-            TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:concreteMessage.title address:concreteMessage.address provider:concreteMessage.provider venueId:concreteMessage.venue_id];
+            TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:concreteMessage.title address:concreteMessage.address provider:concreteMessage.provider venueId:concreteMessage.venue_id type:nil];
             
             locationMediaAttachment.venue = venue;
             
@@ -617,7 +617,7 @@
             getBotCallbackAnswer.data = data;
             getBotCallbackAnswer.game = isGame;
             return [[[TGTelegramNetworking instance] requestSignal:getBotCallbackAnswer continueOnServerErrors:false failOnFloodErrors:false failOnServerErrorsImmediately:true] map:^id(TLmessages_BotCallbackAnswer$botCallbackAnswer *result) {
-                NSDictionary *response = @{@"text": result.message == nil ? @"" : result.message, @"alert": @(result.alert), @"url": result.url == nil ? @"" : result.url, @"cacheTimestamp": @((int32_t)[[TGTelegramNetworking instance] approximateRemoteTime]), @"cacheTime": @(result.cache_time)};
+                NSDictionary *response = @{@"text": result.message == nil ? @"" : result.message, @"alert": @(result.alert), @"url": result.url == nil ? @"" : result.url, @"cacheTimestamp": @((int32_t)[[TGTelegramNetworking instance] approximateRemoteTime]), @"cacheTime": @(result.cache_time), @"nativeUI": @(result.flags & (1 << 4))};
                 if (result.cache_time > 0) {
                     [TGDatabaseInstance() cacheBotCallbackResponse:request response:[NSKeyedArchiver archivedDataWithRootObject:response]];
                 }
@@ -885,6 +885,13 @@
         if (concreteCredentials.saveCredentials) {
             newCredentials.flags |= (1 << 0);
         }
+        sendPaymentForm.credentials = newCredentials;
+    } else if ([credentials isKindOfClass:[TGPaymentCredentialsApplePay class]]) {
+        TGPaymentCredentialsApplePay *concreteCredentials = credentials;
+        TLInputPaymentCredentials$inputPaymentCredentialsApplePay *newCredentials = [[TLInputPaymentCredentials$inputPaymentCredentialsApplePay alloc] init];
+        TLDataJSON$dataJSON *dataJson = [[TLDataJSON$dataJSON alloc] init];
+        dataJson.data = concreteCredentials.data;
+        newCredentials.payment_data = dataJson;
         sendPaymentForm.credentials = newCredentials;
     } else {
         return [SSignal fail:nil];

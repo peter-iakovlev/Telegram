@@ -1,15 +1,15 @@
 #import "TGUpdateStateRequestBuilder.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <SSignalKit/SSignalKit.h>
 
 #import "TGCommon.h"
-#import "ASCommon.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
-#import "SGraphListNode.h"
 
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
+#import <LegacyComponents/SGraphListNode.h>
 
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
@@ -36,8 +36,6 @@
 
 #import "TGUser+Telegraph.h"
 
-#import "TGStringUtils.h"
-#import "TGDateUtils.h"
 #import <MTProtoKit/MTEncryption.h>
 
 #import "TGUpdate.h"
@@ -77,12 +75,13 @@
 
 #import "TGServiceSignals.h"
 
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
 
 #import "TGRecentGifsSignal.h"
 #import "TGRecentStickersSignal.h"
+#import "TGFavoriteStickersSignal.h"
 
 #import "TLUpdate$updateChannelTooLong.h"
 
@@ -94,7 +93,6 @@
 #import "TGCallSignals.h"
 
 #import "TGLocalizationSignals.h"
-#import "TGLocalization.h"
 
 #import "TGSuggestedLocalizationController.h"
 #import "TGLocalizationSelectionController.h"
@@ -527,7 +525,7 @@ static bool _initialUpdatesScheduled = false;
         NSString *currentVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
         NSString *versionKey = [[NSString alloc] initWithFormat:@"NotifiedVersionUpdate_%@", currentVersion];
 #ifdef DEBUG
-        [[NSUserDefaults standardUserDefaults] removeObjectForKey:versionKey];
+//        [[NSUserDefaults standardUserDefaults] removeObjectForKey:versionKey];
 #endif
         if (![[[NSUserDefaults standardUserDefaults] objectForKey:versionKey] boolValue]) {
             NSString *previousVersion = [[NSUserDefaults standardUserDefaults] objectForKey:@"UpdateChangelog_PreviousVersion"];
@@ -537,6 +535,8 @@ static bool _initialUpdatesScheduled = false;
             
             bool skipUpdate = initial;
 #ifdef DEBUG
+            previousVersion = @"4.2";
+            skipUpdate = false;
 #elif defined(INTERNAL_RELEASE)
             skipUpdate = true;
 #endif
@@ -736,6 +736,8 @@ static bool _initialUpdatesScheduled = false;
     NSMutableArray *updatedPinnedDialogsKeyOrder = [[NSMutableArray alloc] init];
     NSArray *replacedPinnedDialogs = nil;
     
+    NSNumber *contactRegisteredSettings = nil;
+    
     for (TLUpdate *update in otherUpdates)
     {
         if ([update respondsToSelector:@selector(pts)] && [update respondsToSelector:@selector(pts_count)]) {
@@ -892,6 +894,16 @@ static bool _initialUpdatesScheduled = false;
             }
             [channelUpdates addObject:update];
         }
+        else if ([update isKindOfClass:[TLUpdate$updateChannelReadMessagesContents class]]) {
+            TLUpdate$updateChannelReadMessagesContents *readMessageContents = (TLUpdate$updateChannelReadMessagesContents *)update;
+            int64_t peerId = TGPeerIdFromChannelId(readMessageContents.channel_id);
+            NSMutableArray *channelUpdates = channelUpdatesByPeerId[@(peerId)];
+            if (channelUpdates == nil) {
+                channelUpdates = [[NSMutableArray alloc] init];
+                channelUpdatesByPeerId[@(peerId)] = channelUpdates;
+            }
+            [channelUpdates addObject:update];
+        }
         else if ([update isKindOfClass:[TLUpdate$updateDeleteChannelMessages class]])
         {
             TLUpdate$updateDeleteChannelMessages *deleteChannelMessages = (TLUpdate$updateDeleteChannelMessages *)update;
@@ -920,6 +932,16 @@ static bool _initialUpdatesScheduled = false;
         else if ([update isKindOfClass:[TLUpdate$updateChannelPinnedMessage class]]) {
             TLUpdate$updateChannelPinnedMessage *pinnedMessage = (TLUpdate$updateChannelPinnedMessage *)update;
             int64_t peerId = TGPeerIdFromChannelId(pinnedMessage.channel_id);
+            NSMutableArray *channelUpdates = channelUpdatesByPeerId[@(peerId)];
+            if (channelUpdates == nil) {
+                channelUpdates = [[NSMutableArray alloc] init];
+                channelUpdatesByPeerId[@(peerId)] = channelUpdates;
+            }
+            [channelUpdates addObject:update];
+        }
+        else if ([update isKindOfClass:[TLUpdate$updateChannelAvailableMessages class]]) {
+            TLUpdate$updateChannelAvailableMessages *availableMessages = (TLUpdate$updateChannelAvailableMessages *)update;
+            int64_t peerId = TGPeerIdFromChannelId(availableMessages.channel_id);
             NSMutableArray *channelUpdates = channelUpdatesByPeerId[@(peerId)];
             if (channelUpdates == nil) {
                 channelUpdates = [[NSMutableArray alloc] init];
@@ -986,24 +1008,35 @@ static bool _initialUpdatesScheduled = false;
         }
         else if ([update isKindOfClass:updateContactRegisteredClass])
         {
-            TLUpdate$updateContactRegistered *contactRegistered = (TLUpdate$updateContactRegistered *)update;
+            if (contactRegisteredSettings == nil) {
+                NSData *data = [TGDatabaseInstance() customProperty:@"contactsJoinedNotifications"];
+                int32_t value = 1;
+                if (data != nil) {
+                    [data getBytes:&value length:4];
+                }
+                contactRegisteredSettings = @(value != 0);
+            }
             
-            if ([TGDatabaseInstance() messagesWithDateInConversation:contactRegistered.user_id date:contactRegistered.date].count == 0) {
-                TGMessage *message = [[TGMessage alloc] init];
-                message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
+            if ([contactRegisteredSettings boolValue]) {
+                TLUpdate$updateContactRegistered *contactRegistered = (TLUpdate$updateContactRegistered *)update;
                 
-                message.fromUid = contactRegistered.user_id;
-                message.toUid = TGTelegraphInstance.clientUserId;
-                message.date = contactRegistered.date;
-                //message.unread = false;
-                message.outgoing = false;
-                message.cid = contactRegistered.user_id;
-                
-                TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
-                actionAttachment.actionType = TGMessageActionContactRegistered;
-                message.mediaAttachments = [[NSArray alloc] initWithObjects:actionAttachment, nil];
-                
-                [addedMessages addObject:message];
+                if ([TGDatabaseInstance() messagesWithDateInConversation:contactRegistered.user_id date:contactRegistered.date].count == 0) {
+                    TGMessage *message = [[TGMessage alloc] init];
+                    message.mid = [[[TGDatabaseInstance() generateLocalMids:1] objectAtIndex:0] intValue];
+                    
+                    message.fromUid = contactRegistered.user_id;
+                    message.toUid = TGTelegraphInstance.clientUserId;
+                    message.date = contactRegistered.date;
+                    //message.unread = false;
+                    message.outgoing = false;
+                    message.cid = contactRegistered.user_id;
+                    
+                    TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
+                    actionAttachment.actionType = TGMessageActionContactRegistered;
+                    message.mediaAttachments = [[NSArray alloc] initWithObjects:actionAttachment, nil];
+                    
+                    [addedMessages addObject:message];
+                }
             }
         }
         else if ([update isKindOfClass:updateUserTypingClass])
@@ -1407,6 +1440,8 @@ static bool _initialUpdatesScheduled = false;
             } else {
                 [TGStickersSignals remoteReorderedStickerPacks:((TLUpdate$updateStickerSetsOrder *)update).order];
             }
+        } else if ([update isKindOfClass:[TLUpdate$updateFavedStickers class]]) {
+            [TGFavoriteStickersSignal sync];
         } else if ([update isKindOfClass:[TLUpdate$updateSavedGifs class]]) {
             [TGRecentGifsSignal sync];
         } else if ([update isKindOfClass:[TLUpdate$updateDraftMessage class]]) {
@@ -1833,7 +1868,7 @@ static bool _initialUpdatesScheduled = false;
             [ActionStageInstance() dispatchResource:@"/webpages" resource:updatedWebpages];
         }
         
-        [TGDatabaseInstance() transactionAddMessages:addedMessages notifyAddedMessages:true removeMessages:removeMessageIdsByPeerId updateMessages:messageUpdates updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:chatItems applyMaxIncomingReadIds:maxIncomingReadIds applyMaxOutgoingReadIds:maxOutgoingReadIds applyMaxOutgoingReadDates:maxOutgoingReadDates readHistoryForPeerIds:nil resetPeerReadStates:nil clearConversationsWithPeerIds:nil removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false];
+        [TGDatabaseInstance() transactionAddMessages:addedMessages notifyAddedMessages:true removeMessages:removeMessageIdsByPeerId updateMessages:messageUpdates updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:chatItems applyMaxIncomingReadIds:maxIncomingReadIds applyMaxOutgoingReadIds:maxOutgoingReadIds applyMaxOutgoingReadDates:maxOutgoingReadDates readHistoryForPeerIds:nil resetPeerReadStates:nil resetPeerUnseenMentionsStates:nil clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:nil deleteEarlierHistory:nil];
         
         NSMutableArray *chatParticipantsArray = [[NSMutableArray alloc] init];
         
@@ -2519,130 +2554,130 @@ static bool _initialUpdatesScheduled = false;
         
         if (key != nil && keyId == localKeyId)
         {
-            MTMessageEncryptionKey *keyData = [TGModernSendSecretMessageActor generateMessageKeyData:messageKey incoming:false key:key];
+            bool currentClientIsCreator = [TGDatabaseInstance() encryptedConversationIsCreator:conversationId];
             
-            NSMutableData *encryptedMessageData = [[encryptedMessage.bytes subdataWithRange:NSMakeRange(8 + 16, encryptedMessage.bytes.length - (8 + 16))] mutableCopy];
-            NSData *messageData = MTAesDecrypt(encryptedMessageData, keyData.key, keyData.iv);
+            bool decryptedByV2 = false;
+            NSData *messageData = nil;
             
-            int32_t messageLength = 0;
-            [messageData getBytes:&messageLength range:NSMakeRange(0, 4)];
-            
-            int32_t paddingLength = (int32_t)messageData.length - (messageLength + 4);
-            
-            if (messageLength > (int32_t)messageData.length - 4) {
-                TGLog(@"***** Ignoring message from conversation %lld with invalid message length", encryptedMessage.chat_id);
-            } else if (paddingLength > 16) {
-                TGLog(@"***** Ignoring message from conversation %lld with invalid message length", encryptedMessage.chat_id);
+            MTMessageEncryptionKey *keyData = [TGModernSendSecretMessageActor generateMessageKeyData:messageKey incoming:currentClientIsCreator key:key v2:true];
+            messageData = [self decryptMessageData:encryptedMessage authKey:key messageKey:messageKey keyData:keyData currentClientIsCreator:currentClientIsCreator v2:true];
+            if (messageData != nil) {
+                decryptedByV2 = true;
             } else {
-                NSData *localMessageKeyFull = MTSubdataSha1(messageData, 0, messageLength + 4);
-                NSData *localMessageKey = [[NSData alloc] initWithBytes:(((int8_t *)localMessageKeyFull.bytes) + localMessageKeyFull.length - 16) length:16];
-                if (![localMessageKey isEqualToData:messageKey]) {
-                    TGLog(@"***** Ignoring message from conversation with message key mismatch %lld", encryptedMessage.chat_id);
-                } else {
-                    NSData *messageContentData = [messageData subdataWithRange:NSMakeRange(4, messageData.length - 4)];
-                    
-                    if (messageContentData.length >= 4)
+                MTMessageEncryptionKey *keyData = [TGModernSendSecretMessageActor generateMessageKeyData:messageKey incoming:currentClientIsCreator key:key v2:false];
+                messageData = [self decryptMessageData:encryptedMessage authKey:key messageKey:messageKey keyData:keyData currentClientIsCreator:currentClientIsCreator v2:false];
+            }
+            
+            if (messageData != nil) {
+                NSData *messageContentData = [messageData subdataWithRange:NSMakeRange(4, messageData.length - 4)];
+                
+                if (messageContentData.length >= 4)
+                {
+                    NSUInteger layer = 1;
+                    int32_t seqIn = 0;
+                    int32_t seqOut = 0;
+                    int32_t possibleLayerSignature = 0;
+                    [messageContentData getBytes:&possibleLayerSignature length:4];
+                    if (possibleLayerSignature == (int32_t)0x1be31789)
                     {
-                        NSUInteger layer = 1;
-                        int32_t seqIn = 0;
-                        int32_t seqOut = 0;
-                        int32_t possibleLayerSignature = 0;
-                        [messageContentData getBytes:&possibleLayerSignature length:4];
-                        if (possibleLayerSignature == (int32_t)0x1be31789)
+                        if (messageContentData.length >= 4 + 1)
                         {
-                            if (messageContentData.length >= 4 + 1)
+                            uint8_t randomBytesLength = 0;
+                            [messageContentData getBytes:&randomBytesLength range:NSMakeRange(4, 1)];
+                            while ((randomBytesLength + 1) % 4 != 0)
                             {
-                                uint8_t randomBytesLength = 0;
-                                [messageContentData getBytes:&randomBytesLength range:NSMakeRange(4, 1)];
-                                while ((randomBytesLength + 1) % 4 != 0)
-                                {
-                                    randomBytesLength++;
-                                }
-                                
-                                if (messageContentData.length >= 4 + 1 + randomBytesLength + 4 + 4 + 4)
-                                {
-                                    int32_t value = 0;
-                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength, 4)];
-                                    layer = value;
-                                    
-                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4, 4)];
-                                    if (outSeqIn)
-                                        *outSeqIn = value / 2;
-                                    seqIn = value;
-                                    
-                                    [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4 + 4, 4)];
-                                    if (outSeqOut)
-                                        *outSeqOut = value / 2;
-                                    seqOut = value;
-                                }
+                                randomBytesLength++;
                             }
                             
-                            layer = MAX(1U, layer);
+                            if (messageContentData.length >= 4 + 1 + randomBytesLength + 4 + 4 + 4)
+                            {
+                                int32_t value = 0;
+                                [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength, 4)];
+                                layer = value;
+                                
+                                [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4, 4)];
+                                if (outSeqIn)
+                                    *outSeqIn = value / 2;
+                                seqIn = value;
+                                
+                                [messageContentData getBytes:&value range:NSMakeRange(4 + 1 + randomBytesLength + 4 + 4, 4)];
+                                if (outSeqOut)
+                                    *outSeqOut = value / 2;
+                                seqOut = value;
+                            }
                         }
                         
-                        if (decryptedLayer)
-                            *decryptedLayer = layer;
-                        
-                        if (layer >= 17)
+                        layer = MAX(1U, layer);
+                    }
+                    
+                    if (decryptedLayer)
+                        *decryptedLayer = layer;
+                    
+                    if (layer >= 17)
+                    {
+                        bool isCreator = [TGDatabaseInstance() encryptedConversationIsCreator:conversationId];
+                        if (isCreator)
                         {
-                            bool isCreator = [TGDatabaseInstance() encryptedConversationIsCreator:conversationId];
-                            if (isCreator)
+                            if ((seqIn & 1) == 0)
                             {
-                                if ((seqIn & 1) == 0)
-                                {
-                                    TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
-                                    return nil;
-                                }
-                                if (seqOut & 1)
-                                {
-                                    TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
-                                    return nil;
-                                }
+                                TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
+                                return nil;
                             }
-                            else
+                            if (seqOut & 1)
                             {
-                                if (seqIn & 1)
-                                {
-                                    TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
-                                    return nil;
-                                }
-                                if ((seqOut & 1) == 0)
-                                {
-                                    TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
-                                    return nil;
-                                }
+                                TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
+                                return nil;
+                            }
+                        }
+                        else
+                        {
+                            if (seqIn & 1)
+                            {
+                                TGLog(@"***** Ignoring message from conversation %lld with seq_in %d", encryptedMessage.chat_id, seqIn);
+                                return nil;
+                            }
+                            if ((seqOut & 1) == 0)
+                            {
+                                TGLog(@"***** Ignoring message from conversation %lld with seq_out %d", encryptedMessage.chat_id, seqOut);
+                                return nil;
                             }
                         }
                     }
                     
-                    int fromUid = 0;
-                    bool fromFound = false;
+                    if (layer >= 73) {
+                        if (!decryptedByV2) {
+                            return nil;
+                        }
+                    }
+                }
+                
+                int fromUid = 0;
+                bool fromFound = false;
+                
+                if (cachedParticipantIds != NULL)
+                {
+                    auto it = cachedParticipantIds->find(encryptedMessage.chat_id);
+                    if (it != cachedParticipantIds->end())
+                    {
+                        fromFound = true;
+                        fromUid = it->second;
+                    }
+                }
+                
+                if (!fromFound)
+                {
+                    fromUid = [TGDatabaseInstance() encryptedParticipantIdForConversationId:conversationId];
                     
                     if (cachedParticipantIds != NULL)
-                    {
-                        auto it = cachedParticipantIds->find(encryptedMessage.chat_id);
-                        if (it != cachedParticipantIds->end())
-                        {
-                            fromFound = true;
-                            fromUid = it->second;
-                        }
-                    }
-                    
-                    if (!fromFound)
-                    {
-                        fromUid = [TGDatabaseInstance() encryptedParticipantIdForConversationId:conversationId];
-                        
-                        if (cachedParticipantIds != NULL)
-                            (*cachedParticipantIds)[encryptedMessage.chat_id] = fromUid;
-                    }
-                    
-                    if (fromUid != 0)
-                    {
-                        return messageContentData;
-                    }
-                    else
-                        TGLog(@"***** Couldn't find participant uid for conversation %lld", encryptedMessage.chat_id);
+                        (*cachedParticipantIds)[encryptedMessage.chat_id] = fromUid;
                 }
+                
+                if (fromUid != 0)
+                {
+                    return messageContentData;
+                }
+                else
+                    TGLog(@"***** Couldn't find participant uid for conversation %lld", encryptedMessage.chat_id);
             }
         }
         else if (key != nil && keyId != localKeyId)
@@ -2657,6 +2692,88 @@ static bool _initialUpdatesScheduled = false;
         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/encrypted/discardEncryptedChat/(%lld)", (int64_t)encryptedMessage.chat_id] options:@{@"encryptedConversationId": @((int64_t)encryptedMessage.chat_id)} flags:0 watcher:TGTelegraphInstance];
     }
     
+    return nil;
+}
+
++ (NSData *)decryptMessageData:(TLEncryptedMessage *)encryptedMessage authKey:(NSData *)authKey messageKey:(NSData *)messageKey keyData:(MTMessageEncryptionKey *)keyData currentClientIsCreator:(bool)currentClientIsCreator v2:(bool)v2 {
+    NSMutableData *encryptedMessageData = [[encryptedMessage.bytes subdataWithRange:NSMakeRange(8 + 16, encryptedMessage.bytes.length - (8 + 16))] mutableCopy];
+    NSData *messageData = MTAesDecrypt(encryptedMessageData, keyData.key, keyData.iv);
+    
+    int32_t messageLength = 0;
+    [messageData getBytes:&messageLength range:NSMakeRange(0, 4)];
+    
+    int32_t paddingLength = (int32_t)messageData.length - (messageLength + 4);
+    
+    if (messageLength <= 0 || messageLength > (int32_t)messageData.length - 4) {
+        //TGLog(@"***** Ignoring message from conversation %lld with invalid message length", encryptedMessage.chat_id);
+        int32_t messageDataLength = messageData.length - 4;
+        
+        if (v2) {
+            int xValue = currentClientIsCreator ? 8 : 0;
+            NSMutableData *msgKeyLargeData = [[NSMutableData alloc] init];
+            [msgKeyLargeData appendBytes:((uint8_t *)authKey.bytes) + 88 + xValue length:32];
+            [msgKeyLargeData appendData:messageData];
+            
+            NSData *msgKeyLarge = MTSha256(msgKeyLargeData);
+            NSData *localMessageKey = [msgKeyLarge subdataWithRange:NSMakeRange(8, 16)];
+            
+            if (![localMessageKey isEqualToData:messageKey]) {
+                //check key
+            }
+        } else {
+            NSData *localMessageKeyFull = MTSubdataSha1(messageData, 0, messageDataLength);
+            NSData *localMessageKey = [[NSData alloc] initWithBytes:(((int8_t *)localMessageKeyFull.bytes) + localMessageKeyFull.length - 16) length:16];
+            if (![localMessageKey isEqualToData:messageKey]) {
+                //compare key
+            }
+        }
+    } else if ((v2 && paddingLength < 12) || paddingLength > 1024) {
+        TGLog(@"***** Ignoring message from conversation %lld with invalid message padding %d", encryptedMessage.chat_id, paddingLength);
+        
+        if (v2) {
+            int xValue = currentClientIsCreator ? 8 : 0;
+            NSMutableData *msgKeyLargeData = [[NSMutableData alloc] init];
+            [msgKeyLargeData appendBytes:((uint8_t *)authKey.bytes) + 88 + xValue length:32];
+            [msgKeyLargeData appendData:messageData];
+            
+            NSData *msgKeyLarge = MTSha256(msgKeyLargeData);
+            NSData *localMessageKey = [msgKeyLarge subdataWithRange:NSMakeRange(8, 16)];
+            
+            if (![localMessageKey isEqualToData:messageKey]) {
+                //check key
+            }
+        } else {
+            NSData *localMessageKeyFull = MTSubdataSha1(messageData, 0, messageLength + 4);
+            NSData *localMessageKey = [[NSData alloc] initWithBytes:(((int8_t *)localMessageKeyFull.bytes) + localMessageKeyFull.length - 16) length:16];
+            if (![localMessageKey isEqualToData:messageKey]) {
+                //compare key
+            }
+        }
+    } else {
+        if (v2) {
+            int xValue = currentClientIsCreator ? 8 : 0;
+            NSMutableData *msgKeyLargeData = [[NSMutableData alloc] init];
+            [msgKeyLargeData appendBytes:((uint8_t *)authKey.bytes) + 88 + xValue length:32];
+            [msgKeyLargeData appendData:messageData];
+            
+            NSData *msgKeyLarge = MTSha256(msgKeyLargeData);
+            NSData *localMessageKey = [msgKeyLarge subdataWithRange:NSMakeRange(8, 16)];
+            
+            if (![localMessageKey isEqualToData:messageKey]) {
+                TGLog(@"***** Ignoring message from conversation with message key mismatch %lld", encryptedMessage.chat_id);
+            } else {
+                return messageData;
+            }
+        } else {
+            NSData *localMessageKeyFull = MTSubdataSha1(messageData, 0, messageLength + 4);
+            NSData *localMessageKey = [[NSData alloc] initWithBytes:(((int8_t *)localMessageKeyFull.bytes) + localMessageKeyFull.length - 16) length:16];
+            if (![localMessageKey isEqualToData:messageKey]) {
+                TGLog(@"***** Ignoring message from conversation with message key mismatch %lld", encryptedMessage.chat_id);
+            } else {
+                return messageData;
+            }
+        }
+    }
     return nil;
 }
 

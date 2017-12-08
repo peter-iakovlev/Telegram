@@ -43,6 +43,8 @@
 @property (nonatomic, readonly) CGFloat expandedHeight;
 @property (nonatomic, readonly) CGFloat shrinkedHeight;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 - (void)setShrinked:(bool)shrinked;
 
 @property (nonatomic, readonly) bool isInteracting;

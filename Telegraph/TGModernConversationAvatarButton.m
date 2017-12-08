@@ -1,16 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGModernConversationAvatarButton.h"
 
-#import "TGImageUtils.h"
-#import "TGLetteredAvatarView.h"
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGAppDelegate.h"
 
@@ -29,6 +21,7 @@
     UIImage *_avatarIcon;
     
     CGFloat _horizontalOffset;
+    CGFloat _verticalOffset;
 }
 
 @end
@@ -44,16 +37,35 @@
         [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:true];
         [self addSubview:_avatarView];
         
-        if (iosMajorVersion() < 7)
+        if (iosMajorVersion() < 7) {
             _horizontalOffset = -11.0f;
-        
-        if ([TGViewController useExperimentalRTL])
-            _avatarView.transform = CGAffineTransformMakeScale(-1.0f, 1.0f);
+        } else if (iosMajorVersion() >= 11) {
+            _horizontalOffset = 25.0f;
+            _verticalOffset = 13.0f;
+            
+            if (TGAppDelegateInstance.rootController.isRTL)
+                _horizontalOffset = -5.0f;
+        }
         
         _iconView = [[UIImageView alloc] init];
         [_avatarView addSubview:_iconView];
     }
     return self;
+}
+
+- (void)setPreview:(bool)preview
+{
+    _preview = preview;
+    if (iosMajorVersion() >= 11 && preview)
+    {
+        _horizontalOffset -= 20.0f;
+        _verticalOffset += 2.0f;
+        
+        if (TGAppDelegateInstance.rootController.isRTL)
+            _horizontalOffset = -15;
+        
+        [self setNeedsLayout];
+    }
 }
 
 - (void)setOrientation:(UIInterfaceOrientation)orientation
@@ -90,6 +102,11 @@
     _avatarFirstName = firstName;
     _avatarLastName = lastName;
     [_avatarView setFirstName:firstName lastName:lastName];
+}
+
+- (NSString *)avatarUrl
+{
+    return _avatarUrl;
 }
 
 - (void)setAvatarUrl:(NSString *)uri
@@ -151,7 +168,7 @@
             rtlOffset = 10.0f;
         }
         
-        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -17, 37, 37);
+        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -17 + _verticalOffset, 37, 37);
         
         if (TGAppDelegateInstance.rootController.isRTL) {
             CGRect frame = _avatarView.frame;
@@ -167,7 +184,9 @@
         }
         scaling = 0.7f;
         
-        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -12, 26, 26);
+        CGFloat verticalOffset = iosMajorVersion() >= 11 ? 2.0f : 0.0f;
+        
+        _avatarView.frame = CGRectMake(rtlOffset + _horizontalOffset, -12 + _verticalOffset + verticalOffset, 26, 26);
     }
     
     CGSize iconSize = _iconView.image.size;

@@ -1,10 +1,11 @@
 #import "TGGalleryPhotoActor.h"
 
-#import "ASWatcher.h"
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMessage.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/ASWatcher.h>
+#import <LegacyComponents/ActionStage.h>
+
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGGalleryPhotoActor () <ASWatcher>
 {

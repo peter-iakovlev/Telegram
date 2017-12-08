@@ -1,7 +1,6 @@
 #import "TGNotificationTextPreviewView.h"
 
-#import "TGMessage.h"
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGScrollIndicatorView.h"
 

@@ -1,8 +1,6 @@
 #import "TGEmbedPreviewView.h"
 
-#import "TGImageUtils.h"
-
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGEmbedPreviewView () <UIWebViewDelegate>
 {

@@ -1,6 +1,6 @@
 #import "TGSendInvitesActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 

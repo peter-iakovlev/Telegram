@@ -1,12 +1,13 @@
 #import "TGConvertToSupergroupController.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGGroupManagementSignals.h"
 
 #import "TGCommentCollectionItem.h"
 #import "TGButtonCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGInterfaceManager.h"
 
 #import "TGAlertView.h"

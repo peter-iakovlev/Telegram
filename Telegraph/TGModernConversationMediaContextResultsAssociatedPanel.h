@@ -1,4 +1,4 @@
-#import "TGModernConversationAssociatedInputPanel.h"
+#import <LegacyComponents/TGModernConversationAssociatedInputPanel.h>
 
 @class TGViewController;
 @class TGBotContextResults;
@@ -14,7 +14,6 @@
 
 @property (nonatomic, weak) TGViewController *controller;
 @property (nonatomic, copy) void (^resultSelected)(TGBotContextResults *results, TGBotContextResult *result);
-@property (nonatomic, copy) void (^onResultPreview)(void);
 @property (nonatomic, copy) void (^activateSwitchPm)(NSString *startParam);
 
 - (void)setResults:(TGBotContextResults *)results reload:(bool)reload;

@@ -1,18 +1,14 @@
 #import "TGCallCell.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
-#import "TGMessage.h"
-#import "TGUser.h"
-
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGDateUtils.h"
-#import "TGFont.h"
-
-#import "TGLetteredAvatarView.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
+#import <LegacyComponents/TGModernButton.h>
 #import "TGDialogListCellEditingControls.h"
+
+#import "TGPresentation.h"
 
 @interface TGCallCell ()
 {
@@ -27,6 +23,8 @@
     UILabel *_dateLabel;
     
     TGModernButton *_infoButton;
+    
+    TGCallGroup *_callGroup;
 }
 @end
 
@@ -50,6 +48,8 @@
             [self.layer addSublayer:_separatorLayer];
         }
         
+        self.selectedBackgroundView = [[UIView alloc] init];
+        
         _wrapView = [[TGDialogListCellEditingControls alloc] init];
         _wrapView.clipsToBounds = true;
         [_wrapView setLabelOnly:true];
@@ -59,7 +59,7 @@
         _typeIcon.contentMode = UIViewContentModeCenter;
         [_wrapView addSubview:_typeIcon];
         
-        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7 - TGRetinaPixel, 62 + TGRetinaPixel, 62 + TGRetinaPixel)];
+        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(10, 7 - TGScreenPixel, 62 + TGScreenPixel, 62 + TGScreenPixel)];
         [_avatarView setSingleFontSize:18.0f doubleFontSize:18.0f useBoldFont:false];
         _avatarView.fadeTransition = cpuCoreCount() > 1;
         [_wrapView addSubview:_avatarView];
@@ -83,11 +83,27 @@
         
         _infoButton = [[TGModernButton alloc] init];
         _infoButton.adjustsImageWhenHighlighted = false;
-        [_infoButton setImage:[UIImage imageNamed:@"CallInfoIcon"] forState:UIControlStateNormal];
+        [_infoButton setImage:TGImageNamed(@"CallInfoIcon") forState:UIControlStateNormal];
         [_infoButton addTarget:self action:@selector(infoButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_wrapView addSubview:_infoButton];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    
+    [self updateName];
+    _subLabel.textColor = presentation.pallete.secondaryTextColor;
+    _dateLabel.textColor = presentation.pallete.secondaryTextColor;
+    [_infoButton setImage:presentation.images.callsInfoIcon forState:UIControlStateNormal];
+    _typeIcon.image = presentation.images.callsOutgoingIcon;
+    
+    _separatorLayer.backgroundColor = presentation.pallete.separatorColor.CGColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
 }
 
 - (void)setDeletePressed:(void (^)(void))deletePressed
@@ -102,22 +118,18 @@
     [super prepareForReuse];
 }
 
-- (void)setupWithCallGroup:(TGCallGroup *)group
+- (void)updateName
 {
-    TGUser *peer = group.peer;
+    TGUser *peer = _callGroup.peer;
     
-    TGMessage *message = group.message;
-    
-    [_wrapView setButtonBytes:@[ @(TGDialogListCellEditingControlsDelete) ]];
-    
-    UIColor *nameColor = group.failed ? UIColorRGB(0xfb2125) : [UIColor blackColor];
-    if (group.messages.count > 1)
+    UIColor *nameColor = _callGroup.failed ? _presentation.pallete.destructiveColor : _presentation.pallete.textColor;
+    if (_callGroup.messages.count > 1)
     {
         NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
         style.lineBreakMode = NSLineBreakByTruncatingMiddle;
         
-        NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:TGLocalized(@"Call.GroupFormat"), peer.displayName, [NSString stringWithFormat:@"%d", (int)group.messages.count]] attributes:@{ NSForegroundColorAttributeName: [UIColor blackColor], NSFontAttributeName: _nameLabel.font, NSParagraphStyleAttributeName: style }];
-        if (group.failed)
+        NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:TGLocalized(@"Call.GroupFormat"), peer.displayName, [NSString stringWithFormat:@"%d", (int)_callGroup.messages.count]] attributes:@{ NSForegroundColorAttributeName: _presentation.pallete.textColor, NSFontAttributeName: _nameLabel.font, NSParagraphStyleAttributeName: style }];
+        if (_callGroup.failed)
         {
             NSRange nameRange = [text.string rangeOfString:peer.displayName];
             if (nameRange.location != NSNotFound)
@@ -130,12 +142,25 @@
         _nameLabel.text = peer.displayName;
         _nameLabel.textColor = nameColor;
     }
+}
+
+- (void)setupWithCallGroup:(TGCallGroup *)group
+{
+    _callGroup = group;
+    
+    TGUser *peer = group.peer;
+    
+    TGMessage *message = group.message;
+    
+    [_wrapView setButtonBytes:@[ @(TGDialogListCellEditingControlsDelete) ]];
+    
+    [self updateName];
     [_nameLabel sizeToFit];
     
     _dateLabel.text = [TGDateUtils stringForMessageListDate:(int)message.date];
     [_dateLabel sizeToFit];
     
-    _typeIcon.image = group.outgoing ? [UIImage imageNamed:@"CallOutgoing"] : nil;
+    _typeIcon.hidden = !group.outgoing;
     _subLabel.text = group.displayType;
     [_subLabel sizeToFit];
     
@@ -193,6 +218,7 @@
     [super layoutSubviews];
     
     CGFloat contentOffset = self.contentView.frame.origin.x;
+    CGFloat contentWidth = self.contentView.frame.size.width;
     
     [_wrapView setExpandable:contentOffset <= FLT_EPSILON];
     
@@ -237,10 +263,17 @@
     CGSize size = rawSize;
     if (!TGIsPad())
     {
-        if (rawSize.width >= widescreenWidth - FLT_EPSILON)
-            size.width = screenSize.height - contentOffset;
+        if ([TGViewController hasTallScreen])
+        {
+            size.width = contentWidth;
+        }
         else
-            size.width = screenSize.width - contentOffset;
+        {
+            if (rawSize.width >= widescreenWidth - FLT_EPSILON)
+                size.width = screenSize.height - contentOffset;
+            else
+                size.width = screenSize.width - contentOffset;
+        }
     }
     else
         size.width = rawSize.width - contentOffset;
@@ -253,7 +286,7 @@
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
 
     CGRect frame = self.selectedBackgroundView.frame;
-    frame.origin.y = true ? -1 : 0;
+    frame.origin.y = -1;
     frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
     
@@ -270,12 +303,12 @@
     
     leftPadding = CGRectGetMaxX(avatarFrame) + 12.0f;
     
-    _dateLabel.frame = CGRectMake(self.frame.size.width - _dateLabel.frame.size.width - 48.0f, 20.0f, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
+    _dateLabel.frame = CGRectMake(size.width - _dateLabel.frame.size.width - 48.0f, 20.0f, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
     
     _nameLabel.frame = CGRectMake(leftPadding, 8.0f, _dateLabel.frame.origin.x - leftPadding - 8.0f, _nameLabel.frame.size.height);
     _subLabel.frame = CGRectMake(leftPadding, 31.0f, _dateLabel.frame.origin.x - leftPadding - 8.0f, _subLabel.frame.size.height);
     
-    _infoButton.frame = CGRectMake(self.frame.size.width - 48.0f, 0, 48.0f, 56.0f);
+    _infoButton.frame = CGRectMake(size.width - 48.0f, 0, 48.0f, 56.0f);
 }
 
 - (void)setIsLastCell:(bool)isLastCell {

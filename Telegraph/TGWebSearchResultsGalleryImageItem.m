@@ -1,11 +1,10 @@
 #import "TGWebSearchResultsGalleryImageItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGWebSearchResultsGalleryImageItemView.h"
 
 #import "TGBingSearchResultItem+TGMediaItem.h"
-
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
 
 @interface TGWebSearchResultsGalleryImageItem ()
 {

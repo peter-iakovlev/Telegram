@@ -1,10 +1,9 @@
 #import "TGPreparedAssetImageMessage.h"
 
-#import "TGMessage.h"
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAppDelegate.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGPreparedAssetImageMessage ()
 {
@@ -14,7 +13,7 @@
 
 @implementation TGPreparedAssetImageMessage
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup messageLifetime:(int32_t)messageLifetime
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup messageLifetime:(int32_t)messageLifetime groupedId:(int64_t)groupedId
 {
     self = [self init];
     if (self != nil)
@@ -29,6 +28,7 @@
         _fileSize = fileSize;
         _mimeType = mimeType;
         _attributes = attributes;
+        self.groupedId = groupedId;
         
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
@@ -119,6 +119,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.groupedId = self.groupedId;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -136,7 +137,10 @@
     }
     
     message.mediaAttachments = attachments;
-    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier isVideo:false isCloud:_isCloud useMediaCache:_useMediaCache]};
+    
+    NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+    contentProperties[@"mediaAsset"] = [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier isVideo:false isCloud:_isCloud useMediaCache:_useMediaCache];
+    message.contentProperties = contentProperties;
     
     return message;
 }

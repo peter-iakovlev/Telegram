@@ -1,11 +1,11 @@
 #import "TGInstantPageSlideshowView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGInstantPageMedia.h"
 #import "TGInstantPageImageView.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 #import "TGPagerView.h"
 
 @interface TGInstantPageSlideshowView () <UIScrollViewDelegate, TGModernGalleryTransitionView> {

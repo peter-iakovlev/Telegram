@@ -1,13 +1,12 @@
 #import "TGStickerPackCollectionItemView.h"
 
-#import "TGImageView.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGStickerPackStatusView.h"
+
+#import "TGPresentation.h"
 
 @interface TGStickerPackCollectionItemView ()
 {
@@ -16,31 +15,16 @@
     UILabel *_titleLabel;
     UILabel *_subtitleLabel;
     UIImageView *_reorderingControl;
+    UIImageView *_checkView;
     
     TGStickerPackStatusView *_statusView;
+    UIActivityIndicatorView *_activityIndicator;
 }
 
 @end
 
 @implementation TGStickerPackCollectionItemView
 
-- (UIImage *)reorderingControlImage
-{
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(22.0f, 9.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0xc7c7cc).CGColor);
-        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 22.0f, 2.0f - TGRetinaPixel));
-        CGContextFillRect(context, CGRectMake(0.0f, 4.0f - TGRetinaPixel, 22.0f, 2.0f - TGRetinaPixel));
-        CGContextFillRect(context, CGRectMake(0.0f, 7.0f, 22.0f, 2.0f - TGRetinaPixel));
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    return image;
-}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -53,17 +37,15 @@
         
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
-        _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.font = TGBoldSystemFontOfSize(15.0f);
         [self.editingContentView addSubview:_titleLabel];
         
         _subtitleLabel = [[UILabel alloc] init];
         _subtitleLabel.backgroundColor = [UIColor clearColor];
-        _subtitleLabel.textColor = UIColorRGB(0x808080);
         _subtitleLabel.font = TGSystemFontOfSize(14.0f);
         [self.editingContentView addSubview:_subtitleLabel];
         
-        _reorderingControl = [[UIImageView alloc] initWithImage:[self reorderingControlImage]];
+        _reorderingControl = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 22.0f, 9.0f)];
         _reorderingControl.alpha = 0.0f;
         [self.contentView addSubview:_reorderingControl];
         
@@ -72,11 +54,79 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _subtitleLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+    _checkView.image = presentation.images.collectionMenuCheckImage;
+    _reorderingControl.image = presentation.images.collectionMenuReorderIcon;
+    _unreadView.image = presentation.images.collectionMenuUnreadIcon;
+}
+
 - (void)prepareForReuse
 {
     [super prepareForReuse];
     
     [_imageView reset];
+}
+
+- (void)setSearchStatus:(TGStickerPackItemSearchStatus)searchStatus
+{
+    bool searching = searchStatus == TGStickerPackItemSearchStatusSearching;
+    if (searching && _activityIndicator == nil)
+    {
+        _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+        _activityIndicator.color = UIColorRGB(0x7c828c);
+        _activityIndicator.transform = CGAffineTransformMakeScale(0.85f, 0.85f);
+        [self.contentView addSubview:_activityIndicator];
+    }
+    
+    if (searching)
+    {
+        _activityIndicator.hidden = false;
+        [_activityIndicator startAnimating];
+    }
+    else
+    {
+        [_activityIndicator stopAnimating];
+        _activityIndicator.hidden = true;
+    }
+    
+    if (searchStatus == TGStickerPackItemSearchStatusSearching)
+    {
+        _titleLabel.text = TGLocalized(@"Channel.Stickers.Searching");
+        _subtitleLabel.text = nil;
+        _titleLabel.textColor = self.presentation.pallete.collectionMenuTextColor;
+        
+        [_imageView reset];
+    }
+    else if (searchStatus == TGStickerPackItemSearchStatusFailed)
+    {
+        _titleLabel.text = TGLocalized(@"Channel.Stickers.NotFound");
+        _titleLabel.textColor = self.presentation.pallete.collectionMenuDestructiveColor;
+        _subtitleLabel.text = TGLocalized(@"Channel.Stickers.NotFoundHelp");
+        
+        [_imageView loadUri:@"embedded-image://" withOptions:@{TGImageViewOptionEmbeddedImage: [UIImage imageNamed:@"StickerPackNotFoundIcon"]}];
+    }
+    else
+    {
+        _titleLabel.textColor = self.presentation.pallete.collectionMenuTextColor;
+    }
+    
+    [self setNeedsLayout];
+}
+
+- (void)setIsChecked:(bool)isChecked
+{
+    if (_checkView == nil)
+    {
+        _checkView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
+        _checkView.image = self.presentation.images.collectionMenuCheckImage;
+        [self addSubview:_checkView];
+    }
+    _checkView.hidden = !isChecked;
 }
 
 - (void)setStickerPack:(TGStickerPack *)stickerPack
@@ -88,19 +138,14 @@
     
     _subtitleLabel.text = [[NSString alloc] initWithFormat:TGLocalized([TGStringUtils integerValueFormat:@"StickerPack.StickerCount_" value:stickerPack.documents.count]), [[NSString alloc] initWithFormat:@"%d", (int)stickerPack.documents.count]];
     
-    if (false && stickerPack.hidden) {
-        [self setOptionText:TGLocalized(@"StickerSettings.ContextShow")];
-        [self setIndicatorMode:TGEditableCollectionItemViewIndicatorAdd];
+    if (((TGStickerPackIdReference *)stickerPack.packReference).shortName.length == 0) {
+        [self setOptionText:TGLocalized(@"StickerSettings.ContextHide")];
     } else {
-        if (((TGStickerPackIdReference *)stickerPack.packReference).shortName.length == 0) {
-            [self setOptionText:TGLocalized(@"StickerSettings.ContextHide")];
-        } else {
-            [self setOptionText:TGLocalized(@"Common.Delete")];
-        }
-        [self setIndicatorMode:TGEditableCollectionItemViewIndicatorDelete];
+        [self setOptionText:TGLocalized(@"Common.Delete")];
     }
+    [self setIndicatorMode:TGEditableCollectionItemViewIndicatorDelete];
     
-    _titleLabel.alpha = (false && stickerPack.hidden) ? 0.4f : 1.0f;
+    _titleLabel.alpha = 1.0f;
     _subtitleLabel.alpha = _titleLabel.alpha;
     _imageView.alpha = _titleLabel.alpha;
     
@@ -131,19 +176,8 @@
     if ((_unreadView != nil) != unread) {
         if (unread) {
             if (_unreadView == nil) {
-                static UIImage *dotImage = nil;
-                static dispatch_once_t onceToken;
-                dispatch_once(&onceToken, ^{
-                    UIGraphicsBeginImageContextWithOptions(CGSizeMake(6.0f, 6.0f), false, 0.0f);
-                    CGContextRef context = UIGraphicsGetCurrentContext();
-                    
-                    CGContextSetFillColorWithColor(context, UIColorRGB(0x0f94f3).CGColor);
-                    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 6.0f, 6.0f));
-                    
-                    dotImage = UIGraphicsGetImageFromCurrentImageContext();
-                    UIGraphicsEndImageContext();
-                });
-                _unreadView = [[UIImageView alloc] initWithImage:dotImage];
+                _unreadView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 6.0f, 6.0f)];
+                _unreadView.image = self.presentation.images.collectionMenuUnreadIcon;
                 [self addSubview:_unreadView];
             }
         } else {
@@ -179,13 +213,14 @@
 {
     CGRect bounds = self.bounds;
     
-    CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
-    CGFloat rightInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
+    CGFloat leftInset = (self.showsDeleteIndicator ? 38.0f : 0.0f) + self.safeAreaInset.left;
+    CGFloat rightInset = (self.showsDeleteIndicator ? 38.0f : 0.0f) + self.safeAreaInset.right;
     self.separatorInset = 60.0f + leftInset;
     
     [super layoutSubviews];
     
-    _imageView.frame = CGRectMake(13.0f + leftInset, CGFloor((self.frame.size.height - 34.0f) / 2.0f), 34.0f, 34.0f);
+    _imageView.frame = CGRectMake(13.0f + leftInset , CGFloor((self.frame.size.height - 34.0f) / 2.0f), 34.0f, 34.0f);
+    _activityIndicator.center = _imageView.center;
     
     CGFloat titleSubtitleSpacing = 2.0f;
     CGFloat titleInset = 0.0f;
@@ -197,7 +232,7 @@
     titleSize.width = MIN(self.frame.size.width - leftInset - 60.0f - 8.0f - rightInset - titleInset, titleSize.width);
     CGSize subtitleSize = [_subtitleLabel.text sizeWithFont:_subtitleLabel.font];
     
-    CGFloat verticalOrigin = CGFloor((self.frame.size.height - titleSize.height - subtitleSize.height - titleSubtitleSpacing) / 2.0f);
+    CGFloat verticalOrigin = _subtitleLabel.text.length > 0 ? CGFloor((self.frame.size.height - titleSize.height - subtitleSize.height - titleSubtitleSpacing) / 2.0f) : CGFloor((self.frame.size.height - titleSize.height) / 2.0f);
     
     if (_unreadView != nil) {
         titleInset = 11.0f;
@@ -205,13 +240,18 @@
     }
     
     _titleLabel.frame = CGRectMake(leftInset + 60.0f + titleInset, verticalOrigin, titleSize.width, titleSize.height);
-    _subtitleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin + 2.0f + titleSize.height + titleSubtitleSpacing, subtitleSize.width, subtitleSize.height);
+    _subtitleLabel.frame = CGRectMake(leftInset + 60.0f, verticalOrigin + 1.0f + titleSize.height + titleSubtitleSpacing, subtitleSize.width, subtitleSize.height);
     
     _reorderingControl.alpha = self.showsDeleteIndicator ? 1.0f : 0.0f;
-    _reorderingControl.frame = CGRectMake(self.contentView.frame.size.width - 15.0f - _reorderingControl.frame.size.width, CGFloor((self.contentView.frame.size.height - _reorderingControl.frame.size.height) / 2.0f), _reorderingControl.frame.size.width, _reorderingControl.frame.size.height);
+    _reorderingControl.frame = CGRectMake(self.contentView.frame.size.width - 15.0f - _reorderingControl.frame.size.width - self.safeAreaInset.right, CGFloor((self.contentView.frame.size.height - _reorderingControl.frame.size.height) / 2.0f), _reorderingControl.frame.size.width, _reorderingControl.frame.size.height);
     
     if (_statusView != nil) {
-        _statusView.frame = CGRectMake(bounds.size.width - _statusView.frame.size.width, CGFloor((bounds.size.height - _statusView.frame.size.height) / 2.0f), _statusView.frame.size.width, _statusView.frame.size.height);
+        _statusView.frame = CGRectMake(bounds.size.width - _statusView.frame.size.width - self.safeAreaInset.right, CGFloor((bounds.size.height - _statusView.frame.size.height) / 2.0f), _statusView.frame.size.width, _statusView.frame.size.height);
+    }
+    
+    if (_checkView != nil) {
+        CGSize checkSize = _checkView.frame.size;
+        _checkView.frame = CGRectMake(bounds.size.width - 15.0f - checkSize.width - self.safeAreaInset.right, 24.0f, checkSize.width, checkSize.height);
     }
 }
 

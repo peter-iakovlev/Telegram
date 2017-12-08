@@ -1,9 +1,9 @@
 #import "TGICloudFileDownloadActor.h"
 
-#import "TGFileUtils.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGFileUtils.h>
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 const NSTimeInterval TGICloudFileDownloadProgressTimerInterval = 1.0f;
 

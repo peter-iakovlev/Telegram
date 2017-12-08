@@ -1,16 +1,17 @@
 #import "TGModernConversationActionInputPanel.h"
 
-#import "TGImageUtils.h"
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "ASHandle.h"
+#import <LegacyComponents/ASHandle.h>
 
 @interface TGModernConversationActionInputPanel ()
 {
-    NSString *_action;
+    UIEdgeInsets _safeAreaInset;
     
+    NSString *_action;
+        
     CALayer *_stripeLayer;
     TGModernButton *_actionButton;
     UIImageView *_iconView;
@@ -41,10 +42,10 @@
     self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, [self baseHeight])];
     if (self)
     {
-        self.backgroundColor = UIColorRGBA(0xfafafa, 0.98f);
+        self.backgroundColor = UIColorRGB(0xf7f7f7);
         
         _stripeLayer = [[CALayer alloc] init];
-        _stripeLayer.backgroundColor = UIColorRGBA(0xb3aab2, 0.4f).CGColor;
+        _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;
         [self.layer addSublayer:_stripeLayer];
         
         _actionButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
@@ -138,18 +139,20 @@
     }
 }
 
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
-- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
+    _safeAreaInset = safeAreaInset;
+    
     dispatch_block_t block = ^
     {
         CGSize messageAreaSize = size;
         
-        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight], messageAreaSize.width, [self baseHeight]);
+        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight] - safeAreaInset.bottom, messageAreaSize.width, [self baseHeight] + safeAreaInset.bottom);
         [self layoutSubviews];
     };
     
@@ -159,9 +162,9 @@
         block();
 }
 
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
 - (void)layoutSubviews
@@ -169,7 +172,7 @@
     [super layoutSubviews];
     
     _stripeLayer.frame = CGRectMake(0.0f, -TGScreenPixel, self.frame.size.width, TGScreenPixel);
-    _actionButton.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, self.frame.size.height);
+    _actionButton.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, [self baseHeight]);
     
     if (_icon != TGModernConversationActionInputPanelIconNone) {
         CGSize titleSize = [_actionButton.titleLabel sizeThatFits:_actionButton.bounds.size];
@@ -179,7 +182,7 @@
         [_actionButton setContentEdgeInsets:UIEdgeInsetsZero];
     }
     
-    _activityIndicator.frame = CGRectMake(self.frame.size.width - _activityIndicator.frame.size.width - 12.0f, CGFloor((self.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
+    _activityIndicator.frame = CGRectMake(self.frame.size.width - _activityIndicator.frame.size.width - 12.0f - _safeAreaInset.right, CGFloor(([self baseHeight] - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
 }
 
 - (void)actionButtonPressed

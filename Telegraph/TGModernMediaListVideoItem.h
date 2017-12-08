@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "TGModernMediaListItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
 
 @interface TGModernMediaListVideoItem : NSObject <TGModernMediaListItem>
 

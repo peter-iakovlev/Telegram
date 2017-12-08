@@ -1,6 +1,6 @@
 #import "TGRoundMessageRingView.h"
 
-#import <pop/POP.h>
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGMusicPlayer.h"
 

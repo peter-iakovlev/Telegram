@@ -1,5 +1,7 @@
 #import "TGAccountSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
@@ -15,11 +17,8 @@
 
 #import "TLauth_SentCode$auth_sentCode.h"
 
-#import "TGPeerIdAdapter.h"
-
 #import "../../config.h"
 
-#import "TGLocalization.h"
 #import "TGTLSerialization.h"
 #import "TLDcOption$modernDcOption.h"
 
@@ -329,6 +328,7 @@
             apiEnvironment.apiId = apiId;
             
             apiEnvironment.layer = @([[[TGTLSerialization alloc] init] currentLayer]);
+            apiEnvironment.disableUpdates = true;
             
             apiEnvironment = [apiEnvironment withUpdatedLangPackCode:currentNativeLocalization().code];
 
@@ -374,7 +374,7 @@
                  }];
             }] onDispose:^{
                 [mtProto stop];
-            }] delay:2.0 onQueue:[SQueue concurrentDefaultQueue]];
+            }] delay:9.0 onQueue:[SQueue concurrentDefaultQueue]];
         }
         return [SSignal complete];
     }];
@@ -416,6 +416,29 @@
             [requestService removeRequestByInternalId:requestToken];
         }];
     }];
+}
+
++ (SSignal *)currentContactsJoinedNotificationSettings {
+    return [[TGDatabaseInstance() modify:^id{
+        NSString *key = @"contactsJoinedNotifications";
+        NSData *data = [TGDatabaseInstance() customProperty:key];
+        int32_t value = 1;
+        if (data.length != 0) {
+            [data getBytes:&value length:4];
+        }
+        SSignal *remote = [SSignal complete];
+        return [[SSignal single:@(value != 0)] then:remote];
+    }] switchToLatest];
+}
+
++ (SSignal *)updateContactsJoinedNotificationSettings:(bool)enabled {
+    return [[TGDatabaseInstance() modify:^id{
+        NSString *key = @"contactsJoinedNotifications";
+        int32_t value = enabled ? 1 : 0;
+        [TGDatabaseInstance() setCustomProperty:key value:[NSData dataWithBytes:&value length:4]];
+        SSignal *remote = [SSignal complete];
+        return remote;
+    }] switchToLatest];
 }
 
 @end

@@ -6,11 +6,11 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "ASActor.h"
+#import <LegacyComponents/ASActor.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMediaAttachment.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGImageDownloadActor : ASActor <ASWatcher>
 @property (nonatomic, strong) ASHandle *actionHandle;

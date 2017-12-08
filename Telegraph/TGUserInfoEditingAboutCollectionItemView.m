@@ -1,6 +1,6 @@
 #import "TGUserInfoEditingAboutCollectionItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserInfoEditingAboutCollectionItemView ()
 {
@@ -29,7 +29,8 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
+    CGFloat separatorInset = 15.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
 }
 
 @end

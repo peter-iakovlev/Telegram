@@ -14,7 +14,7 @@
 
 #import "TGRecentContextBotsSignal.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 #import "TGRemoteFileSignal.h"
 #import "TGImageInfo+Telegraph.h"
 

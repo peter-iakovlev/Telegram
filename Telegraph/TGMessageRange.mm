@@ -1,6 +1,6 @@
 #import "TGMessageRange.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 bool TGMessageRangeContains(TGMessageRange range, int32_t messageId, int date)
 {

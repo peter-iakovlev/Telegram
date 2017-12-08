@@ -1,6 +1,6 @@
 #import "TGPreparedDownloadImageMessage.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGPreparedDownloadImageMessage
 

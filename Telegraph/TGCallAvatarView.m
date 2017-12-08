@@ -1,11 +1,10 @@
 #import "TGCallAvatarView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
 #import "TGCallSession.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 const NSInteger TGCallSpeechRippleMaxCount = 2;
 const NSTimeInterval TGCallSpeechRippleInterval = 0.25;

@@ -160,6 +160,18 @@
 
 @end
 
+@implementation TGPaymentCredentialsApplePay
+
+- (instancetype)initWithData:(NSString *)data {
+    self = [super init];
+    if (self != nil) {
+        _data = data;
+    }
+    return self;
+}
+
+@end
+
 @implementation TGPaymentCredentialsSaved
 
 - (instancetype)initWithCardId:(NSString *)cardId tmpPassword:(NSData *)tmpPassword {

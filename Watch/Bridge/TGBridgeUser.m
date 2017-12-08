@@ -1,7 +1,7 @@
 #import "TGBridgeUser.h"
 #import "TGBridgeBotInfo.h"
 
-#import "TGStringUtils.h"
+#import "../Extension/TGStringUtils.h"
 
 NSString *const TGBridgeUserIdentifierKey = @"identifier";
 NSString *const TGBridgeUserFirstNameKey = @"firstName";

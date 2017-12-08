@@ -10,7 +10,7 @@
 
 #import "TGUserDataRequestBuilder.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 #import "TGDatabase.h"

@@ -1,13 +1,9 @@
 #import "TGShareSheetSharePeersCell.h"
 
-#import "TGLetteredAvatarView.h"
-#import "TGCheckButtonView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGConversation.h"
-#import "TGUser.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
+#import <LegacyComponents/TGCheckButtonView.h>
 
 @interface TGShareSheetSharePeersCell () <UIGestureRecognizerDelegate>
 {

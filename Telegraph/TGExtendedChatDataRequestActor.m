@@ -1,7 +1,7 @@
 #import "TGExtendedChatDataRequestActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGUpdateStateRequestBuilder.h"
 

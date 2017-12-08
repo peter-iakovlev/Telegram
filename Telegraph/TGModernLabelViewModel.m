@@ -1,6 +1,6 @@
 #import "TGModernLabelViewModel.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGModernLabelViewModel ()
 {

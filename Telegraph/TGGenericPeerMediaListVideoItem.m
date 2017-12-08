@@ -1,7 +1,6 @@
 #import "TGGenericPeerMediaListVideoItem.h"
 
-#import "TGVideoMediaAttachment.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAppDelegate.h"
 

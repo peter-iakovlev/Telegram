@@ -1,13 +1,13 @@
 #import "TGPrivacyCustomShareListController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGButtonCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGUserCollectionItem.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
 #import "TGForwardTargetController.h"
 #import "TGDatabase.h"
 

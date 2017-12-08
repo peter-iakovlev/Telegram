@@ -3,7 +3,7 @@
 #import "DrawingContext.h"
 #import "TGSharedMediaUtils.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 @implementation TransformImageArguments
 

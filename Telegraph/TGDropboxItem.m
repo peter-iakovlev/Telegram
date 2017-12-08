@@ -1,6 +1,6 @@
 #import "TGDropboxItem.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGDropboxItem
 

@@ -3,7 +3,7 @@
 
 #import "ATQueue.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "opus.h"
 #import "opusenc.h"

@@ -1,6 +1,6 @@
 #import "TGOpenInBrowserItems.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGOpenInSafariItem : TGOpenInBrowserItem
 

@@ -1,16 +1,10 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGCommentCollectionItem.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGCommentCollectionItemView.h"
 
-#import "TGFont.h"
+#import "TGPresentation.h"
 
 @interface TGCommentCollectionItem ()
 {
@@ -34,7 +28,6 @@
         _alpha = 1.0f;
         
         _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f];
-        _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
 }
@@ -45,6 +38,11 @@
 
 - (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing clearFormatting:(bool)clearFormatting
 {
+    return [self initWithFormattedText:text paragraphSpacing:paragraphSpacing clearFormatting:clearFormatting alignment:NSTextAlignmentNatural];
+}
+
+- (instancetype)initWithFormattedText:(NSString *)text paragraphSpacing:(CGFloat)paragraphSpacing clearFormatting:(bool)clearFormatting alignment:(NSTextAlignment)alignment
+{
     self = [super init];
     if (self != nil)
     {
@@ -53,8 +51,7 @@
         self.selectable = false;
         _alpha = 1.0f;
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f clearFormatting:clearFormatting];
-        _textColor = UIColorRGB(0x6d6d72);
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing alignment:alignment fontSize:14.0f clearFormatting:clearFormatting];
     }
     return self;
 }
@@ -68,8 +65,6 @@
         self.highlightable = false;
         self.selectable = false;
         _alpha = 1.0f;
-        
-        _textColor = UIColorRGB(0x6d6d72);
     }
     return self;
 }
@@ -193,7 +188,7 @@
     return [TGCommentCollectionItemView class];
 }
 
-- (CGSize)itemSizeForContainerSize:(CGSize)containerSize
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
     static UIFont *font = nil;
     static dispatch_once_t onceToken;
@@ -202,7 +197,7 @@
         font = TGSystemFontOfSize(14);
     });
     
-    CGSize textSize = [_attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 30.0f, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
+    CGSize textSize = [_attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 30.0f - safeAreaInset.left - safeAreaInset.right, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
     
     textSize.width = CGCeil(textSize.width);
     textSize.height = CGCeil(textSize.height);
@@ -214,6 +209,7 @@
     }
     
     _calculatedSize = CGSizeMake(containerSize.width, textSize.height + 7.0f + 7.0f + MAX(0.0f, _topInset) + _bottomInset);
+    [((TGCommentCollectionItemView *)self.boundView) setCalculatedSize:_calculatedSize];
     
     _lastContainerWidth = containerSize.width;
     

@@ -1,5 +1,7 @@
 #import "TGNotificationPrivacyAccountSetting.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 @implementation TGNotificationPrivacyAccountSetting
 
 - (instancetype)initWithDefaultValues

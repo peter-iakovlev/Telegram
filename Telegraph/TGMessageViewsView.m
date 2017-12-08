@@ -1,7 +1,6 @@
 #import "TGMessageViewsView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGMessageViewsView () {
     UIImageView *_iconView;
@@ -25,7 +24,7 @@
             static UIImage *image = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^{
-                image = [UIImage imageNamed:@"MessageInlineViewCountIconIncoming.png"];
+                image = TGImageNamed(@"MessageInlineViewCountIconIncoming.png");
             });
             return image;
         }
@@ -34,7 +33,7 @@
             static UIImage *image = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^{
-                image = [UIImage imageNamed:@"MessageInlineViewCountIconOutgoing.png"];
+                image = TGImageNamed(@"MessageInlineViewCountIconOutgoing.png");
             });
             return image;
         }
@@ -43,7 +42,7 @@
             static UIImage *image = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^{
-                image = [UIImage imageNamed:@"MessageInlineViewCountIconMedia.png"];
+                image = TGImageNamed(@"MessageInlineViewCountIconMedia.png");
             });
             return image;
         }
@@ -85,9 +84,9 @@
     if (count < 1000) {
         return [[NSString alloc] initWithFormat:@"%d", (int)count];
     } else if (count < 1000 * 1000) {
-        return [[NSString alloc] initWithFormat:@"%dk", (int)count / 1000];
+        return [[NSString alloc] initWithFormat:@"%.1fk", (float)count / 1000.0f];
     } else {
-        return [[NSString alloc] initWithFormat:@"%dm", (int)count / (1000 * 1000)];
+        return [[NSString alloc] initWithFormat:@"%.1fm", (float)count / (1000.0f * 1000.0f)];
     }
 }
 

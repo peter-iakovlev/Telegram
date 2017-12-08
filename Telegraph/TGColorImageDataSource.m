@@ -1,6 +1,6 @@
 #import "TGColorImageDataSource.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGColorImageDataSource
 

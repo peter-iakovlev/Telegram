@@ -1,7 +1,7 @@
 #import "TGStickerPreviewPagingScrollView.h"
 
 #import "TGStickerPreviewPage.h"
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 @interface TGStickerPreviewPagingScrollView ()
 {

@@ -19,4 +19,20 @@
     return self;
 }
 
+- (void)viewWillAppear
+{
+    
+}
+
+- (void)viewDidDisappear
+{
+    
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self layoutSubviews];
+}
+
 @end

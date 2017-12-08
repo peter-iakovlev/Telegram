@@ -1,13 +1,12 @@
 #import "TGImageDownloadActor.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
-#import "TGRemoteImageView.h"
-
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGTelegraph.h"
 #import "TGTelegraphProtocols.h"
@@ -22,11 +21,9 @@
 
 #import "TGInterfaceAssets.h"
 
-#import "TGImageManager.h"
+#import <LegacyComponents/TGImageManager.h>
 
-#import "TGImagePickerController.h"
-
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/TGImagePickerController.h>
 
 #import "TGTelegramNetworking.h"
 
@@ -593,7 +590,7 @@ static inline double imageProcessingPriority()
                                                     }
                                                 }
                                                 
-                                                if ([[userProperties objectForKey:@"storeAsAsset"] boolValue] && TGAppDelegateInstance.autosavePhotos)
+                                                if ([[userProperties objectForKey:@"storeAsAsset"] boolValue])
                                                 {
                                                     bool shouldSave = true;
                                                     

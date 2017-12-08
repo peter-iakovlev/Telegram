@@ -1,6 +1,6 @@
 #import "TGModernGalleryVideoFooterView.h"
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGModernGalleryVideoFooterView ()
 {

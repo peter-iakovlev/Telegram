@@ -1,6 +1,8 @@
 #import "TGUserDataRequestBuilder.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 
@@ -13,8 +15,6 @@
 
 #import "TGAccountSettings.h"
 #import "TGAccountSettingsActor.h"
-
-#import "TGStringUtils.h"
 
 @implementation TGUserDataRequestBuilder
 

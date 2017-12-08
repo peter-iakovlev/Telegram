@@ -1,12 +1,11 @@
 #import "TGGifGalleryModel.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
 #import "TGDatabase.h"
-#import "TGPeerIdAdapter.h"
-#import "TGMessage.h"
-#import "TGDocumentMediaAttachment.h"
 
 #import "TGGenericPeerMediaGalleryGifItem.h"
 
@@ -15,7 +14,7 @@
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 
 #import "TGShareMenu.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGRecentGifsSignal.h"
 

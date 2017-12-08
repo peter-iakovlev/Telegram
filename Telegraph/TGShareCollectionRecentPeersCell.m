@@ -1,4 +1,7 @@
 #import "TGShareCollectionRecentPeersCell.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernMediaCollectionView.h"
 
 #import "TGShareCollectionCell.h"
@@ -7,10 +10,7 @@
 
 #import "TGDialogListRecentPeers.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
-#import "TGModernButton.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGModernButton.h>
 
 NSString *const TGShareCollectionRecentPeersCellIdentifier = @"TGShareCollectionRecentPeersCell";
 
@@ -64,6 +64,8 @@ NSString *const TGShareCollectionRecentPeersCellIdentifier = @"TGShareCollection
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.opaque = false;

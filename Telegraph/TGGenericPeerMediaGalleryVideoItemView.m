@@ -1,6 +1,6 @@
 #import "TGGenericPeerMediaGalleryVideoItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGGenericPeerMediaGalleryVideoItem.h"
 #import "TGModernGalleryVideoPlayerView.h"
@@ -8,8 +8,8 @@
 
 #import "TGDatabase.h"
 
-#import "TGModernButton.h"
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 #import "TGEmbedPIPPlaceholderView.h"
 #import "TGEmbedPIPController.h"
 
@@ -81,7 +81,7 @@
 {
     __weak TGGenericPeerMediaGalleryVideoItemView *weakSelf = self;
     
-    [_scrubbingInterfaceView setPictureInPictureHidden:!_playerView.supportsPIP];
+    [_scrubbingInterfaceView setPictureInPictureHidden:!_playerView.supportsPIP || ((TGGenericPeerMediaGalleryVideoItem *)self.item).groupedId == 2];
     
     _scrubbingInterfaceView.pipPressed = ^
     {

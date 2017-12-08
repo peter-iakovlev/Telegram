@@ -1,21 +1,21 @@
 #import "TGInstantPageImageView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSignalImageView.h"
 #import "TGSharedMediaSignals.h"
-#import "TGImageMediaAttachment.h"
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
 
 #import "TransformImageView.h"
 
 #import "TGTelegraph.h"
-#import "TGImageUtils.h"
 #import "PhotoResources.h"
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
 #import "TGVTAcceleratedVideoView.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 @interface TGInstantPageImageView () <TGModernGalleryTransitionView> {
     TGInstantPageMediaArguments *_arguments;
@@ -137,6 +137,9 @@
             [self addSubview:_button];
             [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         }
+        
+        if (iosMajorVersion() >= 11)
+            self.accessibilityIgnoresInvertColors = true;
     }
     return self;
 }

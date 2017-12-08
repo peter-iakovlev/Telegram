@@ -1,30 +1,21 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGGroupInfoController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGConversation.h"
+#import "TGLegacyComponentsContext.h"
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
+
 #import "TGDatabase.h"
 
-#import "TGHacks.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "UIDevice+PlatformInfo.h"
+#import <LegacyComponents/UIDevice+PlatformInfo.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
 #import "TGInterfaceManager.h"
-#import "TGNavigationBar.h"
 #import "TGTelegraphDialogListCompanion.h"
 #import "TGConversationChangeTitleRequestActor.h"
 #import "TGConversationChangePhotoActor.h"
@@ -42,34 +33,32 @@
 #import "TGBotUserInfoController.h"
 #import "TGAlertSoundController.h"
 
-#import "TGRemoteImageView.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGAlertView.h"
 #import "TGActionSheet.h"
 
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGGroupAvatarGalleryItem.h"
 #import "TGGroupAvatarGalleryModel.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGSharedMediaController.h"
 
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGGroupManagementSignals.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGGroupInfoShareLinkController.h"
 
 #import "TGGroupAdminsController.h"
 
-#import "TGMediaAvatarMenuMixin.h"
+#import <LegacyComponents/TGMediaAvatarMenuMixin.h>
+#import "TGWebSearchController.h"
 
 #import "TGConvertToSupergroupController.h"
 
-#import "TGLocalization.h"
+#import "TGLegacyComponentsContext.h"
 
 @interface TGGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate>
 {
@@ -183,7 +172,7 @@
         _usersSectionHeader = [[TGHeaderCollectionItem alloc] initWithTitle:@""];
         _addParticipantItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addParticipantPressed)];
         _addParticipantItem.leftInset = 65.0f;
-        _addParticipantItem.icon = [UIImage imageNamed:@"ModernContactListAddMemberIcon.png"];
+        _addParticipantItem.icon = TGImageNamed(@"ModernContactListAddMemberIcon.png");
         _addParticipantItem.iconOffset = CGPointMake(3.0f, 0.0f);
         _addParticipantItem.titleColor = TGAccentColor();
         _addParticipantItem.deselectAutomatically = true;
@@ -506,7 +495,7 @@
         return;
     
     __weak TGGroupInfoController *weakSelf = self;
-    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0)];
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0) saveEditedPhotos:TGAppDelegateInstance.saveEditedPhotos saveCapturedMedia:TGAppDelegateInstance.saveCapturedMedia];
     _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGGroupInfoController *strongSelf = weakSelf;
@@ -532,6 +521,31 @@
             return;
         
         strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        
+        __weak TGMediaAssetsController *weakAssetsController = assetsController;
+        __weak TGWebSearchController *weakController = searchController;
+        searchController.avatarCompletionBlock = ^(UIImage *image) {
+            __strong TGMediaAssetsController *strongAssetsController = weakAssetsController;
+            if (strongAssetsController.avatarCompletionBlock == nil)
+                return;
+            
+            strongAssetsController.avatarCompletionBlock(image);
+        };
+        searchController.dismiss = ^
+        {
+            __strong TGWebSearchController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissEmbeddedAnimated:true];
+        };
+        searchController.parentNavigationController = assetsController;
+        [searchController presentEmbeddedInController:assetsController animated:true];
+        
+        return searchController;
     };
     [_avatarMixin present];
 }
@@ -1120,11 +1134,11 @@
         }
         
         _addParticipantItem.title = TGLocalized(@"GroupInfo.UpgradeButton");
-        _addParticipantItem.icon = [UIImage imageNamed:@"GroupInfoIconUpgrade"];
+        _addParticipantItem.icon = TGImageNamed(@"GroupInfoIconUpgrade");
 
     } else {
         _addParticipantItem.title = TGLocalized(@"GroupInfo.AddParticipant");
-        _addParticipantItem.icon = [UIImage imageNamed:@"ModernContactListAddMemberIcon.png"];
+        _addParticipantItem.icon = TGImageNamed(@"ModernContactListAddMemberIcon.png");
         
         if ([_usersSection indexOfItem:_usersSectionUpgradeNotice1] != NSNotFound) {
             [_usersSection deleteItem:_usersSectionUpgradeNotice1];
@@ -1333,7 +1347,7 @@
             if (_conversation.isDeactivated) {
                 _leftLabel.text = TGLocalized(@"GroupInfo.DeactivatedStatus");
             } else {
-                _leftLabel.text = _conversation.kickedFromChat ? TGLocalized(@"GroupInfo.KickedStatus") : TGLocalized(@"GroupInfo.LeftStatus");
+                _leftLabel.text = _conversation.kickedFromChat ? @"" : TGLocalized(@"GroupInfo.LeftStatus");
             }
             _leftLabel.font = TGSystemFontOfSize(17.0f);
             _leftLabel.lineBreakMode = NSLineBreakByWordWrapping;
@@ -1369,7 +1383,7 @@
     
     if (avatarView != nil && avatarView.image != nil)
     {
-        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
         modernGallery.previewMode = previewMode;
         if (previewMode)
             modernGallery.showInterface = false;
@@ -1438,7 +1452,7 @@
         
         if (!previewMode)
         {
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:modernGallery];
             controllerWindow.hidden = false;
         }
         else
@@ -1607,7 +1621,7 @@
                 {
                     TGUser *user = [TGDatabaseInstance() loadUser:uid];
                     if (user != nil)
-                        errorText = [[NSString alloc] initWithFormat:TGLocalized(@"ConversationProfile.UserLeftChatError"), user.displayName];
+                        errorText = [[NSString alloc] initWithFormat:TGLocalized(@"GroupInfo.AddUserLeftError"), user.displayName];
                 }
                 else if (status == -3)
                 {
@@ -1769,7 +1783,7 @@
         TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
         controller.previewMode = false;
         
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
         controllerWindow.hidden = false;
     }
 }

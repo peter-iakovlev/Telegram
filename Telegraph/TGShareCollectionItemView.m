@@ -1,7 +1,8 @@
 #import "TGShareCollectionItemView.h"
-#import "TGMenuSheetController.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGMenuSheetController.h>
 
 #import "TGDatabase.h"
 #import "TGChatListSignals.h"
@@ -10,14 +11,11 @@
 #import "TGChatSearchController.h"
 #import "TGTelegraph.h"
 
-#import "TGConversation.h"
-#import "TGUser.h"
-
 #import "TGDialogListRecentPeers.h"
 #import "TGShareCollectionCell.h"
 #import "TGShareCollectionRecentPeersCell.h"
 
-#import "TGMenuSheetCollectionView.h"
+#import <LegacyComponents/TGMenuSheetCollectionView.h>
 #import "TGScrollIndicatorView.h"
 
 const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
@@ -43,7 +41,6 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
     SMetaDisposable *_recentDisposable;
     SMetaDisposable *_searchDisposable;
     
-    bool _transitionedIn;    
     CGFloat _expandOffset;
     CGFloat _collapsedHeight;
     CGFloat _expandedHeight;
@@ -82,6 +79,8 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
         _collectionViewLayout.minimumLineSpacing = 17;
         
         _collectionView = [[TGMenuSheetCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionViewLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.allowSimultaneousPan = true;
         _collectionView.backgroundColor = [UIColor clearColor];
         _collectionView.bounces = false;
@@ -185,10 +184,15 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
 
 - (id)processPeer:(id)peer existingPeerIds:(NSMutableSet *)existingPeerIds
 {
+    bool hideSelf = true;
+    
     if ([peer isKindOfClass:[TGConversation class]])
     {
         TGConversation *conversation = peer;
         if ([existingPeerIds containsObject:@(conversation.conversationId)])
+            return nil;
+        
+        if (conversation.conversationId == TGTelegraphInstance.clientUserId && hideSelf)
             return nil;
         
         [existingPeerIds addObject:@(conversation.conversationId)];
@@ -222,6 +226,9 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
     {
         TGUser *user = peer;
         if ([existingPeerIds containsObject:@(user.uid)])
+            return nil;
+        
+        if (user.uid == TGTelegraphInstance.clientUserId && hideSelf)
             return nil;
         
         [existingPeerIds addObject:@(user.uid)];
@@ -265,10 +272,26 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
             filteredPeers = peers;
         }
         
-        _currentPeers = [_foundPeers arrayByAddingObjectsFromArray:filteredPeers];
+        NSMutableArray *currentPeers = [[NSMutableArray alloc] init];
+        [currentPeers addObjectsFromArray:_foundPeers];
+        [currentPeers addObjectsFromArray:filteredPeers];
+
+        TGConversation *selfPeer = [self selfPeer];
+        [currentPeers insertObject:selfPeer atIndex:0];
+        
+        _currentPeers = currentPeers;
     }
     
     return _currentPeers;
+}
+
+- (TGConversation *)selfPeer
+{
+    TGConversation *selfPeer = [TGDatabaseInstance() loadConversationWithId:TGTelegraphInstance.clientUserId];
+    if (selfPeer == nil)
+        selfPeer = [[TGConversation alloc] initWithConversationId:TGTelegraphInstance.clientUserId unreadCount:0 serviceUnreadCount:0];
+    
+    return selfPeer;
 }
 
 - (void)addFoundPeer:(id)peer
@@ -355,7 +378,7 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
         return [SSignal complete];
     }];
     
-    [_recentDisposable setDisposable:[[[SSignal mergeSignals:@[[TGGlobalMessageSearchSignals recentPeerResults:^id (id item)
+    [_recentDisposable setDisposable:[[[SSignal mergeSignals:@[[TGGlobalMessageSearchSignals recentPeerResults:^id (id item, __unused bool recent)
     {
         __strong TGShareCollectionItemView *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -469,37 +492,6 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
 - (void)reloadData
 {
     [_collectionView reloadData];
-    
-    if (!_transitionedIn)
-    {
-        _transitionedIn = true;
-        if (iosMajorVersion() < 8 || self.sizeClass == UIUserInterfaceSizeClassRegular)
-            return;
-        
-        [_collectionView layoutSubviews];
-        
-        NSTimeInterval delay = 0.1;
-        NSTimeInterval delta = CFAbsoluteTimeGetCurrent() - _appearanceTime;
-        if (delta > 0.08)
-            delay = 0.0;
-        
-        if (delta > 0.45)
-            return;
-        
-        CGRect targetFrame = _collectionView.frame;
-        _collectionView.frame = CGRectOffset(_collectionView.frame, 0, 35);
-        UIViewAnimationOptions options = UIViewAnimationOptionAllowAnimatedContent;
-        if (iosMajorVersion() >= 7)
-            options = options | (7 << 16);
-        
-        [UIView animateWithDuration:0.3 delay:delay options:options animations:^
-        {
-            _collectionView.frame = targetFrame;
-        } completion:nil];
-        
-        for (TGShareCollectionCell *cell in _collectionView.visibleCells)
-            [cell performTransitionInWithDelay:MAX(0, delay - 0.06)];
-    }
 }
 
 #pragma mark - 
@@ -851,7 +843,7 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
         CGFloat maxExpandedHeight = 357.0f;
         CGFloat expandedHeight = 357.0f;
         
-        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - 68.0f - TGMenuSheetButtonItemViewHeight - self.menuController.statusBarHeight);
+        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - 68.0f - TGMenuSheetButtonItemViewHeight - self.menuController.statusBarHeight - self.menuController.safeAreaInset.bottom);
         
         if (_selectedPeerIds.count > 0 && ((NSInteger)screenHeight == 480 || (NSInteger)screenHeight == 568))
             maxExpandedHeight -= TGMenuSheetButtonItemViewHeight;

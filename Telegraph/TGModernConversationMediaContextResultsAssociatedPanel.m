@@ -1,25 +1,22 @@
 #import "TGModernConversationMediaContextResultsAssociatedPanel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBotContextResults.h"
-#import "TGImageUtils.h"
 
 #import "TGAnimatedMediaContextResultCell.h"
 
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"
 
-#import "TGImageUtils.h"
-
-#import "TGBotContextResultAttachment.h"
-
 #import "TGExternalGifSearchResult.h"
 #import "TGExternalImageSearchResult.h"
 
 #import "TGBotSignals.h"
 
-#import "TGItemPreviewController.h"
-#import "TGItemMenuSheetPreviewView.h"
-#import "TGMenuSheetButtonItemView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGItemMenuSheetPreviewView.h>
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 #import "TGPreviewMenu.h"
 
 #import "TGModernConversationGenericContextResultsAssociatedPanelSwitchPm.h"
@@ -105,6 +102,9 @@
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+        _collectionView.tag = 0xbeef;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.backgroundColor = [UIColor clearColor];
@@ -153,12 +153,11 @@
 }
 
 - (TGItemPreviewController *)presentPreviewForResultIfAvailable:(TGBotContextResult *)result immediately:(bool)immediately
-{
-    if (self.onResultPreview != nil)
-        self.onResultPreview();
+{    
+    void (^resultPreviewDisappeared)(bool) = self.resultPreviewDisappeared;
     
     __weak TGModernConversationMediaContextResultsAssociatedPanel *weakSelf = self;
-    return [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
+    TGItemPreviewController *controller = [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
     {
         __strong TGModernConversationMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf.resultSelected != nil)
@@ -181,6 +180,16 @@
         
         return CGPointZero;
     } sourceView:nil sourceRect:nil];
+    controller.onDismiss = ^{
+        if (resultPreviewDisappeared != nil)
+            resultPreviewDisappeared(true);
+    };
+    if (controller != nil)
+    {
+        if (self.resultPreviewAppeared != nil)
+            self.resultPreviewAppeared();
+    }
+    return controller;
 }
 
 - (CGFloat)preferredHeight {
@@ -276,6 +285,15 @@
     [self scrollViewDidScroll:_collectionView];
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    if (!UIEdgeInsetsEqualToEdgeInsets(safeAreaInset, _safeAreaInset))
+    {
+        _safeAreaInset = safeAreaInset;
+        [_collectionView.collectionViewLayout invalidateLayout];
+    }
+}
+
 - (void)bindCellContents {
     for (NSIndexPath *indexPath in [_collectionView indexPathsForVisibleItems]) {
         TGAnimatedMediaContextResultCell *cell = (TGAnimatedMediaContextResultCell *)[_collectionView cellForItemAtIndexPath:indexPath];
@@ -328,9 +346,9 @@
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout insetForSectionAtIndex:(NSInteger)__unused section {
     if (_stickers) {
-        return UIEdgeInsetsMake(4.0f, 12.0f, 4.0f, 12.0f);
+        return UIEdgeInsetsMake(4.0f, 12.0f + self.safeAreaInset.left, 4.0f, 12.0f + self.safeAreaInset.right);
     }
-    return UIEdgeInsetsMake(4.0f, 4.0f, 4.0f, 4.0f);
+    return UIEdgeInsetsMake(4.0f, 4.0f + self.safeAreaInset.left, 4.0f, 4.0f + self.safeAreaInset.right);
 }
 
 - (CGFloat)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)__unused section {
@@ -396,6 +414,11 @@
     _collectionView.frame = CGRectMake(0.0f, separatorHeight + _switchPm.frame.size.height, self.frame.size.width, self.frame.size.height - separatorHeight - _switchPm.frame.size.height);
     
     _bottomView.frame = CGRectMake(0.0f, self.frame.size.height, self.frame.size.width, 4.0f);
+}
+
+- (bool)hasSelectedItem
+{
+    return _collectionView.indexPathsForSelectedItems.count != 0;
 }
 
 - (void)selectPreviousItem

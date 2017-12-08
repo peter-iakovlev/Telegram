@@ -1,7 +1,6 @@
 #import "TGSharedMediaFilesEmptyView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSharedMediaFilesEmptyView ()
 {

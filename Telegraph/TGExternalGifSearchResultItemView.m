@@ -1,12 +1,12 @@
 #import "TGExternalGifSearchResultItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGExternalGifSearchResultItem.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGCheckButtonView.h>
 
-#import "TGCheckButtonView.h"
-
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGExternalGifSearchResultItemView ()
 {

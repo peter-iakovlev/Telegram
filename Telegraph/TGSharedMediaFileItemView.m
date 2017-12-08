@@ -1,22 +1,17 @@
 #import "TGSharedMediaFileItemView.h"
 
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGDateUtils.h"
+#import <LegacyComponents/TGImageView.h>
 
-#import "TGImageView.h"
-
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 #import "TGSharedMediaAvailabilityState.h"
 
 #import "TGSharedMediaFileThumbnailView.h"
 
 #import "TGSharedFileSignals.h"
-#import "TGViewController.h"
 #import "TGSharedMediaUtils.h"
+#import "TGMusicPlayerItemSignals.h"
 
 #import "TGSharedMediaCheckButton.h"
 
@@ -46,6 +41,8 @@
     TGSharedMediaCheckButton *_checkButton;
     
     UIGestureRecognizer *_tapRecognizer;
+    
+    bool _isAudio;
 }
 
 @end
@@ -169,12 +166,16 @@
     _separatorView.hidden = false;
     
     bool isSticker = false;
+    bool isAudio = false;
     for (id attribute in documentMediaAttachment.attributes)
     {
         if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
         {
             isSticker = true;
-            break;
+        }
+        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+        {
+            isAudio = true;
         }
     }
     
@@ -193,6 +194,14 @@
         useThumbnail = false;
         _legacyThumbnailUrl = nil;
         [_genericIconView setStyle:TGSharedMediaFileThumbnailViewStyleRounded colors:thumbnailColors];
+    }
+    
+    _isAudio = isAudio;
+    
+    if (isAudio)
+    {
+        _legacyThumbnailUrl = nil;
+        useThumbnail = true;
     }
     
     if (useThumbnail)
@@ -389,7 +398,17 @@
 
 - (SSignal *)_imageSignal
 {
-    return [TGSharedFileSignals squareFileThumbnail:_documentAttachment ofSize:![TGViewController isWidescreen] ? CGSizeMake(70.0f, 70.0f) : CGSizeMake(90.0f, 90.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:nil];
+    if (_isAudio)
+    {
+        return [[TGMusicPlayerItemSignals albumArtForDocument:_documentAttachment messageId:self.item.messageId thumbnail:true] catch:^SSignal *(__unused id error)
+        {
+            return [SSignal single:[UIImage imageNamed:@"MusicPlayerSmallAlbumArtPlaceholder"]];
+        }];
+    }
+    else
+    {
+        return [TGSharedFileSignals squareFileThumbnail:_documentAttachment ofSize:![TGViewController isWidescreen] ? CGSizeMake(70.0f, 70.0f) : CGSizeMake(90.0f, 90.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:nil];
+    }
 }
 
 - (void)setHighlighted:(BOOL)highlighted

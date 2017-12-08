@@ -1,5 +1,6 @@
 #import "TGBridgeMessageEntitiesAttachment.h"
-#import "TGMessageEntitiesAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeMessageEntitiesAttachment (TGMessageEntitiesAttachment)
 

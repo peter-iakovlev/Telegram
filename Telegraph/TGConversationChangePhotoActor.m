@@ -1,7 +1,9 @@
 #import "TGConversationChangePhotoActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
@@ -12,15 +14,11 @@
 
 #import "TGUserDataRequestBuilder.h"
 
-#import "TGRemoteImageView.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGConversationAddMessagesActor.h"
 
 #import "TLUpdates+TG.h"
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGConversationChangePhotoActor ()
 

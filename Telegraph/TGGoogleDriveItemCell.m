@@ -1,8 +1,8 @@
 #import "TGGoogleDriveItemCell.h"
 
-#import "TGFont.h"
-#import "TGImageView.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGImageView.h>
 
 #import "GDGoogleDriveURLMetadata.h"
 #import "GDGoogleDriveMetadata.h"

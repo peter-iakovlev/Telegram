@@ -1,7 +1,8 @@
 #import "TGBridgeUser+TGUser.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeBotInfo+TGBotInfo.h"
-#import "TGUser.h"
-#import "TGPhoneUtils.h"
 
 @implementation TGBridgeUser (TGUser)
 

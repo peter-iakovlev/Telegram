@@ -1,12 +1,8 @@
 #import "TGVideoMessageViewModel.h"
 
-#import "TGVideoMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
-
-#import "TGImageUtils.h"
-
-#import "TGMessage.h"
 
 #import "TGModernImageViewModel.h"
 #import "TGMessageImageViewModel.h"
@@ -27,7 +23,7 @@
 
 #import "TGAppDelegate.h"
 
-#import "TGPeerIdAdapter.h"
+#import "TGMessageGroupedLayout.h"
 
 @interface TGVideoMessageViewModel ()
 {
@@ -80,6 +76,9 @@
         [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
         
         [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
+     
+        if (_positionFlags != 0)
+            [previewUri appendFormat:@"&position=%d", _positionFlags];
         
         [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
         if (legacyThumbnailCacheUri != nil)
@@ -113,6 +112,65 @@
             [self.imageModel setAdditionalDataString:[[NSString alloc] initWithFormat:@"%d:%02d", minutes, seconds]];
     }
     return self;
+}
+
+- (void)updateImage
+{
+    TGMessage *message = _message;
+    
+    TGVideoMediaAttachment *video = nil;
+    for (id attachment in message.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+        {
+            video = attachment;
+            break;
+        }
+    }
+    
+    TGImageInfo *previewImageInfo = video.thumbnailInfo;
+    
+    CGSize largestSize = CGSizeZero;
+    NSString *legacyVideoFilePath = [TGVideoMessageViewModel filePathForVideoId:video.videoId != 0 ? video.videoId : video.localVideoId local:video.videoId == 0];
+    NSString *legacyThumbnailCacheUri = [previewImageInfo closestImageUrlWithSize:CGSizeZero resultingSize:&largestSize];
+    
+    if (video.videoId != 0 || video.localVideoId != 0)
+    {
+        previewImageInfo = [[TGImageInfo alloc] init];
+        
+        NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
+        if (video.videoId != 0)
+            [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
+        else
+            [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
+        
+        CGSize thumbnailSize = CGSizeZero;
+        CGSize renderSize = CGSizeZero;
+        
+        if (self.groupedLayout != nil)
+        {
+            CGRect frame = [self.groupedLayout frameForMessageId:_message.mid];
+            thumbnailSize = frame.size;
+            renderSize = TGScaleToFill(largestSize, thumbnailSize);
+        }
+        else
+        {
+            [TGImageMessageViewModel calculateImageSizesForImageSize:video.dimensions thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
+        }
+        
+        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
+            
+        [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
+        if (legacyThumbnailCacheUri != nil)
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailCacheUri];
+        
+        if (message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17)
+            [previewUri appendString:@"&secret=1"];
+        
+        [previewImageInfo addImageWithSize:renderSize url:previewUri];
+        
+        [self updateImageInfo:previewImageInfo];
+    }
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
@@ -160,11 +218,11 @@
         }
         else if (_videoSize < 1024 * 1024)
         {
-            labelText = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.DownloadProgressKilobytes"), (int)(_videoSize * progress / 1024), (int)(_videoSize / 1024)];
+            labelText = [[NSString alloc] initWithFormat:@"%1$d KB / %2$d KB", (int)(_videoSize * progress / 1024), (int)(_videoSize / 1024)];
         }
         else
         {
-            labelText = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.DownloadProgressMegabytes"), (float)_videoSize * progress / (1024 * 1024), (float)_videoSize / (1024 * 1024)];
+            labelText = [[NSString alloc] initWithFormat:TGLocalized(@"%.02f MB / %.02f MB"), ((float)_videoSize * progress / (1024 * 1024)), ((float)_videoSize / (1024 * 1024))];
         }
     }
     else
@@ -179,7 +237,18 @@
         }
     }
     
-    [self.imageModel setAdditionalDataString:labelText];
+    if (_positionFlags == TGMessageGroupPositionNone)
+        [self.imageModel setAdditionalDataString:labelText];
+    else
+        [self.imageModel setAdditionalDataString:nil];
+}
+
+- (void)setPositionFlags:(int)positionFlags
+{
+    [super setPositionFlags:positionFlags];
+    
+    if (_positionFlags != TGMessageGroupPositionNone)
+        [self.imageModel setAdditionalDataString:nil];
 }
 
 - (bool)instantPreviewGesture

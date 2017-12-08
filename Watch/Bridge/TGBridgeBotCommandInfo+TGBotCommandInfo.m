@@ -1,5 +1,6 @@
 #import "TGBridgeBotCommandInfo+TGBotCommandInfo.h"
-#import "TGBotComandInfo.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGBridgeBotCommandInfo (TGBotCommandInfo)
 

@@ -1,17 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUserInfoEditingPhoneCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 #import "TGPhoneTextField.h"
 
 @interface TGUserInfoEditingPhoneCollectionItemView () <TGPhoneTextFieldDelegate>
@@ -39,7 +30,7 @@
         _separatorLayer.backgroundColor = TGSeparatorColor().CGColor;
         [self.editingContentView.layer addSublayer:_separatorLayer];
         
-        _fieldSeparator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernUserInfoPhoneEditingSeparator.png"]];
+        _fieldSeparator = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernUserInfoPhoneEditingSeparator.png")];
         _fieldSeparator.frame = CGRectMake(109.0f, 0.0f, TGScreenPixel, 44.0f);
         [self.editingContentView addSubview:_fieldSeparator];
         
@@ -50,9 +41,7 @@
         [_labelButton addTarget:self action:@selector(labelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self.editingContentView addSubview:_labelButton];
         
-        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicatorSmall.png"]];
-        CGSize arrowSize = _arrowView.bounds.size;
-        _arrowView.frame = CGRectMake(96.0f, 17.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
+        _arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernListsDisclosureIndicatorSmall.png")];
         [self.editingContentView addSubview:_arrowView];
         
         CGFloat separatorHeight = TGScreenPixel;
@@ -91,9 +80,16 @@
     
     CGRect bounds = self.bounds;
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width + 256.0f, separatorHeight);
+    CGFloat separatorInset = 15.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width + 256.0f, separatorHeight);
     
-    _phoneField.frame = CGRectMake(122.0f, TGRetinaPixel, bounds.size.width - 122.0f - 8.0f, bounds.size.height);
+    _labelButton.frame = CGRectMake(46.0f + self.safeAreaInset.left, TGRetinaPixel, 46.0f, 44.0f);
+    _fieldSeparator.frame = CGRectMake(109.0f + self.safeAreaInset.left, 0.0f, TGScreenPixel, 44.0f);
+    
+    CGSize arrowSize = _arrowView.bounds.size;
+    _arrowView.frame = CGRectMake(96.0f + self.safeAreaInset.left, 17.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
+    
+    _phoneField.frame = CGRectMake(122.0f + self.safeAreaInset.left, TGRetinaPixel, bounds.size.width - 122.0f - 8.0f - self.safeAreaInset.left - self.safeAreaInset.right, bounds.size.height);
 }
 
 - (void)deleteAction

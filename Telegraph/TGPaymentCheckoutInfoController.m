@@ -1,5 +1,7 @@
 #import "TGPaymentCheckoutInfoController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGPaymentForm.h"
 
 #import "TGHeaderCollectionItem.h"
@@ -7,8 +9,7 @@
 #import "TGUsernameCollectionItem.h"
 #import "TGCountryAndPhoneCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
-#import "TGNavigationController.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "Stripe.h"
 #import "TGBotSignals.h"
@@ -23,6 +24,8 @@
 #import "TGTelegramNetworking.h"
 
 #import "TGAlertView.h"
+
+#import "TGPresentation.h"
 
 @interface TGPaymentCheckoutInfoController () {
     UIBarButtonItem *_doneItem;
@@ -94,6 +97,7 @@
             _shippindAddressLine1.usernameChanged = checkFields;
             _shippindAddressLine1.usernameValid = true;
             _shippindAddressLine1.returnPressed = focusOnNextItem;
+            _shippindAddressLine1.autocapitalizationType = UITextAutocapitalizationTypeSentences;
             [items addObject:_shippindAddressLine1];
             
             _shippindAddressLine2 = [[TGUsernameCollectionItem alloc] init];
@@ -104,6 +108,7 @@
             _shippindAddressLine2.usernameChanged = checkFields;
             _shippindAddressLine2.usernameValid = true;
             _shippindAddressLine2.returnPressed = focusOnNextItem;
+            _shippindAddressLine2.autocapitalizationType = UITextAutocapitalizationTypeSentences;
             [items addObject:_shippindAddressLine2];
             
             _shippindAddressCity = [[TGUsernameCollectionItem alloc] init];
@@ -114,6 +119,7 @@
             _shippindAddressCity.usernameChanged = checkFields;
             _shippindAddressCity.usernameValid = true;
             _shippindAddressCity.returnPressed = focusOnNextItem;
+            _shippindAddressCity.autocapitalizationType = UITextAutocapitalizationTypeSentences;
             [items addObject:_shippindAddressCity];
             
             _shippindAddressState = [[TGUsernameCollectionItem alloc] init];
@@ -124,13 +130,14 @@
             _shippindAddressState.usernameChanged = checkFields;
             _shippindAddressState.usernameValid = true;
             _shippindAddressState.returnPressed = focusOnNextItem;
+            _shippindAddressState.autocapitalizationType = UITextAutocapitalizationTypeSentences;
             [items addObject:_shippindAddressState];
             
             _shippingAddressCountryId = currentInfo.shippingAddress.countryIso2;
             NSString *countryName = _shippingAddressCountryId.length != 0 ? [TGLoginCountriesController countryNameByCountryId:_shippingAddressCountryId code:NULL] : nil;
             _shippingAddressCountry = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"CheckoutInfo.ShippingInfoCountry") variant:countryName == nil ? @"" : countryName action:@selector(countryPressed)];
             _shippingAddressCountry.minLeftPadding = minimalInset + 20.0f;
-            _shippingAddressCountry.variantColor = [UIColor blackColor];
+            _shippingAddressCountry.variantColor = TGPresentation.current.pallete.collectionMenuTextColor;
             [items addObject:_shippingAddressCountry];
             
             _shippindAddressPostcode = [[TGUsernameCollectionItem alloc] init];
@@ -141,6 +148,7 @@
             _shippindAddressPostcode.usernameChanged = checkFields;
             _shippindAddressPostcode.usernameValid = true;
             _shippindAddressPostcode.returnPressed = focusOnNextItem;
+            _shippindAddressPostcode.autocapitalizationType = UITextAutocapitalizationTypeSentences;
             [items addObject:_shippindAddressPostcode];
             
             TGCollectionMenuSection *section = [[TGCollectionMenuSection alloc] initWithItems:items];
@@ -160,6 +168,7 @@
                 _receiverName.usernameChanged = checkFields;
                 _receiverName.usernameValid = true;
                 _receiverName.returnPressed = focusOnNextItem;
+                _receiverName.autocapitalizationType = UITextAutocapitalizationTypeSentences;
                 [items addObject:_receiverName];
             }
             

@@ -1,6 +1,6 @@
 #import "TGWebSearchInternalImageResult.h"
 
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGWebSearchInternalImageResult
 

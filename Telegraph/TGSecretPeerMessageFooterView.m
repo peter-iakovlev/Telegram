@@ -1,6 +1,6 @@
 #import "TGSecretPeerMessageFooterView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSecretPeerMessageFooterView ()
 {

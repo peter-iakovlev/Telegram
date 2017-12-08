@@ -1,4 +1,4 @@
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGTwoStepConfig;
 

@@ -471,3 +471,27 @@
 
 @end
 
+@interface TLUpdate$updateFavedStickers : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateChannelReadMessagesContents : TLUpdate
+
+@property (nonatomic) int32_t channel_id;
+@property (nonatomic, retain) NSArray *messages;
+
+@end
+
+@interface TLUpdate$updateContactsReset : TLUpdate
+
+
+@end
+
+@interface TLUpdate$updateChannelAvailableMessages : TLUpdate
+
+@property (nonatomic) int32_t channel_id;
+@property (nonatomic) int32_t available_min_id;
+
+@end
+

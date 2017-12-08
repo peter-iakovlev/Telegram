@@ -6,16 +6,18 @@
 #import "TGDialogListCell.h"
 
 #import "TGInterfaceAssets.h"
-#import "TGSearchBar.h"
+#import <LegacyComponents/TGSearchBar.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 
 #import "TGInterfaceManager.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGRecentHashtagsSignal.h"
+
+#import "TGPresentation.h"
 
 extern NSString *authorNameYou;
 
@@ -62,6 +64,8 @@ extern NSString *authorNameYou;
     self.view.backgroundColor = [UIColor whiteColor];
     
     _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.view.frame.size.height) style:UITableViewStylePlain];
+    if (iosMajorVersion() >= 11)
+        _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _tableView.dataSource = self;
     _tableView.delegate = self;
@@ -118,7 +122,7 @@ extern NSString *authorNameYou;
     {
         __weak TGChatSearchController *weakSelf = self;
         _searchBar.showActivity = true;
-        [_searchDisposable setDisposable:[[[[TGGlobalMessageSearchSignals searchMessages:query peerId:_peerId accessHash:0 itemMapping:^id(id item)
+        [_searchDisposable setDisposable:[[[[TGGlobalMessageSearchSignals searchMessages:query peerId:_peerId accessHash:0 userId:0 maxId:0 limit:100 itemMapping:^id(id item)
         {
             if ([item isKindOfClass:[TGConversation class]])
             {
@@ -367,6 +371,7 @@ extern NSString *authorNameYou;
         cell = [[TGDialogListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TGDialogListSearchCell" assetsSource:[TGInterfaceAssets instance]];
     }
     
+    cell.presentation = TGPresentation.current;
     [self prepareCell:cell forConversation:_searchResults[indexPath.row] animated:false];
     
     return cell;

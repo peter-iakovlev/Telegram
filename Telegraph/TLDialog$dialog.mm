@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//dialog flags:# peer:Peer top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int notify_settings:PeerNotifySettings pts:flags.0?int draft:flags.1?DraftMessage = Dialog;
+//dialog flags:# pinned:flags.2?true peer:Peer top_message:int read_inbox_max_id:int read_outbox_max_id:int unread_count:int unread_mentions_count:int notify_settings:PeerNotifySettings pts:flags.0?int draft:flags.1?DraftMessage = Dialog;
 
 @implementation TLDialog$dialog
 
@@ -31,6 +31,7 @@
     result.read_inbox_max_id = [is readInt32];
     result.read_outbox_max_id = [is readInt32];
     result.unread_count = [is readInt32];
+    result.unread_mentions_count = [is readInt32];
     
     {
         int32_t signature = [is readInt32];

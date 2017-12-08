@@ -1,7 +1,8 @@
 #import "TGStickerPackPreviewView.h"
 
-#import "TGFont.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 #import "TGPagerView.h"
 
 #import "TGStickerPreviewPagingScrollView.h"

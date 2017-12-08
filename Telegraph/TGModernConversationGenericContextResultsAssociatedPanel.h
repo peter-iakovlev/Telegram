@@ -1,4 +1,4 @@
-#import "TGModernConversationAssociatedInputPanel.h"
+#import <LegacyComponents/TGModernConversationAssociatedInputPanel.h>
 
 @class TGBotContextResults;
 @class TGBotContextResult;
@@ -10,7 +10,6 @@
 @property (nonatomic, weak) TGViewController *controller;
 @property (nonatomic, copy) void (^resultSelected)(TGBotContextResults *results, TGBotContextResult *result);
 @property (nonatomic, copy) void (^activateSwitchPm)(NSString *startParam);
-@property (nonatomic, copy) void (^onResultPreview)(void);
 
 - (void)setResults:(TGBotContextResults *)results;
 

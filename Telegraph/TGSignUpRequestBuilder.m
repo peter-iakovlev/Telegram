@@ -1,13 +1,14 @@
 #import "TGSignUpRequestBuilder.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegramNetworking.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegraph.h"
 #import "TGSchema.h"
-#import "TGUser.h"
 #import "TGUserDataRequestBuilder.h"
 
 #import "TGTimer.h"

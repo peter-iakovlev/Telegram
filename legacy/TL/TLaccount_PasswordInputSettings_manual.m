@@ -1,6 +1,6 @@
 #import "TLaccount_PasswordInputSettings_manual.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TLaccount_PasswordInputSettings_manual
 

@@ -1,5 +1,5 @@
 #import <UIKit/UIKit.h>
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @class TGEmbedItemView;
 @class TGPIPSourceLocation;

@@ -1,4 +1,4 @@
-#import "TGModernGalleryDefaultFooterAccessoryView.h"
+#import <LegacyComponents/TGModernGalleryDefaultFooterAccessoryView.h>
 
 @interface TGGifGalleryAddAccessoryView : UIView <TGModernGalleryDefaultFooterAccessoryView>
 

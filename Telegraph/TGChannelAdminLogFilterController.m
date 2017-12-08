@@ -1,11 +1,13 @@
 #import "TGChannelAdminLogFilterController.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
 #import "TGHeaderCollectionItem.h"
 #import "TGGroupInfoUserCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
 #import "TGCheckCollectionItem.h"
-#import "TGStringUtils.h"
 
 @interface TGChannelAdminLogFilterController () {
     NSArray *_usersFilter;
@@ -77,12 +79,10 @@ static bool filterIsFull(TGChannelEventFilter filter) {
         _adminsItem.alignToRight = true;
         [eventsSection addItem:_adminsItem];
         
-        _newMembersItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.AdminLogFilter.EventsNewMembers") action:@selector(eventsItemPressed:)];
+        _newMembersItem = [[TGCheckCollectionItem alloc] initWithTitle:isChannel ? TGLocalized(@"Channel.AdminLogFilter.EventsNewSubscribers") : TGLocalized(@"Channel.AdminLogFilter.EventsNewMembers") action:@selector(eventsItemPressed:)];
         _newMembersItem.isChecked = filter.invite && filter.join;
         _newMembersItem.alignToRight = true;
-        if (true || !isChannel) {
-            [eventsSection addItem:_newMembersItem];
-        }
+        [eventsSection addItem:_newMembersItem];
         
         _infoItem = [[TGCheckCollectionItem alloc] initWithTitle:isChannel ? TGLocalized(@"Channel.AdminLogFilter.ChannelEventsInfo") : TGLocalized(@"Channel.AdminLogFilter.EventsInfo") action:@selector(eventsItemPressed:)];
         _infoItem.isChecked = filter.info;
@@ -106,12 +106,10 @@ static bool filterIsFull(TGChannelEventFilter filter) {
             [eventsSection addItem:_pinnedMessagesItem];
         }
         
-        _leavingMembersItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.AdminLogFilter.EventsLeaving") action:@selector(eventsItemPressed:)];
+        _leavingMembersItem = [[TGCheckCollectionItem alloc] initWithTitle:isChannel ? TGLocalized(@"Channel.AdminLogFilter.EventsLeavingSubscribers") : TGLocalized(@"Channel.AdminLogFilter.EventsLeaving") action:@selector(eventsItemPressed:)];
         _leavingMembersItem.isChecked = filter.leave;
         _leavingMembersItem.alignToRight = true;
-        if (true || !isChannel) {
-            [eventsSection addItem:_leavingMembersItem];
-        }
+        [eventsSection addItem:_leavingMembersItem];
         
         [self.menuSections addSection:eventsSection];
         

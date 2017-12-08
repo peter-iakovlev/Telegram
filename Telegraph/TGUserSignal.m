@@ -4,7 +4,7 @@
 #import "TL/TLMetaScheme.h"
 #import "TGDatabase.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TLUserFull$userFull.h"
 #import "TGUserDataRequestBuilder.h"

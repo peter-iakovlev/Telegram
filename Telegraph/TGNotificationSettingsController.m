@@ -8,8 +8,8 @@
 
 #import "TGNotificationSettingsController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
@@ -23,6 +23,10 @@
 #import "TGActionSheet.h"
 
 #import "TGAlertSoundController.h"
+
+#import "TGAccountSignals.h"
+
+#import "TGPresentation.h"
 
 @interface TGNotificationSettingsController () <TGAlertSoundControllerDelegate>
 {
@@ -38,10 +42,15 @@
     TGSwitchCollectionItem *_inAppVibrate;
     TGSwitchCollectionItem *_inAppPreview;
     
+    TGSwitchCollectionItem *_joinedContacts;
+    
     NSMutableDictionary *_privateNotificationSettings;
     NSMutableDictionary *_groupNotificationSettings;
     
     bool _selectingPrivateSound;
+    
+    id<SDisposable> _contactsJoinedDisposable;
+    SMetaDisposable *_updateContactsJoinedDisposable;
 }
 
 @end
@@ -119,9 +128,13 @@
         
         TGCollectionMenuSection *inAppNotificationsSection = [[TGCollectionMenuSection alloc] initWithItems:inAppNotificationsSectionItems];
         [self.menuSections addSection:inAppNotificationsSection];
+        
+        _joinedContacts = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"NotificationSettings.ContactJoined") isOn:true];
+        TGCollectionMenuSection *contactsSection = [[TGCollectionMenuSection alloc] initWithItems:@[_joinedContacts]];
+        //[self.menuSections addSection:contactsSection];
 
         TGButtonCollectionItem *resetItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.ResetAllNotifications") action:@selector(resetAllNotifications)];
-        resetItem.titleColor = TGDestructiveAccentColor();
+        resetItem.titleColor = TGPresentation.current.pallete.collectionMenuDestructiveColor;
         resetItem.deselectAutomatically = true;
         TGCollectionMenuSection *resetSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             resetItem,
@@ -139,6 +152,23 @@
             [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%d,cached)", INT_MAX - 1] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:INT_MAX - 1] forKey:@"peerId"] watcher:self];
             [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%d,cached)", INT_MAX - 2] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:INT_MAX - 2] forKey:@"peerId"] watcher:self];
         }];
+        
+        __weak TGNotificationSettingsController *weakSelf = self;
+        
+        _updateContactsJoinedDisposable = [[SMetaDisposable alloc] init];
+        _joinedContacts.toggled = ^(bool value, __unused TGSwitchCollectionItem *item) {
+            __strong TGNotificationSettingsController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf->_updateContactsJoinedDisposable setDisposable:[[TGAccountSignals updateContactsJoinedNotificationSettings:value] startWithNext:nil]];
+            }
+        };
+        
+        _contactsJoinedDisposable = [[[TGAccountSignals currentContactsJoinedNotificationSettings] deliverOn:[SQueue mainQueue]] startWithNext:^(id next) {
+            __strong TGNotificationSettingsController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf->_joinedContacts setIsOn:[next boolValue] animated:true];
+            }
+        }];
     }
     return self;
 }
@@ -147,6 +177,8 @@
 {
     [_actionHandle reset];
     [ActionStageInstance() removeWatcher:self];
+    [_contactsJoinedDisposable dispose];
+    [_updateContactsJoinedDisposable dispose];
 }
 
 #pragma mark -

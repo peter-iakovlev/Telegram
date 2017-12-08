@@ -1,45 +1,41 @@
 #import "TGGenericPeerMediaGalleryModel.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "ATQueue.h"
 
 #import "TGDatabase.h"
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
-#import "TGPeerIdAdapter.h"
 
 #import "TGGenericPeerMediaGalleryImageItem.h"
 #import "TGGenericPeerMediaGalleryVideoItem.h"
+#import "TGGenericPeerGalleryGroupItem.h"
 
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
 #import "TGGenericPeerMediaGalleryDeleteAccessoryView.h"
 
-#import "TGStringUtils.h"
 #import "TGActionSheet.h"
 
-#import "ActionStage.h"
-
-#import "TGAccessChecker.h"
-
 #import "TGForwardTargetController.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAlertView.h"
 
 #import "TGModernConversationController.h"
 
 #import "TGShareMenu.h"
-#import "TGMediaAssetsUtils.h"
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMediaAssetsUtils.h>
+#import <LegacyComponents/TGMenuSheetController.h>
 
 #import "TGGenericModernConversationCompanion.h"
 
-#import "TGShareSheetWindow.h"
-#import "TGShareSheetButtonItemView.h"
+#import "TGLegacyComponentsContext.h"
 
 @interface TGGenericPeerMediaGalleryModel () <ASWatcher>
 {
@@ -56,8 +52,11 @@
     bool _externalMode;
     bool _important;
     
+    NSMutableDictionary *_groupedItems;
+    
     TGConversation *_conversationAuthorPeer;
-    TGShareSheetWindow *_shareSheetWindow;
+    
+    TGGenericPeerMediaGalleryDefaultFooterView *_footerView;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -111,6 +110,8 @@
         _atMessageId = atMessageId;
         
         _loadingCompleted = true;
+        
+        _groupedItems = [[NSMutableDictionary alloc] init];
         [self _replaceMessages:messages atMessageId:_atMessageId];
     }
     return self;
@@ -124,10 +125,14 @@
 
 - (id)authorPeerForId:(int64_t)peerId {
     if (TGPeerIdIsChannel(peerId)) {
-        if (_conversationAuthorPeer == nil) {
-            _conversationAuthorPeer = [TGDatabaseInstance() loadChannels:@[@(_peerId)]][@(_peerId)];
+        if (peerId == _peerId) {
+            if (_conversationAuthorPeer == nil) {
+                _conversationAuthorPeer = [TGDatabaseInstance() loadChannels:@[@(_peerId)]][@(_peerId)];
+            }
+            return _conversationAuthorPeer;
+        } else {
+            return [TGDatabaseInstance() loadChannels:@[@(peerId)]][@(peerId)];
         }
-        return _conversationAuthorPeer;
     } else {
         return [TGDatabaseInstance() loadUser:(int32_t)peerId];
     }
@@ -213,6 +218,19 @@
         if ([currentMessageIds containsObject:@(message.mid)])
             continue;
         
+        int64_t authorPeerId = message.fromUid;
+        if (_peerId == TGTelegraphInstance.clientUserId)
+        {
+            for (TGMediaAttachment *attachment in message.mediaAttachments)
+            {
+                if (attachment.type == TGForwardedMessageMediaAttachmentType)
+                {
+                    authorPeerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                    break;
+                }
+            }
+        }
+        
         for (id attachment in message.mediaAttachments)
         {
             if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
@@ -225,13 +243,14 @@
                 if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                     localImageId = murMurHash32(legacyCacheUrl);
                 
-                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithMedia:imageMedia localId:localImageId peerId:_peerId messageId:message.mid];
                 
-                imageItem.authorPeer = [self authorPeerForId:message.fromUid];
+                imageItem.authorPeer = [self authorPeerForId:authorPeerId];
                 
                 imageItem.date = message.date;
                 imageItem.messageId = message.mid;
                 imageItem.caption = imageMedia.caption;
+                imageItem.groupedId = message.groupedId;
                 [updatedModelItems addObject:imageItem];
             }
             else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
@@ -242,11 +261,12 @@
                 
                 TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                 
-                videoItem.authorPeer = [self authorPeerForId:message.fromUid];
+                videoItem.authorPeer = [self authorPeerForId:authorPeerId];
 
                 videoItem.date = message.date;
                 videoItem.messageId = message.mid;
                 videoItem.caption = videoMedia.caption;
+                videoItem.groupedId = message.groupedId;
                 [updatedModelItems addObject:videoItem];
             }
         }
@@ -267,6 +287,23 @@
         
         return date1 < date2 ? NSOrderedAscending : NSOrderedDescending;
     }];
+    
+    NSMutableDictionary *groups = [[NSMutableDictionary alloc] init];
+    for (id<TGGenericPeerGalleryItem> item in updatedModelItems)
+    {
+        if (item.groupedId != 0)
+        {
+            NSMutableArray *groupItems = groups[@(item.groupedId)];
+            if (groupItems == nil)
+            {
+                groupItems = [[NSMutableArray alloc] init];
+                groups[@(item.groupedId)] = groupItems;
+            }
+            
+            [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:item]];
+            item.groupItems = groupItems;
+        }
+    }
     
     _modelItems = updatedModelItems;
     
@@ -296,7 +333,33 @@
     {
         NSMutableArray *updatedModelItems = [[NSMutableArray alloc] initWithArray:_modelItems];
         [updatedModelItems removeObjectsAtIndexes:indexSet];
+        
+        NSMutableDictionary *groups = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *groupedItems = [[NSMutableDictionary alloc] init];
+        for (id<TGGenericPeerGalleryItem> item in updatedModelItems)
+        {
+            if (item.groupedId != 0)
+            {
+                NSMutableArray *groupItems = groups[@(item.groupedId)];
+                if (groupItems == nil)
+                {
+                    groupItems = [[NSMutableArray alloc] init];
+                    groups[@(item.groupedId)] = groupItems;
+                }
+                
+                [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:item]];
+                item.groupItems = groupItems;
+                
+                groupedItems[@(item.messageId)] = item;
+            }
+        }
+        
         _modelItems = updatedModelItems;
+        
+        TGDispatchOnMainThread(^
+        {
+           _groupedItems = groupedItems;
+        });
         
         [self _replaceItems:_modelItems focusingOnItem:nil];
     }
@@ -331,6 +394,19 @@
         {
             TGMessage *message = messagesById[@([item messageId])];
             
+            int64_t authorPeerId = message.fromUid;
+            if (_peerId == TGTelegraphInstance.clientUserId)
+            {
+                for (TGMediaAttachment *attachment in message.mediaAttachments)
+                {
+                    if (attachment.type == TGForwardedMessageMediaAttachmentType)
+                    {
+                        authorPeerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                        break;
+                    }
+                }
+            }
+            
             for (id attachment in message.mediaAttachments)
             {
                 if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
@@ -343,13 +419,14 @@
                     if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                         localImageId = murMurHash32(legacyCacheUrl);
                     
-                    TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
+                    TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithMedia:imageMedia localId:localImageId peerId:_peerId messageId:message.mid];
                     
-                    imageItem.authorPeer = [self authorPeerForId:message.fromUid];
+                    imageItem.authorPeer = [self authorPeerForId:authorPeerId];
 
                     imageItem.date = message.date;
                     imageItem.messageId = message.mid;
                     imageItem.caption = imageMedia.caption;
+                    imageItem.groupedId = message.groupedId;
                     changesFound = true;
                     [updatedModelItems replaceObjectAtIndex:(NSUInteger)index withObject:imageItem];
                 }
@@ -361,11 +438,12 @@
                     
                     TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                     
-                    videoItem.authorPeer = [self authorPeerForId:message.fromUid];
+                    videoItem.authorPeer = [self authorPeerForId:authorPeerId];
 
                     videoItem.date = message.date;
                     videoItem.messageId = message.mid;
                     videoItem.caption = videoMedia.caption;
+                    videoItem.groupedId = message.groupedId;
                     changesFound = true;
                     [updatedModelItems replaceObjectAtIndex:(NSUInteger)index withObject:videoItem];
                 }
@@ -389,7 +467,32 @@
          return date1 < date2 ? NSOrderedAscending : NSOrderedDescending;
      }];
     
+    NSMutableDictionary *groups = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *groupedItems = [[NSMutableDictionary alloc] init];
+    for (id<TGGenericPeerGalleryItem> item in updatedModelItems)
+    {
+        if (item.groupedId != 0)
+        {
+            NSMutableArray *groupItems = groups[@(item.groupedId)];
+            if (groupItems == nil)
+            {
+                groupItems = [[NSMutableArray alloc] init];
+                groups[@(item.groupedId)] = groupItems;
+            }
+            
+            [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:item]];
+            item.groupItems = groupItems;
+            
+            groupedItems[@(item.messageId)] = item;
+        }
+    }
+    
     _modelItems = updatedModelItems;
+    
+    TGDispatchOnMainThread(^
+    {
+        _groupedItems = groupedItems;
+    });
     
     [self _replaceItems:_modelItems focusingOnItem:nil];
 }
@@ -407,6 +510,19 @@
     
     for (TGMessage *message in messages)
     {
+        int64_t authorPeerId = message.fromUid;
+        if (_peerId == TGTelegraphInstance.clientUserId)
+        {
+            for (TGMediaAttachment *attachment in message.mediaAttachments)
+            {
+                if (attachment.type == TGForwardedMessageMediaAttachmentType)
+                {
+                    authorPeerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                    break;
+                }
+            }
+        }
+        
         for (id attachment in message.mediaAttachments)
         {
             if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
@@ -419,13 +535,14 @@
                 if (imageMedia.imageId == 0 && legacyCacheUrl.length != 0)
                     localImageId = murMurHash32(legacyCacheUrl);
                 
-                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:imageMedia.imageId accessHash:imageMedia.accessHash orLocalId:localImageId peerId:_peerId messageId:message.mid legacyImageInfo:imageMedia.imageInfo embeddedStickerDocuments:imageMedia.embeddedStickerDocuments hasStickers:imageMedia.hasStickers];
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithMedia:imageMedia localId:localImageId peerId:_peerId messageId:message.mid];
                 
-                imageItem.authorPeer = [self authorPeerForId:message.fromUid];
+                imageItem.authorPeer = [self authorPeerForId:authorPeerId];
                 
                 imageItem.date = message.date;
                 imageItem.messageId = message.mid;
                 imageItem.caption = imageMedia.caption;
+                imageItem.groupedId = message.groupedId;
                 [updatedModelItems insertObject:imageItem atIndex:0];
                 
                 if (atMessageId != 0 && atMessageId == message.mid)
@@ -439,11 +556,12 @@
                 
                 TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:videoMedia peerId:_peerId messageId:message.mid];
                 
-                videoItem.authorPeer = [self authorPeerForId:message.fromUid];
+                videoItem.authorPeer = [self authorPeerForId:authorPeerId];
                 
                 videoItem.date = message.date;
                 videoItem.messageId = message.mid;
                 videoItem.caption = videoMedia.caption;
+                videoItem.groupedId = message.groupedId;
                 [updatedModelItems insertObject:videoItem atIndex:0];
                 
                 if (atMessageId != 0 && atMessageId == message.mid)
@@ -452,7 +570,32 @@
         }
     }
     
+    NSMutableDictionary *groups = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *groupedItems = [[NSMutableDictionary alloc] init];
+    for (id<TGGenericPeerGalleryItem> item in updatedModelItems)
+    {
+        if (item.groupedId != 0)
+        {
+            NSMutableArray *groupItems = groups[@(item.groupedId)];
+            if (groupItems == nil)
+            {
+                groupItems = [[NSMutableArray alloc] init];
+                groups[@(item.groupedId)] = groupItems;
+            }
+            
+            [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:item]];
+            item.groupItems = groupItems;
+            
+            groupedItems[@(item.messageId)] = item;
+        }
+    }
+    
     _modelItems = updatedModelItems;
+    
+    TGDispatchOnMainThread(^
+    {
+        _groupedItems = groupedItems;
+    });
     
     [self _replaceItems:_modelItems focusingOnItem:focusItem];
 }
@@ -481,7 +624,23 @@
 
 - (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
 {
-    return [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
+    _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
+    {
+        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        id<TGGenericPeerGalleryItem> galleryItem = strongSelf->_groupedItems[@(item.keyId)];
+        [strongSelf _focusOnItem:(id<TGModernGalleryItem>)galleryItem synchronously:synchronously];
+    };
+    return _footerView;
+}
+
+- (void)_interItemTransitionProgressChanged:(CGFloat)progress
+{
+    [_footerView setInterItemTransitionProgress:progress];
 }
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
@@ -501,37 +660,10 @@
         if (strongSelf == nil)
             return;
         
-        bool isVideo = false;
-        NSString *actionTitle = TGLocalized(@"Preview.SaveToCameraRoll");
-        NSURL *itemURL = [strongSelf saveItemURL:item isVideo:&isVideo];
-        SSignal *externalItemSignal = (itemURL != nil) ? [SSignal single:itemURL] : nil;
-        if (itemURL == nil)
-            actionTitle = nil;
-        
         TGViewController *viewController = nil;
         if (strongSelf.viewControllerForModalPresentation) {
             viewController = (TGViewController *)strongSelf.viewControllerForModalPresentation();
         }
-        
-        void (^saveAction)(void) = ^
-        {
-            if (!isVideo)
-            {
-                if ([itemURL.pathExtension isEqualToString:@"bin"] || itemURL.pathExtension.length == 0)
-                {
-                    NSData *data = [NSData dataWithContentsOfURL:itemURL options:NSDataReadingMappedIfSafe error:nil];
-                    [TGMediaAssetsSaveToCameraRoll saveImageWithData:data];
-                }
-                else
-                {
-                    [TGMediaAssetsSaveToCameraRoll saveImageAtURL:itemURL];
-                }
-            }
-            else
-            {
-                [TGMediaAssetsSaveToCameraRoll saveVideoAtURL:itemURL];
-            }
-        };
         
         CGRect (^sourceRect)(void) = ^CGRect
         {
@@ -543,62 +675,199 @@
         };
         
         __strong TGGenericPeerMediaGalleryActionsAccessoryView *strongAccessoryView = weakAccessoryView;
-        if (strongSelf->_allowActions)
+        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+        void (^presentShare)(TGMenuSheetController *, NSArray *) = ^(TGMenuSheetController *existingController, NSArray *items)
         {
-            [TGShareMenu presentInParentController:viewController menuController:nil buttonTitle:actionTitle buttonAction:saveAction shareAction:^(NSArray *peerIds, NSString *caption)
+            bool canSaveAll = true;
+            NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+            SSignal *externalItemSignal = nil;
+            void (^saveAction)(void) = nil;
+            for (id<TGGenericPeerGalleryItem> item in items)
             {
-                __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                    continue;
                 
-                if (strongSelf != nil && strongSelf.shareAction != nil)
+                [messageIds addObject:@(item.messageId)];
+                
+                if (items.count == 1)
                 {
-                    [ActionStageInstance() dispatchOnStageQueue:^
+                    bool isVideo = false;
+                    NSURL *itemURL = [strongSelf saveItemURL:(id<TGModernGalleryItem>)item isVideo:&isVideo];
+                    if (itemURL != nil)
                     {
-                        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
-                        
-                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] peerId:_peerId];
-                        if (message == nil)
-                            message = [TGDatabaseInstance() loadMessageWithMid:[concreteItem messageId] - migratedMessageIdOffset peerId:_attachedPeerId];
-                        if (message == nil)
-                            message = [TGDatabaseInstance() loadMediaMessageWithMid:[concreteItem messageId]];
-                        
-                        TGDispatchOnMainThread(^
+                        externalItemSignal = (itemURL != nil) ? [SSignal single:itemURL] : nil;
+                        saveAction = ^
                         {
-                            strongSelf.shareAction(message, peerIds, caption);
-                        });
-                    }];
+                            if (!isVideo)
+                            {
+                                if ([itemURL.pathExtension isEqualToString:@"bin"] || itemURL.pathExtension.length == 0)
+                                {
+                                    NSData *data = [NSData dataWithContentsOfURL:itemURL options:NSDataReadingMappedIfSafe error:nil];
+                                    [TGMediaAssetsSaveToCameraRoll saveImageWithData:data silentlyFail:false completionBlock:nil];
+                                }
+                                else
+                                {
+                                    [TGMediaAssetsSaveToCameraRoll saveImageAtURL:itemURL];
+                                }
+                            }
+                            else
+                            {
+                                [TGMediaAssetsSaveToCameraRoll saveVideoAtURL:itemURL];
+                            }
+                        };
+                    }
                 }
-            } externalShareItemSignal:externalItemSignal sourceView:strongAccessoryView sourceRect:sourceRect barButtonItem:nil];
-        }
-        else if (itemURL != nil)
+            }
+            
+            if (items.count > 1)
+            {
+                saveAction = ^
+                {
+                    for (id<TGGenericPeerGalleryItem> item in items)
+                    {
+                        if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                            continue;
+                        
+                        bool isVideo = false;
+                        NSURL *itemURL = [strongSelf saveItemURL:(id<TGModernGalleryItem>)item isVideo:&isVideo];
+                        if (itemURL == nil)
+                            return;
+                        
+                        if (!isVideo)
+                        {
+                            if ([itemURL.pathExtension isEqualToString:@"bin"] || itemURL.pathExtension.length == 0)
+                            {
+                                NSData *data = [NSData dataWithContentsOfURL:itemURL options:NSDataReadingMappedIfSafe error:nil];
+                                [TGMediaAssetsSaveToCameraRoll saveImageWithData:data silentlyFail:false completionBlock:nil];
+                            }
+                            else
+                            {
+                                [TGMediaAssetsSaveToCameraRoll saveImageAtURL:itemURL];
+                            }
+                        }
+                        else
+                        {
+                            [TGMediaAssetsSaveToCameraRoll saveVideoAtURL:itemURL];
+                        }
+                    }
+                };
+            }
+            
+            NSString *actionTitle = canSaveAll ? TGLocalized(@"Preview.SaveToCameraRoll") : nil;
+            if (strongSelf->_allowActions)
+            {
+                [TGShareMenu presentInParentController:viewController menuController:existingController buttonTitle:actionTitle buttonAction:saveAction shareAction:^(NSArray *peerIds, NSString *caption)
+                {
+                    __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+                    
+                    if (strongSelf != nil && strongSelf.shareAction != nil)
+                        strongSelf.shareAction(messageIds, peerIds, caption);
+                } externalShareItemSignal:externalItemSignal sourceView:strongAccessoryView sourceRect:sourceRect barButtonItem:nil];
+            }
+            else if (saveAction != nil)
+            {
+                TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
+                controller.dismissesByOutsideTap = true;
+                controller.hasSwipeGesture = true;
+                controller.narrowInLandscape = true;
+                controller.sourceRect = sourceRect;
+                
+                __weak TGMenuSheetController *weakController = controller;
+                TGMenuSheetButtonItemView *saveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:actionTitle type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    if (strongController == nil)
+                        return;
+                    
+                    [strongController dismissAnimated:true manual:true];
+                    saveAction();
+                }];
+                
+                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    if (strongController == nil)
+                        return;
+                    
+                    [strongController dismissAnimated:true manual:true];
+                }];
+                
+                [controller setItemViews:@[ saveItem, cancelItem ]];
+                
+                [controller presentInViewController:viewController sourceView:strongAccessoryView animated:true];
+            }
+        };
+        
+        if (concreteItem.groupedId == 0 || concreteItem.groupItems.count == 1)
         {
-            TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+            presentShare(nil, @[item]);
+        }
+        else
+        {
+            NSMutableArray *items = [[NSMutableArray alloc] init];
+            NSInteger photosCount = 0;
+            NSInteger videosCount = 0;
+            for (TGGenericPeerGalleryGroupItem *groupItem in concreteItem.groupItems)
+            {
+                if (groupItem.isVideo)
+                    videosCount++;
+                else
+                    photosCount++;
+                
+                id<TGGenericPeerGalleryItem> item = strongSelf->_groupedItems[@(groupItem.keyId)];
+                if (item != nil)
+                    [items addObject:item];
+            }
+            
+            NSInteger totalCount = photosCount + videosCount;
+            if (totalCount == 0)
+                return;
+            
+            NSString *title = nil;
+            if (photosCount > 0 && videosCount == 0)
+            {
+                NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.SharePhoto_" value:photosCount]);
+                title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", photosCount]];
+            }
+            else if (videosCount > 0 && photosCount == 0)
+            {
+                NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.ShareVideo_" value:videosCount]);
+                title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", videosCount]];
+            }
+            else
+            {
+                NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.ShareItem_" value:totalCount]);
+                title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", totalCount]];
+            }
+            
+            TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
+            __weak TGMenuSheetController *weakController = controller;
             controller.dismissesByOutsideTap = true;
             controller.hasSwipeGesture = true;
             controller.narrowInLandscape = true;
             controller.sourceRect = sourceRect;
-            
-            __weak TGMenuSheetController *weakController = controller;
-            TGMenuSheetButtonItemView *saveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:actionTitle type:TGMenuSheetButtonTypeDefault action:^
+            controller.permittedArrowDirections = (UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown);
+
+            bool isVideo = [item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]];
+            TGMenuSheetButtonItemView *thisItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:isVideo ? TGLocalized(@"Media.ShareThisVideo") : TGLocalized(@"Media.ShareThisPhoto") type:TGMenuSheetButtonTypeDefault action:^
             {
                 __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                [strongController dismissAnimated:true manual:true];
-                saveAction();
+                presentShare(strongController, @[item]);
+            }];
+            
+            TGMenuSheetButtonItemView *allItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGMenuSheetController *strongController = weakController;
+                presentShare(strongController, items);
             }];
             
             TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
             {
                 __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                                                       
-                [strongController dismissAnimated:true manual:true];
+                [strongController dismissAnimated:true];
             }];
             
-            [controller setItemViews:@[ saveItem, cancelItem ]];
-            
+            [controller setItemViews:@[thisItem, allItem, cancelItem] animated:false];
             [controller presentInViewController:viewController sourceView:strongAccessoryView animated:true];
         }
     };
@@ -694,136 +963,204 @@
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultRightAccessoryView
 {
-    if (_disableActions) {
+    if (_disableActions || _disableDelete) {
         return nil;
     }
     TGGenericPeerMediaGalleryDeleteAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryDeleteAccessoryView alloc] init];
+    __weak TGGenericPeerMediaGalleryDeleteAccessoryView *weakAccessoryView = accessoryView;
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
         __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
-            if ([strongSelf _canDeleteItem:item]) {
-                if (strongSelf.actionSheetView().window != nil) {
-                    bool haveOutgoing = false;
-                    bool haveIncoming = false;
-                    
-                    if (TGPeerIdIsUser(strongSelf->_peerId) || TGPeerIdIsGroup(strongSelf->_peerId)) {
-                        id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
-                        
-                        int32_t messageId = [concreteItem messageId];
-                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:strongSelf->_peerId];
-                        bool isPeerAdmin = false;
-                        if (TGPeerIdIsGroup(strongSelf->_peerId)) {
-                            TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:strongSelf->_peerId];
-                            isPeerAdmin = [conversation isAdmin];
-                        }
-                        if (message != nil) {
-                            if (message.outgoing) {
-                                if ([TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin]) {
-                                    haveOutgoing = true;
-                                }
-                            } else {
-                                haveIncoming = true;
-                            }
-                        }
-                    }
-                    
-                    _shareSheetWindow = [[TGShareSheetWindow alloc] init];
-                    _shareSheetWindow.dismissalBlock = ^
+            CGRect (^sourceRect)(void) = ^CGRect
+            {
+                __strong TGGenericPeerMediaGalleryDeleteAccessoryView *strongAccessoryView = weakAccessoryView;
+                if (strongAccessoryView == nil)
+                    return CGRectZero;
+                
+                return strongAccessoryView.bounds;
+            };
+            
+            TGViewController *viewController = nil;
+            if (strongSelf.viewControllerForModalPresentation) {
+                viewController = (TGViewController *)strongSelf.viewControllerForModalPresentation();
+            }
+            
+            __strong TGGenericPeerMediaGalleryDeleteAccessoryView *strongAccessoryView = weakAccessoryView;
+            id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+            void (^presentDelete)(TGMenuSheetController *, NSArray *) = ^(TGMenuSheetController *existingController, NSArray *items)
+            {
+                bool canDeleteItems = true;
+                for (id<TGModernGalleryItem> item in items)
+                {
+                    if (![strongSelf _canDeleteItem:item])
                     {
-                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                        if (strongSelf == nil)
-                            return;
-                        
-                        strongSelf->_shareSheetWindow.rootViewController = nil;
-                        strongSelf->_shareSheetWindow = nil;
-                    };
-                    
-                    NSMutableArray *items = [[NSMutableArray alloc] init];
-                    
-                    int64_t conversationId = strongSelf->_peerId;
-                    
-                    NSString *basicDeleteTitle = TGLocalized(@"Common.Delete");
-                    if (TGPeerIdIsSecretChat(conversationId)) {
-                        basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
-                    } else if (TGPeerIdIsChannel(conversationId)) {
-                        basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
-                    }
-                    TGShareSheetButtonItemView *actionItem = [[TGShareSheetButtonItemView alloc] initWithTitle: (TGPeerIdIsSecretChat(conversationId) || TGPeerIdIsChannel(conversationId) || conversationId == TGTelegraphInstance.clientUserId) ? basicDeleteTitle : TGLocalized(@"Conversation.DeleteMessagesForMe") pressed:^ {
-                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                        if (strongSelf != nil) {
-                            [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
-                            strongSelf->_shareSheetWindow = nil;
-                            
-                            [strongSelf _commitDeleteItem:item forEveryone:false];
-                        }
-                    }];
-                    [actionItem setDestructive:true];
-                    
-                    if (!TGPeerIdIsSecretChat(conversationId) && !TGPeerIdIsChannel(conversationId) && conversationId != TGTelegraphInstance.clientUserId && haveOutgoing && !haveIncoming) {
-                        NSString *title = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
-                        if (TGPeerIdIsUser(conversationId)) {
-                            TGUser *user = [TGDatabaseInstance() loadUser:(int)conversationId];
-                            if (user != nil) {
-                                title = [NSString stringWithFormat:TGLocalized(@"Conversation.DeleteMessagesFor"), user.displayFirstName];
-                            }
-                        }
-                        
-                        TGShareSheetButtonItemView *itemView = [[TGShareSheetButtonItemView alloc] initWithTitle: title pressed:^ {
-                            __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                            if (strongSelf != nil) {
-                                [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
-                                strongSelf->_shareSheetWindow = nil;
-                                
-                                [strongSelf _commitDeleteItem:item forEveryone:true];
-                            }
-                        }];
-                        [itemView setDestructive:true];
-                        [items addObject:itemView];
-                    }
-                    
-                    [items addObject:actionItem];
-                    
-                    _shareSheetWindow.view.cancel = ^{
-                        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                        if (strongSelf != nil) {
-                            [strongSelf->_shareSheetWindow dismissAnimated:true completion:nil];
-                            strongSelf->_shareSheetWindow = nil;
-                        }
-                    };
-                    
-                    _shareSheetWindow.view.items = items;
-                    _shareSheetWindow.windowLevel = strongSelf.actionSheetView().window.windowLevel + 0.001f;
-                    [_shareSheetWindow showAnimated:true completion:nil];
-                } else {
-                    UIView *actionSheetView = nil;
-                    if (strongSelf.actionSheetView)
-                        actionSheetView = strongSelf.actionSheetView();
-                    
-                    if (actionSheetView != nil)
-                    {
-                        NSMutableArray *actions = [[NSMutableArray alloc] init];
-                        
-                        NSString *actionTitle = nil;
-                        if ([item isKindOfClass:[TGModernGalleryImageItem class]])
-                            actionTitle = TGLocalized(@"Preview.DeletePhoto");
-                        else
-                            actionTitle = TGLocalized(@"Preview.DeleteVideo");
-                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:actionTitle action:@"delete" type:TGActionSheetActionTypeDestructive]];
-                        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-                        
-                        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
-                        {
-                            __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
-                            if ([action isEqualToString:@"delete"])
-                            {
-                                [strongSelf _commitDeleteItem:item];
-                            }
-                        } target:strongSelf] showInView:actionSheetView];
+                        canDeleteItems = false;
+                        break;
                     }
                 }
+                
+                TGMenuSheetController *controller = existingController ?: [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
+                __weak TGMenuSheetController *weakController = controller;
+                controller.dismissesByOutsideTap = true;
+                controller.hasSwipeGesture = true;
+                controller.narrowInLandscape = true;
+                controller.sourceRect = sourceRect;
+                controller.permittedArrowDirections = (UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown);
+                
+                bool canDeleteForEveryone = true;
+                if (TGPeerIdIsUser(strongSelf->_peerId) || TGPeerIdIsGroup(strongSelf->_peerId)) {
+                    bool isPeerAdmin = false;
+                    if (TGPeerIdIsGroup(strongSelf->_peerId)) {
+                        TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:strongSelf->_peerId];
+                        isPeerAdmin = [conversation isAdmin];
+                    }
+
+                    for (id<TGGenericPeerGalleryItem> item in items)
+                    {
+                        if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                            continue;
+                        
+                        int32_t messageId = [item messageId];
+                        TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:strongSelf->_peerId];
+                        
+                        if (message.outgoing) {
+                            if (![TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin]) {
+                                canDeleteForEveryone = false;
+                            }
+                        } else {
+                            if (!(TGPeerIdIsGroup(strongSelf->_peerId) && [TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin])) {
+                                canDeleteForEveryone = false;
+                            }
+                        }
+                    }
+                }
+                
+                int64_t conversationId = strongSelf->_peerId;
+                NSMutableArray *itemViews = [[NSMutableArray alloc] init];
+                
+                NSString *basicDeleteTitle = TGLocalized(@"Common.Delete");
+                if (TGPeerIdIsSecretChat(conversationId)) {
+                    basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                } else if (TGPeerIdIsChannel(conversationId)) {
+                    basicDeleteTitle = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                }
+                
+                if (!TGPeerIdIsSecretChat(conversationId) && !TGPeerIdIsChannel(conversationId) && conversationId != TGTelegraphInstance.clientUserId && canDeleteForEveryone) {
+                    NSString *title = TGLocalized(@"Conversation.DeleteMessagesForEveryone");
+                    if (TGPeerIdIsUser(conversationId)) {
+                        TGUser *user = [TGDatabaseInstance() loadUser:(int)conversationId];
+                        if (user != nil) {
+                            title = [NSString stringWithFormat:TGLocalized(@"Conversation.DeleteMessagesFor"), user.displayFirstName];
+                        }
+                    }
+                    
+                    TGMenuSheetButtonItemView *forItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDestructive action:^
+                    {
+                        __strong TGMenuSheetController *strongController = weakController;
+                        [strongController dismissAnimated:true];
+                        
+                        [strongSelf _commitDeleteItems:items forEveryone:true];
+                    }];
+                    [itemViews addObject:forItem];
+                }
+                
+                TGMenuSheetButtonItemView *basicItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:(TGPeerIdIsSecretChat(conversationId) || TGPeerIdIsChannel(conversationId) || conversationId == TGTelegraphInstance.clientUserId) ? basicDeleteTitle : TGLocalized(@"Conversation.DeleteMessagesForMe") type:TGMenuSheetButtonTypeDestructive action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    [strongController dismissAnimated:true];
+                    
+                    [strongSelf _commitDeleteItems:items forEveryone:false];
+                }];
+                [itemViews addObject:basicItem];
+                
+                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    [strongController dismissAnimated:true];
+                }];
+                [itemViews addObject:cancelItem];
+                
+                
+                [controller setItemViews:itemViews animated:existingController != nil];
+
+                if (existingController == nil)
+                    [controller presentInViewController:viewController sourceView:strongAccessoryView animated:true];
+            };
+            
+            if (concreteItem.groupedId == 0 || concreteItem.groupItems.count == 1)
+            {
+                presentDelete(nil, @[item]);
+            }
+            else
+            {
+                NSMutableArray *items = [[NSMutableArray alloc] init];
+                NSInteger photosCount = 0;
+                NSInteger videosCount = 0;
+                for (TGGenericPeerGalleryGroupItem *groupItem in concreteItem.groupItems)
+                {
+                    if (groupItem.isVideo)
+                        videosCount++;
+                    else
+                        photosCount++;
+                    
+                    id<TGGenericPeerGalleryItem> item = strongSelf->_groupedItems[@(groupItem.keyId)];
+                    if (item != nil)
+                        [items addObject:item];
+                }
+                
+                NSInteger totalCount = photosCount + videosCount;
+                if (totalCount == 0)
+                    return;
+                
+                NSString *title = nil;
+                if (photosCount > 0 && videosCount == 0)
+                {
+                    NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.SharePhoto_" value:photosCount]);
+                    title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", photosCount]];
+                }
+                else if (videosCount > 0 && photosCount == 0)
+                {
+                    NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.ShareVideo_" value:videosCount]);
+                    title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", videosCount]];
+                }
+                else
+                {
+                    NSString *format = TGLocalized([TGStringUtils integerValueFormat:@"Media.ShareItem_" value:totalCount]);
+                    title = [NSString stringWithFormat:format, [NSString stringWithFormat:@"%ld", totalCount]];
+                }
+                
+                TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
+                __weak TGMenuSheetController *weakController = controller;
+                controller.dismissesByOutsideTap = true;
+                controller.hasSwipeGesture = true;
+                controller.narrowInLandscape = true;
+                controller.sourceRect = sourceRect;
+                controller.permittedArrowDirections = (UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown);
+                
+                bool isVideo = [item isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]];
+                TGMenuSheetButtonItemView *thisItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:isVideo ? TGLocalized(@"Media.ShareThisVideo") : TGLocalized(@"Media.ShareThisPhoto") type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    presentDelete(strongController, @[item]);
+                }];
+                
+                TGMenuSheetButtonItemView *allItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    presentDelete(strongController, items);
+                }];
+                
+                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+                {
+                    __strong TGMenuSheetController *strongController = weakController;
+                    [strongController dismissAnimated:true];
+                }];
+                
+                [controller setItemViews:@[thisItem, allItem, cancelItem] animated:false];
+                [controller presentInViewController:viewController sourceView:strongAccessoryView animated:true];
             }
         }
     };
@@ -855,23 +1192,29 @@
     return true;
 }
 
-- (void)_commitDeleteItem:(id<TGModernGalleryItem>)item {
-    [self _commitDeleteItem:item forEveryone:false];
+- (void)_commitDeleteItems:(NSArray *)items {
+    [self _commitDeleteItems:items forEveryone:false];
 }
 
-- (void)_commitDeleteItem:(id<TGModernGalleryItem>)item forEveryone:(bool)forEveryone
+- (void)_commitDeleteItems:(NSArray *)items forEveryone:(bool)forEveryone
 {
     [_queue dispatch:^
     {
-        if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+        NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+        for (id<TGGenericPeerGalleryItem> item in items)
         {
-            id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
+            if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)])
+                continue;
             
-            NSArray *messageIds = @[@([concreteItem messageId])];
-            [self _deleteMessagesWithIds:messageIds];
-            static int actionId = 1;
-            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/deleteMessages/(genericPeerMedia%d)", _peerId, actionId++] options:@{@"mids": messageIds, @"forEveryone": @(forEveryone)} watcher:TGTelegraphInstance];
+            [messageIds addObject:@(item.messageId)];
         }
+        
+        if (messageIds.count == 0)
+            return;
+        
+        [self _deleteMessagesWithIds:messageIds];
+        static int actionId = 1;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversation/(%lld)/deleteMessages/(genericPeerMedia%d)", _peerId, actionId++] options:@{@"mids": messageIds, @"forEveryone": @(forEveryone)} watcher:TGTelegraphInstance];
     }];
 }
 

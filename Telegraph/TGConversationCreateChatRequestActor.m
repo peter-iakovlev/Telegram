@@ -1,7 +1,7 @@
 #import "TGConversationCreateChatRequestActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"

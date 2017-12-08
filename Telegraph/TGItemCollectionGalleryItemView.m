@@ -1,13 +1,13 @@
 #import "TGItemCollectionGalleryItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 #import "MediaBox.h"
 
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 
 #import "TGItemCollectionGalleryItem.h"
-
-#import "TGMessage.h"
 
 #import "TGInstantPageImageView.h"
 #import "TGEmptyGalleryFooterAccessoryView.h"
@@ -31,6 +31,16 @@
         [self.scrollView addSubview:_wrapperView];
     }
     return self;
+}
+
+- (void)setFocused:(bool)isFocused {
+    [super setFocused:isFocused];
+    
+    if (isFocused)
+    {
+        TGInstantPageMedia *media = ((TGItemCollectionGalleryItem *)self.item).media;
+        [self defaultFooterAccessoryLeftView].hidden = ![media.media isKindOfClass:[TGImageMediaAttachment class]];
+    }
 }
 
 - (SSignal *)readyForTransitionIn {

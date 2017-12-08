@@ -1,7 +1,6 @@
 #import "TGCollectionMultilineInputItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGCollectionMultilineInputItemView () <UITextViewDelegate> {
     UILabel *_placeholderLabel;
@@ -54,9 +53,9 @@
     return UIEdgeInsetsMake(13.0f, 11.0f, 13.0f, 11.0f);
 }
 
-+ (CGFloat)heightForText:(NSString *)text width:(CGFloat)width {
++ (CGFloat)heightForText:(NSString *)text width:(CGFloat)width safeAreaInset:(UIEdgeInsets)safeAreaInset {
     UIEdgeInsets insets = [self insets];
-    return CGCeil([text.length == 0 ? @" " : text sizeWithFont:[self font] constrainedToSize:CGSizeMake(width - insets.left - insets.right - 10.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping].height + insets.top + insets.bottom);
+    return CGCeil([text.length == 0 ? @" " : text sizeWithFont:[self font] constrainedToSize:CGSizeMake(width - insets.left - insets.right - 10.0f - safeAreaInset.left - safeAreaInset.right, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping].height + insets.top + insets.bottom);
 }
 
 - (void)setPlaceholder:(NSString *)placeholder {
@@ -155,6 +154,9 @@
     
     UIEdgeInsets insets = [TGCollectionMultilineInputItemView insets];
     UIEdgeInsets additionalInsets = self.insets;
+    additionalInsets.left += self.safeAreaInset.left;
+    additionalInsets.right += self.safeAreaInset.right;
+    
     _placeholderLabel.frame = CGRectOffset(_placeholderLabel.bounds, insets.left + additionalInsets.left + 5.0f, insets.top + additionalInsets.top + TGRetinaPixel);
     CGRect frame = self.bounds;
     if (!_countLabel.hidden)
@@ -163,7 +165,7 @@
     frame.origin.x += additionalInsets.left;
     
     _textView.frame = frame;
-    _countLabel.frame = CGRectMake(self.bounds.size.width - insets.right - 30.0f - 4.0f, insets.top + TGRetinaPixel, 30.0f, _countLabel.frame.size.height);
+    _countLabel.frame = CGRectMake(self.bounds.size.width - insets.right - 30.0f - 4.0f - self.safeAreaInset.right, insets.top + TGRetinaPixel, 30.0f, _countLabel.frame.size.height);
 }
 
 - (BOOL)becomeFirstResponder {

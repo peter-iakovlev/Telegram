@@ -1,8 +1,8 @@
 #import <Foundation/Foundation.h>
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGBotInfo.h"
-#import "TGBotReplyMarkup.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TL/TLMetaScheme.h"
 
 #import "TGPaymentForm.h"

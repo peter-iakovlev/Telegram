@@ -6,7 +6,7 @@
 //
 //
 
-#import "TGImageDataSource.h"
+#import <LegacyComponents/TGImageDataSource.h>
 
 @interface TGGoogleDriveThumbnailDataSource : TGImageDataSource
 

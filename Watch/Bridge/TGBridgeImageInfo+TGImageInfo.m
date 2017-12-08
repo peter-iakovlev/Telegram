@@ -1,6 +1,6 @@
 #import "TGBridgeImageInfo+TGImageInfo.h"
 
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGBridgeImageInfo (TGImageInfo)
 

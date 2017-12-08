@@ -1,12 +1,12 @@
 #import "TGCheckImageStoredActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGDatabase.h"
 
-#import <AssetsLibrary/AssetsLibrary.h>
+#import <LegacyComponents/TGMediaAssetsUtils.h>
 
 @implementation TGCheckImageStoredActor
 
@@ -37,19 +37,12 @@
             
             if (data != nil)
             {
-                ALAssetsLibrary *assetsLibrary = [[ALAssetsLibrary alloc] init];
-                
-                __block __strong ALAssetsLibrary *blockLibrary = assetsLibrary;
-                
-                [assetsLibrary writeImageDataToSavedPhotosAlbum:data metadata:nil completionBlock:^(NSURL *assetURL, __unused NSError *error)
+                [TGMediaAssetsSaveToCameraRoll saveImageWithData:data silentlyFail:true completionBlock:^(bool succeed)
                 {
-                    TGLog(@"Saved to %@", assetURL);
-                    
-                    blockLibrary = nil;
-                    
                     [ActionStageInstance() dispatchOnStageQueue:^
                     {
-                        [TGDatabaseInstance() setAssetIsStored:url];
+                        if (succeed)
+                            [TGDatabaseInstance() setAssetIsStored:url];
                         
                         [ActionStageInstance() actionCompleted:self.path result:nil];
                     }];

@@ -1,11 +1,11 @@
 #import "TGPeerNotificationSettingsSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegramNetworking.h"
 #import "TGTelegraph.h"
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGPeerNotificationSettingsHelper : NSObject <ASWatcher>
 {

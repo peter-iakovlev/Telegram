@@ -1,7 +1,11 @@
 #import "TGShareCommentView.h"
-#import "TGModernButton.h"
-#import "TGFont.h"
-#import "HPTextViewInternal.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/HPTextViewInternal.h>
+
+#import "TGAppDelegate.h"
 
 @interface TGShareCommentView () <UITextViewDelegate>
 {
@@ -41,7 +45,7 @@
         [_placeholderView sizeToFit];
         [self addSubview:_placeholderView];
         
-        _textView = [[HPTextViewInternal alloc] init];
+        _textView = [[HPTextViewInternal alloc] initWithKeyCommandController:TGAppDelegateInstance.keyCommandController];
         _textView.font = _placeholderView.font;
         _textView.backgroundColor = [UIColor clearColor];
         _textView.textColor = [UIColor blackColor];

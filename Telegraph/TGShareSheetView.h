@@ -6,6 +6,7 @@
 
 + (UIImage *)selectionBackgroundWithFirst:(bool)first last:(bool)last;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
 @property (nonatomic, weak) TGShareSheetWindow *attachmentSheetWindow;
 @property (nonatomic, copy) void (^cancel)();
 

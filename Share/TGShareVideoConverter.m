@@ -5,17 +5,6 @@
 
 #import <sys/stat.h>
 
-typedef enum
-{
-    TGMediaVideoConversionPresetCompressedDefault,
-    TGMediaVideoConversionPresetCompressedVeryLow,
-    TGMediaVideoConversionPresetCompressedLow,
-    TGMediaVideoConversionPresetCompressedMedium,
-    TGMediaVideoConversionPresetCompressedHigh,
-    TGMediaVideoConversionPresetCompressedVeryHigh,
-    TGMediaVideoConversionPresetAnimation
-} TGMediaVideoConversionPreset;
-
 @interface TGShareMediaVideoConversionResult : NSObject
 
 @property (nonatomic, readonly) NSURL *fileURL;
@@ -325,7 +314,7 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
 
 @implementation TGShareVideoConverter
 
-+ (SSignal *)convertAVAsset:(AVAsset *)avAsset
++ (SSignal *)convertAVAsset:(AVAsset *)avAsset preset:(TGMediaVideoConversionPreset)preset
 {
     SQueue *queue = [[SQueue alloc] init];
     
@@ -341,14 +330,15 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
             {
                 if (((TGMediaVideoConversionContext *)context.value).cancelled)
                     return;
+             
+                TGMediaVideoConversionPreset finalPreset = preset;
                 
                 CGSize dimensions = [avAsset tracksWithMediaType:AVMediaTypeVideo].firstObject.naturalSize;
-                TGMediaVideoConversionPreset preset = TGMediaVideoConversionPresetCompressedMedium;
-                if (!CGSizeEqualToSize(dimensions, CGSizeZero))
+                if (!CGSizeEqualToSize(dimensions, CGSizeZero) && preset != TGMediaVideoConversionPresetAnimation && preset != TGMediaVideoConversionPresetVideoMessage)
                 {
                     TGMediaVideoConversionPreset bestPreset = [self bestAvailablePresetForDimensions:dimensions];
                     if (preset > bestPreset)
-                        preset = bestPreset;
+                        finalPreset = bestPreset;
                 }
                 
                 NSError *error = nil;
@@ -373,7 +363,7 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
                     }
                 }
                 
-                if (![self setupAssetReaderWriterForAVAsset:avAsset outputURL:outputUrl preset:preset inhibitAudio:false conversionContext:context error:&error])
+                if (![self setupAssetReaderWriterForAVAsset:avAsset outputURL:outputUrl preset:finalPreset inhibitAudio:false conversionContext:context error:&error])
                 {
                     [subscriber putError:error];
                     return;
@@ -425,6 +415,11 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
         transformedRect = CGRectMake(0, 0, videoTrack.naturalSize.width, videoTrack.naturalSize.height);
     
     CGRect cropRect = transformedRect;
+    if (preset == TGMediaVideoConversionPresetVideoMessage)
+    {
+        cropRect = CGRectInset(cropRect, 13.0f, 13.0f);
+        cropRect = CGRectOffset(cropRect, 2.0f, 3.0f);
+    }
     
     CGSize maxDimensions = [TGMediaVideoConversionPresetSettings maximumSizeForPreset:preset];
     CGSize outputDimensions = TGFitSize(cropRect.size, maxDimensions);
@@ -886,6 +881,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return (CGSize){ 1920.0f, 1920.0f };
             
+        case TGMediaVideoConversionPresetVideoMessage:
+            return (CGSize){ 240.0f, 240.0f };
+            
         default:
             return (CGSize){ 640.0f, 640.0f };
     }
@@ -968,6 +966,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return 4000;
             
+        case TGMediaVideoConversionPresetVideoMessage:
+            return 480;
+            
         default:
             return 700;
     }
@@ -991,6 +992,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
             
         case TGMediaVideoConversionPresetCompressedVeryHigh:
             return 64;
+            
+        case TGMediaVideoConversionPresetVideoMessage:
+            return 32;
             
         default:
             return 24;

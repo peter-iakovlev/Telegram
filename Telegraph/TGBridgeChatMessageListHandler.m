@@ -1,8 +1,9 @@
 #import "TGBridgeChatMessageListHandler.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
-#import "TGMessage.h"
 #import "TGDatabase.h"
 #import "TGChatMessageListSignal.h"
 #import "TGUserSignal.h"
@@ -11,8 +12,6 @@
 #import "TGBridgeChat+TGConversation.h"
 #import "TGBridgeChatMessageListView+TGChatMessageListView.h"
 #import "TGBridgeUser+TGUser.h"
-
-#import "TGPeerIdAdapter.h"
 
 NSString *const TGBridgeUserIdsKey = @"userIds";
 NSString *const TGBridgeChannelIdsKey = @"channelIds";

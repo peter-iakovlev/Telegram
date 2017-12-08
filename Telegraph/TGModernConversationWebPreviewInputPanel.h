@@ -1,4 +1,4 @@
-#import "TGModernConversationAssociatedInputPanel.h"
+#import <LegacyComponents/TGModernConversationAssociatedInputPanel.h>
 
 @class TGWebPageMediaAttachment;
 

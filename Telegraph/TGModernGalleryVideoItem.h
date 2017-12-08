@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGModernGalleryItem.h"
+#import <LegacyComponents/TGModernGalleryItem.h>
 
 @class TGVideoMediaAttachment;
 
@@ -15,6 +15,7 @@
 @property (nonatomic, strong, readonly) id media;
 @property (nonatomic, strong, readonly) NSString *previewUri;
 @property (nonatomic, strong, readonly) id videoDownloadArguments;
+@property (nonatomic, readonly) CGSize imageSize;
 
 - (instancetype)initWithMedia:(id)media previewUri:(NSString *)previewUri;
 

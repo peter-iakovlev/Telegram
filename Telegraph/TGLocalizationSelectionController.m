@@ -1,7 +1,8 @@
 #import "TGLocalizationSelectionController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGLocalizationSignals.h"
-#import "TGLocalization.h"
 
 #import "TGAppDelegate.h"
 
@@ -17,7 +18,7 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
-        _check = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _check = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuCheck.png")];
         _indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         
         [self addSubview:_check];
@@ -86,7 +87,7 @@
     if (self != nil) {
         _disposable = [[SMetaDisposable alloc] init];
         __weak TGLocalizationSelectionController *weakSelf = self;
-        [_disposable setDisposable:[[[TGLocalizationSignals availableLocalizations] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *localizations) {
+        [_disposable setDisposable:[[[[TGLocalizationSignals storedLocalizations] then:[TGLocalizationSignals availableLocalizations]] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *localizations) {
             __strong TGLocalizationSelectionController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 NSMutableArray *updatedLocalizations = [[NSMutableArray alloc] initWithArray:localizations];
@@ -274,6 +275,13 @@
 - (void)localizationUpdated {
     self.title = TGLocalized(@"Settings.AppLanguage");
     _searchBar.placeholder = TGLocalized(@"ChatSearch.SearchPlaceholder");
+    if (iosMajorVersion() >= 9) {
+        if ([effectiveLocalization().code isEqualToString:@"ar"]) {
+            [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        } else {
+            [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
+        }
+    }
 }
 
 @end

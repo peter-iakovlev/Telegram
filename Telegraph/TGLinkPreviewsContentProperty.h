@@ -1,4 +1,4 @@
-#import "PSCoding.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGLinkPreviewsContentProperty : NSObject <PSCoding>
 

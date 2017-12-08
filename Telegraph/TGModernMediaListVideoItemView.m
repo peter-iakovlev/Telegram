@@ -1,9 +1,9 @@
 #import "TGModernMediaListVideoItemView.h"
 
-#import "TGModernMediaListVideoItem.h"
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
+#import "TGModernMediaListVideoItem.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGModernMediaListVideoItemView ()
 {
@@ -48,7 +48,7 @@
             
             CFRelease(gradient);
             
-            UIImage *videoIcon = [UIImage imageNamed:@"ModernMediaItemVideoIcon.png"];
+            UIImage *videoIcon = TGComponentsImageNamed(@"ModernMediaItemVideoIcon.png");
             [videoIcon drawAtPoint:CGPointMake(5.0f, 20.0f - 5.0f - videoIcon.size.height)];
             
             shadowImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:23.0f topCapHeight:0.0f];

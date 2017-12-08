@@ -1,11 +1,13 @@
 #import "TGOpenInAppItem.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGOpenInBrowserItems.h"
 #import "TGOpenInLocationItems.h"
 #import "TGOpenInSocialItems.h"
 #import "TGOpenInVideoItems.h"
 
 #import "TGApplication.h"
-#import "TGWebPageMediaAttachment.h"
 
 NSString *const TGOpenInEmbedURLKey = @"embedURL";
 

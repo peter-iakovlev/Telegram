@@ -1,4 +1,4 @@
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGCallMessageButton : TGModernButton
 

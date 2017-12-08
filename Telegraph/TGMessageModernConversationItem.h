@@ -29,6 +29,9 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
     NSArray *_additionalUsers;
     NSArray *_additionalConversations;
     int32_t _additionalDate;
+    bool _byAdmin;
+    
+    TGMessageGroupPositionFlags _positionFlags;
     
     bool _mediaAvailabilityStatus;
 }
@@ -43,18 +46,27 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)updateMediaVisibility;
 - (void)updateMessageAttributes;
 - (void)updateMessageVisibility;
+- (void)updateMessageFocus;
 - (void)updateEditingState:(TGModernViewStorage *)viewStorage animationDelay:(NSTimeInterval)animationDelay;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)setTemporaryHighlighted:(bool)temporaryHighlighted viewStorage:(TGModernViewStorage *)viewStorage;
 - (void)clearHighlights;
 
+- (id)currentAuthorPeer;
+
+- (bool)isExpiredLiveLocation;
+
 - (CGRect)effectiveContentFrame;
+- (CGRect)fullContentFrame;
 - (UIView *)referenceViewForImageTransition;
 
 - (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
 - (void)collectBoundModelViewFramesRecursively:(NSMutableDictionary *)dict ifPresentInDict:(NSMutableDictionary *)anotherDict;
 - (void)restoreBoundModelViewFramesRecursively:(NSMutableDictionary *)dict;
 
+- (void)setExplicitReplyPanOffset:(CGFloat)replyPanOffset ended:(bool)ended;
 - (void)updateReplySwipeInteraction:(TGModernViewStorage *)viewStorage ended:(bool)ended;
+
+- (void)_updateLiveLocationExpiration;
 
 @end

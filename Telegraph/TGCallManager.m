@@ -6,7 +6,8 @@
 #import "TGCallSignals.h"
 #import "TGCallSession.h"
 #import "TGCallKitAdapter.h"
-#import "TGBridgeServer.h"
+
+#import "TGDatabase.h"
 
 #import <MTProtoKit/MTProtoKit.h>
 
@@ -103,7 +104,7 @@
                     }
                 };
             }
-                
+            
             [context.disposable setDisposable:[[[TGCallSignals requestedOutgoingCallWithPeerId:peerId] deliverOn:_queue] startWithNext:^(id next) {
                 __strong TGCallManager *strongSelf = weakSelf;
                 if (strongSelf != nil) {
@@ -248,7 +249,19 @@
             } error:^(__unused id error) {
                 __strong TGCallManager *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    [strongSelf cleanupContext:internalId];
+                    NSString *rpcError = nil;
+                    if ([error isKindOfClass:[MTRpcError class]])
+                        rpcError = ((MTRpcError *)error).errorDescription;
+                    if ([rpcError isEqualToString:@"CALL_ALREADY_ACCEPTED"])
+                        rpcError = nil;
+                    
+                    if (rpcError != nil)
+                    {
+                        [strongSelf setContextState:internalId state:[[TGCallStateData alloc] initWithInternalId:@(internalId) callId:0 accessHash:0 state:TGCallStateEnded peerId:0 connection:nil hungUpOutside:false needsRating:false needsDebug:false error:rpcError]];
+                        
+                        TGLog(@"CallManager: call received error %@", rpcError);
+                        [strongSelf cleanupContext:internalId];
+                    }
                 }
             } completed:nil]];
         } else {
@@ -346,6 +359,13 @@
             } error:^(__unused id error) {
                 __strong TGCallManager *strongSelf = weakSelf;
                 if (strongSelf != nil) {
+                    NSString *rpcError = nil;
+                    if ([error isKindOfClass:[MTRpcError class]])
+                        rpcError = ((MTRpcError *)error).errorDescription;
+                    
+                    [strongSelf setContextState:internalId state:[[TGCallStateData alloc] initWithInternalId:@(internalId) callId:0 accessHash:0 state:TGCallStateEnded peerId:0 connection:nil hungUpOutside:false needsRating:false needsDebug:false error:rpcError]];
+                    
+                    TGLog(@"CallManager: call confirmed error %@", rpcError);
                     [strongSelf cleanupContext:internalId];
                 }
             } completed:nil]];
@@ -406,6 +426,8 @@
                 context.context = [[TGCallOngoingContext alloc] initWithCallId:confirmedContext.callId accessHash:confirmedContext.accessHash date:confirmedContext.date adminId:confirmedContext.adminId participantId:confirmedContext.participantId key:key keyFingerprint:keyId defaultConnection:confirmedContext.defaultConnection alternativeConnections:confirmedContext.alternativeConnections];
                 [self setContextState:internalId state:[[TGCallStateData alloc] initWithInternalId:@(internalId) callId:confirmedContext.callId accessHash:confirmedContext.accessHash state:TGCallStateOngoing peerId:confirmedContext.participantId connection:[[TGCallConnection alloc] initWithKey:key keyHash:visKeyHash defaultConnection:confirmedContext.defaultConnection alternativeConnections:confirmedContext.alternativeConnections] hungUpOutside:false needsRating:false needsDebug:false error:nil]];
             } else {
+                [self setContextState:internalId state:[[TGCallStateData alloc] initWithInternalId:@(internalId) callId:0 accessHash:0 state:TGCallStateEnded peerId:0 connection:nil hungUpOutside:false needsRating:false needsDebug:false error:@"FINGERPRINT_MISMATCH"]];
+                
                 TGLog(@"Call key gA hash or fingerprint mismatch");
                 [self cleanupContext:internalId];
             }

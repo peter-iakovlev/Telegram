@@ -1,25 +1,22 @@
 #import "TGModernConversationComplexMediaContextResultsAssociatedPanel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBotContextResults.h"
-#import "TGImageUtils.h"
 
 #import "TGAnimatedMediaContextResultCell.h"
 
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"
 
-#import "TGImageUtils.h"
-
-#import "TGBotContextResultAttachment.h"
-
 #import "TGExternalGifSearchResult.h"
 #import "TGExternalImageSearchResult.h"
 
 #import "TGBotSignals.h"
 
-#import "TGItemPreviewController.h"
-#import "TGItemMenuSheetPreviewView.h"
-#import "TGMenuSheetButtonItemView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGItemMenuSheetPreviewView.h>
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 #import "TGPreviewMenu.h"
 
 #import "TGModernConversationGenericContextResultsAssociatedPanelSwitchPm.h"
@@ -120,6 +117,8 @@
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
         
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.backgroundColor = nil;
@@ -159,34 +158,7 @@
                 return nil;
             
             TGBotContextResult *result = strongSelf->_results.results[indexPath.item];
-            CGPoint (^sourcePoint)(id) = ^CGPoint(__unused id item)
-            {
-                __strong TGModernConversationComplexMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
-                if (strongSelf == nil)
-                    return CGPointZero;
-                
-                for (TGAnimatedMediaContextResultCell *cell in strongSelf->_collectionView.visibleCells)
-                {
-                    if ([cell.result isEqual:result])
-                    {
-                        NSIndexPath *indexPath = [strongSelf->_collectionView indexPathForCell:cell];
-                        if (indexPath != nil)
-                            return [strongSelf->_collectionView convertPoint:cell.center toView:nil];
-                    }
-                }
-                
-                return CGPointZero;
-            };
-            
-            if (strongSelf.onResultPreview != nil)
-                strongSelf.onResultPreview();
-            
-            return [TGPreviewMenu presentInParentController:strongSelf.controller expandImmediately:false result:result results:strongSelf->_results sendAction:^(TGBotContextResult *result)
-            {
-                __strong TGModernConversationComplexMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
-                if (strongSelf != nil && strongSelf.resultSelected != nil)
-                    strongSelf.resultSelected(strongSelf->_results, result);
-            } sourcePointForItem:sourcePoint sourceView:nil sourceRect:nil];
+            return [strongSelf presentPreviewForResultIfAvailable:result immediately:false];
         }];
     }
     return self;
@@ -198,11 +170,10 @@
 
 - (TGItemPreviewController *)presentPreviewForResultIfAvailable:(TGBotContextResult *)result immediately:(bool)immediately
 {
-    if (self.onResultPreview != nil)
-        self.onResultPreview();
+    void (^resultPreviewDisappeared)(bool) = self.resultPreviewDisappeared;
     
     __weak TGModernConversationComplexMediaContextResultsAssociatedPanel *weakSelf = self;
-    return [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
+    TGItemPreviewController *controller = [TGPreviewMenu presentInParentController:self.controller expandImmediately:immediately result:result results:_results sendAction:^(TGBotContextResult *result)
     {
         __strong TGModernConversationComplexMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf.resultSelected != nil)
@@ -225,6 +196,16 @@
         
         return CGPointZero;
     } sourceView:nil sourceRect:nil];
+    controller.onDismiss = ^{
+        if (resultPreviewDisappeared != nil)
+            resultPreviewDisappeared(true);
+    };
+    if (controller != nil)
+    {
+        if (self.resultPreviewAppeared != nil)
+            self.resultPreviewAppeared();
+    }
+    return controller;
 }
 
 - (bool)fillsAvailableSpace {
@@ -552,6 +533,11 @@
 
 - (CGRect)tableBackgroundFrame {
     return _tableViewBackground.frame;
+}
+
+- (bool)hasSelectedItem
+{
+    return _collectionView.indexPathsForSelectedItems.count != 0;
 }
 
 - (void)selectPreviousItem

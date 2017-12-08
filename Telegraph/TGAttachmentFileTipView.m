@@ -1,11 +1,10 @@
 #import "TGAttachmentFileTipView.h"
-#import "TGModernButton.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGAppDelegate.h"
-
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
 
 @interface TGAttachmentFileTipView ()
 {
@@ -24,7 +23,7 @@
     self = [super initWithType:TGMenuSheetItemTypeHeader];
     if (self != nil)
     {
-        _imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"AttachmentTipIcons"]];
+        _imageView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"AttachmentTipIcons")];
         [self addSubview:_imageView];
         
         NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.FileHowToText"), [TGStringUtils stringForDeviceType]];

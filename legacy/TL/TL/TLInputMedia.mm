@@ -184,67 +184,6 @@
 
 @end
 
-@implementation TLInputMedia$inputMediaVenue : TLInputMedia
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x2827a81a;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xaad6ab5b;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
-{
-    TLInputMedia$inputMediaVenue *object = [[TLInputMedia$inputMediaVenue alloc] init];
-    object.geo_point = metaObject->getObject((int32_t)0xa4670371);
-    object.title = metaObject->getString((int32_t)0xcdebf414);
-    object.address = metaObject->getString((int32_t)0x1a893fea);
-    object.provider = metaObject->getString((int32_t)0x49eaf8ed);
-    object.venue_id = metaObject->getString((int32_t)0x8aaa3ed3);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeObject;
-        value.nativeObject = self.geo_point;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa4670371, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.title;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.address;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1a893fea, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.provider;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x49eaf8ed, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.venue_id;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8aaa3ed3, value));
-    }
-}
-
-
-@end
-
 @implementation TLInputMedia$inputMediaGifExternal : TLInputMedia
 
 
@@ -561,6 +500,114 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.ttl_seconds;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x401ae035, value));
+    }
+}
+
+
+@end
+
+@implementation TLInputMedia$inputMediaGeoLive : TLInputMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x7b1a118f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x8ab41d1e;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputMedia$inputMediaGeoLive *object = [[TLInputMedia$inputMediaGeoLive alloc] init];
+    object.geo_point = metaObject->getObject((int32_t)0xa4670371);
+    object.period = metaObject->getInt32((int32_t)0xc19ffb71);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.geo_point;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa4670371, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.period;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc19ffb71, value));
+    }
+}
+
+
+@end
+
+@implementation TLInputMedia$inputMediaVenue : TLInputMedia
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xc13d1c11;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xaad6ab5b;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputMedia$inputMediaVenue *object = [[TLInputMedia$inputMediaVenue alloc] init];
+    object.geo_point = metaObject->getObject((int32_t)0xa4670371);
+    object.title = metaObject->getString((int32_t)0xcdebf414);
+    object.address = metaObject->getString((int32_t)0x1a893fea);
+    object.provider = metaObject->getString((int32_t)0x49eaf8ed);
+    object.venue_id = metaObject->getString((int32_t)0x8aaa3ed3);
+    object.venue_type = metaObject->getString((int32_t)0x345205b8);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.geo_point;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa4670371, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.title;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcdebf414, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.address;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1a893fea, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.provider;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x49eaf8ed, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.venue_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8aaa3ed3, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.venue_type;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x345205b8, value));
     }
 }
 

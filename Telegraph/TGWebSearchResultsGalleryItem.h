@@ -1,6 +1,6 @@
 #import "TGWebSearchResult.h"
-#import "TGModernGalleryItem.h"
-#import "TGModernGallerySelectableItem.h"
+#import <LegacyComponents/TGModernGalleryItem.h>
+#import <LegacyComponents/TGModernGallerySelectableItem.h>
 
 @protocol TGWebSearchResultsGalleryItem <TGModernGalleryItem, TGModernGallerySelectableItem>
 

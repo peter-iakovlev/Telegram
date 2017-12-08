@@ -1,12 +1,10 @@
 #import "TGPhotoGridCell.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGInterfaceAssets.h"
-
-#import "TGVideoMediaAttachment.h"
-
-#import "TGImageUtils.h"
 
 @interface TGPhotoGridCell ()
 

@@ -1,15 +1,16 @@
 #import "TGShareSheetView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGShareSheetWindow.h"
 
 #import "TGShareSheetItemView.h"
-#import "TGImageUtils.h"
 #import "TGVerticalSwipeDismissGestureRecognizer.h"
 #import "TGAttachmentSheetScrollView.h"
 
 #import "TGShareSheetButtonItemView.h"
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import <Accelerate/Accelerate.h>
 
@@ -230,23 +231,33 @@ static CGFloat blurDynamicOffset = 5.0f;
     return UIEdgeInsetsMake(8.0f, 10.0f, 10.0f, 10.0f);
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self updateLayout];
+}
+
 - (void)animateToDefaultPosition:(CGFloat)__unused velocity
 {
     UIEdgeInsets insets = [self insets];
+    insets.left += _safeAreaInset.left;
+    insets.right += _safeAreaInset.left;
+    if (_keyboardOffset < FLT_EPSILON)
+        insets.bottom += _safeAreaInset.bottom;
     CGFloat cancelHeight = insets.top + [_cancelItemView preferredHeightForMaximumHeight:CGFLOAT_MAX] + insets.bottom;
     
     if (iosMajorVersion() >= 7)
     {
         [UIView animateWithDuration:0.45 delay:0.0 usingSpringWithDamping:0.48f initialSpringVelocity:0.0f options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction animations:^
         {
-            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight), _containerView.frame.size.width, _containerView.frame.size.height);
+            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight) - insets.bottom, _containerView.frame.size.width, _containerView.frame.size.height);
         } completion:nil];
     }
     else
     {
         [UIView animateWithDuration:0.2 animations:^
         {
-            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight), _containerView.frame.size.width, _containerView.frame.size.height);
+            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight) - insets.bottom, _containerView.frame.size.width, _containerView.frame.size.height);
         }];
     }
 }
@@ -254,6 +265,11 @@ static CGFloat blurDynamicOffset = 5.0f;
 - (void)swipeGesture:(TGVerticalSwipeDismissGestureRecognizer *)recognizer
 {
     UIEdgeInsets insets = [self insets];
+    insets.left += _safeAreaInset.left;
+    insets.right += _safeAreaInset.left;
+    if (_keyboardOffset < FLT_EPSILON)
+        insets.bottom += _safeAreaInset.bottom;
+    
     if (recognizer.state == UIGestureRecognizerStateBegan)
     {
         if (_containerView.layer.presentationLayer != nil)
@@ -266,7 +282,7 @@ static CGFloat blurDynamicOffset = 5.0f;
         
         CGFloat offset = [recognizer locationInView:self].y - _swipeStart;
         CGFloat bandOffset = [self swipeOffsetForOffset:offset];
-        _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight) + bandOffset, _containerView.frame.size.width, _containerView.frame.size.height);
+        _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - MAX(0.0f, _keyboardOffset - cancelHeight) + bandOffset - insets.bottom, _containerView.frame.size.width, _containerView.frame.size.height);
     }
     else if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
@@ -417,6 +433,9 @@ static CGFloat blurDynamicOffset = 5.0f;
     [self layoutIfNeeded];
     
     UIEdgeInsets insets = [self insets];
+    insets.left += _safeAreaInset.left;
+    insets.right += _safeAreaInset.left;
+    insets.bottom += _safeAreaInset.bottom;
     
     _containerView.frame = CGRectMake(insets.left, self.frame.size.height, self.frame.size.width - insets.left - insets.right, _containerView.frame.size.height);
     
@@ -428,7 +447,7 @@ static CGFloat blurDynamicOffset = 5.0f;
         //[self beginBlur];
         [UIView animateWithDuration:0.12 delay:0.0 options:(7 << 16) | UIViewAnimationOptionAllowUserInteraction animations:^
         {
-            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height, self.frame.size.width - insets.left - insets.right, _containerView.frame.size.height);
+            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - insets.bottom, self.frame.size.width - insets.left - insets.right, _containerView.frame.size.height);
             _backgroundView.alpha = 1.0f;
         } completion:^(__unused BOOL finished)
         {
@@ -440,7 +459,7 @@ static CGFloat blurDynamicOffset = 5.0f;
     {
         [UIView animateWithDuration:0.3 delay:0.0 options:UIViewAnimationOptionAllowUserInteraction animations:^
         {
-            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height, self.frame.size.width - insets.left - insets.right, _containerView.frame.size.height);
+            _containerView.frame = CGRectMake(insets.left, self.frame.size.height - _containerView.frame.size.height - insets.bottom, self.frame.size.width - insets.left - insets.right, _containerView.frame.size.height);
             _backgroundView.alpha = 1.0f;
         } completion:^(__unused BOOL finished)
         {
@@ -518,6 +537,8 @@ static CGFloat blurDynamicOffset = 5.0f;
     [self dispatchWillDisappear];
     
     UIEdgeInsets insets = [self insets];
+    insets.left += _safeAreaInset.left;
+    insets.right += _safeAreaInset.left;
     
     [UIView animateWithDuration:duration delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^
     {
@@ -623,8 +644,13 @@ static CGFloat blurDynamicOffset = 5.0f;
     CGFloat maxScreenSide = MAX(screenSize.width, screenSize.height);
     
     UIEdgeInsets insets = [self insets];
-    
+    insets.left += _safeAreaInset.left;
+    insets.right += _safeAreaInset.left;
+
     CGFloat cancelHeight = insets.top + [_cancelItemView preferredHeightForMaximumHeight:CGFLOAT_MAX] + insets.bottom;
+    
+    if (_keyboardOffset < FLT_EPSILON)
+        insets.bottom += _safeAreaInset.bottom;
     
     CGFloat maxHeight = self.frame.size.width < (maxScreenSide - FLT_EPSILON) ? (maxScreenSide - 20.0f - 44.0f + 4.0f - cancelHeight) : (minScreenHeight - 20.0f - 32.0f + 4.0f - cancelHeight);
     if (self.frame.size.width > self.frame.size.height) {
@@ -667,7 +693,7 @@ static CGFloat blurDynamicOffset = 5.0f;
 
     _scrollView.contentSize = CGSizeMake(self.frame.size.width, containerHeight);
     
-    _containerView.frame = CGRectMake(insets.left, self.frame.size.height - MIN(maxHeight, containerHeight) - cancelHeight - MAX(0.0f, _keyboardOffset - cancelHeight), containerWidth, MIN(maxHeight, containerHeight) + cancelHeight);
+    _containerView.frame = CGRectMake(insets.left, self.frame.size.height - MIN(maxHeight, containerHeight) - cancelHeight - MAX(0.0f, _keyboardOffset - cancelHeight) - insets.bottom, containerWidth, MIN(maxHeight, containerHeight) + cancelHeight);
     _scrollViewContainer.frame = CGRectMake(0.0f, 0.0f, _containerView.frame.size.width, _containerView.frame.size.height - cancelHeight);
     _scrollView.frame = _scrollViewContainer.bounds;
     _scrollView.contentSize = CGSizeMake(_scrollView.frame.size.width, containerHeight);

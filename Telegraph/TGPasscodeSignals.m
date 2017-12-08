@@ -2,7 +2,7 @@
 
 #import "TGDatabase.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @implementation TGPasscodeStatus
 

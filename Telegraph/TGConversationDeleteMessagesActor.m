@@ -1,14 +1,14 @@
 #import "TGConversationDeleteMessagesActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 
 #import "TGDownloadManager.h"
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGConversationDeleteMessagesActor () {
     int64_t _peerId;

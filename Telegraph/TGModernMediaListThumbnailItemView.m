@@ -1,8 +1,8 @@
 #import "TGModernMediaListThumbnailItemView.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 @interface TGModernMediaListThumbnailItemView () <TGModernGalleryTransitionView>
 {

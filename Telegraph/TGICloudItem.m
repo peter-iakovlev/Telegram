@@ -1,6 +1,6 @@
 #import "TGICloudItem.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGICloudItem
 

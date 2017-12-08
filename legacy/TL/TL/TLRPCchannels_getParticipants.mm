@@ -17,12 +17,12 @@
 
 - (int)impliedResponseSignature
 {
-    return (int)0xf56ee2a8;
+    return 0;
 }
 
 - (int)layerVersion
 {
-    return 38;
+    return 72;
 }
 
 - (int32_t)TLconstructorSignature
@@ -56,7 +56,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x24d98f92;
+    return (int32_t)0x123e05e9;
 }
 
 - (int32_t)TLconstructorName
@@ -71,6 +71,7 @@
     object.filter = metaObject->getObject((int32_t)0x834de586);
     object.offset = metaObject->getInt32((int32_t)0xfc56269);
     object.limit = metaObject->getInt32((int32_t)0xb8433fca);
+    object.n_hash = metaObject->getInt32((int32_t)0xc152e470);
     return object;
 }
 
@@ -99,6 +100,12 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.limit;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xb8433fca, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.n_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc152e470, value));
     }
 }
 

@@ -1,4 +1,7 @@
 #import "TGBridgeAudioHandler.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeAudioSubscription.h"
 
 #import "TGBridgeAudioMediaAttachment+TGAudioMediaAttachment.h"
@@ -13,8 +16,9 @@
 #import "TGDownloadAudioSignal.h"
 #import "TGSendAudioSignal.h"
 
-#import "TGMessage.h"
 #import "TGBridgeMessage+TGMessage.h"
+
+#import "TGAudioMediaAttachment+Telegraph.h"
 
 @implementation TGBridgeAudioHandler
 

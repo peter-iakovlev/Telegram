@@ -29,7 +29,6 @@
 
 @property (nonatomic) bool canPromote;
 @property (nonatomic) bool canRestrict;
-@property (nonatomic) bool canBan;
 @property (nonatomic) bool canDelete;
 
 @property (nonatomic, copy) void (^toggled)(bool value);

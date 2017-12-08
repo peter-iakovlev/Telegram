@@ -7,7 +7,7 @@
  */
 
 #import "TGModernView.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGModernButtonView : TGModernButton <TGModernView>
 

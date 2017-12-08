@@ -10,7 +10,7 @@
 
 #import "TL/TLMetaScheme.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGSynchronizeServiceActionsActor : TGActor <ASWatcher>
 

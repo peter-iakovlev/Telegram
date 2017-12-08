@@ -2,7 +2,7 @@
 
 #import <sys/stat.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGLiveUploadActor.h"
 
 #import "MP4Atom.h"

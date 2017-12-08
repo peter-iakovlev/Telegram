@@ -10,7 +10,7 @@
 #import <GLKit/GLKit.h>
 //#import "RMRootViewController.h"
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 typedef enum {
     Inch35 = 0,

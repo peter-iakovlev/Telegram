@@ -46,16 +46,6 @@
 
 @end
 
-@interface TLMessageMedia$messageMediaVenue : TLMessageMedia
-
-@property (nonatomic, retain) TLGeoPoint *geo;
-@property (nonatomic, retain) NSString *title;
-@property (nonatomic, retain) NSString *address;
-@property (nonatomic, retain) NSString *provider;
-@property (nonatomic, retain) NSString *venue_id;
-
-@end
-
 @interface TLMessageMedia$messageMediaGame : TLMessageMedia
 
 @property (nonatomic, retain) TLGame *game;
@@ -90,6 +80,24 @@
 @property (nonatomic, retain) TLDocument *document;
 @property (nonatomic, retain) NSString *caption;
 @property (nonatomic) int32_t ttl_seconds;
+
+@end
+
+@interface TLMessageMedia$messageMediaGeoLive : TLMessageMedia
+
+@property (nonatomic, retain) TLGeoPoint *geo;
+@property (nonatomic) int32_t period;
+
+@end
+
+@interface TLMessageMedia$messageMediaVenue : TLMessageMedia
+
+@property (nonatomic, retain) TLGeoPoint *geo;
+@property (nonatomic, retain) NSString *title;
+@property (nonatomic, retain) NSString *address;
+@property (nonatomic, retain) NSString *provider;
+@property (nonatomic, retain) NSString *venue_id;
+@property (nonatomic, retain) NSString *venue_type;
 
 @end
 

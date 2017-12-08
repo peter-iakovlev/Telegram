@@ -107,7 +107,7 @@
                     {
                         int64_t authKeyId = 0;
                         [datacenter.authKeyId getBytes:&authKeyId length:8];
-                        datacenterAuthInfo[@(datacenter.datacenterId)] = [[MTDatacenterAuthInfo alloc] initWithAuthKey:datacenter.authKey authKeyId:authKeyId saltSet:@[] authKeyAttributes:@{}];
+                        datacenterAuthInfo[@(datacenter.datacenterId)] = [[MTDatacenterAuthInfo alloc] initWithAuthKey:datacenter.authKey authKeyId:authKeyId saltSet:@[] authKeyAttributes:@{} tempAuthKey:nil];
                         
                         if (datacenter.authorized && clientUserId != 0)
                             datacenterAuthTokens[@(datacenter.datacenterId)] = @(clientUserId);

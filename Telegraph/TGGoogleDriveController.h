@@ -1,4 +1,4 @@
-#import "TGNavigationController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGGoogleDriveItem;
 

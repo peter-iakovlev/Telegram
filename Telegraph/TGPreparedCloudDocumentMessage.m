@@ -1,8 +1,6 @@
 #import "TGPreparedCloudDocumentMessage.h"
 
-#import "TGMessage.h"
-
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGPreparedCloudDocumentMessage
 

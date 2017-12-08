@@ -2,7 +2,7 @@
 
 @class TLInlineBotSwitchPM;
 
-@interface TLMessages_BotResults$botResults : TLmessages_BotResults
+@interface TLMessages_BotResults$botResults : TLmessages_BotResults$messages_botResultsMeta
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic, readonly) bool isMedia;

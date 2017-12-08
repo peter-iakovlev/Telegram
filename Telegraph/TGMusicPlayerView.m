@@ -1,19 +1,15 @@
 #import "TGMusicPlayerView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <MediaPlayer/MediaPlayer.h>
-#import <pop/POP.h>
 
 #import "TGTelegraph.h"
 #import "TGInterfaceManager.h"
 
-#import "TGDateUtils.h"
-#import "TGImageUtils.h"
-#import "TGFont.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGMusicPlayerController.h"
-#import "TGNavigationController.h"
 #import "TGVideoMessagePIPController.h"
 
 @interface TGMusicPlayerView ()
@@ -45,7 +41,6 @@
     
     TGVideoMessagePIPController *_pipController;
 }
-
 @end
 
 @implementation TGMusicPlayerView
@@ -72,20 +67,20 @@
         
         _closeButton = [[TGModernButton alloc] init];
         _closeButton.adjustsImageWhenHighlighted = false;
-        [_closeButton setImage:[UIImage imageNamed:@"MusicPlayerMinimizedClose.png"] forState:UIControlStateNormal];
+        [_closeButton setImage:TGImageNamed(@"MusicPlayerMinimizedClose.png") forState:UIControlStateNormal];
         [_closeButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_closeButton];
         
         _playButton = [[TGModernButton alloc] init];
         _playButton.adjustsImageWhenHighlighted = false;
-        [_playButton setImage:[UIImage imageNamed:@"MusicPlayerMinimizedPlay.png"] forState:UIControlStateNormal];
+        [_playButton setImage:TGImageNamed(@"MusicPlayerMinimizedPlay.png") forState:UIControlStateNormal];
         [_playButton addTarget:self action:@selector(playButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_playButton];
         _playButton.hidden = true;
         
         _pauseButton = [[TGModernButton alloc] init];
         _pauseButton.adjustsImageWhenHighlighted = false;
-        [_pauseButton setImage:[UIImage imageNamed:@"MusicPlayerMinimizedPause.png"] forState:UIControlStateNormal];
+        [_pauseButton setImage:TGImageNamed(@"MusicPlayerMinimizedPause.png") forState:UIControlStateNormal];
         [_pauseButton addTarget:self action:@selector(pauseButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_pauseButton];
         _pauseButton.hidden = true;
@@ -354,35 +349,11 @@
     }
     
     TGMusicPlayerController *controller = [[TGMusicPlayerController alloc] init];
-    UINavigationController *navigationController = _navigationController;
+    UIViewController *rootController = _navigationController.parentViewController;
+    [rootController.view endEditing:true];
     
-    UIViewController *presentedController = controller;
-    
-    CGSize preferredSize = CGSizeMake(414.0f, 667.0f);
-    if (TGIsPad())
-    {
-        TGNavigationController *playerNavigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-        playerNavigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-        playerNavigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-        playerNavigationController.preferredContentSize = preferredSize;
-        presentedController = playerNavigationController;
-    }
-    else
-    {
-        navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
-        presentedController.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    }
-    
-    if (!TGIsPad())
-    {
-        NSNumber *value = [NSNumber numberWithInt:UIInterfaceOrientationPortrait];
-        [[UIDevice currentDevice] setValue:value forKey:@"orientation"];
-    }
-    
-    [navigationController presentViewController:presentedController animated:true completion:nil];
-    
-    if (TGIsPad() && iosMajorVersion() < 8)
-        presentedController.view.superview.bounds = CGRectMake(0, 0, preferredSize.width, preferredSize.height);
+    [rootController addChildViewController:controller];
+    [rootController.view addSubview:controller.view];
 }
 
 @end

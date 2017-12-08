@@ -1,7 +1,6 @@
 #import "TGCalloutView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGCalloutView ()
 

@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGInstantPageDisplayView.h"
 #import "TGInstantPageLinkSelectionView.h"
 #import "TGInstantPageMedia.h"
@@ -74,6 +75,6 @@ typedef enum {
 
 - (instancetype)initWithOrigin:(CGPoint)origin contentSize:(CGSize)contentSize items:(NSArray<id<TGInstantPageLayoutItem> > *)items;
 
-+ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth presentation:(TGInstantPagePresentation *)presentation;
++ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth safeAreaInset:(UIEdgeInsets)safeAreaInset presentation:(TGInstantPagePresentation *)presentation;
 
 @end

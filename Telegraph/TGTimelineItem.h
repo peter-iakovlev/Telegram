@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TL/TLMetaScheme.h"
 

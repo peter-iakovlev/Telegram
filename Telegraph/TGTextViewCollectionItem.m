@@ -1,7 +1,8 @@
 #import "TGTextViewCollectionItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTextViewCollectionItemView.h"
-#import "TGFont.h"
 
 @interface TGTextViewCollectionItem ()
 {

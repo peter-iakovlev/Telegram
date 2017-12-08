@@ -1,26 +1,21 @@
 #import "TGShareTargetController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGModernBarButton.h>
+#import <LegacyComponents/TGListsTableView.h>
+#import <LegacyComponents/TGSearchBar.h>
+#import <LegacyComponents/TGSearchDisplayMixin.h>
 
-#import "TGModernBarButton.h"
-#import "TGListsTableView.h"
-#import "TGSearchBar.h"
-#import "TGSearchDisplayMixin.h"
-
-
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGShareTargetCell.h"
 #import "TGDialogListRecentPeersCell.h"
 #import "TGHighlightableButton.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
 #import "TGChatListSignals.h"
 #import "TGRecentPeersSignals.h"
 #import "TGGlobalMessageSearchSignals.h"
@@ -94,6 +89,8 @@
     
     CGRect tableFrame = self.view.bounds;
     _tableView = [[TGListsTableView alloc] initWithFrame:tableFrame style:UITableViewStylePlain];
+    if (iosMajorVersion() >= 11)
+        _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _tableView.delegate = self;
     _tableView.dataSource = self;
@@ -107,6 +104,10 @@
     _searchTopBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -320.0f, self.view.frame.size.width, 320.0f)];
     _searchTopBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [_tableView insertSubview:_searchTopBackgroundView atIndex:0];
+    
+    UIColor *searchBackgroundColor = UIColorRGB(0xf7f7f7);
+    _searchBar.backgroundColor = searchBackgroundColor;
+    _searchTopBackgroundView.backgroundColor = searchBackgroundColor;
     
     _searchMixin = [[TGSearchDisplayMixin alloc] init];
     _searchMixin.searchBar = _searchBar;
@@ -232,6 +233,7 @@
         int64_t peerId = [TGShareTargetController _peerIdForPeer:peer];
         [cell setupWithPeer:peer];
         [cell setChecked:[_selectedPeerIds containsObject:@(peerId)] animated:false];
+        [cell setIsLastCell:[self isLastCell:indexPath]];
         return cell;
     }
     else
@@ -284,6 +286,29 @@
             [cell setChecked:[_selectedPeerIds containsObject:@(peerId)] animated:false];
             return cell;
             
+        }
+    }
+}
+
+- (bool)isLastCell:(NSIndexPath *)indexPath {
+    bool isLastCell = false;
+    TGConversation *peer = [self currentPeers][indexPath.row];
+    bool pinnedToTop = [peer isKindOfClass:[TGConversation class]] && (((TGConversation *)peer).pinnedToTop || ((TGConversation *)peer).conversationId == TGTelegraphInstance.clientUserId);
+    if (indexPath.row + 1 < (NSInteger)[self currentPeers].count) {
+        TGConversation *nextPeer = [self currentPeers][indexPath.row + 1];
+        bool nextPinnedToTop = [nextPeer isKindOfClass:[TGConversation class]] && ((TGConversation *)nextPeer).pinnedToTop;
+        isLastCell = nextPinnedToTop != pinnedToTop;
+    } else {
+        isLastCell = true;
+    }
+    return isLastCell;
+}
+
+- (void)updateIsLastCell {
+    for (NSIndexPath *indexPath in _tableView.indexPathsForVisibleRows) {
+        TGShareTargetCell *cell = (TGShareTargetCell *)[_tableView cellForRowAtIndexPath:indexPath];
+        if ([cell isKindOfClass:[TGShareTargetCell class]]) {
+            [cell setIsLastCell:[self isLastCell:indexPath]];
         }
     }
 }
@@ -476,6 +501,15 @@
 
 #pragma mark -
 
+- (TGConversation *)selfPeer
+{
+    TGConversation *selfPeer = [TGDatabaseInstance() loadConversationWithId:TGTelegraphInstance.clientUserId];
+    if (selfPeer == nil)
+        selfPeer = [[TGConversation alloc] initWithConversationId:TGTelegraphInstance.clientUserId unreadCount:0 serviceUnreadCount:0];
+    
+    return selfPeer;
+}
+
 - (NSArray *)currentPeers
 {
     if (_currentPeers == nil)
@@ -509,7 +543,14 @@
             filteredPeers = peers;
         }
         
-        _currentPeers = [_foundPeers arrayByAddingObjectsFromArray:filteredPeers];
+        NSMutableArray *currentPeers = [[NSMutableArray alloc] init];
+        [currentPeers addObjectsFromArray:_foundPeers];
+        [currentPeers addObjectsFromArray:filteredPeers];
+        
+        TGConversation *selfPeer = [self selfPeer];
+        [currentPeers insertObject:selfPeer atIndex:0];
+        
+        _currentPeers = currentPeers;
     }
     
     return _currentPeers;
@@ -612,6 +653,9 @@
         if ([existingPeerIds containsObject:@(conversation.conversationId)])
             return nil;
         
+        if (conversation.conversationId == TGTelegraphInstance.clientUserId)
+            return nil;
+        
         [existingPeerIds addObject:@(conversation.conversationId)];
         
         if (![conversation currentUserCanSendMessages])
@@ -696,7 +740,7 @@
         return [SSignal complete];
     }];
     
-    [_recentDisposable setDisposable:[[[SSignal mergeSignals:@[[TGGlobalMessageSearchSignals recentPeerResults:^id (id item) {
+    [_recentDisposable setDisposable:[[[SSignal mergeSignals:@[[TGGlobalMessageSearchSignals recentPeerResults:^id (id item, __unused bool recent) {
         __strong TGShareTargetController *strongSelf = weakSelf;
         if (strongSelf != nil)
             return [strongSelf processPeer:item existingPeerIds:nil];

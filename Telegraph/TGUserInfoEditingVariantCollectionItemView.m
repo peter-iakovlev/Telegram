@@ -1,15 +1,6 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUserInfoEditingVariantCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserInfoEditingVariantCollectionItemView ()
 {
@@ -45,7 +36,7 @@
         _variantLabel.font = TGSystemFontOfSize(17.0f);
         [self addSubview:_variantLabel];
         
-        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicatorSmall.png"]];
+        _arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernListsDisclosureIndicatorSmall.png")];
         [self addSubview:_arrowView];
     }
     return self;
@@ -70,18 +61,19 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
+    CGFloat separatorInset = 15.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGRetinaPixel;
+    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
     
     CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(70.0f, CGFLOAT_MAX)];
     _titleLabel.frame = CGRectMake(leftPadding, 14.0f, titleSize.width, titleSize.height);
     
     CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width - 122.0f - 35.0f, CGFLOAT_MAX)];
-    _variantLabel.frame = CGRectMake(bounds.size.width - variantSize.width - 35.0f, 12.0f, variantSize.width, variantSize.height);
+    _variantLabel.frame = CGRectMake(bounds.size.width - variantSize.width - 35.0f - self.safeAreaInset.right, 12.0f, variantSize.width, variantSize.height);
     
     CGSize arrowSize = _arrowView.bounds.size;
-    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 18.0f, arrowSize.width, arrowSize.height);
+    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width - self.safeAreaInset.right, 18.0f, arrowSize.width, arrowSize.height);
 }
 
 @end

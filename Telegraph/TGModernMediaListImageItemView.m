@@ -1,6 +1,6 @@
 #import "TGModernMediaListImageItemView.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGModernMediaListImageItem.h"
 

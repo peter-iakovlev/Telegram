@@ -1,13 +1,12 @@
 #import "TGPaymentPasswordEntryControllerView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAnimationUtils.h"
 
 #import "TGCommentCollectionItem.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGPaymentPasswordEntryControllerView () <UITextFieldDelegate> {
     UIView *_dimmingView;

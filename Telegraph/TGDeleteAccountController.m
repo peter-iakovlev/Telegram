@@ -4,7 +4,7 @@
 #import "TGCommentCollectionItem.h"
 #import "TGTextViewCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 @interface TGDeleteAccountController ()
 {

@@ -1,14 +1,9 @@
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAudioSliderArea.h"
-#import "TGModernButton.h"
-
-#import <MTProtoKit/MTTime.h>
-
-#import <POP/pop.h>
+#import <LegacyComponents/TGModernButton.h>
 
 static CGFloat insetLeft = 4.0f;
 static CGFloat insetRight = 4.0f;
@@ -92,7 +87,7 @@ static CGFloat scrubberInternalInset = 4.0f;
         
         _pipButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 50.0f, 44.0f)];
         _pipButton.hidden = true;
-        [_pipButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedVideoPIPIcon"], [UIColor whiteColor]) forState:UIControlStateNormal];
+        [_pipButton setImage:TGTintedImage(TGComponentsImageNamed(@"EmbedVideoPIPIcon"), [UIColor whiteColor]) forState:UIControlStateNormal];
         [_pipButton addTarget:self action:@selector(pipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_pipButton];
     }
@@ -157,7 +152,7 @@ static CGFloat scrubberInternalInset = 4.0f;
         CGPoint handleStartPosition = CGPointMake(CGRectGetMidX(_scrubberHandle.frame), CGRectGetMidY(_scrubberHandle.frame));
         CGRect foregroundStartFrame = _scrubberForegroundContainer.frame;
         
-        float playedProgress = MAX(0.0f, MIN(1.0f, (float)((MTAbsoluteSystemTime() - _positionTimestamp) / _duration)));
+        float playedProgress = MAX(0.0f, MIN(1.0f, (float)((CACurrentMediaTime() - _positionTimestamp) / _duration)));
         
         CGRect handlePositionFrame = [self sliderButtonFrameForProgress:_position + playedProgress];
         CGRect foregroundFrame = [self sliderForegroundFrameForProgress:_position + playedProgress];
@@ -219,7 +214,7 @@ static CGFloat scrubberInternalInset = 4.0f;
     _sliderArea.userInteractionEnabled = isPlayable;
     
     _duration = duration;
-    _positionTimestamp = MTAbsoluteSystemTime();
+    _positionTimestamp = CACurrentMediaTime();
     
     if (!_isScrubbing)
     {

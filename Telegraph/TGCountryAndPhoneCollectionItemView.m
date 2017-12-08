@@ -1,16 +1,14 @@
 #import "TGCountryAndPhoneCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBackspaceTextField.h"
-#import "TGTextField.h"
-#import "TGPhoneUtils.h"
+#import <LegacyComponents/TGTextField.h>
 
 #import <CoreTelephony/CTCarrier.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
 #import "TGLoginCountriesController.h"
-#import "TGNavigationController.h"
 
 @interface TGCountryAndPhoneCollectionItemView () <UITextFieldDelegate>
 {
@@ -86,7 +84,7 @@
         [_countryButton addTarget:self action:@selector(countryButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_countryButton];
         
-        UIImageView *disclosureIndicator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
+        UIImageView *disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
         disclosureIndicator.frame = (CGRect){{_countryButton.frame.size.width - 15.0f - disclosureIndicator.frame.size.width, 15.0f}, disclosureIndicator.frame.size};
         disclosureIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
         [_countryButton addSubview:disclosureIndicator];

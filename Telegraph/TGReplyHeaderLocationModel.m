@@ -16,9 +16,9 @@
 
 @implementation TGReplyHeaderLocationModel
 
-- (instancetype)initWithPeer:(id)peer latitude:(double)__unused latitude longitude:(double)__unused longitude incoming:(bool)incoming system:(bool)system
+- (instancetype)initWithPeer:(id)peer latitude:(double)__unused latitude longitude:(double)__unused longitude period:(int32_t)period incoming:(bool)incoming system:(bool)system
 {
-    self = [super initWithPeer:peer incoming:incoming text:TGLocalized(@"Message.Location") truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:period > 0 ? TGLocalized(@"Message.LiveLocation") : TGLocalized(@"Message.Location") truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
     if (self != nil)
     {
         /*_imageModel = [[TGSignalImageViewModel alloc] init];

@@ -2,10 +2,8 @@
 
 #import "TGLoginResetAccountControllerView.h"
 
-#import "TGPhoneUtils.h"
-
 #import "TGAlertView.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAccountSignals.h"
 
@@ -41,7 +39,7 @@
     int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
     [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
     
-    [TGAppDelegateInstance presentLoginController:true animated:true showWelcomeScreen:false phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
+    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
 }
 
 - (void)loadView {
@@ -95,7 +93,7 @@
 }
 
 - (void)_completedDeletion {
-    [TGAppDelegateInstance presentLoginController:true animated:true showWelcomeScreen:false phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
+    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
 }
 
 @end

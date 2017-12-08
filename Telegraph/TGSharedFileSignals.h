@@ -7,6 +7,7 @@
 @interface TGSharedFileSignals : NSObject
 
 + (SSignal *)squareFileThumbnail:(TGDocumentMediaAttachment *)documentAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock;
++ (SSignal *)squareFileThumbnail:(TGDocumentMediaAttachment *)documentAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache inhibitBlur:(bool)inhibitBlur pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock;
 
 // returns Signal<[Signal<NSData>, Signal<NSNumber>]>
 + (SSignal *)documentData:(TGDocumentMediaAttachment *)document priority:(bool)priority;

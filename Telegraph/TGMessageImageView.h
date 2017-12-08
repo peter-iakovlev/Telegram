@@ -6,13 +6,13 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import <SSignalKit/SSignalKit.h>
 #import <AVFoundation/AVFoundation.h>
 
 #import "TGModernView.h"
-#import "TGModernGalleryVideoView.h"
+#import <LegacyComponents/TGModernGalleryVideoView.h>
 
 typedef enum {
     TGMessageImageViewOverlayNone = 0,
@@ -24,7 +24,8 @@ typedef enum {
     TGMessageImageViewOverlaySecretProgress = 6,
     TGMessageImageViewOverlayProgressNoCancel = 7,
     TGMessageImageViewOverlayPlayMedia = 8,
-    TGMessageImageViewOverlayPauseMedia = 9
+    TGMessageImageViewOverlayPauseMedia = 9,
+    TGMessageImageViewOverlayCompleted = 11
 } TGMessageImageViewOverlay;
 
 typedef enum {
@@ -35,6 +36,7 @@ typedef enum {
 } TGMessageImageViewActionType;
 
 @class TGMessageImageView;
+@class TGMessageImageViewTimestampView;
 
 @protocol TGMessageImageViewDelegate <NSObject>
 
@@ -47,6 +49,7 @@ typedef enum {
 @interface TGMessageImageViewContainer : UIView <TGModernView>
 
 @property (nonatomic, strong) TGMessageImageView *imageView;
+@property (nonatomic, readonly) TGMessageImageViewTimestampView *timestampView;
 
 @end
 
@@ -61,6 +64,7 @@ typedef enum {
 @property (nonatomic) UIEdgeInsets inlineVideoInsets;
 @property (nonatomic) CGSize inlineVideoSize;
 @property (nonatomic) CGFloat inlineVideoCornerRadius;
+@property (nonatomic) int inlineVideoPosition;
 @property (nonatomic) bool flexibleTimestamp;
 
 @property (nonatomic, copy) void (^progressBlock)(TGImageView *, CGFloat);
@@ -71,8 +75,10 @@ typedef enum {
 - (void)setOverlayType:(int)overlayType animated:(bool)animated;
 - (void)setProgress:(CGFloat)progress animated:(bool)animated;
 - (void)setSecretProgress:(CGFloat)progress completeDuration:(NSTimeInterval)completeDuration animated:(bool)animated;
+- (void)setTimestampUnlimitedWidth:(bool)unlimitedWidth;
 - (void)setTimestampColor:(UIColor *)color;
 - (void)setTimestampHidden:(bool)timestampHidden;
+- (void)setTimestampHidden:(bool)timestampHidden animated:(bool)animated;
 - (void)setTimestampPosition:(int)timestampPosition;
 - (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
 - (void)setAdditionalDataString:(NSString *)additionalDataString animated:(bool)animated;

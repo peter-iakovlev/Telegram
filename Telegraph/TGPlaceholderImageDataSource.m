@@ -1,17 +1,6 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGPlaceholderImageDataSource.h"
 
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
-
-#import "NSObject+TGLock.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGInterfaceAssets.h"
 
@@ -24,12 +13,13 @@ typedef struct
 } TGTwoColors;
 
 static const TGTwoColors colors[] = {
-    { .top = 0xff516a, .bottom = 0xff885e },
-    { .top = 0xffa85c, .bottom = 0xffcd6a },
-    { .top = 0x54cb68, .bottom = 0xa0de7e },
-    { .top = 0x2a9ef1, .bottom = 0x72d5fd },
-    { .top = 0x665fff, .bottom = 0x82b1ff },
-    { .top = 0xd669ed, .bottom = 0xe0a2f3 },
+    { .top = 0xff516a, .bottom = 0xff885e }, //red
+    { .top = 0xffa85c, .bottom = 0xffcd6a }, //orange
+    { .top = 0x665fff, .bottom = 0x82b1ff }, //purple
+    { .top = 0x54cb68, .bottom = 0xa0de7e }, //green
+    { .top = 0x28c9b7, .bottom = 0x53edd6 }, //cyan
+    { .top = 0x2a9ef1, .bottom = 0x72d5fd }, //blue
+    { .top = 0xd669ed, .bottom = 0xe0a2f3 }, //pink
 };
 
 @implementation TGPlaceholderImageDataSource
@@ -65,7 +55,7 @@ static const TGTwoColors colors[] = {
 
 - (NSValue *)groupGradient:(int64_t)gid
 {
-    return [NSValue valueWithBytes:&colors[[[TGInterfaceAssets instance] groupColorIndex:gid] % 6] objCType:@encode(TGTwoColors)];
+    return [NSValue valueWithBytes:&colors[[[TGInterfaceAssets instance] groupColorIndex:gid]] objCType:@encode(TGTwoColors)];
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute
@@ -85,14 +75,14 @@ static const TGTwoColors colors[] = {
         int uid = [args[@"uid"] intValue];
         int colorIndex = [[TGInterfaceAssets instance] userColorIndex:uid];
         
-        return [[NSString alloc] initWithFormat:@"%@:%d:%@x%@", args[@"type"], uid == 0 ? -1 : (int)(colorIndex % (sizeof(colors) / sizeof(colors[0]))), args[@"w"], args[@"h"]];
+        return [[NSString alloc] initWithFormat:@"%@:%d:%@x%@", args[@"type"], uid == 0 ? -1 : colorIndex, args[@"w"], args[@"h"]];
     }
     else
     {
         int64_t gid = [args[@"cid"] longLongValue];
         int colorIndex = [[TGInterfaceAssets instance] groupColorIndex:gid];
         
-        return [[NSString alloc] initWithFormat:@"%@:%d:%@x%@", args[@"type"], gid == 0 ? -1 : (int)(colorIndex % (sizeof(colors) / sizeof(colors[0]))), args[@"w"], args[@"h"]];
+        return [[NSString alloc] initWithFormat:@"%@:%d:%@x%@", args[@"type"], gid == 0 ? -1 : colorIndex, args[@"w"], args[@"h"]];
     }
 }
 
@@ -121,10 +111,8 @@ static const TGTwoColors colors[] = {
     if (uid == 0)
         return (TGTwoColors){.top = 0xb1b1b1, .bottom = 0xcdcdcd };
 
-    
     int colorIndex = [[TGInterfaceAssets instance] userColorIndex:uid];
-    
-    return colors[colorIndex % (sizeof(colors) / sizeof(colors[0]))];
+    return colors[colorIndex];
 }
 
 - (TGTwoColors)_colorsForGroupId:(int64_t)groupId
@@ -133,8 +121,7 @@ static const TGTwoColors colors[] = {
         return (TGTwoColors){.top = 0x8a8d91, .bottom = 0xbfc1c3};
     
     int colorIndex = [[TGInterfaceAssets instance] groupColorIndex:groupId];
-    
-    return colors[colorIndex % (sizeof(colors) / sizeof(colors[0]))];
+    return colors[colorIndex];
 }
 
 - (TGDataResource *)_createAndCachePlaceholderWithArgs:(NSDictionary *)args
@@ -180,13 +167,6 @@ static const TGTwoColors colors[] = {
         
         CFRelease(gradient);
         
-        if (false && uid == 0)
-        {
-            CGFloat lineWidth = size.width > 40.0f ? 1.0f : 1.0f;
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(lineWidth, lineWidth, size.width - lineWidth * 2.0f, size.height - lineWidth * 2.0f));
-        }
-        
         UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
         
@@ -230,6 +210,53 @@ static const TGTwoColors colors[] = {
         
         CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, size.height), 0);
         CFRelease(gradient);
+        
+        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        if (image != nil)
+        {
+            TG_SYNCHRONIZED_BEGIN(imageCache);
+            [TGPlaceholderImageDataSource imageCache][[self cacheKeyForArgs:args]] = image;
+            TG_SYNCHRONIZED_END(imageCache);
+        }
+    }
+    else if ([type isEqualToString:@"saved-messages"])
+    {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGContextBeginPath(context);
+        CGContextAddEllipseInRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
+        CGContextClip(context);
+        
+        TGTwoColors twoColors = colors[5];
+        
+        CGColorRef colors[2] = {
+            CGColorRetain(UIColorRGB(twoColors.bottom).CGColor),
+            CGColorRetain(UIColorRGB(twoColors.top).CGColor)
+        };
+        
+        CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);
+        CGFloat locations[2] = {0.0f, 1.0f};
+        
+        CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+        CGGradientRef gradient = CGGradientCreateWithColors(colorSpace, colorsArray, (CGFloat const *)&locations);
+        
+        CFRelease(colorsArray);
+        CFRelease(colors[0]);
+        CFRelease(colors[1]);
+        
+        CGColorSpaceRelease(colorSpace);
+        
+        CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, size.height), 0);
+        
+        CFRelease(gradient);
+        
+        UIImage *icon = TGImageNamed(@"SavedMessagesIcon");
+        CGSize ratios = CGSizeMake(22.0f / 60.0f, 27.0f / 60.0f);
+        CGSize iconSize = CGSizeMake(round(size.width * ratios.width), round(size.height * ratios.height));
+        [icon drawInRect:CGRectMake((size.width - iconSize.width) / 2.0f, ceil((size.height - iconSize.height) / 2.0f) + 1.0f, iconSize.width, iconSize.height)];
         
         UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();

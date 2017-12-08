@@ -9,15 +9,16 @@
 
 @end
 
-@interface TLcontacts_Contacts$contacts_contacts : TLcontacts_Contacts
+@interface TLcontacts_Contacts$contacts_contactsNotModified : TLcontacts_Contacts
 
-@property (nonatomic, retain) NSArray *contacts;
-@property (nonatomic, retain) NSArray *users;
 
 @end
 
-@interface TLcontacts_Contacts$contacts_contactsNotModified : TLcontacts_Contacts
+@interface TLcontacts_Contacts$contacts_contacts : TLcontacts_Contacts
 
+@property (nonatomic, retain) NSArray *contacts;
+@property (nonatomic) int32_t saved_count;
+@property (nonatomic, retain) NSArray *users;
 
 @end
 

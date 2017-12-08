@@ -1,6 +1,6 @@
 #import "TGVerifyChangePhoneActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 

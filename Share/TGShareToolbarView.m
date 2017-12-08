@@ -27,12 +27,12 @@
      
         _wrapperView = [[UIView alloc] initWithFrame:self.bounds];
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        _wrapperView.backgroundColor = TGColorWithHex(0xf7f7f7);
+        _wrapperView.backgroundColor = [UIColor hexColor:0xf7f7f7];
         [self addSubview:_wrapperView];
         
         CGFloat separatorHeight = 1.0f / [[UIScreen mainScreen] scale];
         UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, separatorHeight)];
-        stripeView.backgroundColor = TGColorWithHex(0xb2b2b2);
+        stripeView.backgroundColor = [UIColor hexColor:0xb2b2b2];
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_wrapperView addSubview:stripeView];
         
@@ -43,7 +43,7 @@
         _leftButton = [[TGShareButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
         _leftButton.exclusiveTouch = true;
         [_leftButton setTitle:NSLocalizedString(@"Share.Cancel", nil) forState:UIControlStateNormal];
-        [_leftButton setTitleColor:TGColorWithHex(0x007ee5)];
+        [_leftButton setTitleColor:[UIColor hexColor:0x007ee5]];
         _leftButton.titleLabel.font = [UIFont systemFontOfSize:17];
         _leftButton.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 0);
         [_leftButton sizeToFit];
@@ -55,7 +55,7 @@
         _rightButton = [[TGShareButton alloc] initWithFrame:CGRectMake(0, 0, 40, 44)];
         _rightButton.exclusiveTouch = true;
         [_rightButton setTitle:NSLocalizedString(@"Share.Done", nil) forState:UIControlStateNormal];
-        [_rightButton setTitleColor:TGColorWithHex(0x007ee5)];
+        [_rightButton setTitleColor:[UIColor hexColor:0x007ee5]];
         _rightButton.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
         _rightButton.contentEdgeInsets = UIEdgeInsetsMake(0, 27, 0, 10);
         [_rightButton sizeToFit];

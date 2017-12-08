@@ -1,13 +1,12 @@
 #import "TGMultipleStickerPacksCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGStickerPack.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGStickerPack.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "TGStickerCollectionViewCell.h"
+#import <LegacyComponents/TGStickerCollectionViewCell.h>
 
 static CGFloat preloadInset = 64.0f;
 
@@ -84,6 +83,8 @@ static CGFloat preloadInset = 64.0f;
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.backgroundColor = [UIColor clearColor];

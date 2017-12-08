@@ -1,5 +1,7 @@
 #import "TGUser+Telegraph.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSchema.h"
 
 #import "TGDatabase.h"
@@ -8,9 +10,9 @@
 
 #import "TGImageInfo+Telegraph.h"
 
-#import "TGStringUtils.h"
-
 #import "TLUser$modernUser.h"
+
+#import "TGNotificationPrivacyAccountSetting.h"
 
 void extractUserPhoto(TLUserProfilePhoto *photo, TGUser *target)
 {
@@ -126,8 +128,6 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
 
 @implementation TGUser (Telegraph)
 
-//user flags:# id:int access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int = User;
-
 - (id)initWithTelegraphUserDesc:(TLUser *)user
 {
     self = [self init];
@@ -190,6 +190,47 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate)
             }
         }
     }
+    return self;
+}
+
+- (TGUser *)applyPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules currentTime:(NSTimeInterval)currentTime
+{
+    if (privacyRules == nil)
+        return self;
+    
+    bool approximatePresenceRequired = false;
+    
+    switch (privacyRules.lastSeenPrimarySetting)
+    {
+        case TGPrivacySettingsLastSeenPrimarySettingEverybody:
+            if ([privacyRules.neverShareWithUserIds containsObject:@(self.uid)])
+                approximatePresenceRequired = true;
+            break;
+        case TGPrivacySettingsLastSeenPrimarySettingContacts:
+            if ([TGDatabaseInstance() uidIsRemoteContact:self.uid])
+            {
+                if ([privacyRules.neverShareWithUserIds containsObject:@(self.uid)])
+                    approximatePresenceRequired = true;
+            }
+            else
+            {
+                if (![privacyRules.alwaysShareWithUserIds containsObject:@(self.uid)])
+                    approximatePresenceRequired = true;
+            }
+            break;
+        case TGPrivacySettingsLastSeenPrimarySettingNobody:
+            if (![privacyRules.alwaysShareWithUserIds containsObject:@(self.uid)])
+                approximatePresenceRequired = true;
+            break;
+    }
+    
+    if (approximatePresenceRequired)
+    {
+        TGUser *user = [self copy];
+        user.presence = [TGUser approximatePresenceFromPresence:self.presence currentTime:currentTime];
+        return user;
+    }
+    
     return self;
 }
 

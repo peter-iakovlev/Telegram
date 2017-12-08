@@ -1,26 +1,24 @@
 #import "TGGenericContextResultCell.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGSharedMediaUtils.h"
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaSignals.h"
 
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
 #import "TGBotContextResultSendMessageGeo.h"
-
-#import "TGMessage.h"
 
 #import "TGDocumentMessageIconView.h"
 #import "TGMessageImageView.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGBotContextResultSendMessageContact.h"
 
@@ -211,7 +209,7 @@
         } else if ([result.sendMessage isKindOfClass:[TGBotContextResultSendMessageGeo class]]) {
             TGBotContextResultSendMessageGeo *concreteMessage = (TGBotContextResultSendMessageGeo *)result.sendMessage;
             CGSize mapImageSize = CGSizeMake(75.0f, 75.0f);
-            NSString *mapUri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=4", concreteMessage.location.latitude, concreteMessage.location.longitude, (int)mapImageSize.width, (int)mapImageSize.height];
+            NSString *mapUri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=4&offset=-10", concreteMessage.location.latitude, concreteMessage.location.longitude, (int)mapImageSize.width, (int)mapImageSize.height];
             imageUrl = mapUri;
         }
     } else if ([result isKindOfClass:[TGBotContextMediaResult class]]) {

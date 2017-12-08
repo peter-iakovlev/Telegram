@@ -30,3 +30,11 @@
 "Share.TouchId" = "Toegangscode invoeren";
 
 "Share.AddCaption" = "Opmerking toevoegen";
+
+"Share.PasscodeFailedAttempts_1" = "1 mislukte poging";
+"Share.PasscodeFailedAttempts_2" = "2 mislukte pogingen";
+"Share.PasscodeFailedAttempts_3_10" = "%@ mislukte pogingen";
+"Share.PasscodeFailedAttempts_any" = "%@ mislukte poging";
+"Share.PasscodeTryAgainIn1Minute" = "Probeer het over 1 minuut nog eens";
+
+"Share.SavedMessages" = "Bewaarde berichten";

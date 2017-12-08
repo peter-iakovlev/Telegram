@@ -27,4 +27,6 @@
 
 - (void)standaloneSendBotStartPayload:(NSString *)payload;
 
+- (bool)supportsLiveLocations;
+
 @end

@@ -1,11 +1,11 @@
 #import "TGCallBackgroundView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "UIImage+ImageEffects.h"
-#import "TGImageUtils.h"
 
 #import "TGCallSession.h"
 #import "TGMediaSignals.h"
-#import "TGUser.h"
 
 @interface TGCallBackgroundView ()
 {
@@ -69,6 +69,7 @@
         CGColorSpaceRelease(colorSpace);
         
         CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, screenSize.height), 0);
+        CGGradientRelease(gradient);
     
         [self setImage:UIGraphicsGetImageFromCurrentImageContext() big:true empty:true];
         UIGraphicsEndImageContext();

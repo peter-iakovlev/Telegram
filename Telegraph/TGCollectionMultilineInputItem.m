@@ -4,6 +4,7 @@
 
 @interface TGCollectionMultilineInputItem () {
     CGFloat _currentContainerWidth;
+    UIEdgeInsets _currentSafeAreaInset;
 }
 
 @end
@@ -19,16 +20,17 @@
     return self;
 }
 
-- (CGSize)itemSizeForContainerSize:(CGSize)containerSize {
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)safeAreaInset {
     _currentContainerWidth = containerSize.width;
+    _currentSafeAreaInset = safeAreaInset;
     
-    CGFloat width = _currentContainerWidth;
+    CGFloat width = _currentContainerWidth - safeAreaInset.left - safeAreaInset.right;
     if (_showRemainingCount)
         width -= 30.0f;
     
     width -= _insets.left + _insets.right;
     
-    CGFloat textHeight = [TGCollectionMultilineInputItemView heightForText:_text width:width];
+    CGFloat textHeight = [TGCollectionMultilineInputItemView heightForText:_text width:width safeAreaInset:_currentSafeAreaInset];
     if (_minHeight > FLT_EPSILON)
         textHeight = MAX(_minHeight, textHeight);
     return CGSizeMake(containerSize.width, textHeight);
@@ -57,12 +59,12 @@
             if (strongSelf->_showRemainingCount)
                 width -= 30.0f;
             
-            CGFloat previousHeight = [TGCollectionMultilineInputItemView heightForText:strongSelf->_text width:width];
+            CGFloat previousHeight = [TGCollectionMultilineInputItemView heightForText:strongSelf->_text width:width safeAreaInset:strongSelf->_currentSafeAreaInset];
             strongSelf->_text = text;
             if (strongSelf->_textChanged) {
                 strongSelf->_textChanged(text);
             }
-            CGFloat currentHeight = [TGCollectionMultilineInputItemView heightForText:strongSelf->_text width:width];
+            CGFloat currentHeight = [TGCollectionMultilineInputItemView heightForText:strongSelf->_text width:width safeAreaInset:strongSelf->_currentSafeAreaInset];
             if (ABS(currentHeight - previousHeight) > FLT_EPSILON) {
                 if (strongSelf->_heightChanged) {
                     strongSelf->_heightChanged();

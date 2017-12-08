@@ -1,7 +1,8 @@
 #import "TGCollectionMenuController.h"
 
-#import "TGInterfaceAssets.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGPresentation.h"
 
 #import "TGCollectionMenuView.h"
 #import "TGCollectionMenuLayout.h"
@@ -23,6 +24,8 @@
     CGFloat _currentLayoutWidth;
     
     UIView *_headerBackgroundView;
+    
+    id<SDisposable> _presentationDisposable;
 }
 
 @end
@@ -35,6 +38,14 @@
     if (self)
     {
         _menuSections = [[TGCollectionMenuSectionList alloc] init];
+        
+        __weak TGCollectionMenuController *weakSelf = self;
+        _presentationDisposable = [TGPresentation.signal startWithNext:^(TGPresentation *next)
+        {
+            __strong TGCollectionMenuController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf setPresentation:next];
+        }];
     }
     return self;
 }
@@ -43,6 +54,8 @@
 {
     _collectionView.delegate = nil;
     _collectionView.dataSource = nil;
+    
+    [_presentationDisposable dispose];
 }
 
 - (void)enterEditingMode:(bool)animated
@@ -92,6 +105,8 @@
     
     _collectionLayout = [[TGCollectionMenuLayout alloc] init];
     _collectionView = [[TGCollectionMenuView alloc] initWithFrame:self.view.bounds collectionViewLayout:_collectionLayout];
+    if (iosMajorVersion() >= 11)
+        _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.backgroundColor = nil;
     _collectionView.opaque = false;
     _collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -114,6 +129,22 @@
     };
     
     [self.view insertSubview:_collectionView aboveSubview:_headerBackgroundView];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    if ([self isViewLoaded])
+        self.view.backgroundColor = _presentation.pallete.collectionMenuBackgroundColor;
+    
+    for (TGCollectionMenuSection *section in _menuSections.sections)
+    {
+        for (TGCollectionItem *listItem in section.items)
+        {
+            [listItem setPresentation:presentation];
+        }
+    }
 }
 
 - (void)collectionMenuViewDidEnterEditingMode:(TGCollectionMenuView *)__unused collectionMenuView
@@ -181,7 +212,8 @@
     if (TGIsPad()) {
         self.view.frame = self.navigationController.view.bounds;
     }
-    self.view.backgroundColor = [TGInterfaceAssets listsBackgroundColor];
+    
+    self.view.backgroundColor = _presentation.pallete.collectionMenuBackgroundColor;
     
     _headerBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.controllerInset.top)];
     _headerBackgroundView.backgroundColor = [UIColor whiteColor];
@@ -202,6 +234,11 @@
     
     if ([self isViewLoaded]) {
         _headerBackgroundView.frame = CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.controllerInset.top);
+        
+        for (TGCollectionItemView *itemView in [_collectionView visibleCells])
+        {
+            itemView.safeAreaInset = self.controllerSafeAreaInset;
+        }
     }
 }
 
@@ -213,6 +250,13 @@
     }
     
     [super viewWillAppear:animated];
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [_collectionView stopScrollingAnimation];
+    
+    [super viewWillDisappear:animated];
 }
 
 /*- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
@@ -286,11 +330,15 @@
     
     if (item != nil)
     {
+        if (item.presentation != _presentation)
+            item.presentation = _presentation;
+        
         TGCollectionItemView *itemView = [item dequeueItemView:collectionView registeredIdentifiers:_collectionRegisteredIdentifiers forIndexPath:indexPath];
         if (iosMajorVersion() <= 8) {
             if (itemView.boundItem != nil)
                 [itemView.boundItem unbindView];
             
+            itemView.safeAreaInset = self.controllerSafeAreaInset;
             [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
             
             [item bindView:itemView];
@@ -314,6 +362,7 @@
             if (itemView.boundItem != nil)
                 [itemView.boundItem unbindView];
             
+            itemView.safeAreaInset = self.controllerSafeAreaInset;
             [self updateItem:item itemView:itemView positionAtIndexPath:indexPath ignoreDragging:false animated:false];
             
             [item bindView:itemView];
@@ -336,8 +385,12 @@
     
     CGSize layoutSize = collectionView.frame.size;
     
+    UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+    if (layoutSize.width > layoutSize.height)
+        orientation = UIInterfaceOrientationLandscapeLeft;
+    
     if (item != nil)
-        return [item itemSizeForContainerSize:layoutSize];
+        return [item itemSizeForContainerSize:layoutSize safeAreaInset:[TGViewController safeAreaInsetForOrientation:orientation]];
     
     return CGSizeZero;
 }

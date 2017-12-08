@@ -1,12 +1,12 @@
 #import "TGCollectionStaticMultilineTextItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernTextViewModel.h"
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
 @interface TGCollectionStaticMultilineTextItemViewTextView : UIButton {

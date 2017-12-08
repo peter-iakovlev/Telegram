@@ -1,8 +1,8 @@
 #import "TGModernFlatteningViewModel.h"
 
-#import "TGModernFlatteningView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import "TGModernFlatteningView.h"
 
 CGFloat TGModernFlatteningViewModelTilingLimit = 512.0f;
 

@@ -1,12 +1,9 @@
 #import "TGChannelAdminLogEmptyView.h"
 
-#import "TGViewController.h"
-
-#import "TGFont.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGWallpaperManager.h"
-#import "TGWallpaperInfo.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
 
 @implementation TGChannelAdminLogEmptyFilter
 
@@ -29,7 +26,7 @@
 
 @implementation TGChannelAdminLogEmptyView
 
-- (instancetype)initWithFilter:(TGChannelAdminLogEmptyFilter *)filter
+- (instancetype)initWithFilter:(TGChannelAdminLogEmptyFilter *)filter group:(bool)group
 {
     static const CGFloat minWidth = 280.0f;
     
@@ -67,7 +64,7 @@
         if (filter != nil) {
             titleText = TGLocalized(@"Channel.AdminLog.EmptyFilterTitle");
         }
-        NSString *bodyText = TGLocalized(@"Channel.AdminLog.EmptyText");
+        NSString *bodyText = group ? TGLocalized(@"Channel.AdminLog.EmptyText") : TGLocalized(@"Channel.AdminLog.ChannelEmptyText");
         if (filter != nil) {
             if (filter.query.length != 0) {
                 bodyText = [NSString stringWithFormat:TGLocalized(@"Channel.AdminLog.EmptyFilterQueryText"), filter.query];

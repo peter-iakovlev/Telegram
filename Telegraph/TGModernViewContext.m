@@ -1,8 +1,13 @@
 #import "TGModernViewContext.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGModernViewContext
+
+- (bool)isFocusedOnMessage:(int32_t)__unused messageId
+{
+    return false;
+}
 
 - (bool)isMediaVisibleInMessage:(int32_t)__unused messageId
 {
@@ -10,6 +15,11 @@
 }
 
 - (bool)isMessageChecked:(int32_t)__unused messageId
+{
+    return false;
+}
+
+- (bool)isGroupChecked:(int64_t)__unused groupedId
 {
     return false;
 }
@@ -35,6 +45,10 @@
     } else {
         return false;
     }
+}
+
+- (bool)isByAdmin:(TGMessage *)message {
+    return [_adminIds containsObject:@(message.fromUid)];
 }
 
 @end

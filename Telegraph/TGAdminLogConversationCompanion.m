@@ -1,10 +1,14 @@
 #import "TGAdminLogConversationCompanion.h"
 
-#import "ASCommon.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGLegacyComponentsContext.h"
+
+
 #import "TGCommon.h"
 
 #import "TGAppDelegate.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 #import "TGAppDelegate.h"
@@ -21,18 +25,12 @@
 
 #import "TGChannelInfoController.h"
 #import "TGChannelGroupInfoController.h"
-#import "TGNavigationController.h"
-#import "TGPopoverController.h"
-#import "TGNavigationBar.h"
 
 #import "TGModernViewContext.h"
 
 #import "TGModernConversationActionInputPanel.h"
 
 #import "TGTelegramNetworking.h"
-
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
 
 #import "TGAlertView.h"
 
@@ -50,7 +48,7 @@
 
 #import "TGPinnedMessageTitlePanel.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAccountSignals.h"
 
@@ -62,20 +60,14 @@
 
 #import "TGReportPeerOtherTextController.h"
 
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGGroupAvatarGalleryModel.h"
 
 #import "TGGroupManagementSignals.h"
 
 #import "TGChannelAdminLogFilterController.h"
 
-#import "TGNavigationController.h"
-
 #import "TGChannelAdminLogEmptyView.h"
-
-#import "TGLocalization.h"
-
-#import "TGPeerIdAdapter.h"
 
 #import "TGChannelBanController.h"
 
@@ -270,7 +262,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (_currentSearchQuery.length != 0 || !isEventFilterAllSet(_eventFilter) || _usersFilter != nil) {
         filter = [[TGChannelAdminLogEmptyFilter alloc] initWithQuery:_currentSearchQuery];
     }
-    return [[TGChannelAdminLogEmptyView alloc] initWithFilter:filter];
+    return [[TGChannelAdminLogEmptyView alloc] initWithFilter:filter group:_isChannelGroup];
 }
 
 - (bool)canPostMessages {
@@ -676,7 +668,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                                     [data addObject:@{@"text": dateStringPlain}];
                                     [resultText appendString:@"\n"];
                                     NSString *restrictedString = @"";
-                                    if (value.rights.tlRights.flags != value.previousRights.tlRights.flags) {
+                                    if (value.rights.tlFlags != value.previousRights.tlFlags) {
                                         restrictedString = [NSString stringWithFormat:TGLocalized(@"Channel.AdminLog.MessageRestrictedUntil"), dateStringPlain];
                                     } else {
                                         restrictedString = [NSString stringWithFormat:TGLocalized(@"Channel.AdminLog.MessageRestrictedNewSetting"), [NSString stringWithFormat:TGLocalized(@"Channel.AdminLog.MessageRestrictedUntil"), dateStringPlain]];
@@ -686,7 +678,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                                     [data addObject:@{@"text": @""}];
                                     [resultText appendString:@"\n"];
                                     NSString *restrictedString = @"";
-                                    if (value.rights.tlRights.flags != value.previousRights.tlRights.flags) {
+                                    if (value.rights.tlFlags != value.previousRights.tlFlags) {
                                         restrictedString = TGLocalized(@"Channel.AdminLog.MessageRestrictedForever");
                                     } else {
                                         restrictedString = [NSString stringWithFormat:TGLocalized(@"Channel.AdminLog.MessageRestrictedNewSetting"), TGLocalized(@"Channel.AdminLog.MessageRestrictedForever")];
@@ -851,7 +843,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                                 }
                                 [updates appendString:TGLocalized(@"Channel.AdminLog.CanChangeInviteLink")];
                             }
-                            if (_isChannelGroup && value.previousRights.canPinMessages != value.rights.canPinMessages) {
+                            if (value.previousRights.canPinMessages != value.rights.canPinMessages) {
                                 [updates appendString:@"\n"];
                                 if (value.previousRights.canPinMessages) {
                                     [updates appendString:@"-"];
@@ -887,6 +879,11 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                             action.actionData = @{@"adminLogEntryContent": content, @"uid": @(value.userId)};
                             message.mediaAttachments = @[action];
                         }
+                    } else if ([content isKindOfClass:[TGChannelAdminLogEntryChangeStickerPack class]] || [content isKindOfClass:[TGChannelAdminLogEntryTogglePreHistoryHidden class]]) {
+                        TGActionMediaAttachment *action = [[TGActionMediaAttachment alloc] init];
+                        action.actionType = TGMessageActionCustom;
+                        action.actionData = @{@"adminLogEntryContent": content};
+                        message.mediaAttachments = @[action];
                     }
                     
                     messageId -= 1;
@@ -925,12 +922,26 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
 
 - (bool)imageDownloadsShouldAutosavePhotos
 {
-    return TGAppDelegateInstance.autosavePhotos;
+    TGAutoDownloadMode mode = _conversation.isChannelGroup ? TGAutoDownloadModeCellularGroups: TGAutoDownloadModeCellularChannels;
+    return (TGAppDelegateInstance.autoSavePhotosMode & mode) != 0;
 }
 
 - (bool)shouldAutomaticallyDownloadPhotos
 {
-    return TGAppDelegateInstance.autoDownloadPhotosInGroups;
+    TGAutoDownloadChat chat = _conversation.isChannelGroup ? TGAutoDownloadChatGroup : TGAutoDownloadChatChannel;
+    return [TGAppDelegateInstance.autoDownloadPreferences shouldDownloadPhotoInChat:chat networkType:TGTelegraphInstance.networkTypeManager.networkType];
+}
+
+- (bool)shouldAutomaticallyDownloadVideos
+{
+    TGAutoDownloadChat chat = _conversation.isChannelGroup ? TGAutoDownloadChatGroup : TGAutoDownloadChatChannel;
+    return [TGAppDelegateInstance.autoDownloadPreferences shouldDownloadVideoInChat:chat networkType:TGTelegraphInstance.networkTypeManager.networkType];
+}
+
+- (bool)shouldAutomaticallyDownloadDocuments
+{
+    TGAutoDownloadChat chat = _conversation.isChannelGroup ? TGAutoDownloadChatGroup : TGAutoDownloadChatChannel;
+    return [TGAppDelegateInstance.autoDownloadPreferences shouldDownloadDocumentInChat:chat networkType:TGTelegraphInstance.networkTypeManager.networkType];
 }
 
 - (bool)shouldAutomaticallyDownloadAnimations
@@ -940,12 +951,14 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
 
 - (bool)shouldAutomaticallyDownloadAudios
 {
-    return TGAppDelegateInstance.autoDownloadAudioInGroups;
+    TGAutoDownloadChat chat = _conversation.isChannelGroup ? TGAutoDownloadChatGroup : TGAutoDownloadChatChannel;
+    return [TGAppDelegateInstance.autoDownloadPreferences shouldDownloadVoiceMessageInChat:chat networkType:TGTelegraphInstance.networkTypeManager.networkType];
 }
 
 - (bool)shouldAutomaticallyDownloadVideoMessages
 {
-    return TGAppDelegateInstance.autoDownloadVideoMessageInGroups;
+    TGAutoDownloadChat chat = _conversation.isChannelGroup ? TGAutoDownloadChatGroup : TGAutoDownloadChatChannel;
+    return [TGAppDelegateInstance.autoDownloadPreferences shouldDownloadVideoMessageInChat:chat networkType:TGTelegraphInstance.networkTypeManager.networkType];
 }
 
 - (NSString *)_sendMessagePathForMessageId:(int32_t)mid {
@@ -1087,14 +1100,6 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     return false;
 }
 
-- (NSString *)_controllerInfoButtonText {
-    if (_conversation.isChannelGroup) {
-        return TGLocalized(@"Conversation.InfoGroup");
-    } else {
-        return TGLocalized(@"Conversation.InfoChannel");
-    }
-}
-
 - (int64_t)requestPeerId {
     return 0;
 }
@@ -1131,7 +1136,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (_conversation.chatPhotoSmall.length == 0)
         return nil;
     
-    TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+    TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
     modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
     
     return modernGallery;

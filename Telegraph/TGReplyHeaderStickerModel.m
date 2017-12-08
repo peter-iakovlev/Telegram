@@ -1,6 +1,6 @@
 #import "TGReplyHeaderStickerModel.h"
 
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGReplyHeaderStickerModel
 

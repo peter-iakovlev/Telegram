@@ -1,9 +1,8 @@
 #import "TGPinnedMessageTitlePanel.h"
 
-#import "TGModenConcersationReplyAssociatedPanel.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import "TGModenConcersationReplyAssociatedPanel.h"
 
 @interface TGPinnedMessageTitlePanel () {
     TGModenConcersationReplyAssociatedPanel *_replyPanel;
@@ -61,7 +60,7 @@
     CGFloat separatorHeight = TGScreenPixel;
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);
     
-    _replyPanel.frame = CGRectMake(0.0f, TGRetinaPixel, self.frame.size.width, 44.0f);
+    _replyPanel.frame = CGRectMake(self.safeAreaInset.left, TGRetinaPixel, self.frame.size.width - self.safeAreaInset.left - self.safeAreaInset.right, 44.0f);
 }
 
 - (void)tapGesture:(UITapGestureRecognizer *)recognizer {

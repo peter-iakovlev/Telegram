@@ -1,6 +1,8 @@
 #import "TGLoadConversationAndHistoryForSearchActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegramNetworking.h"
 #import <MTProtoKit/MTRequest.h>
@@ -13,11 +15,7 @@
 #import "TGMessage+Telegraph.h"
 #import "TGUserDataRequestBuilder.h"
 
-#import "TGStringUtils.h"
-
 #import "TGChannelManagementSignals.h"
-
-#import "TGPeerIdAdapter.h"
 
 #import "TGDownloadMessagesSignal.h"
 

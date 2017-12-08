@@ -1,5 +1,8 @@
 #import "TGForwardTargetController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGTelegraph.h"
 #import "TGDialogListController.h"
 #import "TGTelegraphDialogListCompanion.h"
 #import "TGContactsController.h"
@@ -7,17 +10,15 @@
 #import "TGInterfaceManager.h"
 #import "TGInterfaceAssets.h"
 
-#import "TGDatabase.h"
+#import "TGSendMessageSignals.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGBackdropView.h"
+#import "TGDatabase.h"
 
 #import "TGAlertView.h"
 
 #import "TGAppDelegate.h"
 
-#import "TGLocalization.h"
+#import "TGPresentation.h"
 
 @interface TGForwardContactsController : TGContactsController
 
@@ -87,6 +88,7 @@
         _dialogListCompanion.showSecretInForwardMode = showSecretChats;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -113,6 +115,7 @@
         _dialogListCompanion.forwardMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -121,7 +124,7 @@
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
-        _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = TGLocalized(@"BlockedUsers.BlockFormat");
+        _confirmationDefaultPersonFormat = _confirmationDefaultGroupFormat = @"%@";
         _controllerTitle = TGLocalized(@"BlockedUsers.BlockTitle");
         _blockMode = true;
     }
@@ -144,6 +147,7 @@
         _dialogListCompanion.privacyMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -172,6 +176,7 @@
         _dialogListCompanion.showSecretInForwardMode = showSecretChats;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -204,6 +209,7 @@
         _dialogListCompanion.botStartMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -252,6 +258,7 @@
         _dialogListCompanion.showSecretInForwardMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -293,6 +300,7 @@
         _dialogListCompanion.showSecretInForwardMode = true;
         _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
         _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.presentation = TGPresentation.current;
         _dialogListController.customParentViewController = self;
         _dialogListController.doNotHideSearchAutomatically = true;
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
@@ -348,39 +356,31 @@
     
     if (_contactsController != nil)
     {
-        _toolbarContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 44, self.view.frame.size.width, 44)];
+        CGFloat offset = self.controllerSafeAreaInset.bottom;
+        _toolbarContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 44 - offset, self.view.frame.size.width, 44 + offset)];
         _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
 
-        if (TGBackdropEnabled())
-        {
-            UIView *backgroundView = [[UIToolbar alloc] initWithFrame:_toolbarContainerView.bounds];
-            backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            [_toolbarContainerView addSubview:backgroundView];
-        }
-        else
-        {
-            UIView *backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
-            backgroundView.frame = _toolbarContainerView.bounds;
-            backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-            [_toolbarContainerView addSubview:backgroundView];
-            
-            UIView *stripeView = [[UIView alloc] init];
-            stripeView.frame = CGRectMake(0.0f, 0.0f, _toolbarContainerView.frame.size.width, TGScreenPixel);
-            stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
-            stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-            [_toolbarContainerView addSubview:stripeView];
-        }
+        UIView *backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
+        backgroundView.frame = _toolbarContainerView.bounds;
+        backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [_toolbarContainerView addSubview:backgroundView];
+        
+        UIView *stripeView = [[UIView alloc] init];
+        stripeView.frame = CGRectMake(0.0f, 0.0f, _toolbarContainerView.frame.size.width, TGScreenPixel);
+        stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
+        stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        [_toolbarContainerView addSubview:stripeView];
         
         _segmentedControl = [[UISegmentedControl alloc] initWithItems:@[TGLocalized(@"DialogList.TabTitle"), TGLocalized(@"Contacts.TabTitle")]];
         
-        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlBackground.png"] forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlSelected.png"] forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:[UIImage imageNamed:@"ModernSegmentedControlHighlighted.png"] forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        UIImage *dividerImage = [UIImage imageNamed:@"ModernSegmentedControlDivider.png"];
+        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        UIImage *dividerImage = TGComponentsImageNamed(@"ModernSegmentedControlDivider.png");
         [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
         _segmentedControl.frame = CGRectMake(CGFloor((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
-        _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
+        _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         
         [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
         [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
@@ -406,9 +406,18 @@
     }
 }
 
+- (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
+{
+    [super controllerInsetUpdated:previousInset];
+    
+    CGFloat offset = self.controllerSafeAreaInset.bottom;
+    _toolbarContainerView.frame = CGRectMake(0, self.view.frame.size.height - 44 - offset, self.view.frame.size.width, 44 + offset);
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
-    _toolbarContainerView.frame = CGRectMake(0, self.view.frame.size.height - 44, self.view.frame.size.width, 44);
+    CGFloat offset = self.controllerSafeAreaInset.bottom;
+    _toolbarContainerView.frame = CGRectMake(0, self.view.frame.size.height - 44 - offset, self.view.frame.size.width, 44 + offset);
     _segmentedControl.frame = CGRectMake(CGFloor((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
     
     [super viewWillAppear:animated];
@@ -728,11 +737,63 @@
             if ([_selectedTarget isKindOfClass:[TGUser class]])
             {
                 TGUser *user = (TGUser *)_selectedTarget;
-                NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink}];
-                if (_shareLink[@"text"] != nil && [_shareLink[@"replace"] boolValue]) {
-                    dict[@"replaceInitialText"] = _shareLink[@"text"];
+                
+                if (user.uid == TGTelegraphInstance.clientUserId && _forwardMessages.count > 0)
+                {
+                    int64_t fromPeerId = [_forwardMessages.firstObject cid];
+                    int64_t fromPeerAccessHash = [TGDatabaseInstance() loadConversationWithId:fromPeerId].accessHash;
+                    
+                    NSMutableArray *batches = [[NSMutableArray alloc] init];
+                    NSUInteger i = 0;
+                    int64_t currentGroupedId = 0;
+                    for (TGMessage *message in _forwardMessages)
+                    {
+                        int64_t groupedId = 0;
+                        if (message.groupedId != 0 && [self.completeGroups containsObject:@(message.groupedId)])
+                            groupedId = message.groupedId;
+                        
+                        if (groupedId != currentGroupedId && batches.count > 0)
+                            i++;
+                        
+                        currentGroupedId = groupedId;
+                        
+                        NSMutableArray *batch = nil;
+                        if (batches.count > i)
+                        {
+                            batch = batches[i][@"items"];
+                        }
+                        else
+                        {
+                            batch = [[NSMutableArray alloc] init];
+                            NSDictionary *batchDict = @{@"items": batch, @"grouped": @(currentGroupedId != 0)};
+                            [batches addObject:batchDict];
+                        }
+                        
+                        [batch addObject:@(message.mid)];
+                    }
+                    
+                    for (NSDictionary *batch in batches)
+                    {
+                        bool grouped = [batch[@"grouped"] boolValue];
+                        [[TGSendMessageSignals forwardMessagesWithMessageIds:batch[@"items"] toPeerIds:@[@(user.uid)] fromPeerId:fromPeerId fromPeerAccessHash:fromPeerAccessHash grouped:grouped] startWithNext:nil];
+                    }
+                    
+                    [[[TGProgressWindow alloc] init] dismissWithSuccess];
+                    
+                    [TGAppDelegateInstance.rootController.dialogListController requestSavedMessagesTooltip];
                 }
-                [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:dict atMessage:nil clearStack:true openKeyboard:[_shareLink[@"replace"] boolValue]canOpenKeyboardWhileInTransition:false animated:true];
+                else
+                {
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:@{@"forwardMessages": [NSArray arrayWithArray:_forwardMessages], @"sendMessages": [NSArray arrayWithArray:_sendMessages], @"sendFiles": _documentFileUrl == nil ? @[] : @[@{@"url": _documentFileUrl}], @"shareLink": _shareLink == nil ? @{} : _shareLink}];
+                    if (_shareLink[@"text"] != nil && [_shareLink[@"replace"] boolValue]) {
+                        dict[@"replaceInitialText"] = _shareLink[@"text"];
+                    }
+                    
+                    if (self.completeGroups != nil)
+                        dict[@"completeGroups"] = self.completeGroups;
+                    
+                    [[TGInterfaceManager instance] navigateToConversationWithId:user.uid conversation:nil performActions:dict atMessage:nil clearStack:true openKeyboard:[_shareLink[@"replace"] boolValue] canOpenKeyboardWhileInTransition:false animated:true];
+                }
             }
             else if ([_selectedTarget isKindOfClass:[TGConversation class]])
             {
@@ -741,6 +802,10 @@
                 if (_shareLink[@"text"] != nil && [_shareLink[@"replace"] boolValue]) {
                     dict[@"replaceInitialText"] = _shareLink[@"text"];
                 }
+                
+                if (self.completeGroups != nil)
+                    dict[@"completeGroups"] = self.completeGroups;
+                
                 [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:nil performActions:dict atMessage:nil clearStack:true openKeyboard:[_shareLink[@"replace"] boolValue]canOpenKeyboardWhileInTransition:false animated:true];
             }
         }

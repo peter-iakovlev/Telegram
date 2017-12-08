@@ -1,15 +1,18 @@
 #import "TGShareSendButtonItemView.h"
-#import "TGMenuSheetButtonItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 #import "TGShareCommentView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGShareSendButtonItemView ()
 {
-    TGMenuSheetButtonItemView *_actionButton;
+    TGMenuSheetButtonItemView *_topActionButton;
+    TGMenuSheetButtonItemView *_bottomActionButton;
+    UIView *_separator;
+    
     TGModernButton *_sendButton;
     UIImageView *_countBadge;
     UILabel *_countLabel;
@@ -26,7 +29,7 @@
 
 @dynamic didBeginEditingComment;
 
-- (instancetype)initWithActionTitle:(NSString *)actionTitle action:(void (^)(void))action sendAction:(void (^)(NSString *caption))sendAction
+- (instancetype)initWithTopActionTitle:(NSString *)topActionTitle topAction:(void (^)(void))topAction bottomActionTitle:(NSString *)bottomActionTitle bottomAction:(void (^)(void))bottomAction sendAction:(void (^)(NSString *caption))sendAction
 {
     self = [self initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
@@ -35,13 +38,26 @@
         
         _sendAction = sendAction;
         
-        if (actionTitle.length > 0)
+        if (topActionTitle.length > 0)
         {
-            _actionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:actionTitle type:TGMenuSheetButtonTypeDefault action:^
+            _topActionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:topActionTitle type:TGMenuSheetButtonTypeDefault action:^
             {
-                action();
+                topAction();
             }];
-            [self addSubview:_actionButton];
+            [self addSubview:_topActionButton];
+            
+            _separator = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
+            _separator.backgroundColor = TGSeparatorColor();
+            [self addSubview:_separator];
+        }
+        
+        if (bottomActionTitle.length > 0)
+        {
+            _bottomActionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:bottomActionTitle type:TGMenuSheetButtonTypeDefault action:^
+            {
+                bottomAction();
+            }];
+            [self addSubview:_bottomActionButton];
         }
         
         _sendButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
@@ -216,8 +232,9 @@
         [UIView animateWithDuration:0.18 animations:^
         {
             _sendButton.alpha = 1.0f;
+            _separator.alpha = 0.0f;
         }];
-        [_actionButton setHidden:true animated:true];
+        [_bottomActionButton setHidden:true animated:true];
         
         [self setSelectedBadgeCount:count animated:animated];
     }
@@ -229,12 +246,13 @@
         [UIView animateWithDuration:0.18 animations:^
         {
             _sendButton.alpha = 0.0f;
+            _separator.alpha = 1.0f;
         }];
         [UIView animateWithDuration:0.15 animations:^
         {
             _commentView.alpha = 0.0f;
         }];
-        [_actionButton setHidden:false animated:true];
+        [_bottomActionButton setHidden:false animated:true];
     }
     
     if (wasExpanded != expanded)
@@ -255,7 +273,7 @@
         _commentView.maxHeight = 60.0f;
     
     CGFloat expandedHeight = MAX(TGMenuSheetButtonItemViewHeight * 2, TGMenuSheetButtonItemViewHeight + _textHeight + 17.0f);
-    CGFloat defaultHeight = (_actionButton != nil) ? TGMenuSheetButtonItemViewHeight : 0.0f;
+    CGFloat defaultHeight = (_topActionButton != nil ? TGMenuSheetButtonItemViewHeight : 0.0f) + (_bottomActionButton != nil ? TGMenuSheetButtonItemViewHeight : 0.0f);
     return (_selectedCount == 0) ? defaultHeight : expandedHeight;
 }
 
@@ -263,7 +281,9 @@
 {
     _commentView.frame = CGRectMake(16.0f, 16.0f, self.frame.size.width - 16.0f * 2, _commentView.frame.size.height);
     _sendButton.frame = CGRectMake(0.0f, self.frame.size.height - TGMenuSheetButtonItemViewHeight, self.frame.size.width, TGMenuSheetButtonItemViewHeight);
-    _actionButton.frame = _sendButton.frame;
+    _bottomActionButton.frame = _sendButton.frame;
+    _topActionButton.frame = CGRectMake(0.0f, self.frame.size.height - 2.0f * TGMenuSheetButtonItemViewHeight, self.frame.size.width, TGMenuSheetButtonItemViewHeight);
+    _separator.frame = CGRectMake(0.0f, TGMenuSheetButtonItemViewHeight, self.frame.size.width, _separator.frame.size.height);
 }
 
 @end

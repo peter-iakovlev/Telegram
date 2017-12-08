@@ -1,8 +1,8 @@
 #import "TGReplyHeaderImageModel.h"
 
-#import "TGSignalImageViewModel.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import "TGSignalImageViewModel.h"
 
 #import "TGModernImageViewModel.h"
 

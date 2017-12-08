@@ -1,11 +1,11 @@
 #import "TGDocumentMessageIconView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGMessageImageView.h"
 
-#import "TGMessageImageViewOverlayView.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGDocumentMessageIconView ()
 {
@@ -52,14 +52,6 @@ static UIImage *highlightImageForDiameter(CGFloat diameter) {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        static UIImage *backgroundImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIImage *rawImage = [UIImage imageNamed:@"ModernDocumentMessageIconBackground.png"];
-            backgroundImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
-        });
-        
         _extensionLabel = [[UILabel alloc] init];
         _extensionLabel.backgroundColor = [UIColor clearColor];
         _extensionLabel.opaque = false;

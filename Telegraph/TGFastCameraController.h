@@ -1,4 +1,4 @@
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGSuggestionContext;
 @class TGVideoEditAdjustments;
@@ -16,7 +16,7 @@
 
 @property (nonatomic, strong) NSString *recipientName;
 
-- (instancetype)initWithParentController:(TGViewController *)parentController attachmentButtonFrame:(CGRect)attachmentButtonFrame;
+- (instancetype)initWithParentController:(TGViewController *)parentController attachmentButtonFrame:(CGRect)attachmentButtonFrame saveCapturedMedia:(bool)saveCapturedMedia saveEditedPhotos:(bool)saveEditedPhotos;
 
 - (void)handlePanAt:(CGPoint)location;
 - (void)handleReleaseAt:(CGPoint)location;

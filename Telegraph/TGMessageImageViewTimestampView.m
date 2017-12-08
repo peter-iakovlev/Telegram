@@ -1,17 +1,10 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGMessageImageViewTimestampView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStaticBackdropAreaData.h"
-#import "TGAnimationBlockDelegate.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGStaticBackdropAreaData.h>
+
+#import "TGPresentation.h"
 
 static const float luminanceThreshold = 0.8f;
 
@@ -51,52 +44,6 @@ static UIImage *clockHourWithColor(UIColor *color)
     CGFloat lineWidth = 1.25f;
     CGContextSetFillColorWithColor(context, color.CGColor);
     CGContextFillRect(context, CGRectMake(lineWidth / 2.0f, lineWidth / 2.0f, 4.0f - lineWidth, 2.0f - lineWidth));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
-}
-
-static UIImage *checkmarkFirstImageWithColor(UIColor *color)
-{
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(12.0f, 9.0f), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetLineWidth(context, 1.2f);
-    CGContextSetStrokeColorWithColor(context, color.CGColor);
-    
-    CGPoint checkmarksOrigin = CGPointMake(1.0f, 1.0f);
-    
-    CGPoint points[] = {
-        CGPointMake(checkmarksOrigin.x, checkmarksOrigin.y + 4.0f),
-        CGPointMake(checkmarksOrigin.x + 4.0f, checkmarksOrigin.y + 4.0f + 4.0f),
-        CGPointMake(checkmarksOrigin.x + 3.5f - 0.5f, checkmarksOrigin.y + 4.0f + 4.0f),
-        CGPointMake(checkmarksOrigin.x + 3.5f + (4.0f + 3.5f) - 1.0f, checkmarksOrigin.y)
-    };
-    CGContextStrokeLineSegments(context, points, (sizeof(points) / sizeof(points[0])));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
-}
-
-static UIImage *checkmarkSecondImageWithColor(UIColor *color)
-{
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(12.0f, 9.0f), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGContextSetLineWidth(context, 1.2f);
-    CGContextSetStrokeColorWithColor(context, color.CGColor);
-    
-    CGPoint checkmarksOrigin = CGPointMake(1.0f, 1.0f);
-    
-    CGPoint points[] = {
-         CGPointMake(checkmarksOrigin.x + 2.5f, checkmarksOrigin.y + 4.0f + 2.5f),
-         CGPointMake(checkmarksOrigin.x + 4.0f - 0.9f, checkmarksOrigin.y + 4.0f + 4.0f - 0.9f),
-         CGPointMake(checkmarksOrigin.x + 3.5f - 0.5f, checkmarksOrigin.y + 4.0f + 4.0f),
-         CGPointMake(checkmarksOrigin.x + 3.5f + (4.0f + 3.5f) - 1.0f, checkmarksOrigin.y)
-    };
-    CGContextStrokeLineSegments(context, points, (sizeof(points) / sizeof(points[0])));
     
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -148,36 +95,6 @@ static CGImageRef clockHourImage(CGFloat luminance)
     return luminance >= luminanceThreshold ? lightImage : darkImage;
 }
 
-static CGImageRef checkmarkFirstImage(CGFloat luminance)
-{
-    static CGImageRef lightImage = NULL;
-    static CGImageRef darkImage = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lightImage = CGImageRetain(checkmarkFirstImageWithColor(UIColorRGBA(0x525252, 0.6f)).CGImage);
-        darkImage = CGImageRetain(checkmarkFirstImageWithColor([UIColor whiteColor]).CGImage);
-    });
-    
-    return luminance >= luminanceThreshold ? lightImage : darkImage;
-}
-
-static CGImageRef checkmarkSecondImage(CGFloat luminance)
-{
-    static CGImageRef lightImage = NULL;
-    static CGImageRef darkImage = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lightImage = CGImageRetain(checkmarkSecondImageWithColor(UIColorRGBA(0x525252, 0.6f)).CGImage);
-        darkImage = CGImageRetain(checkmarkSecondImageWithColor([UIColor whiteColor]).CGImage);
-    });
-    
-    return luminance >= luminanceThreshold ? lightImage : darkImage;
-}
-
 @interface TGMessageImageViewTimestampLayer : CALayer
 
 @end
@@ -221,6 +138,8 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     
     NSString *_viewsString;
     CGFloat _maxWidth;
+    
+    TGPresentation *_presentation;
 }
 
 @end
@@ -298,16 +217,18 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
                 _clockMinLayer.contents = (__bridge id)clockMinImage(currentLuminance);
                 _clockHourLayer.contents = (__bridge id)clockHourImage(currentLuminance);
             }
-            
-            if (_chechmarkFirstLayer != nil)
-                _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(currentLuminance);
-            
-            if (_chechmarkSecondLayer != nil)
-                _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(currentLuminance);
         }
         
         [self setNeedsDisplay];
     }
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _chechmarkFirstLayer.contents = (__bridge id)presentation.images.chatDeliveredIconMedia.CGImage;
+    _chechmarkSecondLayer.contents = (__bridge id)presentation.images.chatReadIconMedia.CGImage;
 }
 
 - (void)setTimestampColor:(UIColor *)timestampColor
@@ -329,7 +250,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     } else if (count < 1000 * 1000) {
         return [[NSString alloc] initWithFormat:@"%dk", (int)count / 1000];
     } else {
-        return [[NSString alloc] initWithFormat:@"%dm", (int)count / 1000];
+        return [[NSString alloc] initWithFormat:@"%dm", (int)count / (1000 * 1000)];
     }
 }
 
@@ -534,12 +455,11 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     
-    CGFloat luminance = 0.0f;//_backdropArea.luminance
     _chechmarkFirstLayer = [self _dequeueLayer];
-    _chechmarkFirstLayer.contents = (__bridge id)checkmarkFirstImage(luminance);
+    _chechmarkFirstLayer.contents = (__bridge id)_presentation.images.chatDeliveredIconMedia.CGImage;
     _chechmarkFirstLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
-    _chechmarkFirstLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 9.0f);
-    _chechmarkFirstLayer.position = CGPointMake(self.bounds.size.width - 15.0f, 8.5f);
+    _chechmarkFirstLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 11.0f);
+    _chechmarkFirstLayer.position = CGPointMake(self.bounds.size.width - 15.0f, 9.5f);
     
     [CATransaction commit];
     
@@ -552,13 +472,11 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     
-    CGFloat luminance = 0.0f;//_backdropArea.luminance
-    
     _chechmarkSecondLayer = [self _dequeueLayer];
-    _chechmarkSecondLayer.contents = (__bridge id)checkmarkSecondImage(luminance);
+    _chechmarkSecondLayer.contents = (__bridge id)_presentation.images.chatReadIconMedia.CGImage;
     _chechmarkSecondLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
-    _chechmarkSecondLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 9.0f);
-    _chechmarkSecondLayer.position = CGPointMake(self.bounds.size.width - 11.0f, 8.5f);
+    _chechmarkSecondLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 11.0f);
+    _chechmarkSecondLayer.position = CGPointMake(self.bounds.size.width - 11.0f, 9.5f);
     
     [CATransaction commit];
     
@@ -711,7 +629,7 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
             static UIImage *viewsImage = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^{
-                viewsImage = [UIImage imageNamed:@"MessageInlineViewCountIconMedia.png"];
+                viewsImage = TGImageNamed(@"MessageInlineViewCountIconMedia.png");
             });
             
             [viewsImage drawAtPoint:CGPointMake(backgroundRect.origin.x + 6.0f, backgroundRect.origin.y + 5.0f)];
@@ -734,10 +652,10 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
     {
         if (_checkmarkDisplayValue >= 1)
         {
-            CGImageRef checkmarkImage = checkmarkFirstImage(luminance);
+            CGImageRef checkmarkImage = _presentation.images.chatDeliveredIconMedia.CGImage;
             if (checkmarkImage != NULL)
             {
-                CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f, 4.0f, 12.0f, 9.0f);
+                CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f, 4.0f, 12.0f, 11.0f);
                 
                 CGContextTranslateCTM(context, CGRectGetMidX(checkmarkFrame), CGRectGetMidY(checkmarkFrame));
                 CGContextScaleCTM(context, 1.0f, -1.0f);
@@ -753,10 +671,10 @@ static CGImageRef checkmarkSecondImage(CGFloat luminance)
         
         if (_checkmarkDisplayValue >= 2)
         {
-            CGImageRef checkmarkImage = checkmarkSecondImage(luminance);
+            CGImageRef checkmarkImage = _presentation.images.chatReadIconMedia.CGImage;
             if (checkmarkImage != NULL)
             {
-                CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f + 4.0f, 4.0f, 12.0f, 9.0f);
+                CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f + 4.0f, 4.0f, 12.0f, 11.0f);
                 
                 CGContextTranslateCTM(context, CGRectGetMidX(checkmarkFrame), CGRectGetMidY(checkmarkFrame));
                 CGContextScaleCTM(context, 1.0f, -1.0f);

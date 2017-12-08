@@ -1,8 +1,8 @@
 #import "TGCollectionStaticMultilineTextItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernTextViewModel.h"
-#import "TGMessage.h"
-#import "TGFont.h"
 #import "TGReusableLabel.h"
 
 #import "TGCollectionStaticMultilineTextItemView.h"

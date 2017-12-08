@@ -1,5 +1,8 @@
 #import "TGPrivacyLastSeenController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGDatabase.h"
 #import "TGAppDelegate.h"
 #import "TGNotificationPrivacyAccountSetting.h"
 
@@ -7,11 +10,8 @@
 #import "TGCommentCollectionItem.h"
 #import "TGVariantCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
-#import "TGHacks.h"
 
 #import "TGPrivacyCustomShareListController.h"
-
-#import "TGStringUtils.h"
 
 #import "TGHeaderCollectionItem.h"
 
@@ -31,8 +31,11 @@
     
     TGCollectionMenuSection *_customShareSection;
     
+    int _p2pMode;
     TGCollectionMenuSection *_p2pSection;
-    TGSwitchCollectionItem *_p2pItem;
+    TGCheckCollectionItem *_p2pAlwaysItem;
+    TGCheckCollectionItem *_p2pContactsItem;
+    TGCheckCollectionItem *_p2pNeverItem;
     
     TGCollectionMenuSection *_integrationSection;
     TGSwitchCollectionItem *_integrationItem;
@@ -137,10 +140,31 @@
         {
             _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
             
-            _p2pItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls.P2P") isOn:!TGAppDelegateInstance.callsDisableP2P];
-            _p2pItem.interfaceHandle = _actionHandle;
+            _p2pAlwaysItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls.P2PAlways") action:@selector(p2pAlwaysPressed)];
+            _p2pAlwaysItem.alignToRight = true;
+            _p2pContactsItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls.P2PContacts") action:@selector(p2pContactsPressed)];
+            _p2pContactsItem.alignToRight = true;
+            _p2pNeverItem = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls.P2PNever") action:@selector(p2pNeverPressed)];
+            _p2pNeverItem.alignToRight = true;
+            
+            NSData *phoneCallsP2PContactsData = [TGDatabaseInstance() customProperty:@"phoneCallsP2PContacts"];
+            int32_t phoneCallsP2PContacts = 0;
+            if (phoneCallsP2PContactsData.length == 4) {
+                [phoneCallsP2PContactsData getBytes:&phoneCallsP2PContacts];
+            }
+            
+            int32_t defaultMode = phoneCallsP2PContacts ? 3 : 2;
+            int32_t p2pMode = TGAppDelegateInstance.callsP2PMode;
+            if (p2pMode == 0)
+                p2pMode = defaultMode;
+            
+            [self updateP2PMode:p2pMode update:false];
+            
             _p2pSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-                _p2pItem,
+                [[TGHeaderCollectionItem alloc] initWithTitle:[TGLocalized(@"Privacy.Calls.P2P") uppercaseString]],
+                _p2pAlwaysItem,
+                _p2pContactsItem,
+                _p2pNeverItem,
                 [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Privacy.Calls.P2PHelp")]]
             ];
             [self.menuSections addSection:_p2pSection];
@@ -178,16 +202,41 @@
     {
         TGSwitchCollectionItem *switchItem = options[@"item"];
         
-        if (switchItem == _p2pItem)
-        {
-            TGAppDelegateInstance.callsDisableP2P = !switchItem.isOn;
-            [TGAppDelegateInstance saveSettings];
-        }
-        else if (switchItem == _integrationItem)
+        if (switchItem == _integrationItem)
         {
             TGAppDelegateInstance.callsDisableCallKit = !switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+    }
+}
+
+- (void)p2pAlwaysPressed
+{
+    [self updateP2PMode:2 update:true];
+}
+
+- (void)p2pContactsPressed
+{
+    [self updateP2PMode:3 update:true];
+}
+
+- (void)p2pNeverPressed
+{
+    [self updateP2PMode:1 update:true];
+}
+
+- (void)updateP2PMode:(int)mode update:(bool)update
+{
+    _p2pMode = mode;
+    
+    _p2pAlwaysItem.isChecked = mode == 2;
+    _p2pContactsItem.isChecked = mode == 3;
+    _p2pNeverItem.isChecked = mode == 1;
+    
+    if (update)
+    {
+        TGAppDelegateInstance.callsP2PMode = mode;
+        [TGAppDelegateInstance saveSettings];
     }
 }
 

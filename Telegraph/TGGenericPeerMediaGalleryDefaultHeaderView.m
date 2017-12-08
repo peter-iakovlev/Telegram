@@ -1,6 +1,6 @@
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGGenericPeerMediaGalleryDefaultHeaderView ()
 {

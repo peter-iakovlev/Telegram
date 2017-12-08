@@ -1,9 +1,10 @@
 #import "TGUserInfoCollectionItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGUserInfoCollectionItemView.h"
 
-#import "TGRemoteImageView.h"
-#import "TGDateUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGUserInfoCollectionItem ()
 {
@@ -72,6 +73,7 @@
     
     view.itemHandle = _actionHandle;
     
+    [view setDisableAvatarPlaceholder:_disableAvatarPlaceholder];
     [view setAvatarOffset:_avatarOffset];
     [view setNameOffset:_nameOffset];
     [view setFirstName:[self currentFirstName] lastName:[self currentLastName] uidForPlaceholderCalculation:_user.uid];
@@ -114,6 +116,13 @@
     ((TGUserInfoCollectionItemView *)[self boundView]).itemHandle = nil;
     
     [super unbindView];
+}
+
+- (void)setDisableAvatarPlaceholder:(bool)disableAvatarPlaceholder
+{
+    _disableAvatarPlaceholder = disableAvatarPlaceholder;
+    
+    [(TGUserInfoCollectionItemView *)[self boundView] setDisableAvatarPlaceholder:disableAvatarPlaceholder];
 }
 
 - (void)setUser:(TGUser *)user animated:(bool)animated
@@ -283,6 +292,11 @@
         return [((TGUserInfoCollectionItemView *)self.view) avatarView];
     
     return nil;
+}
+
+- (void)setAvatarHidden:(bool)hidden animated:(bool)animated
+{
+    [((TGUserInfoCollectionItemView *)self.view) setAvatarHidden:hidden animated:animated];
 }
 
 - (void)makeNameFieldFirstResponder

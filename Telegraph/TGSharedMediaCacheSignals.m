@@ -1,8 +1,8 @@
 #import "TGSharedMediaCacheSignals.h"
 
-#import "TGDatabase.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGPeerIdAdapter.h"
+#import "TGDatabase.h"
 
 #import "TGModernConversationController.h"
 

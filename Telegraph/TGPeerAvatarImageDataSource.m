@@ -1,20 +1,21 @@
 #import "TGPeerAvatarImageDataSource.h"
 
-#import "ASQueue.h"
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
+#import <LegacyComponents/ASQueue.h>
+#import <LegacyComponents/ActionStage.h>
+
+#import "TGAppDelegate.h"
 #import "TGWorkerPool.h"
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGImageBlur.h"
-#import "UIImage+TG.h"
+#import <LegacyComponents/TGImageBlur.h>
+#import <LegacyComponents/UIImage+TG.h>
 
 #import "TGMediaStoreContext.h"
 
@@ -257,7 +258,34 @@ static ASQueue *taskManagementQueue()
         }
     }
     
+    if ([args[@"imageId"] respondsToSelector:@selector(longLongValue)])
+    {
+        int64_t imageId = [args[@"imageId"] longLongValue];
+        CGSize size = CGSizeMake(42, 42);
+        NSString *photoDirectoryPath = [self pathForModernPhotoDirectory:imageId];
+        NSString *cachedSizeLowPath = [photoDirectoryPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"thumbnail-%dx%d-%dx%d%@.jpg", (int)size.width, (int)size.height, (int)size.width, (int)size.height, @"-low"]];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:cachedSizeLowPath isDirectory:NULL])
+        {
+            if (outIsThumbnail)
+                *outIsThumbnail = true;
+            return true;
+        }
+    }
+    
     return false;
+}
+
++ (NSString *)pathForModernPhotoDirectory:(int64_t)imageId
+{
+    static NSString *filesDirectory = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"files"];
+    });
+    
+    NSString *photoDirectoryName = [[NSString alloc] initWithFormat:@"image-remote-%" PRIx64 "", imageId];
+    return [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
 }
 
 + (TGDataResource *)_performLoad:(NSString *)uri isCancelled:(bool (^)())isCancelled
@@ -285,6 +313,17 @@ static ASQueue *taskManagementQueue()
     if (image == nil && [args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
     {
         image = [[TGRemoteImageView sharedCache] cachedImage:args[@"legacy-thumbnail-cache-url"] availability:TGCacheDisk];
+        lowQualityThumbnail = true;
+    }
+    
+    if (image == nil && [args[@"imageId"] respondsToSelector:@selector(longLongValue)])
+    {
+        int64_t imageId = [args[@"imageId"] longLongValue];
+        CGSize size = CGSizeMake(42, 42);
+        NSString *photoDirectoryPath = [self pathForModernPhotoDirectory:imageId];
+        NSString *cachedSizeLowPath = [photoDirectoryPath stringByAppendingPathComponent:[[NSString alloc] initWithFormat:@"thumbnail-%dx%d-%dx%d%@.jpg", (int)size.width, (int)size.height, (int)size.width, (int)size.height, @"-low"]];
+        
+        image = [[UIImage alloc] initWithContentsOfFile:cachedSizeLowPath];
         lowQualityThumbnail = true;
     }
     

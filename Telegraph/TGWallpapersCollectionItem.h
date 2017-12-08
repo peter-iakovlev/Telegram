@@ -8,7 +8,7 @@
 
 #import "TGCollectionItem.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @class TGWallpaperInfo;
 

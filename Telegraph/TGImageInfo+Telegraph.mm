@@ -1,11 +1,11 @@
 #import "TGImageInfo+Telegraph.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSchema.h"
 
-#import "TGCache.h"
-#import "TGRemoteImageView.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGCache.h>
+#import <LegacyComponents/TGRemoteImageView.h>
 
 NSString *extractFileUrl(id fileLocation)
 {
@@ -30,6 +30,12 @@ NSString *extractFileUrl(id fileLocation)
     else if ([fileLocation isKindOfClass:[Secret66_FileLocation_fileLocation class]])
     {
         Secret66_FileLocation_fileLocation *concreteFileLocation = fileLocation;
+        
+        return [[NSString alloc] initWithFormat:@"%d_%lld_%d_%lld", concreteFileLocation.dcId.intValue, concreteFileLocation.volumeId.longLongValue, concreteFileLocation.localId.intValue, concreteFileLocation.secret.longLongValue];
+    }
+    else if ([fileLocation isKindOfClass:[Secret73_FileLocation_fileLocation class]])
+    {
+        Secret73_FileLocation_fileLocation *concreteFileLocation = fileLocation;
         
         return [[NSString alloc] initWithFormat:@"%d_%lld_%d_%lld", concreteFileLocation.dcId.intValue, concreteFileLocation.volumeId.longLongValue, concreteFileLocation.localId.intValue, concreteFileLocation.secret.longLongValue];
     }
@@ -327,5 +333,62 @@ bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *vol
     }
     return self;
 }
+
+- (id)initWithSecret73SizesDescription:(NSArray *)sizesDesc cachedData:(__autoreleasing NSData **)cachedData {
+    self = [super init];
+    if (self != nil)
+    {
+        for (id sizeDesc in sizesDesc)
+        {
+            if ([sizeDesc isKindOfClass:[Secret73_PhotoSize_photoSize class]])
+            {
+                Secret73_PhotoSize_photoSize *concreteSize = sizeDesc;
+                NSString *urlLocation = extractFileUrl(concreteSize.location);
+                
+                [self addImageWithSize:CGSizeMake(concreteSize.w.intValue, concreteSize.h.intValue) url:urlLocation];
+            }
+            else if ([sizeDesc isKindOfClass:[Secret73_PhotoSize_photoCachedSize class]])
+            {
+                Secret73_PhotoSize_photoCachedSize *concreteSize = sizeDesc;
+                
+                NSString *url = extractFileUrl(concreteSize.location);
+                
+                [self addImageWithSize:CGSizeMake(concreteSize.w.intValue, concreteSize.h.intValue) url:url];
+                
+                if (concreteSize.bytes.length != 0)
+                {
+                    NSData *imageData = concreteSize.bytes;
+                    if (cachedData != NULL)
+                        *cachedData = imageData;
+                    else
+                    {
+                        if (url != nil)
+                        {
+                            [[TGRemoteImageView sharedCache] diskCacheContains:url orUrl:nil completion:^(bool containsFirst, __unused bool containsSecond)
+                             {
+                                 if (!containsFirst)
+                                 {
+                                     if (TGEnableBlur() && cpuCoreCount() > 1)
+                                     {
+                                         NSData *data = nil;
+                                         TGScaleAndBlurImage(imageData, CGSizeZero, &data);
+                                         if (data != nil)
+                                             [[TGRemoteImageView sharedCache] cacheImage:nil withData:data url:url availability:TGCacheDisk];
+                                         else
+                                             [[TGRemoteImageView sharedCache] cacheImage:nil withData:imageData url:url availability:TGCacheDisk];
+                                     }
+                                     else
+                                         [[TGRemoteImageView sharedCache] cacheImage:nil withData:imageData url:url availability:TGCacheDisk];
+                                 }
+                             }];
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return self;
+}
+
 
 @end

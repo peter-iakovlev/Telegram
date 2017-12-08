@@ -1,5 +1,7 @@
 #import "TGCallController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <AVFoundation/AVFoundation.h>
 
 #import "TGTelegraph.h"
@@ -7,18 +9,12 @@
 #import "TGDatabase.h"
 #import "TGInterfaceManager.h"
 
-#import "Freedom.h"
-#import "TGHacks.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
 #import "TGAlertView.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGCallSession.h"
 #import "TGCallSignals.h"
 #import "TGCallKitAdapter.h"
-#import "TGAccessChecker.h"
 
 #import "TGCallView.h"
 #import "TGCallDebugView.h"
@@ -26,8 +22,10 @@
 #import "TGCallRatingView.h"
 #import "TGCallStatusBarView.h"
 
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
 #import "TGCallAudioRouteButtonItemView.h"
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGCallController ()
 {
@@ -35,7 +33,7 @@
     
     TGCallSession *_session;
     SMetaDisposable *_disposable;
-    SMetaDisposable *_levelDisposable;
+    id<SDisposable> _statusBarPressedDisposable;
     
     int64_t _peerId;
     int64_t _accessHash;
@@ -91,6 +89,14 @@
         _debugBitrate = 25;
         _debugPacketLoss = 15;
         _debugP2P = true;
+        
+        __weak TGCallController *weakSelf = self;
+        _statusBarPressedDisposable = [TGAppDelegateInstance.statusBarPressed startWithNext:^(__unused id next)
+        {
+            __strong TGCallController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf presentController];
+        }];
     }
     return self;
 }
@@ -98,12 +104,14 @@
 - (void)dealloc
 {
     [_disposable dispose];
+    [_statusBarPressedDisposable dispose];
 }
 
 - (void)loadView
 {
     [UIView setAnimationsEnabled:false];
     self.view = [[TGCallView alloc] init];
+    self.view.safeAreaInset = [TGViewController safeAreaInsetForOrientation:UIInterfaceOrientationPortrait];
     self.view.layer.rasterizationScale = TGScreenScaling();
     
     __weak TGCallController *weakSelf = self;
@@ -202,6 +210,8 @@
 {
     if (_debugView != nil)
         return;
+    
+    _presentRatingAlert = true;
     
     __weak TGCallController *weakSelf = self;
     _debugView = [[TGCallDebugView alloc] initWithFrame:self.view.bounds callSession:_session];
@@ -341,7 +351,7 @@
 
 - (void)acceptButtonPressed
 {
-    if (![TGAccessChecker checkMicrophoneAuthorizationStatusForIntent:TGMicrophoneAccessIntentCall alertDismissCompletion:nil])
+    if (![[[LegacyComponentsGlobals provider] accessChecker] checkMicrophoneAuthorizationStatusForIntent:TGMicrophoneAccessIntentCall alertDismissCompletion:nil])
         return;
     
     [TGCallController requestMicrophoneAccess:^(bool granted)
@@ -385,7 +395,7 @@
         _routeMenuCloseTimer = nil;
     }
      
-    TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+    TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
     _menuController = controller;
     TGMenuSheetController *weakController = controller;
     controller.dismissesByOutsideTap = true;
@@ -609,7 +619,7 @@
     _appearing = true;
     _appeared = true;
     
-    _previousStatusBarAlpha = [TGHacks applicationStatusBarAlpha];
+    _previousStatusBarAlpha = [[TGLegacyComponentsContext shared] applicationStatusBarAlpha];
     _previousStatusBarOffset = [TGHacks applicationStatusBarOffset];
     
     self.overlayWindow.hidden = false;
@@ -624,7 +634,7 @@
         self.view.alpha = 1.0f;
         self.view.transform = CGAffineTransformIdentity;
         
-        [TGHacks setApplicationStatusBarAlpha:1.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
         [TGHacks setApplicationStatusBarOffset:0.0f];
     } completion:^(__unused BOOL finished)
     {
@@ -661,10 +671,12 @@
         TGDispatchAfter(delay, dispatch_get_main_queue(), ^
         {
             _disappearing = true;
-            [self animateDismissWithCompletion:^
+            [self animateDismiss:false completion:nil];
+
+            TGDispatchAfter(0.3, dispatch_get_main_queue(), ^
             {
                 [self dismiss];
-            }];
+            });
         });
         
         if (delay > DBL_EPSILON)
@@ -708,11 +720,6 @@
     }];
 }
 
-- (void)animateDismissWithCompletion:(void (^)(void))completion
-{
-    [self animateDismiss:false completion:completion];
-}
-
 - (void)animateDismiss:(bool)fast completion:(void (^)(void))completion
 {
     [self setProximityListenerEnabled:false];
@@ -734,7 +741,7 @@
         [self.view centralize];
         self.view.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
         
-        [TGHacks setApplicationStatusBarAlpha:_previousStatusBarAlpha];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:_previousStatusBarAlpha];
         [TGHacks setApplicationStatusBarOffset:_previousStatusBarOffset];
     } completion:^(__unused BOOL finished)
     {
@@ -799,9 +806,9 @@
 
 @implementation TGCallControllerWindow
 
-- (instancetype)initWithParentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController contentController:(TGOverlayController *)contentController
 {
-    self = [super initWithParentController:parentController contentController:contentController];
+    self = [super initWithManager:manager parentController:parentController contentController:contentController];
     if (self != nil)
     {
         self.windowLevel = UIWindowLevelStatusBar - 0.0001f;

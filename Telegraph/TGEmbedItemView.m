@@ -1,23 +1,22 @@
 #import "TGEmbedItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGOverlayControllerWindow.h"
-
-#import "TGEmbedPlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
 #import "TGEmbedInternalPlayerView.h"
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 
-#import "TGMenuSheetView.h"
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetView.h>
+#import <LegacyComponents/TGMenuSheetController.h>
 
 #import "TGEmbedPlayerController.h"
 #import "TGEmbedPIPController.h"
 #import "TGEmbedPIPPlaceholderView.h"
+
+#import "TGLegacyComponentsContext.h"
 
 const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
@@ -36,6 +35,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     TGWebPageMediaAttachment *_webPage;
     TGDocumentMediaAttachment *_document;
     
+    UIView *_backView;
     UIView *_wrapperView;
     TGEmbedPlayerView *_playerView;
         
@@ -120,11 +120,19 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
         _location = [[TGPIPSourceLocation alloc] initWithEmbed:true peerId:peerId messageId:messageId localId:0 webPage:nil];
         self.backgroundColor = [UIColor blackColor];
         
+        _backView = [[UIView alloc] initWithFrame:self.bounds];
+        _backView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        _backView.backgroundColor = [UIColor blackColor];
+        [self addSubview:_backView];
+        
+        if (iosMajorVersion() >= 11)
+            _backView.accessibilityIgnoresInvertColors = true;
+        
         _wrapperView = [[UIView alloc] initWithFrame:CGRectZero];
         _wrapperView.clipsToBounds = true;
-        if (!TGIsPad() && !preview)
+        if (!TGIsPad() && !preview && iosMajorVersion() > 7 && (![attachment isKindOfClass:[TGWebPageMediaAttachment class]] || [TGEmbedPlayerView playerViewClassForWebPage:(TGWebPageMediaAttachment *)attachment onlySpecial:false] != [TGEmbedPlayerView class]))
         {
-            _embedWindow = [[TGEmbedItemViewWindow alloc] init];
+            _embedWindow = [[TGEmbedItemViewWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:nil contentController:nil];
             TGOverlayWindowViewController *controller = [[TGOverlayWindowViewController alloc] init];
             controller.isImportant = true;
             _embedWindow.rootViewController = controller;
@@ -337,9 +345,16 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 - (CGSize)_dimensions
 {
     if (_webPage != nil)
-        return [_webPage embedSize];
+    {
+        if ([_webPage.embedUrl rangeOfString:@"player.twitch.tv"].location != NSNotFound)
+            return CGSizeMake(1280, 720);
+        else
+            return [_webPage embedSize];
+    }
     else if (_document != nil)
+    {
         return [_document pictureSize];
+    }
     
     return CGSizeZero;
 }
@@ -347,6 +362,7 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 - (CGFloat)preferredHeightForWidth:(CGFloat)width screenHeight:(CGFloat)__unused screenHeight
 {
     _smallActivated = fabs(screenHeight - _smallActivationHeight) < FLT_EPSILON;
+    
     
     CGSize dimensions = [self _dimensions];
     CGSize embedSize = TGFitSize(CGSizeMake(dimensions.width, dimensions.height), CGSizeMake(width, CGFloor(width * 1.25f)));
@@ -380,6 +396,9 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
 - (void)didChangeAbsoluteFrame
 {
+    if (_wrapperView.superview == self)
+        return;
+    
     CGRect frame = [self convertRect:self.bounds toView:nil];
     frame.size.height += 15.0f;
     _wrapperView.frame = frame;

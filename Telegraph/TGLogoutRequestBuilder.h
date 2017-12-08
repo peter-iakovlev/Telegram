@@ -8,7 +8,7 @@
 
 #import "TGActor.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGLogoutRequestBuilder : TGActor <ASWatcher>
 

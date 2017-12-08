@@ -6,6 +6,7 @@
 @class TLChatPhoto;
 @class TLMessage;
 @class TLChannelParticipant;
+@class TLInputStickerSet;
 
 @interface TLChannelAdminLogEventAction : NSObject <TLObject>
 
@@ -98,6 +99,19 @@
 
 @property (nonatomic, retain) TLChannelParticipant *prev_participant;
 @property (nonatomic, retain) TLChannelParticipant *n_new_participant;
+
+@end
+
+@interface TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet : TLChannelAdminLogEventAction
+
+@property (nonatomic, retain) TLInputStickerSet *prev_stickerset;
+@property (nonatomic, retain) TLInputStickerSet *n_new_stickerset;
+
+@end
+
+@interface TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden : TLChannelAdminLogEventAction
+
+@property (nonatomic) bool n_new_value;
 
 @end
 

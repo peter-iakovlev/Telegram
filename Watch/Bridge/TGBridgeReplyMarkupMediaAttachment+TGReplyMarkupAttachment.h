@@ -1,5 +1,6 @@
 #import "TGBridgeReplyMarkupMediaAttachment.h"
-#import "TGReplyMarkupAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeReplyMarkupMediaAttachment (TGReplyMarkupAttachment)
 

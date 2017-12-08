@@ -1,12 +1,12 @@
 #import "TGWebSearchGifItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGWebSearchGifItem.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGCheckButtonView.h>
 
-#import "TGCheckButtonView.h"
-
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGWebSearchGifItemView ()
 {

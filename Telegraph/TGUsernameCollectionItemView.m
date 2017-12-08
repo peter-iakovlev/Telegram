@@ -1,9 +1,8 @@
 #import "TGUsernameCollectionItemView.h"
 
-#import "TGFont.h"
-#import "TGTextField.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGTextField.h>
 
 @interface TGUsernameCollectionItemView () <UITextFieldDelegate>
 {
@@ -12,6 +11,9 @@
     TGTextField *_textField;
     UIActivityIndicatorView *_activityIndicator;
     CGFloat _minimalInset;
+    TGModernButton *_clearButton;
+    
+    bool _clearable;
 }
 
 @end
@@ -42,6 +44,8 @@
         _textField.leftInset = 20.0f;
         _textField.placeholderFont = _textField.font;
         _textField.placeholderColor = UIColorRGB(0xbfbfbf);
+        _textField.editingRectOffset = -TGScreenPixel;
+        _textField.placeholderOffset = 1.0f + (TGScreenPixel < 0.5f ? TGScreenPixel : 0.0);
         _textField.autocorrectionType = UITextAutocorrectionTypeNo;
         _textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
         _textField.spellCheckingType = UITextSpellCheckingTypeNo;
@@ -92,6 +96,7 @@
 - (void)setUsername:(NSString *)username
 {
     _textField.text = username;
+    [self updateClearButton];
 }
 
 - (void)setUsernameValid:(bool)usernameValid
@@ -113,59 +118,108 @@
     }
 }
 
+- (void)setClearable:(bool)clearable {
+    _clearable = clearable;
+    
+    if (clearable && _clearButton == nil) {
+        _clearButton = [[TGModernButton alloc] init];
+        _clearButton.adjustsImageWhenHighlighted = false;
+        _clearButton.hidden = true;
+        [_clearButton setImage:TGImageNamed(@"SearchBarClearIcon") forState:UIControlStateNormal];
+        [_clearButton addTarget:self action:@selector(clearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_clearButton];
+        
+        [self setNeedsLayout];
+    }
+    
+    [self updateClearButton];
+}
+
 - (void)setMinimalInset:(CGFloat)minimalInset {
     _minimalInset = minimalInset;
     [self setNeedsLayout];
 }
 
-- (void)setAutoCapitalize:(bool)autoCapitalize {
-    if (autoCapitalize) {
-        _textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
-    } else {
-        _textField.autocapitalizationType = UITextAutocapitalizationTypeSentences;
-    }
+- (void)setAutocapitalizationType:(UITextAutocapitalizationType)autocapitalizationType {
+    _textField.autocapitalizationType = autocapitalizationType;
+}
+
+- (void)updateClearButton {
+    _clearButton.hidden = !_clearable || _textField.text.length == 0;
+}
+
+- (void)clearButtonPressed {
+    _textField.text = @"";
+    _clearButton.hidden = true;
+    
+    if (_usernameChanged)
+        _usernameChanged(@"");
 }
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
+    CGFloat inset = 14.0f + self.safeAreaInset.left;
+    
     if (_usernameLabel.text.length != 0) {
-        _usernameLabel.frame = (CGRect){{14.0f, CGFloor((self.contentView.frame.size.height - _usernameLabel.frame.size.height) / 2.0f)}, _usernameLabel.frame.size};
+        _usernameLabel.frame = (CGRect){{inset, CGFloor((self.contentView.frame.size.height - _usernameLabel.frame.size.height) / 2.0f)}, _usernameLabel.frame.size};
     } else {
-        _usernameLabel.frame = (CGRect){{14.0f, CGFloor((self.contentView.frame.size.height - _usernameLabel.frame.size.height) / 2.0f)}, CGSizeMake(0.0f, _usernameLabel.frame.size.height)};
+        _usernameLabel.frame = (CGRect){{inset, CGFloor((self.contentView.frame.size.height - _usernameLabel.frame.size.height) / 2.0f)}, CGSizeMake(0.0f, _usernameLabel.frame.size.height)};
     }
     
     if (_prefixLabel.text.length != 0) {
-        _prefixLabel.frame = (CGRect){{14.0f, CGFloor((self.contentView.frame.size.height - _prefixLabel.frame.size.height) / 2.0f) + TGRetinaPixel}, _prefixLabel.frame.size};
+        _prefixLabel.frame = (CGRect){{inset, CGFloor((self.contentView.frame.size.height - _prefixLabel.frame.size.height) / 2.0f) + TGScreenPixel}, _prefixLabel.frame.size};
     } else {
-        _prefixLabel.frame = (CGRect){{14.0f, CGFloor((self.contentView.frame.size.height - _prefixLabel.frame.size.height) / 2.0f)}, CGSizeMake(0.0f, _prefixLabel.frame.size.height)};
+        _prefixLabel.frame = (CGRect){{inset, CGFloor((self.contentView.frame.size.height - _prefixLabel.frame.size.height) / 2.0f)}, CGSizeMake(0.0f, _prefixLabel.frame.size.height)};
     }
     
-    CGFloat textOffset = 14.0f;
+    CGFloat minimalInset = _minimalInset + self.safeAreaInset.left;
+    CGFloat textOffset = inset;
     if (_usernameLabel.text.length != 0) {
         textOffset = CGRectGetMaxX(_usernameLabel.frame) + 2.0f;
-        textOffset = MAX(_minimalInset, textOffset);
+        textOffset = MAX(minimalInset, textOffset);
     } else if (_prefixLabel.text.length != 0) {
         textOffset = CGRectGetMaxX(_prefixLabel.frame) + 2.0f - 22.0f;
-        textOffset = MAX(_minimalInset, textOffset);
+        textOffset = MAX(minimalInset, textOffset);
     } else {
         textOffset = -5.0f;
     }
     
-    _textField.frame = CGRectMake(textOffset, 0.0f, self.contentView.frame.size.width - 8.0f - 2.0f - textOffset, self.contentView.frame.size.height);
-    _activityIndicator.frame = CGRectMake(self.contentView.frame.size.width - _activityIndicator.frame.size.width - 10.0f, CGFloor((self.contentView.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
+    CGFloat buttonOffset = 0.0f;
+    if (_clearable) {
+        _clearButton.frame = CGRectMake(self.contentView.frame.size.width - self.contentView.frame.size.height + 3.0f - self.safeAreaInset.right, 0.0f, self.contentView.frame.size.height, self.contentView.frame.size.height);
+        buttonOffset = _clearButton.frame.size.width - 28.0f;
+    }
+    
+    _textField.frame = CGRectMake(textOffset, 0.0f, self.contentView.frame.size.width - 8.0f - 2.0f - textOffset - buttonOffset - self.safeAreaInset.right, self.contentView.frame.size.height);
+    _activityIndicator.frame = CGRectMake(self.contentView.frame.size.width - _activityIndicator.frame.size.width - 10.0f - self.safeAreaInset.right, CGFloor((self.contentView.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     if (!_textField.secureTextEntry && [string rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]].location != NSNotFound)
         return false;
+ 
+    if (_textPasted) {
+        NSString *modifiedText = _textPasted(range, string);
+        if (modifiedText != nil)
+        {
+            textField.text = modifiedText;
+            
+            if (_usernameChanged)
+                _usernameChanged(modifiedText);
+            
+            return false;
+        }
+    }
     
     NSString *username = [textField.text stringByReplacingCharactersInRange:range withString:string];
     
     if (_usernameChanged)
         _usernameChanged(username);
+    
+    [self updateClearButton];
     
     return true;
 }
@@ -181,6 +235,11 @@
 - (BOOL)becomeFirstResponder
 {
     return [_textField becomeFirstResponder];
+}
+
+- (bool)textFieldIsFirstResponder
+{
+    return [_textField isFirstResponder];
 }
 
 @end

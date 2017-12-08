@@ -1,13 +1,10 @@
 #import "TGNotificationContactPreviewView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGNotificationView.h"
 
-#import "TGContactMediaAttachment.h"
-#import "TGUser.h"
-
-#import "TGFont.h"
-#import "TGPhoneUtils.h"
-
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGNotificationContactPreviewView ()
 {

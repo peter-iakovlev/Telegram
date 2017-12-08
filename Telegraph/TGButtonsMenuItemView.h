@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGButtonsMenuItemView : UITableViewCell
 

@@ -1,6 +1,7 @@
 #import "PhotoResources.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TelegramMediaResources.h"
 #import "MediaBox.h"
 
@@ -11,8 +12,7 @@
 #import "DrawingContext.h"
 #import "TransformImageView.h"
 
-#import "TGImageUtils.h"
-#import "TGImageBlur.h"
+#import <LegacyComponents/TGImageBlur.h>
 
 #import <ImageIO/ImageIO.h>
 #import <AVFoundation/AVFoundation.h>

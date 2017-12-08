@@ -1,12 +1,10 @@
 #import "TGLoginPasswordView.h"
 
-#import "TGTextField.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGTextField.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGLoginPasswordView () <UITextFieldDelegate>
 {

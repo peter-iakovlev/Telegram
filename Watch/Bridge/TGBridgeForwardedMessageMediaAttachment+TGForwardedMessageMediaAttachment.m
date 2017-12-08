@@ -1,6 +1,6 @@
 #import "TGBridgeForwardedMessageMediaAttachment+TGForwardedMessageMediaAttachment.h"
 
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGBridgeForwardedMessageMediaAttachment (TGForwardedMessageMediaAttachment)
 

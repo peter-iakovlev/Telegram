@@ -1,7 +1,6 @@
 #import "TGMessageUniqueIdContentProperty.h"
 
-#import "PSKeyValueEncoder.h"
-#import "PSKeyValueDecoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGMessageUniqueIdContentProperty
 

@@ -1,10 +1,10 @@
 #import "TGAudioWebpageFooterModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDocumentMessageIconModel.h"
 #import "TGMusicPlayer.h"
 #import "TGAudioSliderViewModel.h"
-
-#import "TGWebPageMediaAttachment.h"
 
 #import "TGMessageImageView.h"
 

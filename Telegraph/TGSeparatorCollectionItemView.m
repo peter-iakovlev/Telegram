@@ -1,6 +1,6 @@
 #import "TGSeparatorCollectionItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSeparatorCollectionItemView () {
     UIView *_separatorView;

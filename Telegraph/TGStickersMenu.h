@@ -1,5 +1,5 @@
 #import <Foundation/Foundation.h>
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 @class TGViewController;
 @class TGMenuSheetController;

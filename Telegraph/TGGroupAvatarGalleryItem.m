@@ -1,10 +1,10 @@
 #import "TGGroupAvatarGalleryItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGGroupAvatarGalleryItemView.h"
 
-#import "TGImageInfo.h"
-
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGGroupAvatarGalleryItem ()
 {
@@ -20,16 +20,19 @@
     return [TGGroupAvatarGalleryItemView class];
 }
 
-- (instancetype)initWithMessageId:(int32_t)messageId legacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageSize:(CGSize)imageSize
+- (instancetype)initWithMessageId:(int32_t)messageId legacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageId:(int64_t)imageId imageSize:(CGSize)imageSize
 {
     NSMutableString *imageUri = [[NSMutableString alloc] initWithString:@"peer-avatar://?"];
     [imageUri appendFormat:@"legacy-cache-url=%@", legacyUrl];
     [imageUri appendFormat:@"&legacy-thumbnail-cache-url=%@", legacyThumbnailUrl];
     [imageUri appendFormat:@"&width=%d&height=%d", (int)imageSize.width, (int)imageSize.height];
+    if (imageId != 0)
+        [imageUri appendFormat:@"&imageId=%lld", imageId];
     
     self = [super initWithUri:imageUri imageSize:imageSize];
     if (self != nil)
     {
+        self.imageId = imageId;
         _messageId = messageId;
         _legacyUrl = legacyUrl;
     }

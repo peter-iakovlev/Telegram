@@ -1,16 +1,10 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGSwitchCollectionItemView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGIconSwitchView.h"
+
+#import "TGPresentation.h"
 
 @interface TGSwitchCollectionItemView ()
 {
@@ -28,7 +22,6 @@
     if (self)
     {   
         _titleLabel = [[UILabel alloc] init];
-        _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.font = TGSystemFontOfSize(17);
         _titleLabel.textAlignment = NSTextAlignmentLeft;
@@ -45,6 +38,21 @@
         [self addSubview:_switchView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    if ([_switchView isKindOfClass:[UISwitch class]] && [_switchView respondsToSelector:@selector(setOnTintColor:)])
+    {
+        _switchView.onTintColor = presentation.pallete.collectionMenuSwitchColor;
+        if (presentation.pallete.collectionMenuSwitchColor != nil)
+            _switchView.tintColor = presentation.pallete.collectionMenuAccessoryColor;
+        else
+            _switchView.tintColor = nil;
+    }
 }
 
 - (void)setFullSeparator:(bool)fullSeparator {
@@ -81,9 +89,9 @@
     CGRect bounds = self.bounds;
     
     CGSize switchSize = _switchView.bounds.size;
-    _switchView.frame = CGRectMake(bounds.size.width - switchSize.width - 15.0f, 6.0f, switchSize.width, switchSize.height);
+    _switchView.frame = CGRectMake(bounds.size.width - switchSize.width - 15.0f - self.safeAreaInset.right, 6.0f, switchSize.width, switchSize.height);
     
-    _titleLabel.frame = CGRectMake(15.0f, CGFloor((bounds.size.height - 26.0f) / 2.0f), bounds.size.width - 15.0f - 4.0f - switchSize.width - 6.0f, 26.0f);
+    _titleLabel.frame = CGRectMake(15.0f + self.safeAreaInset.left, CGFloor((bounds.size.height - 26.0f) / 2.0f), bounds.size.width - 15.0f - 4.0f - switchSize.width - 6.0f, 26.0f);
 }
 
 @end

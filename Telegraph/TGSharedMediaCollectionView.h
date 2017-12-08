@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 
+#import <LegacyComponents/TGModernGalleryController.h>
+
 @class TGSharedMediaSectionHeaderView;
 @class TGSharedMediaSectionHeader;
 
@@ -9,6 +11,6 @@
 
 @end
 
-@interface TGSharedMediaCollectionView : UICollectionView
+@interface TGSharedMediaCollectionView : UICollectionView <TGModernGalleryTransitionHostScrollView>
 
 @end

@@ -1,21 +1,21 @@
 #import "TGInstantPageMedia.h"
 
-#import "TGImageMediaAttachment.h"
-#import "TGVideoMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGInstantPageMedia
 
-- (instancetype)initWithIndex:(NSInteger)index media:(id)media {
+- (instancetype)initWithIndex:(NSInteger)index media:(id)media groupedId:(int64_t)groupedId {
     self = [super init];
     if (self != nil) {
         _index = index;
         _media = media;
+        _groupedId = groupedId;
     }
     return self;
 }
 
 - (BOOL)isEqual:(id)object {
-    return [object isKindOfClass:[TGInstantPageMedia class]] && ((TGInstantPageMedia *)object)->_index == _index && TGObjectCompare(((TGInstantPageMedia *)object)->_media, _media);
+    return [object isKindOfClass:[TGInstantPageMedia class]] && ((TGInstantPageMedia *)object)->_index == _index && TGObjectCompare(((TGInstantPageMedia *)object)->_media, _media) && ((TGInstantPageMedia *)object)->_groupedId == _groupedId;
 }
 
 - (NSString *)caption {

@@ -10,7 +10,14 @@
 
 @interface TGAccountInfoCollectionItem : TGUserInfoCollectionItem
 
-- (void)setSynchronizationStatus:(int)status;
+@property (nonatomic, assign) bool hasDisclosureIndicator;
+@property (nonatomic, assign) bool showCameraIcon;
+@property (nonatomic) SEL action;
+
+- (void)setPhoneNumber:(NSString *)phoneNumber;
+- (void)setUsername:(NSString *)username;
+
+- (void)setStatus:(NSString *)status active:(bool)active;
 - (void)localizationUpdated;
 
 @end

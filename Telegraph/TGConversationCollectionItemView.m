@@ -1,13 +1,10 @@
 #import "TGConversationCollectionItemView.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGLetteredAvatarView.h"
-
-#import "TGConversation.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGConversationCollectionItemViewContent : UIView
 
@@ -129,10 +126,10 @@
 
 - (void)layoutSubviews
 {
-    CGFloat leftInset = false ? 38.0f : 0.0f;
+    CGFloat leftInset = self.safeAreaInset.left;
     self.separatorInset = 65.0f + leftInset;
     
-    CGFloat rightInset = 0.0f;
+    CGFloat rightInset = self.safeAreaInset.right;
     
     [super layoutSubviews];
     

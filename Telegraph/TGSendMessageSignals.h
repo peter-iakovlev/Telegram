@@ -20,7 +20,7 @@
 
 + (SSignal *)forwardMessageWithMid:(int32_t)mid peerId:(int64_t)peerId;
 
-+ (SSignal *)forwardMessagesWithMessageIds:(NSArray *)messageIds toPeerIds:(NSArray *)peerIds fromPeerId:(int64_t)fromPeerId fromPeerAccessHash:(int64_t)fromPeerAccessHash;
++ (SSignal *)forwardMessagesWithMessageIds:(NSArray *)messageIds toPeerIds:(NSArray *)peerIds fromPeerId:(int64_t)fromPeerId fromPeerAccessHash:(int64_t)fromPeerAccessHash grouped:(bool)grouped;
 + (SSignal *)broadcastMessageWithText:(NSString *)text toPeerIds:(NSArray *)peerIds;
 
 + (SSignal *)sendMediaWithPeerId:(int64_t)peerId replyToMid:(int32_t)replyToMid attachment:(TGMediaAttachment *)attachment uploadSignal:(SSignal *)uploadSignal mediaProducer:(TLInputMedia *(^)(NSDictionary *uploadInfo))mediaProducer;
@@ -36,6 +36,7 @@
 + (SSignal *)shareText:(NSString *)text entities:(NSArray *)entities toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)sharePhoto:(TGImageMediaAttachment *)photo toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareVideo:(TGVideoMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
++ (SSignal *)shareMultiMedia:(NSArray *)multiMedia toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareContact:(TGContactMediaAttachment *)contact toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareLocation:(TGLocationMediaAttachment *)location toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;
 + (SSignal *)shareDocument:(TGDocumentMediaAttachment *)document toPeerIds:(NSArray *)peerIds caption:(NSString *)caption;

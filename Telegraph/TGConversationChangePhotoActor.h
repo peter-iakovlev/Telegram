@@ -10,7 +10,7 @@
 
 #import "tl/TLMetaScheme.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGConversationChangePhotoActor : TGActor <ASWatcher>
 

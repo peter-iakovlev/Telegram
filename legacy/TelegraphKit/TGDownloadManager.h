@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 typedef enum {
     TGDownloadItemClassThumbnail = 1,

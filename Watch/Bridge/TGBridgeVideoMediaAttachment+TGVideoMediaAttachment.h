@@ -1,5 +1,6 @@
 #import "TGBridgeVideoMediaAttachment.h"
-#import "TGVideoMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeVideoMediaAttachment (TGVideoMediaAttachment)
 

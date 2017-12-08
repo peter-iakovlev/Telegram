@@ -1,6 +1,6 @@
 #import "TGBridgeContactMediaAttachment.h"
 
-#import "TGStringUtils.h"
+#import "../Extension/TGStringUtils.h"
 
 const NSInteger TGBridgeContactMediaAttachmentType = 0xB90A5663;
 

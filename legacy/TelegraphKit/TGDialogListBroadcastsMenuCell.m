@@ -1,9 +1,8 @@
 #import "TGDialogListBroadcastsMenuCell.h"
 
-#import "TGModernButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGDialogListBroadcastsMenuCell ()
 {
@@ -29,7 +28,7 @@
         self.contentView.clipsToBounds = false;
         
         _broadcastListsButton = [[TGModernButton alloc] init];
-        [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannelButton") forState:UIControlStateNormal];
+        [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannel") forState:UIControlStateNormal];
         [_broadcastListsButton setTitleColor:TGAccentColor()];
         _broadcastListsButton.titleLabel.font = TGSystemFontOfSize(15.0f + TGRetinaPixel);
         [_broadcastListsButton setContentEdgeInsets:UIEdgeInsetsMake(0, 8, 0, 8)];
@@ -75,7 +74,7 @@
 
 - (void)resetLocalization
 {
-    [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannelButton") forState:UIControlStateNormal];
+    [_broadcastListsButton setTitle:TGLocalized(@"Compose.NewChannel") forState:UIControlStateNormal];
     [_newGroupButton setTitle:TGLocalized(@"Compose.NewGroup") forState:UIControlStateNormal];
     
     [self setNeedsLayout];

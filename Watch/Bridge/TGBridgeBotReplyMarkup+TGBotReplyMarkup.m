@@ -1,11 +1,8 @@
 #import "TGBridgeBotReplyMarkup+TGBotReplyMarkup.h"
 
-#import "TGMessage.h"
-#import "TGBridgeMessage+TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGBotReplyMarkup.h"
-#import "TGBotReplyMarkupRow.h"
-#import "TGBotReplyMarkupButton.h"
+#import "TGBridgeMessage+TGMessage.h"
 
 @implementation TGBridgeBotReplyMarkup (TGBotReplyMarkup)
 

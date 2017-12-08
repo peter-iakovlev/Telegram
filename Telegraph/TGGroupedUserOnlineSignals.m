@@ -1,7 +1,7 @@
 #import "TGGroupedUserOnlineSignals.h"
 
 #import "TGTelegramNetworking.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TL/TLMetaScheme.h"
 #import "TGTelegraph.h"
 #import "TGUser+Telegraph.h"

@@ -1,12 +1,11 @@
 #import "TGSharedVideoSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedMediaSignals.h"
 
-#import "TGVideoMediaAttachment.h"
-#import "TGImageUtils.h"
-
 #import "TGImageInfo+Telegraph.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import <AVFoundation/AVFoundation.h>
 

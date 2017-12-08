@@ -1,8 +1,9 @@
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
 
-#import "TGModernGalleryItem.h"
+#import <LegacyComponents/TGImageUtils.h>
+#import <LegacyComponents/TGModernGalleryItem.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGGenericPeerMediaGalleryActionsAccessoryView ()
 {
@@ -19,7 +20,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        UIImage *actionImage = [UIImage imageNamed:@"ActionsWhiteIcon.png"];
+        UIImage *actionImage = TGImageNamed(@"ActionsWhiteIcon.png");
         _button = [[TGModernButton alloc] init];
         _button.modernHighlight = true;
         _button.exclusiveTouch = true;

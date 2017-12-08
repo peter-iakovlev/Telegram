@@ -1,9 +1,6 @@
 #import "TGSpotlightIndexData.h"
 
-#import "TGStringUtils.h"
-
-#import "TGConversation.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSpotlightIndexItem () {
     NSUInteger _hash;

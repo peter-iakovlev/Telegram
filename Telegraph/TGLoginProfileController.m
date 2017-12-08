@@ -1,43 +1,35 @@
 #import "TGLoginProfileController.h"
 
-#import "TGToolbarButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-
-#import "TGHacks.h"
-#import "TGFont.h"
-
-#import "UIDevice+PlatformInfo.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/UIDevice+PlatformInfo.h>
 
 #import "TGAppDelegate.h"
 
 #import "TGSignUpRequestBuilder.h"
 
 #import "TGTelegraph.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/SGraphObjectNode.h>
 #import "TGDatabase.h"
-
-#import "TGLoginInactiveUserController.h"
 
 #import "TGHighlightableButton.h"
 
-#import "TGRemoteImageView.h"
-
-#import "TGActivityIndicatorView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGApplication.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
-#import "TGTextField.h"
+#import <LegacyComponents/TGTextField.h>
 
 #import "TGActionSheet.h"
 
 #import "TGAlertView.h"
 
-#import "TGMediaAvatarMenuMixin.h"
+#import <LegacyComponents/TGMediaAvatarMenuMixin.h>
+#import "TGWebSearchController.h"
+
+#import "TGLegacyComponentsContext.h"
 
 #define TGAvatarActionSheetTag ((int)0xF3AEE8CC)
 #define TGImageSourceActionSheetTag ((int)0x34281CB0)
@@ -542,7 +534,7 @@
 - (void)addPhotoButtonPressed
 {
     __weak TGLoginProfileController *weakSelf = self;
-    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:false personalPhoto:true];
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:self hasDeleteButton:false personalPhoto:true saveEditedPhotos:false saveCapturedMedia:false];
     _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGLoginProfileController *strongSelf = weakSelf;
@@ -559,6 +551,31 @@
             return;
         
         strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        
+        __weak TGMediaAssetsController *weakAssetsController = assetsController;
+        __weak TGWebSearchController *weakController = searchController;
+        searchController.avatarCompletionBlock = ^(UIImage *image) {
+            __strong TGMediaAssetsController *strongAssetsController = weakAssetsController;
+            if (strongAssetsController.avatarCompletionBlock == nil)
+                return;
+            
+            strongAssetsController.avatarCompletionBlock(image);
+        };
+        searchController.dismiss = ^
+        {
+            __strong TGWebSearchController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissEmbeddedAnimated:true];
+        };
+        searchController.parentNavigationController = assetsController;
+        [searchController presentEmbeddedInController:assetsController animated:true];
+        
+        return searchController;
     };
     [_avatarMixin present];
 }
@@ -699,38 +716,16 @@
     {
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            if ([((SGraphObjectNode *)resource).object boolValue])
-                [TGAppDelegateInstance presentMainController];
-            else
-            {
-                if (![[self.navigationController.viewControllers lastObject] isKindOfClass:[TGLoginInactiveUserController class]])
-                {
-                    TGLoginInactiveUserController *inactiveUserController = [[TGLoginInactiveUserController alloc] init];
-                    [self.navigationController pushViewController:inactiveUserController animated:true];
-                }
-            }
+            [TGAppDelegateInstance presentMainController];
         });
     }
     else if ([path isEqualToString:@"/tg/contactListSynchronizationState"])
     {
         if (![((SGraphObjectNode *)resource).object boolValue])
         {
-            bool activated = [TGDatabaseInstance() haveRemoteContactUids];
-            
             dispatch_async(dispatch_get_main_queue(), ^
             {
-                if (activated)
-                    [TGAppDelegateInstance presentMainController];
-                else
-                {
-                    if (![[self.navigationController.viewControllers lastObject] isKindOfClass:[TGLoginInactiveUserController class]])
-                    {
-                        TGLoginInactiveUserController *inactiveUserController = [[TGLoginInactiveUserController alloc] init];
-                        [self.navigationController pushViewController:inactiveUserController animated:true];
-                    }
-                    else
-                        self.inProgress = false;
-                }
+                [TGAppDelegateInstance presentMainController];
             });
         }
     }

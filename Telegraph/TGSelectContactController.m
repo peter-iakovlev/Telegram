@@ -1,26 +1,22 @@
 #import "TGSelectContactController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 #import "TGRootController.h"
 
-#import "TGToolbarButton.h"
-
-#import "TGUser.h"
 #import "TGInterfaceManager.h"
 
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGMessage+Telegraph.h"
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGCreateGroupController.h"
-
-#import "TGImageUtils.h"
-#import "TGFont.h"
 
 #import "TGAlertView.h"
 #import "TGApplicationFeatures.h"
@@ -76,7 +72,7 @@
         _call = call;
         
         if (createGroup)
-            contactsMode |= TGContactsModeCompose;
+            contactsMode |= TGContactsModeCompose | TGContactsModeSearchGlobal;
         else if (createChannel || inviteToChannel) {
             contactsMode |= (TGContactsModeCompose | TGContactsModeSearchGlobal);
             if (showLink) {
@@ -221,10 +217,10 @@
             NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
             NSString *errorText = TGLocalized(@"Profile.CreateEncryptedChatError");
             if ([errorType isEqual:@"USER_BLOCKED"]) {
-                errorText = _channelConversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddBlocked") : TGLocalized(@"Channel.ErrorAddBlocked");
+                errorText = _channelConversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddBlocked") : TGLocalized(@"Group.ErrorAddBlocked");
             } else if ([errorType isEqual:@"USERS_TOO_MUCH"]) {
                 if (_channelConversation.isChannelGroup) {
-                    errorText = TGLocalized(@"Group.ErrorAddTooMuch");
+                    errorText = TGLocalized(@"ConversationProfile.UsersTooMuchError");
                 } else {
                     errorText = TGLocalized(@"Channel.ErrorAddTooMuch");
                 }

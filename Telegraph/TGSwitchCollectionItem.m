@@ -8,7 +8,7 @@
 
 #import "TGSwitchCollectionItem.h"
 
-#import "ASHandle.h"
+#import <LegacyComponents/ASHandle.h>
 
 #import "TGSwitchCollectionItemView.h"
 

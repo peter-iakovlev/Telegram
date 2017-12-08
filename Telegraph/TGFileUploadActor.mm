@@ -7,8 +7,8 @@
 #import "TGNetworkWorker.h"
 #import <MTProtoKit/MTRequest.h>
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGLiveUploadActor.h"
 

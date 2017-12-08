@@ -1,22 +1,23 @@
 #import "TGSecretPeerMediaGalleryModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
-#import "TGStringUtils.h"
 
 #import "TGSecretPeerMediaGalleryImageItem.h"
 #import "TGSecretPeerMediaGalleryVideoItem.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGModernSendSecretMessageActor.h"
 
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGSecretPeerMediaGalleryModel () <ASWatcher>
 {

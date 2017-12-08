@@ -1,11 +1,7 @@
 #import "TGCallMessageViewModel.h"
 
-#import "TGFont.h"
-#import "TGDateUtils.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMessage.h"
 #import "TGCallDiscardReason.h"
 
 #import "TGModernImageViewModel.h"
@@ -14,7 +10,9 @@
 #import "TGModernButtonView.h"
 #import "TGModernFlatteningViewModel.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
+
+#import "TGPresentation.h"
 
 @interface TGCallMessageViewModel ()
 {
@@ -37,11 +35,6 @@
     {
         _callForMessageId = message.mid;
 
-        static UIColor *incomingDetailColor = nil;
-        static UIColor *outgoingDetailColor = nil;
-        static UIImage *incomingCallIcon = nil;
-        static UIImage *outgoingCallIcon = nil;
-        
         static UIImage *incomingGreenIcon = nil;
         static UIImage *incomingRedIcon = nil;
         static UIImage *outgoingGreenIcon = nil;
@@ -50,16 +43,11 @@
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            incomingDetailColor = UIColorRGB(0x999999);
-            outgoingDetailColor = UIColorRGB(0x2da32e);
-            incomingCallIcon = TGTintedImage([UIImage imageNamed:@"TabIconCalls"], TGAccentColor());
-            outgoingCallIcon = TGTintedImage([UIImage imageNamed:@"TabIconCalls"], UIColorRGB(0x3fc33b));
+            incomingGreenIcon = TGTintedImage(TGImageNamed(@"MessageCallIncomingIcon"), UIColorRGB(0x36c033));
+            incomingRedIcon = TGTintedImage(TGImageNamed(@"MessageCallIncomingIcon"), UIColorRGB(0xff4747));
             
-            incomingGreenIcon = TGTintedImage([UIImage imageNamed:@"MessageCallIncomingIcon"], UIColorRGB(0x36c033));
-            incomingRedIcon = TGTintedImage([UIImage imageNamed:@"MessageCallIncomingIcon"], UIColorRGB(0xff4747));
-            
-            outgoingGreenIcon = TGTintedImage([UIImage imageNamed:@"MessageCallOutgoingIcon"], UIColorRGB(0x36c033));
-            outgoingRedIcon = TGTintedImage([UIImage imageNamed:@"MessageCallOutgoingIcon"], UIColorRGB(0xff4747));
+            outgoingGreenIcon = TGTintedImage(TGImageNamed(@"MessageCallOutgoingIcon"), UIColorRGB(0x36c033));
+            outgoingRedIcon = TGTintedImage(TGImageNamed(@"MessageCallOutgoingIcon"), UIColorRGB(0xff4747));
         });
         
         bool outgoing = message.outgoing;
@@ -82,7 +70,7 @@
         
         _timeModel = [[TGModernTextViewModel alloc] initWithText:time font:TGCoreTextSystemFontOfSize(13.0f)];
         _timeModel.maxNumberOfLines = 1;
-        _timeModel.textColor = _incomingAppearance ? incomingDetailColor : outgoingDetailColor;
+        _timeModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingSubtextColor : _context.presentation.pallete.chatOutgoingSubtextColor;
         [_contentModel addSubmodel:_timeModel];
         
         _iconModel = [[TGModernImageViewModel alloc] init];
@@ -97,11 +85,12 @@
             if (strongSelf != nil)
                 [strongSelf callPressed];
         };
-        _callButtonModel.image = _incomingAppearance ? incomingCallIcon : outgoingCallIcon;
+        _callButtonModel.image = _incomingAppearance ? _context.presentation.images.chatCallIconIncoming : _context.presentation.images.chatCallIconOutgoing;
         _callButtonModel.modernHighlight = true;
         [self addSubmodel:_callButtonModel];
         
         [_contentModel removeSubmodel:(TGModernViewModel *)_dateModel viewStorage:nil];
+        [_contentModel removeSubmodel:(TGModernViewModel *)_editedLabelModel viewStorage:nil];
     }
     return self;
 }

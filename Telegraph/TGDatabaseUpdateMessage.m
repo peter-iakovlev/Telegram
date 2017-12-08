@@ -47,6 +47,17 @@
 
 @end
 
+@implementation TGDatabaseUpdateMentionUnread
+
+- (instancetype)initWithPeerId:(int64_t)peerId messageId:(int32_t)messageId {
+    self = [super initWithPeerId:peerId messageId:messageId];
+    if (self != nil) {
+    }
+    return self;
+}
+
+@end
+
 @implementation TGDatabaseUpdateMessageWithMessage
 
 - (instancetype)initWithPeerId:(int64_t)peerId messageId:(int32_t)messageId message:(TGMessage *)message dispatchEdited:(bool)dispatchEdited {

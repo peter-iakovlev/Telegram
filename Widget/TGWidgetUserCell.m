@@ -54,7 +54,7 @@ const CGSize TGWidgetSmallUserCellSize = { 68.0f, 76.0f };
         {
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
+            CGContextSetFillColorWithColor(context, [UIColor hexColor:0x007ee5].CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0, 0, 22, 22));
             badgeBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:12 topCapHeight:12];
             UIGraphicsEndImageContext();

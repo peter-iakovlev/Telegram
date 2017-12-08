@@ -1,13 +1,10 @@
 #import "TGShareSearchItemView.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-
-#import "TGSearchBar.h"
-#import "TGModernButton.h"
-#import "UIControl+HitTestEdgeInsets.h"
+#import <LegacyComponents/TGSearchBar.h>
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
 
 @interface TGShareSearchItemView () <TGSearchBarDelegate>
 {
@@ -176,6 +173,7 @@
             if (self.didBeginSearch != nil)
                 self.didBeginSearch();
             
+            [_searchBar.window makeKeyWindow];
             [_searchBar.customTextField becomeFirstResponder];
             [UIView animateWithDuration:0.15f animations:^
             {

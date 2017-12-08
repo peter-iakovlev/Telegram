@@ -1,20 +1,16 @@
 #import "TGModernConversationKeyboardView.h"
+#import <SSignalKit/SSignalKit.h>
+#import <LegacyComponents/TGStickerKeyboardTabPanel.h>
 
 @class TGViewController;
 @class TGDocumentMediaAttachment;
-
-typedef enum
-{
-    TGStickerKeyboardViewDefaultStyle,
-    TGStickerKeyboardViewDarkBlurredStyle,
-    TGStickerKeyboardViewPaintStyle,
-    TGStickerKeyboardViewPaintDarkStyle
-} TGStickerKeyboardViewStyle;
 
 @interface TGStickerKeyboardView : UIView <TGModernConversationKeyboardView>
 
 @property (nonatomic, assign) CGFloat keyboardHeight;
 @property (nonatomic) bool enableAnimation;
+
+@property (nonatomic, strong) SSignal *channelInfoSignal;
 
 @property (nonatomic, readonly) bool isGif;
 
@@ -30,7 +26,10 @@ typedef enum
 
 - (void)sizeToFitForWidth:(CGFloat)width;
 - (void)updateIfNeeded;
+- (void)showTabPanel;
 
 - (void)updateExpanded;
+
++ (CGFloat)preferredHeight:(bool)landscape;
 
 @end

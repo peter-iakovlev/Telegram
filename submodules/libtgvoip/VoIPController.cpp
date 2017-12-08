@@ -74,6 +74,9 @@
 #define TLID_UDP_REFLECTOR_SELF_INFO 0xc01572c7
 #define PAD4(x) (4-(x+(x<=253 ? 1 : 0))%4)
 
+#define MAX(a,b) (a>b ? a : b)
+#define MIN(a,b) (a<b ? a : b)
+
 inline int pad4(int x){
 	int r=PAD4(x);
 	if(r==4)
@@ -222,10 +225,16 @@ VoIPController::VoIPController() : activeNetItfName(""),
 	proxyPort=0;
 	resolvedProxyAddress=NULL;
 
+	signalBarCount=0;
+	signalBarCountCallback=NULL;
+
 	selectCanceller=SocketSelectCanceller::Create();
 	udpSocket=NetworkSocket::Create(PROTO_UDP);
 	realUdpSocket=udpSocket;
 	udpConnectivityState=UDP_UNKNOWN;
+
+	outputAGC=NULL;
+	outputAGCEnabled=false;
 
 	maxAudioBitrate=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("audio_max_bitrate", 20000);
 	maxAudioBitrateGPRS=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("audio_max_bitrate_gprs", 8000);
@@ -257,6 +266,8 @@ VoIPController::VoIPController() : activeNetItfName(""),
 	stm->enabled=1;
 	stm->frameDuration=60;
 	outgoingStreams.push_back(stm);
+										
+	memset(signalBarsHistory, 0, sizeof(signalBarsHistory));
 }
 
 VoIPController::~VoIPController(){
@@ -353,6 +364,8 @@ VoIPController::~VoIPController(){
 	if(resolvedProxyAddress)
 		delete resolvedProxyAddress;
 	delete selectCanceller;
+	if(outputAGC)
+		delete outputAGC;
 	LOGD("Left VoIPController::~VoIPController");
 }
 
@@ -1159,10 +1172,13 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 					UpdateAudioBitrate();
 
 					jitterBuffer=new JitterBuffer(NULL, incomingAudioStream->frameDuration);
+					outputAGC=new AutomaticGainControl();
+					outputAGC->SetPassThrough(!outputAGCEnabled);
 					decoder=new OpusDecoder(audioOutput);
 					decoder->SetEchoCanceller(echoCanceller);
 					decoder->SetJitterBuffer(jitterBuffer);
 					decoder->SetFrameDuration(incomingAudioStream->frameDuration);
+					decoder->AddAudioEffect(outputAGC);
 					decoder->Start();
 					if(incomingAudioStream->frameDuration>50)
 						jitterBuffer->SetMinPacketCount((uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_initial_delay_60", 3));
@@ -1220,7 +1236,7 @@ simpleAudioBlock random_id:long random_bytes:string raw_data:string = DecryptedA
 					audioOutput->Start();
 					audioOutStarted=true;
 				}
-				if(jitterBuffer)
+				if(jitterBuffer && in.Remaining()>=sdlen)
 					jitterBuffer->HandleInput((unsigned char*) (buffer+in.GetOffset()), sdlen, pts);
 				if(i<count-1)
 					in.Seek(in.GetOffset()+sdlen);
@@ -1353,10 +1369,14 @@ void VoIPController::RunTickThread(){
 #else
 		Sleep(100);
 #endif
+		int prevSignalBarCount=GetSignalBarsCount();
+		signalBarCount=4;
 		tickCount++;
 		if(connectionInitTime==0)
 			continue;
 		double time=GetCurrentTime();
+		if(state==STATE_RECONNECTING)
+			signalBarCount=1;
 		if(tickCount%5==0 && (state==STATE_ESTABLISHED || state==STATE_RECONNECTING)){
 			memmove(&rttHistory[1], rttHistory, 31*sizeof(double));
 			rttHistory[0]=GetAverageRTT();
@@ -1371,6 +1391,7 @@ void VoIPController::RunTickThread(){
 			v=v/32;
 			if(rttHistory[0]>10.0 && rttHistory[8]>10.0 && (networkType==NET_TYPE_EDGE || networkType==NET_TYPE_GPRS)){
 				waitingForAcks=true;
+				signalBarCount=1;
 			}else{
 				waitingForAcks=false;
 			}
@@ -1453,6 +1474,11 @@ void VoIPController::RunTickThread(){
 				}else{
 					encoder->SetPacketLoss(15);
 				}
+
+				if(encoder->GetPacketLoss()>30)
+					signalBarCount=MIN(signalBarCount, 2);
+				else if(encoder->GetPacketLoss()>20)
+					signalBarCount=MIN(signalBarCount, 3);
 			}
 		}
 
@@ -1521,8 +1547,24 @@ void VoIPController::RunTickThread(){
 		}
 		unlock_mutex(queuedPacketsMutex);
 
-		if(jitterBuffer)
+		if(jitterBuffer){
 			jitterBuffer->Tick();
+			double avgDelay=jitterBuffer->GetAverageDelay();
+			double avgLateCount[3];
+			jitterBuffer->GetAverageLateCount(avgLateCount);
+			/*if(avgDelay>=5)
+				signalBarCount=1;
+			else if(avgDelay>=4)
+				signalBarCount=MIN(signalBarCount, 2);
+			else if(avgDelay>=3)
+				signalBarCount=MIN(signalBarCount, 3);*/
+
+			if(avgLateCount[2]>=0.2)
+				signalBarCount=1;
+			else if(avgLateCount[2]>=0.1)
+				signalBarCount=MIN(signalBarCount, 2);
+
+		}
 
 		lock_mutex(endpointsMutex);
 		if(state==STATE_ESTABLISHED || state==STATE_RECONNECTING){
@@ -1660,6 +1702,14 @@ void VoIPController::RunTickThread(){
 		if(state!=STATE_ESTABLISHED && setEstablishedAt>0 && time>=setEstablishedAt){
 			SetState(STATE_ESTABLISHED);
 			setEstablishedAt=0;
+		}
+
+		signalBarsHistory[tickCount%sizeof(signalBarsHistory)]=(unsigned char)signalBarCount;
+		int _signalBarCount=GetSignalBarsCount();
+		if(_signalBarCount!=prevSignalBarCount){
+			LOGD("SIGNAL BAR COUNT CHANGED: %d", _signalBarCount);
+			if(signalBarCountCallback)
+				signalBarCountCallback(this, _signalBarCount);
 		}
 
 
@@ -2402,6 +2452,24 @@ void VoIPController::SendUdpPing(Endpoint *endpoint){
 	pkt.data=p.GetBuffer();
 	pkt.length=p.GetLength();
 	udpSocket->Send(&pkt);
+}
+
+int VoIPController::GetSignalBarsCount(){
+	unsigned char avg=0;
+	for(int i=0;i<sizeof(signalBarsHistory);i++)
+		avg+=signalBarsHistory[i];
+	return avg >> 2;
+}
+
+void VoIPController::SetSignalBarsCountCallback(void (*f)(VoIPController *, int)){
+	signalBarCountCallback=f;
+}
+
+void VoIPController::SetAudioOutputGainControlEnabled(bool enabled){
+	LOGD("New output AGC state: %d", enabled);
+	outputAGCEnabled=enabled;
+	if(outputAGC)
+		outputAGC->SetPassThrough(!enabled);
 }
 
 Endpoint::Endpoint(int64_t id, uint16_t port, IPv4Address& _address, IPv6Address& _v6address, char type, unsigned char peerTag[16]) : address(_address), v6address(_v6address){

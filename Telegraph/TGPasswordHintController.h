@@ -1,4 +1,4 @@
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPasswordHintController : TGViewController
 

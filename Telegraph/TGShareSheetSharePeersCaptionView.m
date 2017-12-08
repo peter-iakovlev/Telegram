@@ -1,6 +1,6 @@
 #import "TGShareSheetSharePeersCaptionView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGShareSheetSharePeersCaptionView () <UITextViewDelegate> {
     UIImageView *_backgroundView;

@@ -1,6 +1,6 @@
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 #import "TGArchivedStickerPacksSummary.h"
 
 @interface TGMaskStickersSignals : NSObject

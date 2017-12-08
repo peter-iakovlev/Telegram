@@ -1,46 +1,52 @@
 #import "TGStickerKeyboardView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <AudioToolbox/AudioToolbox.h>
 
 #import "TGAppDelegate.h"
 #import "TGStickerPacksSettingsController.h"
+#import "TGChannelStickersController.h"
 
-#import "TGStickerCollectionViewCell.h"
+#import "TGDatabase.h"
+
+#import <LegacyComponents/TGStickerCollectionViewCell.h>
 #import "TGStickerCollectionHeader.h"
-#import "TGStickerKeyboardTabPanel.h"
-
-#import "TGDocumentMediaAttachment.h"
-#import "TGStickersSignals.h"
-#import "TGRecentGifsSignal.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGStickerKeyboardTabPanel.h>
 
 #import "TGGifKeyboardCell.h"
 
 #import "TGGifKeyboardBalancedLayout.h"
 
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/TGMenuView.h>
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGMenuView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGStickerItemPreviewView.h>
 
-#import "TGItemPreviewController.h"
-#import "TGStickerItemPreviewView.h"
-
-#import "TGItemMenuSheetPreviewView.h"
-#import "TGMenuSheetButtonItemView.h"
+#import <LegacyComponents/TGItemMenuSheetPreviewView.h>
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 #import "TGPreviewGifItemView.h"
 #import "TGPreviewMenu.h"
 
 #import "TGRecentStickersSignal.h"
+#import "TGFavoriteStickersSignal.h"
 
 #import "TGTrendingStickerPackKeyboardCell.h"
+#import "TGStickerGroupPackCell.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGArchivedStickerPacksAlert.h"
 
 #import "TGStickersMenu.h"
 
 #import "TGForceTouchGestureRecognizer.h"
+
+#import "TGStickersSignals.h"
+#import "TGMaskStickersSignals.h"
+#import "TGRecentGifsSignal.h"
+
+#import "TGLegacyComponentsContext.h"
 
 static const CGFloat preloadInset = 160.0f;
 static const CGFloat gifInset = 128.0f;
@@ -56,6 +62,7 @@ typedef enum {
 {
     id<SDisposable> _stickerPacksDisposable;
     id<SDisposable> _updatedFeaturedStickerPacksDisposable;
+    SPipe *_pinPipe;
     
     TGStickerKeyboardViewStyle _style;
     TGStickerKeyboardTabPanel *_tabPanel;
@@ -69,6 +76,7 @@ typedef enum {
     
     UICollectionView *_collectionView;
     UICollectionViewFlowLayout *_collectionLayout;
+    NSMapTable *_visibleCollectionReusableHeaderViews;
     
     UIView *_topStripe;
     
@@ -77,6 +85,15 @@ typedef enum {
     NSArray *_recentStickersSorted;
     NSArray *_recentDocuments;
     
+    NSArray *_favoriteDocuments;
+    NSArray *_groupDocuments;
+    bool _showGroupPlaceholder;
+    bool _isGroupAdmin;
+    bool _groupStickersUnpinned;
+    int64_t _groupStickerPackId;
+    int64_t _peerId;
+    NSString *_groupTitle;
+
     NSDictionary *_recentDocumentToStickerPack;
     
     NSArray *_recentGifsOriginal;
@@ -105,17 +122,24 @@ typedef enum {
     TGItemPreviewHandle *_gifPreviewHandle;
     
     __weak TGItemPreviewController *_previewController;
+    __weak TGMenuSheetButtonItemView *_faveItem;
     
     SAtomic *_accumulatedReadFeaturedPackIds;
     STimer *_accumulatedReadFeaturedPackIdsTimer;
     NSMutableSet *_alreadyReadFeaturedPackIds;
     
+    NSTimer *_actionsTimer;
+    
     bool _expanded;
+    
+    void (^_openGroupStickerPackSettings)(void);
 }
 
 @end
 
 @implementation TGStickerKeyboardView
+
+@synthesize safeAreaInset = _safeAreaInset;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -127,6 +151,8 @@ typedef enum {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        _pinPipe = [[SPipe alloc] init];
+        
         _style = style;
         
         CGFloat tabPanelHeight = 45.0f;
@@ -152,6 +178,8 @@ typedef enum {
         
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.backgroundColor = [UIColor clearColor];
@@ -162,8 +190,10 @@ typedef enum {
         _collectionView.delaysContentTouches = false;
         _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset, 0.0f, preloadInset, 0.0f);
         [_collectionView registerClass:[TGStickerCollectionViewCell class] forCellWithReuseIdentifier:@"TGStickerCollectionViewCell"];
+        [_collectionView registerClass:[TGStickerGroupPackCell class] forCellWithReuseIdentifier:@"TGStickerGroupPackCell"];
         [_collectionView registerClass:[TGStickerCollectionHeader class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader"];
         [self addSubview:_collectionView];
+        _visibleCollectionReusableHeaderViews = [NSMapTable mapTableWithKeyOptions:NSMapTableStrongMemory valueOptions:NSMapTableWeakMemory];
         
         _trendingCollectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _trendingCollectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_trendingCollectionLayout];
@@ -274,116 +304,7 @@ typedef enum {
         if (style != TGStickerKeyboardViewDarkBlurredStyle && style != TGStickerKeyboardViewDefaultStyle)
             [self addSubview:_topStripe];
         
-        SSignal *combinedSignal = [SSignal combineSignals:@[(iosMajorVersion() >= 8 && !TGIsPad() && _style == TGStickerKeyboardViewDefaultStyle) ? [TGRecentGifsSignal recentGifs] : [SSignal single:@[]], [TGStickersSignals stickerPacks], [TGRecentStickersSignal recentStickers]]];
-        
-        _stickerPacksDisposable = [[combinedSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *combinedResult)
-        {
-            NSArray *gifs = combinedResult[0];
-            
-            NSDictionary *dict = combinedResult[1];
-            NSMutableArray *filteredPacks = [[NSMutableArray alloc] init];
-            NSMutableDictionary *packIdMap = [[NSMutableDictionary alloc] init];
-            for (TGStickerPack *pack in dict[@"packs"])
-            {
-                if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]] && !pack.hidden) {
-                    [filteredPacks addObject:pack];
-                    
-                    TGStickerPackIdReference *packReference = (TGStickerPackIdReference *)pack.packReference;
-                    packIdMap[@(packReference.packId)] = pack;
-                }
-            }
-            
-            NSArray *sortedStickerPacks = filteredPacks;
-            
-            NSMutableArray *reversed = [[NSMutableArray alloc] init];
-            for (id item in sortedStickerPacks)
-            {
-                [reversed addObject:item];
-            }
-            
-            NSMutableArray *reversedGifs = [[NSMutableArray alloc] init];
-            for (id item in [gifs reverseObjectEnumerator])
-            {
-                [reversedGifs addObject:item];
-            }
-            
-            NSMutableArray *reversedRecentStickers = [[NSMutableArray alloc] init];
-            NSMutableDictionary *documentToStickerPack = [[NSMutableDictionary alloc] init];
-            for (id item in [combinedResult[2] reverseObjectEnumerator]) {
-                [reversedRecentStickers addObject:item];
-                
-                TGDocumentMediaAttachment *document = (TGDocumentMediaAttachment *)item;
-                if ([document.stickerPackReference isKindOfClass:[TGStickerPackIdReference class]]) {
-                    TGStickerPackIdReference *packReference = (TGStickerPackIdReference *)document.stickerPackReference;
-                    
-                    documentToStickerPack[@(document.documentId)] = packIdMap[@(packReference.packId)];
-                }
-            }
-            
-            __strong TGStickerKeyboardView *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                strongSelf->_recentDocumentToStickerPack = documentToStickerPack;
-                
-                NSUInteger unreadFeaturedCount = ((NSArray *)dict[@"featuredPacksUnreadIds"]).count;
-                [strongSelf setTrendingBadge:unreadFeaturedCount == 0 ? nil : [NSString stringWithFormat:@"%d", (int)unreadFeaturedCount]];
-                NSMutableSet *unreadPacks = [[NSMutableSet alloc] init];
-                for (NSNumber *nPackId in dict[@"featuredPacksUnreadIds"]) {
-                    [unreadPacks addObject:nPackId];
-                }
-                
-                if (![strongSelf->_stickerPacks isEqual:reversed] || ![strongSelf->_recentStickersOriginal isEqual:reversedRecentStickers]) {
-                    NSArray *updatedRecentStickers = nil;
-                    if (strongSelf->_recentStickersOriginal == nil) {
-                        strongSelf->_recentStickersOriginal = reversedRecentStickers;
-                        updatedRecentStickers = reversedRecentStickers;
-                    } else {
-                        strongSelf->_recentStickersOriginal = reversedRecentStickers;
-                        updatedRecentStickers = strongSelf->_recentStickersSorted;
-                    }
-                    [strongSelf setStickerPacks:reversed recentStickers:updatedRecentStickers];
-                }
-                
-                if (![strongSelf->_recentGifsOriginal isEqual:reversedGifs]) {
-                    strongSelf->_recentGifsOriginal = reversedGifs;
-                    
-                    NSArray *sortedGifs = [reversedGifs sortedArrayUsingComparator:^NSComparisonResult(TGDocumentMediaAttachment *document1, TGDocumentMediaAttachment *document2) {
-                        return document1.documentId < document2.documentId ? NSOrderedAscending : NSOrderedDescending;
-                    }];
-                    
-                    if (!TGObjectCompare(sortedGifs, strongSelf->_recentGifsSorted)) {
-                        strongSelf->_recentGifsSorted = sortedGifs;
-                        [strongSelf setRecentGifs:reversedGifs];
-                    }
-                }
-                
-                NSMutableSet<NSNumber *> *installedPacks = [[NSMutableSet alloc] init];
-                for (TGStickerPack *pack in dict[@"packs"]) {
-                    if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
-                        int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
-                        [installedPacks addObject:@(packId)];
-                    }
-                }
-                
-                NSMutableArray *trendingPacks = [[NSMutableArray alloc] init];
-                for (TGStickerPack *pack in dict[@"featuredPacks"]) {
-                    if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
-                        int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
-                        if (![installedPacks containsObject:@(packId)]) {
-                            [trendingPacks addObject:pack];
-                        }
-                    }
-                }
-                
-                if (![strongSelf->_trendingStickerPacks isEqualToArray:trendingPacks]) {
-                    [strongSelf setTrendingStickerPacks:trendingPacks];
-                }
-                
-                //[strongSelf setInstalledTrendingPacks:installedPacks];
-                [strongSelf setUnreadTrendingPacks:unreadPacks];
-                
-                [strongSelf updateCurrentSection];
-            }
-        }];
+        [self setupSignals];
         
         _updatedFeaturedStickerPacksDisposable = [[TGStickersSignals updatedFeaturedStickerPacks] startWithNext:nil];
         
@@ -408,7 +329,7 @@ typedef enum {
                         
                         TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:nil];
                         
-                        TGItemMenuSheetPreviewView *previewView = [[TGItemMenuSheetPreviewView alloc] initWithMainItemViews:@[ gifItem ] actionItemViews:@[ deleteItem, sendItem ]];
+                        TGItemMenuSheetPreviewView *previewView = [[TGItemMenuSheetPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] mainItemViews:@[ gifItem ] actionItemViews:@[ deleteItem, sendItem ]];
                         
                         __weak TGItemMenuSheetPreviewView *weakPreviewView = previewView;
                         deleteItem.action = ^
@@ -439,7 +360,7 @@ typedef enum {
                             [strongPreviewView performCommit];
                         };
                         
-                        controller = [[TGItemPreviewController alloc] initWithParentController:parentViewController previewView:previewView];
+                        controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentViewController previewView:previewView];
                         controller.sourcePointForItem = ^(__unused id item)
                         {
                             __strong TGStickerKeyboardView *strongSelf = weakSelf;
@@ -475,6 +396,309 @@ typedef enum {
     [_stickerPacksDisposable dispose];
     [_updatedFeaturedStickerPacksDisposable dispose];
     [_accumulatedReadFeaturedPackIdsTimer invalidate];
+}
+
+- (void)updateInsets
+{
+    CGFloat tabPanelHeight = 45.0f;
+    if (_style == TGStickerKeyboardViewDefaultStyle)
+        tabPanelHeight -= 3.0f;
+    
+    _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset, 0.0f, preloadInset + _safeAreaInset.bottom, 0.0f);
+    _trendingCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset + _safeAreaInset.bottom, 0.0f);
+    _gifsCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset + _safeAreaInset.bottom, 0.0f);
+}
+
+- (void)setChannelInfoSignal:(SSignal *)channelInfoSignal
+{
+    _channelInfoSignal = channelInfoSignal;
+    [self setupSignals];
+}
+
+- (void)updateGroupStickersHeader:(TGStickerCollectionHeader *)header
+{
+    bool isAdmin = _isGroupAdmin;
+    bool isUnpinned = _groupStickersUnpinned;
+    bool hasStickers = _groupDocuments.count > 0;
+    
+    __weak TGStickerKeyboardView *weakSelf = self;
+    header.accessoryPressed = ^{
+        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        if (isAdmin)
+        {
+            if (hasStickers)
+            {
+                if (strongSelf->_openGroupStickerPackSettings != nil)
+                    strongSelf->_openGroupStickerPackSettings();
+            }
+            else
+            {
+                [strongSelf unpinGroupStickers];
+            }
+        }
+        else
+        {
+            if (!isUnpinned)
+            {
+                [strongSelf unpinGroupStickers];
+            }
+        }
+    };
+    
+    if (hasStickers && isAdmin)
+    {
+        header.icon = TGImageNamed(@"StickersGroupSettings");
+    }
+    else
+    {
+        if (!isUnpinned)
+            header.icon = TGImageNamed(@"StickersGroupCross");
+        else
+            header.icon = nil;
+    }
+    
+    header.title = [NSString stringWithFormat:TGLocalized(@"Stickers.GroupStickers"), _groupTitle];
+}
+
+- (void)unpinGroupStickers
+{
+    if (_peerId == 0)
+        return;
+    
+    int64_t packId = _groupStickerPackId;
+    if (packId == 0)
+        packId = -1;
+    
+    [TGDatabaseInstance() storeGroupStickerPackUnpinned:packId forPeerId:_peerId];
+    _pinPipe.sink(@true);
+}
+
+- (void)setupSignals
+{
+    SSignal *groupStickersSignal = [SSignal single:@{}];
+    if (self.channelInfoSignal != nil)
+    {
+        groupStickersSignal = [self.channelInfoSignal mapToSignal:^SSignal *(NSDictionary *dict) {
+            TGCachedConversationData *data = dict[@"data"];
+            if (data == nil)
+                data = [[TGCachedConversationData alloc] init];
+            
+            if (data.stickerPack == nil) {
+                return [SSignal single:@{@"conversation":dict[@"conversation"], @"data": data}];
+            } else {
+                return [[TGStickersSignals cachedStickerPack:data.stickerPack] map:^id(TGStickerPack *stickerPack) {
+                    return @{@"conversation":dict[@"conversation"], @"data":data, @"stickerPack":stickerPack};
+                }];
+            }
+        }];
+    }
+    
+    SVariable *pinVar = [[SVariable alloc] init];
+    [pinVar set:_pinPipe.signalProducer()];
+    _pinPipe.sink(@true);
+    
+    SSignal *combinedSignal = [SSignal combineSignals:@[(iosMajorVersion() >= 8 && !TGIsPad() && _style == TGStickerKeyboardViewDefaultStyle) ? [TGRecentGifsSignal recentGifs] : [SSignal single:@[]], [TGStickersSignals stickerPacks], [TGRecentStickersSignal recentStickers], [TGFavoriteStickersSignal favoriteStickers], groupStickersSignal, pinVar.signal]];
+    
+    __weak TGStickerKeyboardView *weakSelf = self;
+    _stickerPacksDisposable = [[combinedSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *combinedResult)
+    {
+        NSArray *gifs = combinedResult[0];
+        
+        NSDictionary *dict = combinedResult[1];
+   
+        NSMutableArray *filteredPacks = [[NSMutableArray alloc] init];
+        NSMutableDictionary *packIdMap = [[NSMutableDictionary alloc] init];
+        for (TGStickerPack *pack in dict[@"packs"])
+        {
+            if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]] && !pack.hidden) {
+                [filteredPacks addObject:pack];
+                
+                TGStickerPackIdReference *packReference = (TGStickerPackIdReference *)pack.packReference;
+                packIdMap[@(packReference.packId)] = pack;
+            }
+        }
+        
+        NSArray *sortedStickerPacks = filteredPacks;
+        
+        NSMutableArray *reversed = [[NSMutableArray alloc] init];
+        for (id item in sortedStickerPacks)
+        {
+            [reversed addObject:item];
+        }
+        
+        NSMutableArray *reversedGifs = [[NSMutableArray alloc] init];
+        for (id item in [gifs reverseObjectEnumerator])
+        {
+            [reversedGifs addObject:item];
+        }
+        
+        NSMutableSet *favoriteStickerIds = [[NSMutableSet alloc] init];
+        NSMutableDictionary *documentToStickerPack = [[NSMutableDictionary alloc] init];
+        NSMutableArray *reversedFavoriteStickers = [[NSMutableArray alloc] init];
+        for (id item in [combinedResult[3] reverseObjectEnumerator]) {
+            TGDocumentMediaAttachment *document = (TGDocumentMediaAttachment *)item;
+            [reversedFavoriteStickers addObject:document];
+            [favoriteStickerIds addObject:@(document.documentId)];
+            if ([document.stickerPackReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                TGStickerPackIdReference *packReference = (TGStickerPackIdReference *)document.stickerPackReference;
+                
+                documentToStickerPack[@(document.documentId)] = packIdMap[@(packReference.packId)];
+            }
+        }
+        
+        NSMutableArray *reversedRecentStickers = [[NSMutableArray alloc] init];
+        for (id item in [combinedResult[2] reverseObjectEnumerator]) {
+            TGDocumentMediaAttachment *document = (TGDocumentMediaAttachment *)item;
+            
+            if (![favoriteStickerIds containsObject:@(document.documentId)]) {
+                [reversedRecentStickers addObject:item];
+            
+                if ([document.stickerPackReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                    TGStickerPackIdReference *packReference = (TGStickerPackIdReference *)document.stickerPackReference;
+                    
+                    documentToStickerPack[@(document.documentId)] = packIdMap[@(packReference.packId)];
+                }
+            }
+        }
+        
+        NSDictionary *groupStickersInfo = combinedResult[4];
+        TGStickerPack *groupStickerPack = (TGStickerPack *)groupStickersInfo[@"stickerPack"];
+        TGStickerPackIdReference *groupStickerPackReference = [groupStickerPack.packReference isKindOfClass:[TGStickerPackIdReference class]] ? groupStickerPack.packReference : nil;
+        NSArray *groupStickers = [groupStickerPack documents];
+        
+        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            strongSelf->_recentDocumentToStickerPack = documentToStickerPack;
+            strongSelf->_groupStickerPackId = groupStickerPackReference.packId;
+            
+            TGConversation *conversation = (TGConversation *)groupStickersInfo[@"conversation"];
+            TGCachedConversationData *conversationData = (TGCachedConversationData *)groupStickersInfo[@"data"];
+            if (conversation != nil)
+            {
+                strongSelf->_peerId = conversation.conversationId;
+                strongSelf->_isGroupAdmin = (conversation.channelRole == TGChannelRoleCreator || conversation.channelAdminRights.canChangeInfo);
+                strongSelf->_groupTitle = conversation.chatTitle;
+            }
+            
+            if (strongSelf->_peerId != 0)
+            {
+                int64_t unpinnedPackId = [TGDatabaseInstance() groupStickerPackUnpinned:strongSelf->_peerId];
+                strongSelf->_groupStickersUnpinned = (groupStickerPackReference.packId != 0 && unpinnedPackId == groupStickerPackReference.packId) || unpinnedPackId == -1;
+                [strongSelf->_tabPanel setAvatarUrl:conversation.chatPhotoSmall peerId:conversation.conversationId title:conversation.chatTitle];
+                
+                if (unpinnedPackId != 0 && !strongSelf->_groupStickersUnpinned)
+                    [TGDatabaseInstance() storeGroupStickerPackUnpinned:0 forPeerId:strongSelf->_peerId];
+            }
+            
+            bool hasGroupStickerPack = false;
+            if (groupStickerPackReference != nil) {
+                for (TGStickerPack *stickerPack in reversed)
+                {
+                    if ([stickerPack.packReference isEqual:groupStickerPackReference]) {
+                        hasGroupStickerPack = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (strongSelf->_isGroupAdmin)
+            {
+                strongSelf->_showGroupPlaceholder = groupStickers.count == 0 && conversationData.canSetStickerPack;
+                if (groupStickers.count > 0 && strongSelf->_groupStickersUnpinned)
+                {
+                    strongSelf->_groupStickersUnpinned = false;
+                    [TGDatabaseInstance() storeGroupStickerPackUnpinned:0 forPeerId:strongSelf->_peerId];
+                }
+                
+                strongSelf->_openGroupStickerPackSettings = ^{
+                    __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        TGChannelStickersController *stickersController = [[TGChannelStickersController alloc] initWithConversation:conversation];
+                        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[stickersController]];
+                        [strongSelf->_parentViewController presentViewController:navigationController animated:true completion:nil];
+                    }
+                };
+            }
+            else
+            {
+                strongSelf->_showGroupPlaceholder = false;
+                if (hasGroupStickerPack)
+                    groupStickers = @[];
+            }
+            
+            TGStickerCollectionHeader *header = [strongSelf->_visibleCollectionReusableHeaderViews objectForKey:[NSIndexPath indexPathForItem:0 inSection:2]];
+            if (header == nil)
+                header = [strongSelf->_visibleCollectionReusableHeaderViews objectForKey:[NSIndexPath indexPathForItem:0 inSection:[strongSelf lastGroupSection]]];
+            
+            [strongSelf updateGroupStickersHeader:header];
+            
+            NSUInteger unreadFeaturedCount = ((NSArray *)dict[@"featuredPacksUnreadIds"]).count;
+            [strongSelf setTrendingBadge:unreadFeaturedCount == 0 ? nil : [NSString stringWithFormat:@"%d", (int)unreadFeaturedCount]];
+            NSMutableSet *unreadPacks = [[NSMutableSet alloc] init];
+            for (NSNumber *nPackId in dict[@"featuredPacksUnreadIds"]) {
+                [unreadPacks addObject:nPackId];
+            }
+            
+            if (![strongSelf->_stickerPacks isEqual:reversed] || ![strongSelf->_recentStickersOriginal isEqual:reversedRecentStickers] || ![strongSelf->_favoriteDocuments isEqual:reversedFavoriteStickers] || ![strongSelf->_groupDocuments isEqual:groupStickers]) {
+                NSArray *updatedRecentStickers = nil;
+                if (strongSelf->_recentStickersOriginal == nil) {
+                    strongSelf->_recentStickersOriginal = reversedRecentStickers;
+                    updatedRecentStickers = reversedRecentStickers;
+                } else {
+                    strongSelf->_recentStickersOriginal = reversedRecentStickers;
+                    updatedRecentStickers = strongSelf->_recentStickersSorted;
+                }
+                [strongSelf setStickerPacks:reversed recentStickers:updatedRecentStickers favoriteStickers:reversedFavoriteStickers groupStickers:groupStickers];
+            }
+            
+            if (![strongSelf->_recentGifsOriginal isEqual:reversedGifs]) {
+                strongSelf->_recentGifsOriginal = reversedGifs;
+                
+                NSArray *sortedGifs = [reversedGifs sortedArrayUsingComparator:^NSComparisonResult(TGDocumentMediaAttachment *document1, TGDocumentMediaAttachment *document2) {
+                    return document1.documentId < document2.documentId ? NSOrderedAscending : NSOrderedDescending;
+                }];
+                
+                if (!TGObjectCompare(sortedGifs, strongSelf->_recentGifsSorted)) {
+                    strongSelf->_recentGifsSorted = sortedGifs;
+                    [strongSelf setRecentGifs:reversedGifs];
+                }
+            }
+            
+            NSMutableSet<NSNumber *> *installedPacks = [[NSMutableSet alloc] init];
+            for (TGStickerPack *pack in dict[@"packs"]) {
+                if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                    int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
+                    [installedPacks addObject:@(packId)];
+                }
+            }
+            
+            NSMutableArray *trendingPacks = [[NSMutableArray alloc] init];
+            for (TGStickerPack *pack in dict[@"featuredPacks"]) {
+                if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                    int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
+                    if (![installedPacks containsObject:@(packId)]) {
+                        [trendingPacks addObject:pack];
+                    }
+                }
+            }
+            
+            if (![strongSelf->_trendingStickerPacks isEqualToArray:trendingPacks]) {
+                [strongSelf setTrendingStickerPacks:trendingPacks];
+            }
+            
+            [strongSelf setUnreadTrendingPacks:unreadPacks];
+            
+            [strongSelf updateCurrentSection];
+            
+            if (strongSelf->_stickerPacks.count == 0 && strongSelf->_favoriteDocuments.count == 0 & strongSelf->_recentDocuments.count == 0 && strongSelf->_groupDocuments.count == 0)
+            {
+                [strongSelf setMode:[strongSelf showTrendingFirst] ? TGStickerKeyboardViewModeTrendingFirst : TGStickerKeyboardViewModeTrendingLast];
+            }
+        }
+    }];
 }
 
 - (void)didMoveToSuperview
@@ -525,6 +749,18 @@ typedef enum {
         [self layoutForSize:bounds.size];
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    if (UIEdgeInsetsEqualToEdgeInsets(_safeAreaInset, safeAreaInset))
+        return;
+    
+    _safeAreaInset = safeAreaInset;
+    _tabPanel.safeAreaInset = safeAreaInset;
+    [self updateInsets];
+    if (!UIEdgeInsetsEqualToEdgeInsets(_safeAreaInset, UIEdgeInsetsZero))
+        [self layoutForSize:self.bounds.size];
+}
+
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
 {
     if (_expanded)
@@ -538,18 +774,21 @@ typedef enum {
     _tabPanel.frame = CGRectMake(0.0f, 0.0f, size.width, _tabPanel.frame.size.height);
     [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
     
+    CGFloat left = _safeAreaInset.left;
+    CGFloat width = size.width - _safeAreaInset.left - _safeAreaInset.right;
+    
     if (_mode == TGStickerKeyboardViewModeStickers) {
-        _collectionView.frame = CGRectMake(0.0f, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-        _gifsCollectionView.frame = CGRectMake(-size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
-        _trendingCollectionView.frame = CGRectMake(size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
+        _collectionView.frame = CGRectMake(left, -preloadInset, width, size.height + preloadInset * 2.0f);
+        _gifsCollectionView.frame = CGRectMake(-size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
+        _trendingCollectionView.frame = CGRectMake(size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
     } else if (_mode == TGStickerKeyboardViewModeGifs) {
-        _collectionView.frame = CGRectMake(size.width, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-        _gifsCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
-        _trendingCollectionView.frame = CGRectMake(size.width * 2.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
+        _collectionView.frame = CGRectMake(size.width + left, -preloadInset, width, size.height + preloadInset * 2.0f);
+        _gifsCollectionView.frame = CGRectMake(left, -gifInset, width, size.height + gifInset * 2.0f);
+        _trendingCollectionView.frame = CGRectMake(size.width * 2.0f + left, -gifInset, width, size.height + gifInset * 2.0f);
     } else {
-        _collectionView.frame = CGRectMake(-size.width * 2.0, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-        _gifsCollectionView.frame = CGRectMake(-size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
-        _trendingCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
+        _collectionView.frame = CGRectMake(-size.width * 2.0 + left, -preloadInset, width, size.height + preloadInset * 2.0f);
+        _gifsCollectionView.frame = CGRectMake(-size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
+        _trendingCollectionView.frame = CGRectMake(left, -gifInset, width, size.height + gifInset * 2.0f);
     }
     [_collectionLayout invalidateLayout];
     [_gifsCollectionLayout invalidateLayout];
@@ -566,7 +805,7 @@ typedef enum {
     } else if (collectionView == _trendingCollectionView) {
         return 1;
     } else if (collectionView == _collectionView) {
-        return 1 + _stickerPacks.count;
+        return 4 + _stickerPacks.count;
     } else {
         return 0;
     }
@@ -588,23 +827,37 @@ typedef enum {
         }
     } else if (collectionView == _collectionView ) {
         if (section == 0) {
+            return (NSInteger)_favoriteDocuments.count;
+        } else if (section == 1) {
             return (NSInteger)_recentDocuments.count;
+        } else if (section == 2) {
+            return _groupStickersUnpinned ? 0 : MAX(_showGroupPlaceholder ? 1 : 0, (NSInteger)_groupDocuments.count);
+        } else if (section == [self lastGroupSection]) {
+            return _groupStickersUnpinned ? MAX(_showGroupPlaceholder ? 1 : 0, (NSInteger)_groupDocuments.count) : 0;
         } else {
-            return ((TGStickerPack *)_stickerPacks[section - 1]).documents.count;
+            return ((TGStickerPack *)_stickerPacks[section - 3]).documents.count;
         }
+        return 0;
     } else {
         return 0;
     }
 }
 
-- (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath
+- (CGSize)collectionView:(UICollectionView *)__unused collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     if (collectionView == _gifsCollectionView) {
         return CGSizeMake(30.0f, 30.0f);
     } else if (collectionView == _trendingCollectionView) {
-        return CGSizeMake(collectionViewLayout.collectionView.bounds.size.width, 132.0f);
+        return CGSizeMake(collectionViewLayout.collectionView.bounds.size.width, 124.0f);
     } else {
-        return CGSizeMake(62.0f, 62.0f);
+        if (((indexPath.section == 2 && !_groupStickersUnpinned) || (indexPath.section == [self lastGroupSection] && _groupStickersUnpinned)) && _groupDocuments.count == 0 && _showGroupPlaceholder) {
+            NSString *text = TGLocalized(@"Stickers.GroupStickersHelp");
+            CGSize size = [text sizeWithFont:TGSystemFontOfSize(14.0f) constrainedToSize:CGSizeMake(collectionViewLayout.collectionView.bounds.size.width - 26.0f, FLT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+            
+            return CGSizeMake(collectionViewLayout.collectionView.bounds.size.width, ceil(size.height) + 33.0f + 16.0f);
+        } else {
+            return CGSizeMake(62.0f, 62.0f);
+        }
     }
 }
 
@@ -619,25 +872,25 @@ typedef enum {
         CGFloat inset = 12.0f;
         CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : inset;
         
-        if (_recentDocuments.count == 0 && _stickerPacks.count == 1)
-        {
-            if (section == 0)
-                return UIEdgeInsetsZero;
-            
+        bool sectionVisible = true;
+        if ((section == 0 && _favoriteDocuments.count == 0) || (section == 1 && _recentDocuments.count == 0) || (section == 2 && (_groupStickersUnpinned || (_groupDocuments.count == 0 && !_showGroupPlaceholder))) || (section == [self lastGroupSection] && (!_groupStickersUnpinned || (_groupDocuments.count == 0 && !_showGroupPlaceholder)))) {
+            sectionVisible = false;
+        }
+        
+        if (!sectionVisible)
+            return UIEdgeInsetsZero;
+        
+        if (section == 0) {
+            return UIEdgeInsetsMake(topInset, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
+        }
+        
+        if (section == 2 || section == [self lastGroupSection])
+            topInset = 3.0f;
+        
+        if (section == [self lastGroupSection] && _showGroupPlaceholder) {
             return UIEdgeInsetsMake(topInset, sideInset, inset, sideInset);
         }
         
-        if (section == 0)
-        {
-            if (_recentDocuments.count == 0)
-                return UIEdgeInsetsMake(inset, sideInset, 0.0f, sideInset);
-            else
-            {
-                return UIEdgeInsetsMake(topInset, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
-            }
-        }
-        else if (section == (NSInteger)_stickerPacks.count)
-            return UIEdgeInsetsMake(topInset, sideInset, inset, sideInset);
         return UIEdgeInsetsMake(topInset, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
     }
 }
@@ -771,6 +1024,25 @@ typedef enum {
     [self scrollViewDidEndDragging:scrollView willDecelerate:false];
 }
 
+- (void)showTabPanel
+{
+    if (![TGViewController hasTallScreen])
+        return;
+    
+    [_collectionView setContentOffset:_collectionView.contentOffset animated:false];
+    [_trendingCollectionView setContentOffset:_trendingCollectionView.contentOffset animated:false];
+    [_gifsCollectionView setContentOffset:_gifsCollectionView.contentOffset animated:false];
+    
+    [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+    {
+        CGRect frame = _tabPanel.frame;
+        frame.origin.y = 0.0f;
+        
+        _tabPanel.frame = frame;
+        [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    } completion:nil];
+}
+
 - (void)updateCurrentSection {
     if (_mode == TGStickerKeyboardViewModeGifs) {
         [_tabPanel setCurrentGifsModeSelected];
@@ -795,23 +1067,32 @@ typedef enum {
 
 - (TGStickerPack *)stickerPackAtIndexPath:(NSIndexPath *)indexPath
 {
-    if (indexPath.section == 0)
+    if (indexPath.section == 0 || indexPath.section == 1 || indexPath.section == 2 || indexPath.section == [self lastGroupSection])
     {
         TGDocumentMediaAttachment *document = [self documentAtIndexPath:indexPath];
         return _recentDocumentToStickerPack[@(document.documentId)];
     }
     else
     {
-        return _stickerPacks[indexPath.section - 1];
+        return _stickerPacks[indexPath.section - 3];
     }
+}
+
+- (NSInteger)lastGroupSection
+{
+    return 3 + _stickerPacks.count;
 }
 
 - (TGDocumentMediaAttachment *)documentAtIndexPath:(NSIndexPath *)indexPath
 {
     if (indexPath.section == 0)
+        return _favoriteDocuments[indexPath.item];
+    else if (indexPath.section == 1)
         return _recentDocuments[indexPath.item];
+    else if (indexPath.section == 2 || indexPath.section == [self lastGroupSection])
+        return _groupDocuments[indexPath.item];
     else
-        return ((TGStickerPack *)_stickerPacks[indexPath.section - 1]).documents[indexPath.item];
+        return ((TGStickerPack *)_stickerPacks[indexPath.section - 3]).documents[indexPath.item];
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
@@ -819,7 +1100,34 @@ typedef enum {
     if (collectionView == _collectionView && [kind isEqualToString:UICollectionElementKindSectionHeader])
     {
         TGStickerCollectionHeader *view = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader" forIndexPath:indexPath];
-        view.title = indexPath.section == 0 ? TGLocalized(@"Stickers.FrequentlyUsed") : [_stickerPacks[indexPath.section - 1] title];
+        
+        NSString *title = nil;
+        switch (indexPath.section) {
+            case 0:
+                title = TGLocalized(@"Stickers.FavoriteStickers");
+                break;
+                
+            case 1:
+                title = TGLocalized(@"Stickers.FrequentlyUsed");
+                break;
+                
+            case 2:
+                break;
+                
+            default:
+                if (indexPath.section != [self lastGroupSection])
+                    title = [_stickerPacks[indexPath.section - 3] title];
+                break;
+        }
+        view.title = title;
+        
+        if (indexPath.section == 2 || indexPath.section == [self lastGroupSection])
+            [self updateGroupStickersHeader:view];
+        else
+            view.icon = nil;
+        
+        [_visibleCollectionReusableHeaderViews setObject:view forKey:indexPath];
+        
         return view;
     }
     
@@ -830,7 +1138,13 @@ typedef enum {
 {
     if (collectionView == _collectionView)
     {
-        if (section == 0 && _recentDocuments.count == 0)
+        if (section == 0 && _favoriteDocuments.count == 0)
+            return CGSizeZero;
+        else if (section == 1 && _recentDocuments.count == 0)
+            return CGSizeZero;
+        else if (section == 2 && (_groupStickersUnpinned || (_groupDocuments.count == 0 && !_showGroupPlaceholder)))
+            return CGSizeZero;
+        else if (section == [self lastGroupSection] && (!_groupStickersUnpinned || (_groupDocuments.count == 0 && !_showGroupPlaceholder)))
             return CGSizeZero;
         
         return CGSizeMake(collectionView.bounds.size.width, 23.0f);
@@ -874,10 +1188,22 @@ typedef enum {
         };
         return cell;
     } else {
-        TGStickerCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerCollectionViewCell" forIndexPath:indexPath];
-        [cell setDocumentMedia:[self documentAtIndexPath:indexPath]];
+        if (((indexPath.section == 2 && !_groupStickersUnpinned) || (indexPath.section == [self lastGroupSection] && _groupStickersUnpinned)) && _groupDocuments.count == 0 && _showGroupPlaceholder) {
+            __weak TGStickerKeyboardView *weakSelf = self;
+            TGStickerGroupPackCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerGroupPackCell" forIndexPath:indexPath];
+            cell.pressed = ^{
+                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf->_openGroupStickerPackSettings) {
+                    strongSelf->_openGroupStickerPackSettings();
+                }
+            };
+            return cell;
+        } else {
+            TGStickerCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerCollectionViewCell" forIndexPath:indexPath];
+            [cell setDocumentMedia:[self documentAtIndexPath:indexPath]];
         
-        return cell;
+            return cell;
+        }
     }
 }
 
@@ -891,6 +1217,9 @@ typedef enum {
     } else if (collectionView == _trendingCollectionView) {
     } else {
         TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
+        if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+            return;
+        
         if ([cell isEnabled])
         {
             [cell setDisabledTimeout];
@@ -913,7 +1242,7 @@ typedef enum {
     
     [_tabPanel setCurrentStickerPackIndex:section animated:false];
     
-    if (!_expanded && section != 0 && !fromGifs)
+    if (!_expanded && section != 0 && !fromGifs && _collectionView.frame.size.height < _collectionView.contentSize.height)
     {
         [UIView animateWithDuration:0.15 delay:0.0 options:kNilOptions animations:^
         {
@@ -924,9 +1253,32 @@ typedef enum {
         } completion:nil];
     }
     
+    void (^scrollTo)(CGFloat) = ^(CGFloat y)
+    {
+        if (fromGifs)
+            y -= _tabPanel.frame.size.height;
+        
+        CGFloat verticalOffset = y - [self collectionView:_collectionView layout:_collectionLayout minimumLineSpacingForSectionAtIndex:section] - [self collectionView:_collectionView layout:_collectionLayout referenceSizeForHeaderInSection:section].height;
+        CGFloat effectiveInset = preloadInset;
+        if (_expanded)
+            effectiveInset = _collectionView.contentInset.top;
+        
+        CGFloat contentOffset = verticalOffset - effectiveInset;
+        if (contentOffset > _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom) {
+            contentOffset = _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom;
+        }
+        
+        if (contentOffset < -_collectionView.contentInset.top) {
+            contentOffset = -_collectionView.contentInset.top;
+        }
+        
+        _ignoreSetSection = true;
+        [_collectionView setContentOffset:CGPointMake(0.0f, contentOffset) animated:true];
+    };
+    
     if (section == 0)
     {
-        if (_recentDocuments.count != 0)
+        if (_favoriteDocuments.count != 0)
         {
             _ignoreSetSection = true;
             [_collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionTop animated:true];
@@ -937,26 +1289,28 @@ typedef enum {
             [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:true];
         }
     }
+    else if (section == 1)
+    {
+        if (_recentDocuments.count != 0)
+        {
+            UICollectionViewLayoutAttributes *attributes = [_collectionView layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:section]];
+            scrollTo(attributes.frame.origin.y);
+        }
+    }
+    else if (section == 2 || section == (NSUInteger)[self lastGroupSection])
+    {
+        if (_groupDocuments.count != 0 || _showGroupPlaceholder)
+        {
+            UICollectionViewLayoutAttributes *attributes = [_collectionView layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:section]];
+            scrollTo(attributes.frame.origin.y);
+        }
+    }
     else
     {
-        if (section == 1 && _recentDocuments.count == 0) {
-            _ignoreSetSection = true;
-            [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:true];
-        } else if (((TGStickerPack *)_stickerPacks[section - 1]).documents.count != 0) {
+        if (((TGStickerPack *)_stickerPacks[section - 3]).documents.count != 0) {
             UICollectionViewLayoutAttributes *attributes = [_collectionView layoutAttributesForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:section]];
             
-            CGFloat verticalOffset = attributes.frame.origin.y - [self collectionView:_collectionView layout:_collectionLayout minimumLineSpacingForSectionAtIndex:section] - [self collectionView:_collectionView layout:_collectionLayout referenceSizeForHeaderInSection:section].height;
-            CGFloat effectiveInset = preloadInset;
-            if (_expanded)
-                effectiveInset = _collectionView.contentInset.top;
-            
-            CGFloat contentOffset = verticalOffset - effectiveInset;
-            if (contentOffset > _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom) {
-                contentOffset = _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom;
-            }
-            
-            _ignoreSetSection = true;
-            [_collectionView setContentOffset:CGPointMake(0.0f, contentOffset) animated:true];
+            scrollTo(attributes.frame.origin.y);
         }
     }
 }
@@ -968,18 +1322,27 @@ typedef enum {
     }
 }
 
-- (void)setStickerPacks:(NSArray *)stickerPacks recentStickers:(NSArray *)recentStickers
+- (bool)showGroupStickers {
+    return (_showGroupPlaceholder || _groupDocuments.count != 0) && !_groupStickersUnpinned;
+}
+
+- (bool)showGroupStickersLast {
+    return (_showGroupPlaceholder || _groupDocuments.count != 0) && _groupStickersUnpinned;
+}
+
+- (void)setStickerPacks:(NSArray *)stickerPacks recentStickers:(NSArray *)recentStickers favoriteStickers:(NSArray *)favoriteStickers groupStickers:(NSArray *)groupStickers
 {
     _stickerPacks = stickerPacks;
     
     _recentStickersSorted = recentStickers;
-    
     [self updateRecentDocuments];
+    
+    _favoriteDocuments = favoriteStickers;
+    _groupDocuments = groupStickers;
     
     [_collectionView reloadData];
     
-    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
 }
 
 - (void)setRecentGifs:(NSArray *)recentGifs {
@@ -1027,8 +1390,7 @@ typedef enum {
     
     _ignoreGifCellContents = false;
     
-    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
     
     [self scrollViewDidScroll:_gifsCollectionView];
     
@@ -1046,8 +1408,19 @@ typedef enum {
     
     [_trendingCollectionView reloadData];
     
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
+}
+
+- (bool)showTrendingFirst
+{
     bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    return !disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil;
+}
+
+- (bool)showTrendingLast
+{
+    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
+    return !disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil;
 }
 
 - (void)setInstalledTrendingPacks:(NSSet *)installedTrendingPacks {
@@ -1111,8 +1484,8 @@ typedef enum {
     [self updateRecentDocuments];
     
     [_collectionView reloadData];
-    bool disableTrending = _style == TGStickerKeyboardViewDarkBlurredStyle;
-    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showGifs:_recentGifs.count != 0 showTrendingFirst:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge != nil showTrendingLast:!disableTrending && (_trendingStickerPacks.count != 0) && _trendingStickersBadge == nil];
+    
+    [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
     
     if (!TGObjectCompare(_recentGifsOriginal, _recentGifs)) {
         [self setRecentGifs:_recentGifsOriginal];
@@ -1128,6 +1501,33 @@ typedef enum {
     }
 }
 
+- (void)startActionsTimer
+{
+    if (_actionsTimer != nil)
+    {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+    }
+    
+    _actionsTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(presentActions) interval:0.9 repeat:false];
+}
+
+- (void)presentActions
+{
+    if (_previewController != nil)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
+        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+        
+        [previewView presentActions];
+    }
+    
+    [_actionsTimer invalidate];
+    _actionsTimer = nil;
+}
+
 - (void)handleStickerPress:(UILongPressGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateBegan)
@@ -1137,79 +1537,89 @@ typedef enum {
         for (NSIndexPath *indexPath in [_collectionView indexPathsForVisibleItems])
         {
             TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+            if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                continue;
+            
             if (CGRectContainsPoint(cell.frame, point))
             {
                 TGViewController *parentViewController = _parentViewController;
                 if (parentViewController != nil)
                 {
-                    bool isRecent = _recentDocuments.count > 0 && indexPath.section == 0;
+                    bool isRecent = (_favoriteDocuments.count > 0 && indexPath.section == 0);
                     
-                    TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithFrame:CGRectZero];
+                    TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
                     if ((NSInteger)TGScreenSize().height == 736)
                         previewView.eccentric = false;
-                    if (isRecent && !_forceTouchRecognizer.enabled)
-                        previewView.presentActionsImmediately = true;
+                    if (!_forceTouchRecognizer.enabled)
+                    {
+                        if (isRecent)
+                            previewView.presentActionsImmediately = true;
+                        else
+                            [self startActionsTimer];
+                    }
                     
                     __weak TGStickerKeyboardView *weakSelf = self;
                     __weak TGStickerItemPreviewView *weakPreviewView = previewView;
                     NSMutableArray *actions = [[NSMutableArray alloc] init];
                     TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
-                                                           {
-                                                               __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                                                               __strong TGStickerKeyboardView *strongSelf = weakSelf;
-                                                               if (strongSelf == nil || strongPreviewView == nil)
-                                                                   return;
-                                                               
-                                                               [strongPreviewView performCommit];
-                                                               
-                                                               TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
-                                                                               {
-                                                                                   if (strongSelf->_stickerSelected)
-                                                                                       strongSelf->_stickerSelected(strongPreviewView.item);
-                                                                               });
-                                                           }];
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                        if (strongSelf == nil || strongPreviewView == nil)
+                            return;
+                        
+                        [strongPreviewView performCommit];
+                        
+                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                        {
+                            if (strongSelf->_stickerSelected)
+                                strongSelf->_stickerSelected(strongPreviewView.item);
+                        });
+                    }];
                     [actions addObject:sendItem];
                     
-//                    TGMenuSheetButtonItemView *favoriteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
-//                    {
-//                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-//                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
-//                        if (strongSelf == nil || strongPreviewView == nil)
-//                            return;
-//
-//                        [strongPreviewView performDismissal];
-//                    }];
-//                    [actions addObject:favoriteItem];
+                    TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                        if (strongSelf == nil || strongPreviewView == nil)
+                            return;
+                        
+                        [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                        [strongPreviewView performDismissal];
+                    }];
+                    [actions addObject:faveItem];
+                    _faveItem = faveItem;
                     
                     TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
-                                                           {
-                                                               __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                                                               __strong TGStickerKeyboardView *strongSelf = weakSelf;
-                                                               if (strongSelf == nil || strongPreviewView == nil)
-                                                                   return;
-                                                               
-                                                               [strongPreviewView performDismissal];
-                                                               
-                                                               TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
-                                                                               {
-                                                                                   [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
-                                                                               });
-                                                           }];
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                        if (strongSelf == nil || strongPreviewView == nil)
+                            return;
+                        
+                        [strongPreviewView performDismissal];
+                        
+                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                        {
+                            [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
+                        });
+                    }];
                     [actions addObject:viewItem];
                     
                     TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
-                                                             {
-                                                                 __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
-                                                                 if (strongPreviewView == nil)
-                                                                     return;
-                                                                 
-                                                                 [strongPreviewView performDismissal];
-                                                             }];
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        if (strongPreviewView == nil)
+                            return;
+                        
+                        [strongPreviewView performDismissal];
+                    }];
                     [actions addObject:cancelItem];
                     
                     [previewView setupWithMainItemViews:nil actionItemViews:actions];
                     
-                    TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentViewController previewView:previewView];
+                    TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentViewController previewView:previewView];
                     _previewController = controller;
                     
                     controller.sourcePointForItem = ^(id item)
@@ -1220,6 +1630,9 @@ typedef enum {
                         
                         for (TGStickerCollectionViewCell *cell in strongSelf->_collectionView.visibleCells)
                         {
+                            if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                                continue;
+                            
                             if ([cell.documentMedia isEqual:item])
                             {
                                 NSIndexPath *indexPath = [strongSelf->_collectionView indexPathForCell:cell];
@@ -1233,10 +1646,18 @@ typedef enum {
                     
                     TGDocumentMediaAttachment *sticker = [self documentAtIndexPath:indexPath];
                     TGStickerPack *stickerPack = [self stickerPackAtIndexPath:indexPath];
+                    if (stickerPack == nil)
+                        stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
                     
                     [previewView setSticker:sticker stickerPack:stickerPack recent:isRecent];
                     
                     [cell setHighlightedWithBounce:true];
+                    
+                    if (previewView.presentActionsImmediately)
+                    {
+                        bool isFaved = [TGFavoriteStickersSignal isFaved:sticker];
+                        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+                    }
                 }
                 
                 break;
@@ -1245,9 +1666,14 @@ typedef enum {
     }
     else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
     {
-        for (TGStickerCollectionViewCell *cell in [_collectionView visibleCells])
-            [cell setHighlightedWithBounce:false];
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
         
+        for (TGStickerCollectionViewCell *cell in [_collectionView visibleCells])
+        {
+            if ([cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                [cell setHighlightedWithBounce:false];
+        }
         TGItemPreviewController *controller = _previewController;
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
         if (previewView.isLocked)
@@ -1265,6 +1691,9 @@ typedef enum {
         if (previewView.isLocked)
             return;
         
+        if (_actionsTimer != nil)
+            [self startActionsTimer];
+        
         CGPoint point = [gestureRecognizer locationInView:_collectionView];
         CGPoint relativePoint = [gestureRecognizer locationInView:self];
         
@@ -1273,10 +1702,16 @@ typedef enum {
             for (NSIndexPath *indexPath in [_collectionView indexPathsForVisibleItems])
             {
                 TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
+                if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                    continue;
+                
                 if (CGRectContainsPoint(cell.frame, point))
                 {
                     TGDocumentMediaAttachment *sticker = [self documentAtIndexPath:indexPath];
                     TGStickerPack *stickerPack = [self stickerPackAtIndexPath:indexPath];
+                    if (stickerPack == nil)
+                        stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                    
                     if (sticker != nil)
                     {
                         bool isRecent = _recentDocuments.count > 0 && indexPath.section == 0;
@@ -1298,9 +1733,13 @@ typedef enum {
     if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
     {
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
+        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+        
         [previewView presentActions];
         
-        if (fabs(CFAbsoluteTimeGetCurrent() - previewView.lastFeedbackTime) > 1.0)
+        if (fabs(CFAbsoluteTimeGetCurrent() - previewView.lastFeedbackTime) > 0.6)
             AudioServicesPlaySystemSound(1519);
     }
 }
@@ -1394,39 +1833,33 @@ typedef enum {
         
         CGSize size = self.bounds.size;
         
+        CGFloat left = _safeAreaInset.left;
+        CGFloat width = size.width - _safeAreaInset.left - _safeAreaInset.right;
+        
         [UIView animateWithDuration:0.2 animations:^{
             if (_mode == TGStickerKeyboardViewModeStickers) {
-                _collectionView.frame = CGRectMake(0.0f, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-                _gifsCollectionView.frame = CGRectMake(-size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
-                _trendingCollectionView.frame = CGRectMake(size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
+                _collectionView.frame = CGRectMake(left, -preloadInset, width, size.height + preloadInset * 2.0f);
+                _gifsCollectionView.frame = CGRectMake(-size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
+                _trendingCollectionView.frame = CGRectMake(size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
             } else if (_mode == TGStickerKeyboardViewModeGifs) {
-                _collectionView.frame = CGRectMake(size.width, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-                _gifsCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
-                _trendingCollectionView.frame = CGRectMake(size.width * 2.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
+                _collectionView.frame = CGRectMake(size.width + left, -preloadInset, width, size.height + preloadInset * 2.0f);
+                _gifsCollectionView.frame = CGRectMake(left, -gifInset, width, size.height + gifInset * 2.0f);
+                _trendingCollectionView.frame = CGRectMake(size.width * 2.0f + left, -gifInset, width, size.height + gifInset * 2.0f);
             } else {
-                _collectionView.frame = CGRectMake(-size.width * 2.0, -preloadInset, size.width, size.height + preloadInset * 2.0f);
-                _gifsCollectionView.frame = CGRectMake(-size.width, -gifInset, size.width, size.height + gifInset * 2.0f);
-                _trendingCollectionView.frame = CGRectMake(0.0f, -gifInset, size.width, size.height + gifInset * 2.0f);
+                _collectionView.frame = CGRectMake(-size.width * 2.0 + left, -preloadInset, width, size.height + preloadInset * 2.0f);
+                _gifsCollectionView.frame = CGRectMake(-size.width + left, -gifInset, width, size.height + gifInset * 2.0f);
+                _trendingCollectionView.frame = CGRectMake(left, -gifInset, width, size.height + gifInset * 2.0f);
             }
         }];
         
         if (mode == TGStickerKeyboardViewModeGifs)
-        {
-            if (_recentDocuments.count != 0)
-            {
-                [_collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionTop animated:false];
-            }
-            else
-            {
-                [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:false];
-            }
-        }
+            [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:false];
         else
-        {
             [_gifsCollectionView setContentOffset:_gifsCollectionView.contentOffset animated:false];
-        }
         
+        _ignoreSetSection = true;
         [self scrollViewDidScroll:_gifsCollectionView];
+        _ignoreSetSection = false;
     }
 }
 
@@ -1472,7 +1905,7 @@ typedef enum {
         __strong TGViewController *parentController = weakParentController;
         if (parentController != nil) {
             if (archivedPacks.count != 0) {
-                TGArchivedStickerPacksAlert *previewWindow = [[TGArchivedStickerPacksAlert alloc] initWithParentController:parentController stickerPacks:archivedPacks];
+                TGArchivedStickerPacksAlert *previewWindow = [[TGArchivedStickerPacksAlert alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:parentController stickerPacks:archivedPacks];
                 __weak TGArchivedStickerPacksAlert *weakPreviewWindow = previewWindow;
                 previewWindow.view.dismiss = ^
                 {
@@ -1495,33 +1928,30 @@ typedef enum {
     else
     {
         NSUInteger index = [_stickerPacks indexOfObject:stickerPack];
-        [self scrollToSection:index + 1];
+        if (index == NSNotFound) {
+            [self previewStickerPack:stickerPack sticker:sticker];
+        } else {
+            [self scrollToSection:3 + index];
+        }
     }
 }
 
 - (void)previewStickerPack:(TGStickerPack *)stickerPack sticker:(TGDocumentMediaAttachment *)sticker {
     TGViewController *parentViewController = _parentViewController;
     
-    TGOverlayController *innerController = [[TGOverlayController alloc] init];
-    innerController.view.backgroundColor = [UIColor clearColor];
-    
     __weak TGStickerKeyboardView *weakSelf = self;
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:parentViewController contentController:innerController keepKeyboard:true];
-    controllerWindow.dismissByMenuSheet = true;
-    controllerWindow.windowLevel = 100000000.0f + 0.002f;
-    controllerWindow.hidden = false;
-    
+
     CGRect sourceRect = CGRectMake(CGFloor(self.bounds.size.width / 2.0f), [UIScreen mainScreen].bounds.size.height, 0.0f, 0.0f);
     
     id<TGStickerPackReference> packReference = stickerPack == nil ? sticker.stickerPackReference : nil;
-    [TGStickersMenu presentWithParentController:innerController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
+    [TGStickersMenu presentWithParentController:parentViewController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
         __strong TGStickerKeyboardView *strongSelf = weakSelf;
         if (strongSelf != nil) {
             if (strongSelf.stickerSelected) {
                 strongSelf.stickerSelected(document);
             }
         }
-    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:innerController.view sourceRect:^CGRect{
+    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
         return sourceRect;
     } centered:true existingController:nil];
 }
@@ -1590,11 +2020,26 @@ typedef enum {
     [_tabPanel updateExpanded:true];
 }
 
+- (void)setVisible:(bool)visible animated:(bool)animated
+{
+    if (![TGViewController hasTallScreen])
+        return;
+    
+    [_tabPanel setHidden:!visible animated:animated];
+}
+
 - (CGFloat)preferredHeight:(bool)landscape
+{
+    return [TGStickerKeyboardView preferredHeight:landscape];
+}
+
++ (CGFloat)preferredHeight:(bool)landscape
 {
     if (TGIsPad())
         return landscape ? 398.0f : 313.0f;
     
+    if ([TGViewController hasTallScreen])
+        return landscape ? 209.0f : 333.0f;
     if ([TGViewController hasVeryLargeScreen])
         return landscape ? 194.0f : 271.0f;
     else if ([TGViewController hasLargeScreen])

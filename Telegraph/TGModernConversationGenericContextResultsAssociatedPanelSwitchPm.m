@@ -1,8 +1,8 @@
 #import "TGModernConversationGenericContextResultsAssociatedPanelSwitchPm.h"
 
-#import "TGModernButton.h"
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGModernConversationGenericContextResultsAssociatedPanelSwitchPm () {
     TGModernButton *_button;

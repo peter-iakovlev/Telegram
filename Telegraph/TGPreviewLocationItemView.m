@@ -1,10 +1,10 @@
 #import "TGPreviewLocationItemView.h"
 
-#import "TGLocationMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageView.h"
-#import "TGLocationMapView.h"
-#import "TGLocationAnnotation.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/TGLocationMapView.h>
+#import <LegacyComponents/TGLocationAnnotation.h>
 
 @interface TGPreviewLocationItemView ()
 {
@@ -42,7 +42,7 @@
 - (void)menuView:(TGMenuSheetView *)__unused menuView willAppearAnimated:(bool)__unused animated
 {
     CGSize mapImageSize = _imageSize;
-    NSString *uri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=-1", _location.coordinate.latitude, _location.coordinate.longitude, (int)mapImageSize.width, (int)mapImageSize.height];
+    NSString *uri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=-1&offset=-10", _location.coordinate.latitude, _location.coordinate.longitude, (int)mapImageSize.width, (int)mapImageSize.height];
     [_imageView loadUri:uri withOptions:@{}];
 }
 

@@ -1,12 +1,12 @@
 #import "TGReplyHeaderTextModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernColorViewModel.h"
 #import "TGModernTextViewModel.h"
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
 #import <CoreText/CoreText.h>
-
-#import "TGUser.h"
 
 @interface TGReplyHeaderTextModel ()
 {

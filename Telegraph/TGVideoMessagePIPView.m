@@ -1,15 +1,12 @@
 #import "TGVideoMessagePIPView.h"
 
-#import "TGImageUtils.h"
-
-#import "TGImageInfo.h"
-#import "TGVideoMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGMusicPlayer.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGVideoMessageViewModel.h"
-#import "TGModernGalleryVideoView.h"
+#import <LegacyComponents/TGModernGalleryVideoView.h>
 #import "TGRoundMessageRingView.h"
 
 @interface TGVideoMessagePIPView ()
@@ -31,7 +28,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _shadowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"VideoMessagePIPShadow"]];
+        _shadowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"VideoMessagePIPShadow")];
         [self addSubview:_shadowView];
         
         _wrapperView = [[UIView alloc] initWithFrame:self.bounds];

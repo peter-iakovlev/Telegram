@@ -1,7 +1,8 @@
 #import "TGListThumbnailSignals.h"
 
-#import "TGImageUtils.h"
-#import "TGImageBlur.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGImageBlur.h>
 
 @implementation TGListThumbnailSignals
 

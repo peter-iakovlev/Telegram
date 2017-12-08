@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 #import "TGModernView.h"
 
 @interface TGModernLetteredAvatarView : TGLetteredAvatarView <TGModernView>

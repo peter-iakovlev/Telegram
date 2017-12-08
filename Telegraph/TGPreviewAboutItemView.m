@@ -1,9 +1,6 @@
 #import "TGPreviewAboutItemView.h"
 
-#import "TGFont.h"
-
-#import "TGWebPageMediaAttachment.h"
-#import "TGLocationMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 const CGFloat TGPreviewAboutItemViewMargin = 21.0f;
 

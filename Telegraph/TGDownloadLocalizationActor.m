@@ -8,9 +8,9 @@
 
 #import "TGDownloadLocalizationActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGTelegraph.h"
 
 #import "TGAppDelegate.h"

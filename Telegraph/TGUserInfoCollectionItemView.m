@@ -1,16 +1,16 @@
 #import "TGUserInfoCollectionItemView.h"
 
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGTextField.h"
-#import "TGLetteredAvatarView.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGTextField.h>
+#import <LegacyComponents/TGLetteredAvatarView.h>
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGSynchronizeContactsActor.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import "TGPresentation.h"
+
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 @interface TGLetteredAvatarView (TGModernGalleryTransition) <TGModernGalleryTransitionView>
 
@@ -30,6 +30,8 @@
     TGLetteredAvatarView *_avatarView;
     UILabel *_nameLabel;
     UILabel *_statusLabel;
+    UILabel *_phoneLabel;
+    UILabel *_usernameLabel;
     CGSize _avatarOffset;
     CGSize _nameOffset;
     
@@ -40,16 +42,20 @@
     TGTextField *_lastNameField;
     
     bool _editing;
+    bool _showCameraIcon;
     
     UIView *_editingFirstNameSeparator;
     UIView *_editingLastNameSeparator;
     
+    UIImageView *_avatarIconView;
     UIImageView *_avatarOverlay;
     UIActivityIndicatorView *_activityIndicator;
+    bool _avatarPlaceholderDisabled;
     
     int32_t _uidForPlaceholderCalculation;
     
     UIImageView *_verifiedIcon;
+    UIImageView *_disclosureIndicator;
     
     TGModernButton *_callButton;
 }
@@ -63,7 +69,7 @@
     self = [super initWithFrame:frame];
     if (self)
     {   
-        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 15 + TGRetinaPixel, 66, 66)];
+        _avatarView = [[TGLetteredAvatarView alloc] initWithFrame:CGRectMake(15, 15 + TGScreenPixel, 66, 66)];
         [_avatarView setSingleFontSize:28.0f doubleFontSize:28.0f useBoldFont:false];
         _avatarView.fadeTransition = true;
         _avatarView.userInteractionEnabled = true;
@@ -135,7 +141,6 @@
         _callButton.adjustsImageWhenHighlighted = false;
         _callButton.exclusiveTouch = true;
         _callButton.hidden = true;
-        [_callButton setImage:TGTintedImage([UIImage imageNamed:@"TabIconCalls"], TGAccentColor()) forState:UIControlStateNormal];
         [_callButton addTarget:self action:@selector(callButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_callButton];
     }
@@ -148,6 +153,47 @@
     [_firstNameField removeTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
     _lastNameField.delegate = nil;
     [_lastNameField removeTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _nameLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _phoneLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+    _usernameLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+    _verifiedIcon.image = presentation.images.profileVerifiedIcon;
+    _disclosureIndicator.image = presentation.images.collectionMenuDisclosureIcon;
+    
+    _firstNameField.textColor = presentation.pallete.collectionMenuTextColor;
+    _firstNameField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _lastNameField.textColor = presentation.pallete.collectionMenuTextColor;
+    _lastNameField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    
+    _editingFirstNameSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    _editingLastNameSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    
+    [_callButton setImage:presentation.images.profileCallIcon forState:UIControlStateNormal];
+}
+
+- (void)setAvatarHidden:(bool)hidden animated:(bool)animated
+{
+    if (animated)
+    {
+        _avatarView.alpha = hidden ? 0.0f : 1.0f;
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            _avatarOverlay.alpha = hidden ? 0.0f : 1.0f;;
+            _avatarIconView.alpha = hidden ? 0.0f : 1.0f;;
+        }];
+    }
+    else
+    {
+        CGFloat alpha = hidden ? 0.0f : 1.0f;
+        _avatarView.alpha = alpha;
+        _avatarOverlay.alpha = alpha;
+        _avatarIconView.alpha = alpha;
+    }
 }
 
 - (id)avatarView
@@ -163,6 +209,20 @@
 - (void)makeNameFieldFirstResponder
 {
     [_firstNameField becomeFirstResponder];
+}
+
+- (void)setShowDisclosureIndicator:(bool)show
+{
+    if (_disclosureIndicator == nil && show)
+    {
+        _disclosureIndicator = [[UIImageView alloc] initWithImage:self.presentation.images.collectionMenuDisclosureIcon];
+        [self addSubview:_disclosureIndicator];
+    }
+    else if (!show)
+    {
+        [_disclosureIndicator removeFromSuperview];
+        _disclosureIndicator = nil;
+    }
 }
 
 - (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation
@@ -184,7 +244,10 @@
     {
         _nameLabel.text = nameText;
         
-        [_avatarView setFirstName:firstName lastName:lastName];
+        if (_avatarPlaceholderDisabled)
+            [_avatarView setFirstName:nil lastName:nil];
+        else
+            [_avatarView setFirstName:firstName lastName:lastName];
         
         [self setNeedsLayout];
     }
@@ -202,6 +265,29 @@
             _lastNameField.text = lastName;
             [self setNeedsLayout];
         }
+    }
+}
+
+- (void)setDisableAvatarPlaceholder:(bool)disable
+{
+    _avatarPlaceholderDisabled = disable;
+    
+    if (disable)
+        [_avatarView setFirstName:nil lastName:nil];
+}
+
+- (void)setShowCameraIcon:(bool)show
+{
+    _showCameraIcon = show;
+    if (show)
+    {
+        [self avatarOverlay].hidden = !show;
+        [self avatarIconView].hidden = !show;
+    }
+    else
+    {
+        _avatarOverlay.hidden = !show;
+        _avatarIconView.hidden = !show;
     }
 }
 
@@ -294,7 +380,10 @@
             }
         }
         
-        [_avatarView setFirstName:_editing ? _firstNameField.text : _firstName lastName:_editing ? _lastNameField.text : _lastName];
+        if (_avatarPlaceholderDisabled)
+            [_avatarView setFirstName:nil lastName:nil];
+        else
+            [_avatarView setFirstName:_editing ? _firstNameField.text : _firstName lastName:_editing ? _lastNameField.text : _lastName];
     }
 }
 
@@ -303,7 +392,7 @@
     if (!TGStringCompare(status, _statusLabel.text))
     {
         _statusLabel.text = status;
-        _statusLabel.textColor = active ? TGAccentColor() : UIColorRGB(0xb3b3b3);
+        _statusLabel.textColor = active ? self.presentation.pallete.accentColor : self.presentation.pallete.collectionMenuVariantColor;
         [self setNeedsLayout];
     }
 }
@@ -334,7 +423,10 @@
     
     if (avatarUri.length == 0)
     {
-        [_avatarView loadUserPlaceholderWithSize:CGSizeMake(64.0f, 64.0f) uid:_uidForPlaceholderCalculation firstName:_firstName lastName:_lastName placeholder:placeholder];
+        int uid = _avatarPlaceholderDisabled ? 0 : _uidForPlaceholderCalculation;
+        NSString *firstName = _avatarPlaceholderDisabled ? nil : _firstName;
+        NSString *lastName = _avatarPlaceholderDisabled ? nil : _lastName;
+        [_avatarView loadUserPlaceholderWithSize:CGSizeMake(64.0f, 64.0f) uid:uid firstName:firstName lastName:lastName placeholder:placeholder];
     }
     else if (!TGStringCompare([_avatarView currentUrl], avatarUri))
     {
@@ -349,31 +441,49 @@
     [_avatarView loadImage:avatarImage];
 }
 
+- (UIView *)avatarOverlay
+{
+    if (_avatarOverlay == nil)
+    {
+        static UIImage *overlayImage = nil;
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^
+        {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(64.0f, 64.0f), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            
+            CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.5f).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 64.0f, 64.0f));
+            
+            overlayImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+        });
+        
+        _avatarOverlay = [[UIImageView alloc] initWithImage:overlayImage];
+        _avatarOverlay.frame = _avatarView.frame;
+        _avatarOverlay.userInteractionEnabled = false;
+        [self insertSubview:_avatarOverlay aboveSubview:_avatarView];
+    }
+    
+    return _avatarOverlay;
+}
+
+- (UIImageView *)avatarIconView
+{
+    if (_avatarIconView == nil)
+    {
+        _avatarIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"SettingsCameraIcon")];
+        _avatarIconView.center = CGPointMake(CGRectGetMidX(_avatarView.frame), CGRectGetMidY(_avatarView.frame));
+        [self insertSubview:_avatarIconView aboveSubview:_avatarOverlay];
+    }
+    return _avatarIconView;
+}
+
 - (void)setUpdatingAvatar:(bool)updatingAvatar animated:(bool)animated
 {
     if (updatingAvatar)
     {
-        if (_avatarOverlay == nil)
-        {
-            static UIImage *overlayImage = nil;
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(64.0f, 64.0f), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                
-                CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.5f).CGColor);
-                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 64.0f, 64.0f));
-                
-                overlayImage = UIGraphicsGetImageFromCurrentImageContext();
-                UIGraphicsEndImageContext();
-            });
-            
-            _avatarOverlay = [[UIImageView alloc] initWithImage:overlayImage];
-            _avatarOverlay.frame = _avatarView.frame;
-            _avatarOverlay.userInteractionEnabled = false;
-            [self insertSubview:_avatarOverlay aboveSubview:_avatarView];
-        }
+        UIView *avatarOverlay = [self avatarOverlay];
         
         if (_activityIndicator == nil)
         {
@@ -382,7 +492,7 @@
             CGRect activityFrame = _activityIndicator.frame;
             activityFrame.origin = CGPointMake(_avatarView.frame.origin.x + CGFloor((_avatarView.frame.size.width - activityFrame.size.width) / 2.0f), _avatarView.frame.origin.y + CGFloor((_avatarView.frame.size.height - activityFrame.size.height) / 2.0f));
             _activityIndicator.frame = activityFrame;
-            [self insertSubview:_activityIndicator aboveSubview:_avatarOverlay];
+            [self insertSubview:_activityIndicator aboveSubview:avatarOverlay];
         }
         
         _activityIndicator.hidden = false;
@@ -390,17 +500,19 @@
         
         if (animated)
         {
-            _avatarOverlay.alpha = 0.0f;
+            avatarOverlay.alpha = 0.0f;
             _activityIndicator.alpha = 0.0f;
             [UIView animateWithDuration:0.3 animations:^
             {
-                _avatarOverlay.alpha = 1.0f;
+                _avatarIconView.alpha = 0.0f;
+                avatarOverlay.alpha = 1.0f;
                 _activityIndicator.alpha = 1.0f;
             }];
         }
         else
         {
-            _avatarOverlay.alpha = 1.0f;
+            _avatarIconView.alpha = 0.0f;
+            avatarOverlay.alpha = 1.0f;
             _activityIndicator.alpha = 1.0f;
         }
     }
@@ -410,7 +522,10 @@
         {
             [UIView animateWithDuration:0.3 animations:^
             {
-                _avatarOverlay.alpha = 0.0f;
+                if (!_showCameraIcon)
+                    _avatarOverlay.alpha = 0.0f;
+                else
+                    [self avatarIconView].alpha = 1.0f;
                 _activityIndicator.alpha = 0.0f;
             } completion:^(BOOL finished) {
                 if (finished)
@@ -419,7 +534,10 @@
         }
         else
         {
-            _avatarOverlay.alpha = 0.0f;
+            if (!_showCameraIcon)
+                _avatarOverlay.alpha = 0.0f;
+            else
+                [self avatarIconView].alpha = 1.0f;
             [_activityIndicator stopAnimating];
             _activityIndicator.alpha = 0.0f;
         }
@@ -452,12 +570,14 @@
     
     CGRect bounds = self.bounds;
     
-    _avatarView.frame = CGRectMake(15.0f + _avatarOffset.width, 16.0f + _avatarOffset.height, 66.0f, 66.0f);
+    _avatarView.frame = CGRectMake(15.0f + _avatarOffset.width + self.safeAreaInset.left, 16.0f + _avatarOffset.height, 66.0f, 66.0f);
     
-    _callButton.frame = CGRectMake(self.frame.size.width - 57.0f, 25.0f, _callButton.frame.size.width, _callButton.frame.size.height);
+    _callButton.frame = CGRectMake(self.frame.size.width - 57.0f - self.safeAreaInset.right, 25.0f, _callButton.frame.size.width, _callButton.frame.size.height);
     
-    CGFloat maxNameWidth = bounds.size.width - 92 - 14;
-    CGFloat maxStatusWidth = bounds.size.width - 92 - 14;
+    _disclosureIndicator.frame = CGRectMake(bounds.size.width - _disclosureIndicator.frame.size.width - 15 - self.safeAreaInset.right, CGFloor((bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
+    
+    CGFloat maxNameWidth = bounds.size.width - 92 - 14 - self.safeAreaInset.left - self.safeAreaInset.right;
+    CGFloat maxStatusWidth = bounds.size.width - 92 - 14 - self.safeAreaInset.left - self.safeAreaInset.right;
     
     if (_verifiedIcon.superview != nil) {
         maxNameWidth -= _verifiedIcon.bounds.size.width + 5.0f;
@@ -467,18 +587,42 @@
         maxStatusWidth -= 54.0f;
     }
     
+    if (_disclosureIndicator != nil) {
+        maxStatusWidth -= 40.0f;
+    }
+    
     CGSize nameLabelSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, 1000)];
     nameLabelSize.width = MIN(nameLabelSize.width, maxNameWidth);
-    CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width, 26 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
+    CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 26 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
     _nameLabel.frame = firstNameLabelFrame;
     
     CGSize statusLabelSize = [_statusLabel sizeThatFits:CGSizeMake(maxStatusWidth, 1000)];
     statusLabelSize.width = MIN(statusLabelSize.width, maxStatusWidth);
-    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width, 53 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
-    if (!CGRectEqualToRect(statusLabelFrame, _statusLabel.frame))
-        _statusLabel.frame = statusLabelFrame;
+    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 53 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
+    _statusLabel.frame = statusLabelFrame;
     
-    CGFloat fieldLeftPadding = 100.0f;
+    if (_phoneLabel != nil)
+    {
+        CGSize phoneLabelSize = [_phoneLabel sizeThatFits:CGSizeMake(maxStatusWidth, 1000)];
+        phoneLabelSize.width = MIN(phoneLabelSize.width, maxStatusWidth);
+        CGRect phoneLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 53 + _nameOffset.height, phoneLabelSize.width, phoneLabelSize.height);
+        _phoneLabel.frame = phoneLabelFrame;
+    }
+    
+    if (_usernameLabel != nil)
+    {
+        CGSize usernameLabelSize = [_usernameLabel sizeThatFits:CGSizeMake(maxStatusWidth, 1000)];
+        usernameLabelSize.width = MIN(usernameLabelSize.width, maxStatusWidth);
+        
+        _nameLabel.frame = CGRectOffset(_nameLabel.frame, 0.0f, -11.0f);
+        _phoneLabel.frame = CGRectOffset(_phoneLabel.frame, 0.0f, -11.0f);
+        
+        CGRect usernameLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 62 + _nameOffset.height + TGScreenPixel, usernameLabelSize.width, usernameLabelSize.height);
+        _usernameLabel.frame = usernameLabelFrame;
+        
+    }
+    
+    CGFloat fieldLeftPadding = 100.0f + self.safeAreaInset.left;
     
     CGRect firstNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 12 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
     _firstNameField.frame = firstNameFieldFrame;
@@ -493,6 +637,9 @@
     if (_verifiedIcon.superview != nil) {
         _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, firstNameLabelFrame.origin.x + nameLabelSize.width + 4.0f, firstNameLabelFrame.origin.y + 5.0f + TGRetinaPixel);
     }
+    
+    _avatarOverlay.frame = _avatarView.frame;
+    _avatarIconView.center = CGPointMake(CGRectGetMidX(_avatarView.frame), CGRectGetMidY(_avatarView.frame));
 }
 
 #pragma mark -
@@ -540,7 +687,8 @@
         
         if (_isVerified) {
             if (_verifiedIcon == nil) {
-                _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconMedium.png"]];
+                _verifiedIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 16.0f, 16.0f)];
+                _verifiedIcon.image = self.presentation.images.profileVerifiedIcon;
             }
             if (_verifiedIcon.superview == nil) {
                 [self.contentView addSubview:_verifiedIcon];
@@ -549,6 +697,42 @@
             [_verifiedIcon removeFromSuperview];
         }
         
+        [self setNeedsLayout];
+    }
+}
+
+- (void)setPhoneNumber:(NSString *)phoneNumber
+{
+    if (_phoneLabel == nil && phoneNumber.length > 0)
+    {
+        _phoneLabel = [[UILabel alloc] init];
+        _phoneLabel.backgroundColor = [UIColor clearColor];
+        _phoneLabel.font = TGSystemFontOfSize(15.0f);
+        _phoneLabel.textColor = self.presentation.pallete.collectionMenuVariantColor;
+        [self addSubview:_phoneLabel];
+    }
+    
+    if (_phoneLabel != nil)
+    {
+        _phoneLabel.text = phoneNumber;
+        [self setNeedsLayout];
+    }
+}
+
+- (void)setUsername:(NSString *)username
+{
+    if (_usernameLabel == nil && username.length > 0)
+    {
+        _usernameLabel = [[UILabel alloc] init];
+        _usernameLabel.backgroundColor = [UIColor clearColor];
+        _usernameLabel.font = TGSystemFontOfSize(15.0f);
+        _usernameLabel.textColor = self.presentation.pallete.collectionMenuVariantColor;
+        [self addSubview:_usernameLabel];
+    }
+    
+    if (_usernameLabel != nil)
+    {
+        _usernameLabel.text = username;
         [self setNeedsLayout];
     }
 }

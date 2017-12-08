@@ -1,15 +1,12 @@
 #import "TGTrendingStickerPackKeyboardCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGStickerPack.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGStickerPack.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "TGStickerCollectionViewCell.h"
-
-static CGFloat preloadInset = 64.0f;
+#import <LegacyComponents/TGStickerCollectionViewCell.h>
 
 @interface TGTrendingStickerPackKeyboardCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     UILabel *_titleLabel;
@@ -70,6 +67,7 @@ static CGFloat preloadInset = 64.0f;
         });
         
         _button = [[TGModernButton alloc] init];
+        _button.adjustsImageWhenHighlighted = false;
         [_button setBackgroundImage:buttonImage forState:UIControlStateNormal];
         _button.modernHighlight = true;
         [_button setTitle:TGLocalized(@"Stickers.Install") forState:UIControlStateNormal];
@@ -82,8 +80,9 @@ static CGFloat preloadInset = 64.0f;
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
-        _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.backgroundColor = [UIColor clearColor];
@@ -92,7 +91,7 @@ static CGFloat preloadInset = 64.0f;
         _collectionView.showsVerticalScrollIndicator = false;
         _collectionView.alwaysBounceVertical = false;
         _collectionView.delaysContentTouches = false;
-        _collectionView.contentInset = UIEdgeInsetsMake(0.0, preloadInset, 0.0f, preloadInset);
+        _collectionView.scrollEnabled = false;
         [_collectionView registerClass:[TGStickerCollectionViewCell class] forCellWithReuseIdentifier:@"TGStickerCollectionViewCell"];
         [self.contentView addSubview:_collectionView];
         
@@ -146,7 +145,7 @@ static CGFloat preloadInset = 64.0f;
     
     _button.frame = CGRectMake(self.bounds.size.width - _button.frame.size.width - rightInset, 16.0f, _button.frame.size.width, _button.frame.size.height);
     
-    CGRect collectionFrame = CGRectMake(-preloadInset, 52.0f, self.bounds.size.width + preloadInset * 2.0f, 78.0f);
+    CGRect collectionFrame = CGRectMake(0.0f, 54.0f, self.bounds.size.width, 78.0f);
     if (!CGRectEqualToRect(collectionFrame, _collectionView.frame)) {
         _collectionView.frame = collectionFrame;
         [_collectionLayout invalidateLayout];
@@ -167,7 +166,7 @@ static CGFloat preloadInset = 64.0f;
 
 - (UIEdgeInsets)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout insetForSectionAtIndex:(NSInteger)section
 {
-    CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : 15.0f;
+    CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : 12.0f;
     return UIEdgeInsetsMake(0.0f, sideInset, [self collectionView:collectionView layout:collectionViewLayout minimumLineSpacingForSectionAtIndex:section], sideInset);
 }
 
@@ -178,7 +177,7 @@ static CGFloat preloadInset = 64.0f;
 
 - (CGFloat)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout*)__unused collectionViewLayout minimumInteritemSpacingForSectionAtIndex:(NSInteger)__unused section
 {
-    return (collectionView.frame.size.width < 330.0f) ? 0.0f : 4.0f;
+    return (collectionView.frame.size.width < 330.0f) ? 0.0f : 7.0f;
 }
 
 - (TGDocumentMediaAttachment *)documentAtIndexPath:(NSIndexPath *)indexPath {

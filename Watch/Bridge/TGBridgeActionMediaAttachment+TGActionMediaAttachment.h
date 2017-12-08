@@ -1,5 +1,6 @@
 #import "TGBridgeActionMediaAttachment.h"
-#import "TGActionMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeActionMediaAttachment (TGActionMediaAttachment)
 

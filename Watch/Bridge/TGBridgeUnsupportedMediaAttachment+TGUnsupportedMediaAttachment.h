@@ -1,5 +1,6 @@
 #import "TGBridgeUnsupportedMediaAttachment.h"
-#import "TGUnsupportedMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeUnsupportedMediaAttachment (TGUnsupportedMediaAttachment)
 

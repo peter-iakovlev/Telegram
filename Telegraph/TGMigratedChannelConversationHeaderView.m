@@ -1,10 +1,10 @@
 #import "TGMigratedChannelConversationHeaderView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernViewContext.h"
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
-
-#import "TGFont.h"
 
 @interface TGMigratedChannelConversationHeaderView () {
     UIImageView *_backgrounView;

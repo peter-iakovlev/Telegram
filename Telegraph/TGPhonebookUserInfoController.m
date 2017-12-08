@@ -1,8 +1,8 @@
 #import "TGPhonebookUserInfoController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGPhoneUtils.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
@@ -110,7 +110,7 @@
             NSString *body = [[NSUserDefaults standardUserDefaults] objectForKey:@"TG_inviteText"];
             if (body.length == 0)
             {
-                body = TGLocalized(@"Contacts.InvitationText");
+                body = @"Hey, let's switch to Telegram http://telegram.org/dl";
             }
             
             messageComposer.body = body;

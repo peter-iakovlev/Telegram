@@ -1,6 +1,8 @@
 #import "TGSynchronizeServiceActionsActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGDatabase.h"
 
@@ -13,8 +15,6 @@
 
 #import "TGTelegramNetworking.h"
 #import <MTProtoKit/MTContext.h>
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGSynchronizeServiceActionsActor ()
 
@@ -166,6 +166,7 @@
                     int64_t peerId = [TGDatabaseInstance() peerIdForEncryptedConversationId:settingsAction.uniqueId createIfNecessary:false];
                     
                     NSUInteger peerLayer = MIN([TGModernSendSecretMessageActor currentLayer], [TGDatabaseInstance() peerLayer:peerId]);
+                    peerLayer = MAX(peerLayer, 46);
                     
                     NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:peerLayer setTTL:settingsAction.messageLifetime randomId:settingsAction.messageRandomId];
                     
@@ -213,6 +214,7 @@
                     int64_t peerId = [TGDatabaseInstance() peerIdForEncryptedConversationId:serviceMessageAction.encryptedConversationId createIfNecessary:false];
                     
                     NSUInteger peerLayer = MIN([TGModernSendSecretMessageActor currentLayer], [TGDatabaseInstance() peerLayer:peerId]);
+                    peerLayer = MAX(peerLayer, 46);
                     
                     NSData *messageData = nil;
                     
@@ -254,6 +256,7 @@
                     int64_t peerId = [TGDatabaseInstance() peerIdForEncryptedConversationId:settingsAction.uniqueId createIfNecessary:false];
                     
                     NSUInteger peerLayer = [TGDatabaseInstance() peerLayer:peerId];
+                    peerLayer = MAX(peerLayer, 46);
                     
                     NSData *messageData = [TGModernSendSecretMessageActor decryptedServiceMessageActionWithLayer:MIN(peerLayer, [TGModernSendSecretMessageActor currentLayer]) notifyLayer:[TGModernSendSecretMessageActor currentLayer] randomId:settingsAction.messageRandomId];
                     

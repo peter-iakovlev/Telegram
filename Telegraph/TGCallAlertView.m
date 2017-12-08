@@ -1,14 +1,14 @@
 #import "TGCallAlertView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "TGModernButton.h"
+#import "TGLegacyComponentsContext.h"
 
 const CGFloat TGCallAlertViewWidth = 270.0f;
 const CGFloat TGCallAlertViewButtonHeight = 44.0f;
@@ -313,7 +313,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 {
     TGCallAlertView *alertView = [[TGCallAlertView alloc] initWithTitle:title message:message customView:customView cancelButtonTitle:cancelButtonTitle doneButtonTitle:doneButtonTitle completionBlock:completionBlock];
     TGCallAlertViewController *controller = [[TGCallAlertViewController alloc] initWithView:alertView];
-    TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithParentController:TGAppDelegateInstance.rootController contentController:controller];
+    TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:TGAppDelegateInstance.rootController contentController:controller];
     window.hidden = false;
     
     return alertView;

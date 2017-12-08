@@ -1,7 +1,8 @@
 #import "TGPasswordInputItemView.h"
 
-#import "TGFont.h"
-#import "TGTextField.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGTextField.h>
 
 @interface TGPasswordInputItemView () <UITextFieldDelegate>
 {

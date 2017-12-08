@@ -1,17 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #ifndef Telegraph_TGCommon_h
 #define Telegraph_TGCommon_h
 
-#import "ASCommon.h"
-
 #import <UIKit/UIKit.h>
+#import <inttypes.h>
 
 #define TGUseSocial true
 
@@ -79,6 +70,15 @@ inline void TGDispatchAfter(double delay, dispatch_queue_t queue, dispatch_block
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((delay) * NSEC_PER_SEC)), queue, block);
 }
     
+void TGLogSetEnabled(bool enabled);
+bool TGLogEnabled();
+void TGLog(NSString *format, ...);
+void TGLogv(NSString *format, va_list args);
+
+void TGLogSynchronize();
+NSArray *TGGetLogFilePaths(int count);
+NSArray *TGGetPackedLogs();
+    
 #ifdef __cplusplus
 }
 #endif
@@ -115,7 +115,6 @@ inline void TGDispatchAfter(double delay, dispatch_queue_t queue, dispatch_block
 #define CGEven(x) ((((int)x) & 1) ? (x + 1) : x)
 #define CGOdd(x) ((((int)x) & 1) ? x : (x + 1))
 
-#import "TGAppearance.h"
 #import "TGTColor.h"
 
 #endif

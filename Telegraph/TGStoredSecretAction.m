@@ -1,6 +1,6 @@
 #import "TGStoredSecretAction.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 TGStoredSecretActionWithSeqActionId TGStoredSecretActionWithSeqActionIdMake(TGStoredSecretActionWithSeqActionIdType type, int32_t value)
 {

@@ -1,8 +1,6 @@
 #import "TGPreparedDownloadExternalDocumentMessage.h"
 
-#import "TGMessage.h"
-
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDocumentHttpFileReference.h"
 

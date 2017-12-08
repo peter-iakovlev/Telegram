@@ -1,7 +1,8 @@
 #import "TGPreviewAudioItemView.h"
-#import "TGMusicPlayerCompleteView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGMusicPlayerCompleteView.h"
 
 #import "TGBotContextExternalResult.h"
 #import "TGGenericPeerPlaylistSignals.h"
@@ -21,7 +22,7 @@
     self = [super initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
     {
-        _musicView = [[TGMusicPlayerCompleteView alloc] initWithFrame:CGRectZero setTitle:nil actionsEnabled:nil];
+        _musicView = [[TGMusicPlayerCompleteView alloc] initWithFrame:CGRectZero];
         _musicView.preview = true;
         [self addSubview:_musicView];
     }

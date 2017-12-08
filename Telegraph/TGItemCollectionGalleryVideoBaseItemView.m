@@ -1,24 +1,23 @@
 #import "TGItemCollectionGalleryVideoBaseItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGVideoDownloadActor.h"
 #import "TGDownloadManager.h"
 
-#import "TGMessage.h"
-#import "TGVideoMediaAttachment.h"
 #import "TGPreparedLocalDocumentMessage.h"
 
-#import "TGModernButton.h"
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 #import "TGModernGalleryVideoPlayerView.h"
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 #import "TGModernGalleryVideoFooterView.h"
-#import "TGModernGalleryDefaultFooterView.h"
+#import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
 
 #import "TGGenericPeerGalleryItem.h"
 

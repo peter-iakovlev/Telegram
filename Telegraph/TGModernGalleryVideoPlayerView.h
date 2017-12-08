@@ -1,9 +1,10 @@
 #import <UIKit/UIKit.h>
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 #import "TGModernGalleryVideoPlayerState.h"
 
 @interface TGModernGalleryVideoPlayerView : UIView <TGPIPAblePlayerView>
 
+@property (nonatomic, copy) bool (^shouldLoop)(NSUInteger loopCount);
 @property (nonatomic, readonly) TGModernGalleryVideoPlayerState *state;
 @property (nonatomic, readonly, getter=isLoaded) bool loaded;
 

@@ -3,7 +3,7 @@
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
 

@@ -19,6 +19,7 @@
     {
         _uri = uri;
         _options = options;
+        _contentMode = UIViewContentModeScaleToFill;
     }
     return self;
 }
@@ -34,11 +35,19 @@
     
     TGModernDataImageView *view = (TGModernDataImageView *)[self boundView];
     [view loadUri:_uri withOptions:_options];
+    
+    view.contentMode = _contentMode;
 }
 
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     [super unbindView:viewStorage];
+}
+
+- (void)setContentMode:(UIViewContentMode)contentMode
+{
+    _contentMode = contentMode;
+    ((TGModernDataImageView *)self.boundView).contentMode = _contentMode;
 }
 
 - (void)setUri:(NSString *)uri options:(NSDictionary *)options

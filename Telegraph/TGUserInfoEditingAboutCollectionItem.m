@@ -1,6 +1,6 @@
 #import "TGUserInfoEditingAboutCollectionItem.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGUserInfoEditingAboutCollectionItemView.h"
 
@@ -22,9 +22,9 @@
     return [TGUserInfoEditingAboutCollectionItemView class];
 }
 
-- (CGSize)itemSizeForContainerSize:(CGSize)containerSize
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    CGSize size = [super itemSizeForContainerSize:containerSize];
+    CGSize size = [super itemSizeForContainerSize:containerSize safeAreaInset:safeAreaInset];
     return CGSizeMake(size.width, MAX(size.height, 80.0f));
 }
 

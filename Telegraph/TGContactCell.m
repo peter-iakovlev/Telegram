@@ -1,11 +1,9 @@
 #import "TGContactCell.h"
 
-#import "TGLabel.h"
-#import "TGRemoteImageView.h"
-#import "TGDateLabel.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGRemoteImageView.h>
+#import "TGDateLabel.h"
 
 #import "TGInterfaceAssets.h"
 
@@ -13,24 +11,18 @@
 
 #import "TGContactCellContents.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import <QuartzCore/QuartzCore.h>
 
 static UIImage *contactCellCheckImage()
 {
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"ModernContactSelectionEmpty.png"];
-    return image;
+    return TGImageNamed(@"ModernContactSelectionEmpty.png");
 }
 
 static UIImage *contactCellCheckedImage()
 {
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"ModernContactSelectionChecked.png"];
-    return image;
+    return TGImageNamed(@"ModernContactSelectionChecked.png");
 }
 
 @interface TGContactCheckButton : UIButton

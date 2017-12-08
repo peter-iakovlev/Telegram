@@ -1,4 +1,4 @@
-#import "TGModernGalleryImageItemView.h"
+#import <LegacyComponents/TGModernGalleryImageItemView.h>
 
 @interface TGSecretPeerMediaGalleryImageItemView : TGModernGalleryImageItemView
 

@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGDatabaseUpdateMessage : NSObject
 
@@ -24,6 +24,12 @@
 @end
 
 @interface TGDatabaseUpdateContentsRead: TGDatabaseUpdateMessage
+
+- (instancetype)initWithPeerId:(int64_t)peerId messageId:(int32_t)messageId;
+
+@end
+
+@interface TGDatabaseUpdateMentionUnread: TGDatabaseUpdateMessage
 
 - (instancetype)initWithPeerId:(int64_t)peerId messageId:(int32_t)messageId;
 

@@ -1,4 +1,6 @@
-#import "TGMenuSheetItemView.h"
+#import <LegacyComponents/TGMenuSheetItemView.h>
+
+#import <LegacyComponents/LegacyComponentsContext.h>
 
 @class TGStickerPack;
 @class TGDocumentMediaAttachment;

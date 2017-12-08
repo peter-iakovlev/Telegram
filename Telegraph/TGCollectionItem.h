@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @class TGCollectionItemView;
+@class TGPresentation;
 
 @interface TGCollectionItem : NSObject
 
@@ -16,7 +17,9 @@
 @property (nonatomic) bool selectable;
 @property (nonatomic) bool deselectAutomatically;
 @property (nonatomic) bool transparent;
+@property (nonatomic) bool ignoreSeparatorInset;
 @property (nonatomic, copy) bool (^canBeMovedToSectionAtIndex)(NSUInteger, NSUInteger);
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic) TGCollectionItemView *view;
 
@@ -24,6 +27,7 @@
 
 - (TGCollectionItemView *)dequeueItemView:(UICollectionView *)collectionView registeredIdentifiers:(NSMutableSet *)registeredIdentifiers forIndexPath:(NSIndexPath *)indexPath;
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize;
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)safeAreaInset;
 
 - (void)bindView:(TGCollectionItemView *)view;
 - (void)unbindView;

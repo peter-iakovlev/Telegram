@@ -1,6 +1,6 @@
 #import "TGAnimationUtils.h"
 
-#import "TGHacks.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 NSString *kCAMediaTimingFunctionSpring = @"kCAMediaTimingFunctionSpring";
 

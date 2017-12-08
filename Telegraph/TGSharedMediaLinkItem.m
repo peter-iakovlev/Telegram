@@ -1,11 +1,9 @@
 #import "TGSharedMediaLinkItem.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGSharedMediaDirectionFilter.h"
-#import "TGWebPageMediaAttachment.h"
 
-#import "TGFont.h"
 #import "TGModernTextViewModel.h"
 #import "TGReusableLabel.h"
 
@@ -97,10 +95,11 @@
         NSMutableString *text = [[NSMutableString alloc] initWithString:rawText];
         [text replaceOccurrencesOfString:@"\n\n" withString:@"\n" options:0 range:NSMakeRange(0, text.length)];
         [text replaceOccurrencesOfString:@"\t" withString:@"" options:0 range:NSMakeRange(0, text.length)];
-        _textModel = [[TGModernTextViewModel alloc] initWithText:text font:TGCoreTextSystemFontOfSize(14.0f)];
-        _textModel.additionalLineSpacing = 4.0f;
+        _textModel = [[TGModernTextViewModel alloc] initWithText:text font:TGCoreTextSystemFontOfSize(13.0f)];
+        _textModel.additionalLineSpacing = 2.0f;
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline;
-        _textModel.maxNumberOfLines = 3;
+        _textModel.maxNumberOfLines = 2;
+        _textModel.textColor = UIColorRGB(0x8d8e93);
     }
     return self;
 }
@@ -115,7 +114,7 @@
     if (_webPage.photo != nil)
     {
         NSString *key = [[NSString alloc] initWithFormat:@"webpage-image-%" PRId64 "", _webPage.photo.imageId];
-        return [TGSharedPhotoSignals sharedPhotoImage:_webPage.photo size:CGSizeMake(80.0f, 80.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] cacheKey:key];
+        return [TGSharedPhotoSignals sharedPhotoImage:_webPage.photo size:CGSizeMake(80.0f, 80.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:10.0f] cacheKey:key];
     }
     else
         return nil;
@@ -136,12 +135,12 @@
     if (_textModel.text.length == 0 || [_textModel.text isEqualToString:@" "])
     {
         _textModel.frame = CGRectMake(0.0f, 0.0f, 0.0f, 0.0f);
-        return MAX(_textModel.frame.size.height + 35.0f + _links.count * 20.0f, 64.0f);
+        return MAX(_textModel.frame.size.height + 35.0f + _links.count * 20.0f, 61.0f);
     }
     else
     {
-        [_textModel layoutForContainerSize:CGSizeMake(width - 80.0f, CGFLOAT_MAX)];
-        return _textModel.frame.size.height + 35.0f + _links.count * 20.0f;
+        [_textModel layoutForContainerSize:CGSizeMake(width - 91.0f, CGFLOAT_MAX)];
+        return _textModel.frame.size.height + 38.0f + _links.count * 20.0f;
     }
 }
 

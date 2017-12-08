@@ -8,18 +8,13 @@
 
 #import "TGMessageNotificationView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGInterfaceAssets.h"
-
-#import "TGPeerIdAdapter.h"
-
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
 
 #import "TGNotificationWindow.h"
 
-#import "TGLetteredAvatarView.h"
-
-#import "TGFont.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGNotificationMessageLabel.h"
 
@@ -246,7 +241,10 @@
             }
             else if (attachment.type == TGLocationMediaAttachmentType)
             {
-                messageText = TGLocalized(@"Message.Location");
+                if (((TGLocationMediaAttachment *)attachment).period > 0)
+                    messageText = TGLocalized(@"Message.LiveLocation");
+                else
+                    messageText = TGLocalized(@"Message.Location");
                 attachmentFound = true;
                 break;
             }

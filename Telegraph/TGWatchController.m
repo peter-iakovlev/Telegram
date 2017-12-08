@@ -1,6 +1,6 @@
 #import "TGWatchController.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGBridgePresetsService.h"
 

@@ -2,7 +2,7 @@
 
 @interface TGCallReceptionView : UIView
 
-- (void)setReception:(CGFloat)reception;
+- (void)setSignalBars:(NSInteger)signalBars;
 
 @end
 

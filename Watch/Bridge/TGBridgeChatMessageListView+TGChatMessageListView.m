@@ -1,7 +1,9 @@
 #import "TGBridgeChatMessageListView+TGChatMessageListView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeMessage+TGMessage.h"
 #import "TGChatMessageListView.h"
-#import "TGConversation.h"
 
 @implementation TGBridgeChatMessageListView (TGChatMessageListView)
 

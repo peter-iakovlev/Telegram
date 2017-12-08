@@ -1,19 +1,21 @@
 #import "TGGenericPeerMediaGalleryGifItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGGenericPeerMediaGalleryGifItem.h"
 
 #import "TGTelegraph.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGVTAcceleratedVideoView.h"
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 
-#import "TGDocumentMediaAttachment.h"
 #import "TGPreparedLocalDocumentMessage.h"
 
 #import "TGGifGalleryAddAccessoryView.h"
 
 #import "TGRecentGifsSignal.h"
-#import "TGGifConverter.h"
+#import <LegacyComponents/TGGifConverter.h>
 
 @interface TGGenericPeerMediaGalleryGifItemView ()
 {

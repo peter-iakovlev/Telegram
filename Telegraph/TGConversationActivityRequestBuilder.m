@@ -1,6 +1,6 @@
 #import "TGConversationActivityRequestBuilder.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGAppDelegate.h"
 

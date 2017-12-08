@@ -36,7 +36,7 @@
     
     if (bridgeAttachment.venue != nil)
     {
-        TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:bridgeAttachment.venue.title address:bridgeAttachment.venue.address provider:bridgeAttachment.venue.provider venueId:bridgeAttachment.venue.venueId];
+        TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:bridgeAttachment.venue.title address:bridgeAttachment.venue.address provider:bridgeAttachment.venue.provider venueId:bridgeAttachment.venue.venueId type:nil];
         
         attachment.venue = venue;
     }

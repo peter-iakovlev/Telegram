@@ -1,10 +1,11 @@
 #import "TGDownloadManager.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #include <set>
 
-#import "TGMessage.h"
 #import "TGDatabase.h"
 
 @implementation TGDownloadItem

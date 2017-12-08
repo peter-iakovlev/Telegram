@@ -19,6 +19,19 @@
     return nil;
 }
 
+- (CGSize)intrinsicContentSize
+{
+    return CGSizeMake(1, 1);
+}
+
+- (bool)translatesAutoresizingMaskIntoConstraints
+{
+    if (iosMajorVersion() >= 11)
+        return false;
+    
+    return [super translatesAutoresizingMaskIntoConstraints];
+}
+
 - (void)tapGesture:(UITapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateEnded)

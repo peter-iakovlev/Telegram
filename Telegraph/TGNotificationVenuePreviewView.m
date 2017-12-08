@@ -1,11 +1,10 @@
 #import "TGNotificationVenuePreviewView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGNotificationView.h"
 
-#import "TGLocationMediaAttachment.h"
-
-#import "TGFont.h"
-
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGNotificationVenuePreviewView ()
 {
@@ -64,7 +63,7 @@
         _addressLabel.frame = CGRectMake(36, 15, ceil(_addressLabel.frame.size.width), ceil(_addressLabel.frame.size.height));
         
         CGSize mapImageSize = CGSizeMake(58.0f, 58.0f);
-        _imageUri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=%d", attachment.latitude, attachment.longitude, (int)mapImageSize.width, (int)mapImageSize.height, 3];
+        _imageUri = [[NSString alloc] initWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=%d&offset=-10", attachment.latitude, attachment.longitude, (int)mapImageSize.width, (int)mapImageSize.height, 3];
     }
     return self;
 }

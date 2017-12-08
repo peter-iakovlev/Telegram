@@ -1,6 +1,6 @@
 #import "TGCallStatusBarView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGCallController.h"
 
@@ -19,8 +19,7 @@
     
     SMetaDisposable *_signalDisposable;
     
-    TGCallStatusBarWindow *_lowerWindow;
-    TGCallStatusBarWindow *_upperWindow;
+    TGCallStatusBarWindow *_window;
     
     id _didEnterBackgroundObserver;
     id _willEnterForegroundObserver;
@@ -47,19 +46,26 @@
         _label.textColor = [UIColor whiteColor];
         [_backgroundView addSubview:_label];
         
-        __weak TGCallStatusBarView *weakSelf = self;
-        _didEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
+        if ((int)TGScreenSize().height == 812)
         {
-            __strong TGCallStatusBarView *strongSelf = weakSelf;
-            [strongSelf stopAnimation];
-        }];
-        
-        _willEnterForegroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillEnterForegroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
+            _label.hidden = true;
+        }
+        else
         {
-            __strong TGCallStatusBarView *strongSelf = weakSelf;
-            if (!strongSelf->_targetHidden)
-                [strongSelf startAnimation];
-        }];
+            __weak TGCallStatusBarView *weakSelf = self;
+            _didEnterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
+            {
+                __strong TGCallStatusBarView *strongSelf = weakSelf;
+                [strongSelf stopAnimation];
+            }];
+            
+            _willEnterForegroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillEnterForegroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *notification)
+            {
+                __strong TGCallStatusBarView *strongSelf = weakSelf;
+                if (!strongSelf->_targetHidden)
+                    [strongSelf startAnimation];
+            }];
+        }
     }
     return self;
 }
@@ -72,33 +78,26 @@
 
 - (void)_setupWindows
 {
-    _lowerWindow = [[TGCallStatusBarWindow alloc] init];
-    _lowerWindow.userInteractionEnabled = false;
-    _lowerWindow.frame = [UIApplication sharedApplication].keyWindow.frame;
-    _lowerWindow.windowLevel = UIWindowLevelStatusBar - 0.002;
-    _lowerWindow.hidden = false;
-    _lowerWindow.tag = 0xbeef;
-    [_lowerWindow addSubview:self];
-    
-    _upperWindow = [[TGCallStatusBarWindow alloc] init];
-    _upperWindow.frame = [UIApplication sharedApplication].keyWindow.frame;
-    _upperWindow.windowLevel = UIWindowLevelStatusBar + 0.00001;
-    _upperWindow.statusBarPressed = _statusBarPressed;
-    _upperWindow.tag = 0xbeef;
-    _upperWindow.hidden = false;
+    _window = [[TGCallStatusBarWindow alloc] init];
+    _window.userInteractionEnabled = true;
+    _window.frame = [UIApplication sharedApplication].keyWindow.frame;
+    _window.windowLevel = UIWindowLevelStatusBar - 0.002;
+    _window.hidden = false;
+    _window.tag = 0xbeef;
+    _window.statusBarPressed = _statusBarPressed;
+    [_window addSubview:self];
 }
 
 - (void)_destroyWindows
 {
     [self removeFromSuperview];
-    _lowerWindow = nil;
-    _upperWindow = nil;
+    _window = nil;
 }
 
 - (void)setStatusBarPressed:(void (^)(void))statusBarPressed
 {
     _statusBarPressed = [statusBarPressed copy];
-    _upperWindow.statusBarPressed = [statusBarPressed copy];
+    _window.statusBarPressed = [statusBarPressed copy];
 }
 
 - (bool)realHidden
@@ -108,7 +107,7 @@
 
 - (void)setHidden:(BOOL)hidden
 {
-    if (_targetHidden == hidden && !(!hidden && _lowerWindow == nil))
+    if (_targetHidden == hidden && !(!hidden && _window == nil))
         return;
     
     _targetHidden = hidden;
@@ -188,6 +187,9 @@
 
 - (void)startAnimation
 {
+    if (_label.hidden)
+        return;
+    
     CAKeyframeAnimation *blinkAnim = [CAKeyframeAnimation animationWithKeyPath:@"opacity"];
     blinkAnim.duration = 1.8;
     blinkAnim.autoreverses = false;
@@ -201,6 +203,9 @@
 
 - (void)stopAnimation
 {
+    if (_label.hidden)
+        return;
+    
     [_label.layer removeAllAnimations];
 }
 

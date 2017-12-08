@@ -1,17 +1,16 @@
 #import "TGGenericPeerMediaGalleryImageItem.h"
 
-#import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGStringUtils.h"
-
-#import "TGUser.h"
+#import <LegacyComponents/TGRemoteImageView.h>
+#import <LegacyComponents/TGImageMediaAttachment.h>
 
 #import "TGAppDelegate.h"
 
 @interface TGGenericPeerMediaGalleryImageItem ()
 {
     TGImageInfo *_legacyImageInfo;
+    TGImageMediaAttachment *_media;
 }
 
 @end
@@ -59,10 +58,26 @@
         self.accessHash = accessHash;
         _legacyImageInfo = legacyImageInfo;
         _messageId = messageId;
+        _peerId = peerId;
         self.embeddedStickerDocuments = embeddedStickerDocuments;
         self.hasStickers = hasStickers;
     }
     return self;
+}
+
+- (instancetype)initWithMedia:(TGImageMediaAttachment *)media localId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId
+{
+    self = [self initWithImageId:media.imageId accessHash:media.accessHash orLocalId:localId peerId:peerId messageId:messageId legacyImageInfo:media.imageInfo embeddedStickerDocuments:media.embeddedStickerDocuments hasStickers:media.hasStickers];
+    if (self != nil)
+    {
+        _media = media;
+    }
+    return self;
+}
+
+- (id)media
+{
+    return _media;
 }
 
 - (BOOL)isEqual:(id)object

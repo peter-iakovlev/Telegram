@@ -1,6 +1,4 @@
-#import "TGViewController.h"
-
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGPIPSourceLocation;
 

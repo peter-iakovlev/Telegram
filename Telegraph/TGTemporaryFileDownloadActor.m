@@ -1,9 +1,9 @@
 #import "TGTemporaryFileDownloadActor.h"
 
-#import "TGModernCache.h"
+#import <LegacyComponents/TGModernCache.h>
 
 #import "TGTelegraph.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGRemoteFileSignal.h"
 

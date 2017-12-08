@@ -1,6 +1,6 @@
 #import "TGInstagramDataContentProperty.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGInstagramDataContentProperty
 

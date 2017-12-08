@@ -1,15 +1,17 @@
 #import "TGModernMediaListController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernMediaListModel.h"
-#import "TGModernMediaListItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
+#import <LegacyComponents/TGModernMediaListItemContentView.h>
 
 #import "TGModernMediaListLayout.h"
-#import "TGModernMediaListItemView.h"
+#import <LegacyComponents/TGModernMediaListItemView.h>
 
-#import "TGModernGalleryController.h"
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 
-#import "TGImageUtils.h"
+#import "TGLegacyComponentsContext.h"
 
 @interface TGModernMediaListController () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource>
 {
@@ -147,6 +149,8 @@
     
     _collectionLayout = [[TGModernMediaListLayout alloc] init];
     _collectionView = [[UICollectionView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, frameSize.height) collectionViewLayout:_collectionLayout];
+    if (iosMajorVersion() >= 11)
+        _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.alwaysBounceVertical = true;
     _collectionView.backgroundColor = [UIColor whiteColor];
     
@@ -552,7 +556,7 @@
         }];
         if (controller != nil)
         {
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
             controllerWindow.hidden = false;
         }
     }

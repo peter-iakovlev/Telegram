@@ -1,5 +1,5 @@
 #import "TGModernMediaListThumbnailItemView.h"
-#import "TGModernGalleryEditableItemView.h"
+#import <LegacyComponents/TGModernGalleryEditableItemView.h>
 
 @interface TGWebSearchImageItemView : TGModernMediaListThumbnailItemView
 

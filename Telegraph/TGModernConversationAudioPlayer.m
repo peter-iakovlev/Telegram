@@ -8,7 +8,7 @@
 
 #import "TGModernConversationAudioPlayer.h"
 
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGModernConversationAudioPlayerContext.h"
 

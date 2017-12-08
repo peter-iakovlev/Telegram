@@ -1,11 +1,8 @@
 #import "TGPreviewStickerItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGMessageImageView.h"
 

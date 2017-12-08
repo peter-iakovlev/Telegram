@@ -1,5 +1,4 @@
-#import "TGOverlayController.h"
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGUser;
 @class TGCallSession;

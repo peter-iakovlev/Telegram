@@ -13,6 +13,11 @@
 @interface TGAccountInfoCollectionItem ()
 {
     int _synchronizationStatus;
+    NSString *_status;
+    bool _active;
+    
+    NSString *_phoneNumber;
+    NSString *_username;
 }
 
 @end
@@ -37,53 +42,61 @@
     return self;
 }
 
+- (void)itemSelected:(id)actionTarget
+{
+    if (_action != NULL && [actionTarget respondsToSelector:_action])
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        [actionTarget performSelector:_action];
+#pragma clang diagnostic pop
+    }
+}
+
 - (void)bindView:(TGUserInfoCollectionItemView *)view
 {
     [super bindView:view];
     
-    bool active = false;
-    NSString *status = [self stringForSynchronizationStatus:_synchronizationStatus active:&active];
-    [view setStatus:status active:active];
+    [view setStatus:_status active:_active];
+    [view setShowDisclosureIndicator:self.hasDisclosureIndicator];
+    [view setPhoneNumber:_phoneNumber];
+    [view setUsername:_username];
+    [view setShowCameraIcon:_showCameraIcon];
 }
 
-- (NSString *)stringForSynchronizationStatus:(int)status active:(bool *)active
+- (void)setHasDisclosureIndicator:(bool)flag
 {
-    NSString *text = @"";
-    
-    if (status == 1)
-        text = TGLocalized(@"State.connecting");
-    else if (status == 2)
-        text = TGLocalized(@"State.updating");
-    else
-    {
-        text = TGLocalized(@"Presence.online");
-        if (active != NULL)
-            *active = true;
-    }
-    
-    return text;
+    _hasDisclosureIndicator = flag;
+    [(TGUserInfoCollectionItemView *)self.boundView setShowDisclosureIndicator:flag];
 }
 
-- (void)setSynchronizationStatus:(int)status
+- (void)setShowCameraIcon:(bool)flag
 {
-    _synchronizationStatus = status;
-    
-    if (self.view != nil)
-    {
-        bool active = false;
-        NSString *status = [self stringForSynchronizationStatus:_synchronizationStatus active:&active];
-        [((TGUserInfoCollectionItemView *)self.view) setStatus:status active:active];
-    }
+    _showCameraIcon = flag;
+    [(TGUserInfoCollectionItemView *)self.boundView setShowCameraIcon:flag];
+}
+
+- (void)setPhoneNumber:(NSString *)phoneNumber
+{
+    _phoneNumber = phoneNumber;
+    [((TGUserInfoCollectionItemView *)self.view) setPhoneNumber:phoneNumber];
+}
+
+- (void)setUsername:(NSString *)username
+{
+    _username = username;
+    [((TGUserInfoCollectionItemView *)self.view) setUsername:username];
+}
+
+- (void)setStatus:(NSString *)status active:(bool)active
+{
+    _status = status;
+    _active = active;
+    [((TGUserInfoCollectionItemView *)self.view) setStatus:status active:active];
 }
 
 - (void)localizationUpdated
 {
-    if (self.view != nil)
-    {
-        bool active = false;
-        NSString *status = [self stringForSynchronizationStatus:_synchronizationStatus active:&active];
-        [((TGUserInfoCollectionItemView *)self.view) setStatus:status active:active];
-    }
 }
 
 @end

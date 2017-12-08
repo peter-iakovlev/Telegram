@@ -1,6 +1,6 @@
 #import "TGModernConversationDimWindow.h"
 
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGModernConversationDimController : TGOverlayController
 
@@ -48,6 +48,51 @@
     }
 }
 
+- (UIViewController *)statusBarAppearanceSourceController
+{
+    UIViewController *rootController = [[LegacyComponentsGlobals provider] applicationWindows].firstObject.rootViewController;
+    UIViewController *topViewController = nil;
+    if ([rootController respondsToSelector:@selector(viewControllers)]) {
+        topViewController = [(UINavigationController *)rootController viewControllers].lastObject;
+    }
+    
+    if ([topViewController isKindOfClass:[UITabBarController class]])
+        topViewController = [(UITabBarController *)topViewController selectedViewController];
+    if ([topViewController isKindOfClass:[TGViewController class]])
+    {
+        TGViewController *concreteTopViewController = (TGViewController *)topViewController;
+        if (concreteTopViewController.presentedViewController != nil)
+        {
+            topViewController = concreteTopViewController.presentedViewController;
+        }
+        else if (concreteTopViewController.associatedWindowStack.count != 0)
+        {
+            for (UIWindow *window in concreteTopViewController.associatedWindowStack.reverseObjectEnumerator)
+            {
+                if (window.rootViewController != nil && window.rootViewController != self)
+                {
+                    topViewController = window.rootViewController;
+                    break;
+                }
+            }
+        }
+    }
+    
+    return topViewController;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    UIStatusBarStyle style = [[self statusBarAppearanceSourceController] preferredStatusBarStyle];
+    return style;
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    bool value = [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
+    return value;
+}
+
 @end
 
 @implementation TGModernConversationDimWindow
@@ -60,7 +105,7 @@
     if (self != nil)
     {
         self.rootViewController = [[TGModernConversationDimController alloc] init];
-        self.windowLevel = 100000000.0f - 0.001f;
+        self.windowLevel = UIWindowLevelStatusBar;
         self.hidden = false;
     }
     return self;

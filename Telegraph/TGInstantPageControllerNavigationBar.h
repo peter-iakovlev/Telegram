@@ -7,6 +7,11 @@
 @property (nonatomic, copy) void (^settingsPressed)();
 @property (nonatomic, copy) void (^scrollToTop)();
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
+@property (nonatomic, assign) CGFloat collapsedHeight;
+@property (nonatomic, assign) CGFloat expandedHeight;
+
 - (CGPoint)settingsButtonCenter;
 - (void)setNavigationButtonsDimmed:(bool)dimmed animated:(bool)animated;
 

@@ -1,6 +1,6 @@
 #import "TGAccountSettingsUpdateActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 

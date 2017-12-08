@@ -1,6 +1,6 @@
 #import "TGProfilePhotoListActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"

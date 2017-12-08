@@ -34,7 +34,6 @@
 @property (nonatomic) int32_t version;
 @property (nonatomic, retain) NSString *restriction_reason;
 @property (nonatomic, retain) TLChannelAdminRights *admin_rights;
-
 @end
 
 @interface TLChat$channelForbiddenMeta : TLChat

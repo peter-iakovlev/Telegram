@@ -2,6 +2,7 @@
 
 @class TGMessage;
 @class TGUser;
+@class TGPresentation;
 
 @interface TGCallGroup : NSObject
 
@@ -24,6 +25,7 @@
 @property (nonatomic, copy) void (^infoPressed)(void);
 @property (nonatomic, copy) void (^deletePressed)(void);
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic) bool isLastCell;
 
 - (void)setupWithCallGroup:(TGCallGroup *)group;

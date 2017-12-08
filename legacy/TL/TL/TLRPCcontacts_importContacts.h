@@ -8,7 +8,6 @@
 @interface TLRPCcontacts_importContacts : TLMetaRpc
 
 @property (nonatomic, retain) NSArray *contacts;
-@property (nonatomic) bool replace;
 
 - (Class)responseClass;
 

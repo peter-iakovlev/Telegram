@@ -1,7 +1,8 @@
 #import "TGBlockedPeersSignals.h"
 
-#import "ActionStage.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
 @interface TGBlockedPeersHelper : NSObject <ASWatcher>

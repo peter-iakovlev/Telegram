@@ -1,7 +1,8 @@
 #import "TGCameraShareSignals.h"
 
-#import "TGImageUtils.h"
-#import "TGCache.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGCache.h>
 
 #import "TLInputMediaUploadedPhoto.h"
 #import "TLInputMediaUploadedDocument.h"
@@ -10,12 +11,10 @@
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
-#import "TGPeerIdAdapter.h"
-#import "TGMessage.h"
 #import "TGMessageViewedContentProperty.h"
 
-#import "TGMediaVideoConverter.h"
-#import "TGVideoEditAdjustments.h"
+#import <LegacyComponents/TGMediaVideoConverter.h>
+#import <LegacyComponents/TGVideoEditAdjustments.h>
 #import "TGMediaLiveUploadWatcher.h"
 
 #import "TGUploadFileSignals.h"
@@ -23,7 +22,7 @@
 
 #import "TGImageDownloadActor.h"
 #import "TGVideoDownloadActor.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGPreparedLocalImageMessage.h"
 #import "TGPreparedAssetVideoMessage.h"
@@ -103,7 +102,7 @@
             UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, preferredThumnailSize));
             NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
 
-            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:description[@"caption"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] messageLifetime:0];
+            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:description[@"caption"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] messageLifetime:0 groupedId:0];
             
             NSArray *messages = [self _setupMessages:preparedMessage peerIds:peerIds];
             
@@ -266,7 +265,7 @@
             int64_t localVideoId = isAnimation ? 0 : localId;
             int64_t localDocumentId = isAnimation ? localId : 0;
             
-            TGPreparedAssetVideoMessage *preparedMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:nil assetURL:description[@"url"] localVideoId:localVideoId imageInfo:nil duration:duration dimensions:finalDimensions adjustments:[adjustments dictionary] useMediaCache:false liveUpload:true passthrough:false caption:description[@"caption"] isCloud:false document:isAnimation localDocumentId:localDocumentId fileSize:INT_MAX mimeType:mimeType attributes:attributes replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] roundMessage:false];
+            TGPreparedAssetVideoMessage *preparedMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:nil assetURL:description[@"url"] localVideoId:localVideoId imageInfo:nil duration:duration dimensions:finalDimensions adjustments:[adjustments dictionary] useMediaCache:false liveUpload:true passthrough:false caption:description[@"caption"] isCloud:false document:isAnimation localDocumentId:localDocumentId fileSize:INT_MAX mimeType:mimeType attributes:attributes replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] roundMessage:false groupedId:0];
             
             [preparedMessage setImageInfoWithThumbnailData:thumbnailData thumbnailSize:finalDimensions];
             

@@ -1,9 +1,9 @@
 #import "TGSecretInfiniteLifetimePeerMediaGalleryModel.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGGenericPeerGalleryItem.h"
 

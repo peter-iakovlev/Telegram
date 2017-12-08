@@ -1,6 +1,6 @@
 #import "TGLoginCountryCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGLoginCountryCell ()
 
@@ -33,7 +33,7 @@
         _codeLabel.font = TGMediumSystemFontOfSize(17);
         _codeLabel.backgroundColor = [UIColor whiteColor];
         _codeLabel.textColor = UIColorRGB(0x0);
-        [self addSubview:_codeLabel];
+        [self.contentView addSubview:_codeLabel];
         
         self.selectedBackgroundView = [[UIView alloc] init];
         self.selectedBackgroundView.backgroundColor = TGSelectionColor();
@@ -56,7 +56,7 @@
 - (void)setUseIndex:(bool)useIndex
 {
     _titleLabel.frame = useIndex ? CGRectMake(iosMajorVersion() >= 7 ? 15 : 9, 12, self.contentView.frame.size.width - 74 - 5, 20) : CGRectMake(9, 12, self.contentView.frame.size.width - 74 - 15, 20);
-    _codeLabel.frame = useIndex ? CGRectMake(self.frame.size.width - 49 - 32, 12, 70, 20) : CGRectMake(self.frame.size.width - 50 - 9, 12, 70, 20);
+    _codeLabel.frame = useIndex ? CGRectMake(self.contentView.frame.size.width - 49 - 32, 12, 70, 20) : CGRectMake(self.contentView.frame.size.width - 81, 12, 70, 20);
 }
 
 @end

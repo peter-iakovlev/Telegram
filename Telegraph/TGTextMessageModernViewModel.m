@@ -1,12 +1,8 @@
 #import "TGTextMessageModernViewModel.h"
 
-#import "TGTelegraphConversationMessageAssetsSource.h"
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGDateUtils.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
+#import "TGTelegraphConversationMessageAssetsSource.h"
 
 #import "TGModernConversationItem.h"
 #import "TGModernView.h"
@@ -22,15 +18,11 @@
 
 #import "TGReusableLabel.h"
 
-#import "TGMessage.h"
-#import "TGUser.h"
-
 #import "TGReplyHeaderModel.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 #import "TGWebpageFooterModel.h"
-#import "TGTextCheckingResult.h"
 
 @interface TGTextMessageModernViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
@@ -46,6 +38,7 @@
     bool _centerText;
     bool _isGame;
     bool _isInvoice;
+    int32_t _authorPeerId;
 }
 
 @end
@@ -139,8 +132,10 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                       {
                           assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
                       });
+        _authorPeerId = message.fromUid;
         _isGame = hasGame;
         _isInvoice = hasInvoice;
+        _authorPeerId = message.fromUid;
         NSArray *textCheckingResults = nil;
         if (hasGame) {
             _text = @"";
@@ -260,6 +255,11 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                 webpageIsVideo = isVideo && !isAnimation;
             }
             
+            bool isTwitter = [_webPage.siteName.lowercaseString isEqualToString:@"twitter"];
+            bool isInstagram = [_webPage.siteName.lowercaseString isEqualToString:@"instagram"];
+            bool isInstantGallery = (isTwitter || isInstagram) && _webPage.instantPage != nil;
+            bool isCoub = [_webPage.siteName.lowercaseString isEqualToString:@"coub"];
+            
             bool activateVideo = false;
             bool activateGame = false;
             bool activateInvoice = false;
@@ -276,28 +276,23 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                             activateGame = true;
                         } else if (webpageIsInvoice) {
                             activateInvoice = true;
-                        } else if (_webPage.instantPage != nil && webpageAction != TGWebpageFooterModelActionDownload) {
+                        } else if (_webPage.instantPage != nil && webpageAction != TGWebpageFooterModelActionDownload && !isInstantGallery) {
                             activateInstantPage = true;
                         } else if (_webPage.document.isRoundVideo && webpageAction != TGWebpageFooterModelActionDownload) {
                             activateRoundMessage = true;
                         } else {
-                            if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"])
-                            {
+                            if ([_webPage.pageType isEqualToString:@"photo"] || [_webPage.pageType isEqualToString:@"article"] || (isInstantGallery && _webPage.instantPage != nil))
                                 webPage = _webPage;
-                            }
-                            
-                            bool isInstagram = [_webPage.siteName.lowercaseString isEqualToString:@"instagram"];
-                            bool isCoub = [_webPage.siteName.lowercaseString isEqualToString:@"coub"];
                             
                             activateWebpageContents = _webPage.embedUrl.length != 0;
                             if (webpageAction == TGWebpageFooterModelActionDownload || webpageAction == TGWebpageFooterModelActionCancel) {
                             } else if (_webPageFooterModel.mediaIsAvailable) {
-                                if (webpageIsVideo && !isInstagram) {
+                                if (webpageIsVideo && !isInstantGallery) {
                                     activateVideo = true;
                                 }
                             }
                             
-                            if (isInstagram)
+                            if (isInstantGallery || isInstagram)
                                 webpageAction = TGWebpageFooterModelActionNone;
                             else if ((webpageAction == TGWebpageFooterModelActionDownload || (webpageAction == TGWebpageFooterModelActionPlay && (_context.autoplayAnimations || isCoub))) && _webPageFooterModel.mediaIsAvailable) {
                                 webpageAction = TGWebpageFooterModelActionNone;
@@ -311,7 +306,7 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                     }
                 }
             }
-            if (_webPage.instantPage != nil && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"] || [linkCandidate hasPrefix:@"http://t.me/iv?"] || [linkCandidate hasPrefix:@"https://t.me/iv?"]) && webpageAction != TGWebpageFooterModelActionDownload) {
+            if (_webPage.instantPage != nil && !isInstantGallery && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"] || [linkCandidate hasPrefix:@"http://t.me/iv?"] || [linkCandidate hasPrefix:@"https://t.me/iv?"]) && webpageAction != TGWebpageFooterModelActionDownload) {
                 if ([_webPage.url isEqualToString:linkCandidate] || (linkCandidateText != nil && [_webPage.url isEqualToString:linkCandidateText])) {
                     activateInstantPage = true;
                 }
@@ -711,21 +706,18 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
         
         if (_context.searchText != nil && _context.searchText.length != 0)
         {
+            if (_context.searchAuthorId != 0) {
+                if (_authorPeerId != _context.searchAuthorId) {
+                    return;
+                }
+            }
+            
             static UIImage *highlightImage = nil;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
-                          {
-                              highlightImage = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
-                              /*CGFloat radius = 4.0f;
-                               UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
-                               CGContextRef context = UIGraphicsGetCurrentContext();
-                               CGContextSetFillColorWithColor(context, UIColorRGBA(0xffe438, 0.4f).CGColor);
-                               CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
-                               highlightImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)radius topCapHeight:(NSInteger)radius];
-                               UIGraphicsEndImageContext();*/
-                          });
-            
-            //CGPoint offset = CGPointMake(_contentModel.frame.origin.x - _backgroundModel.frame.origin.x, _contentModel.frame.origin.y - _backgroundModel.frame.origin.y);
+            {
+                highlightImage = [[TGTelegraphConversationMessageAssetsSource instance] messageLinkFull];
+            });
             
             NSMutableArray *currentSearchHighlightViews = [[NSMutableArray alloc] init];
             

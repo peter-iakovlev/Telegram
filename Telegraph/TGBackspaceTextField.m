@@ -1,6 +1,6 @@
 #import "TGBackspaceTextField.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBackspaceTextField ()
 

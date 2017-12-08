@@ -8,10 +8,12 @@
 
 #import "TGOpusAudioRecorder.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
-#import "ASQueue.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ASQueue.h>
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGLiveUploadActor.h"
 
@@ -24,8 +26,6 @@
 #import "TGDataItem.h"
 
 #import "TGAudioSessionManager.h"
-
-#import "TGAudioWaveform.h"
 
 #import "TGTelegramNetworking.h"
 

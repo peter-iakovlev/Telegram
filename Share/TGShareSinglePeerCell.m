@@ -4,7 +4,7 @@
 #import "TGUserModel.h"
 
 #import "TGShareImageView.h"
-#import "TGCheckButtonView.h"
+#import "TGShareCheckButtonView.h"
 
 @interface TGShareSinglePeerCell ()
 {
@@ -45,7 +45,7 @@
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(60.0f, 60.0f), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetBlendMode(context, kCGBlendModeCopy);
-            CGContextSetFillColorWithColor(context, TGColorWithHex(0x007ee5).CGColor);
+            CGContextSetFillColorWithColor(context, [UIColor hexColor:0x007ee5].CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 60.0f, 60.0f));
             CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(2.0f, 2.0f, 60.0f - 4.0f, 60.0f - 4.0f));
@@ -121,7 +121,7 @@
     
     _isChecked = checked;
     
-    _titleLabel.textColor = checked ? TGAccentColor() : [UIColor blackColor];
+    _titleLabel.textColor = checked ? [UIColor hexColor:0x007ee5] : [UIColor blackColor];
     
     if (animated)
     {

@@ -1,17 +1,15 @@
 #import "TGSynchronizeContactsActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegraph.h"
-#import "TGPhoneUtils.h"
 
 #import <AddressBook/AddressBook.h>
 
-#import "NSObject+TGLock.h"
-
 #import "TGDatabase.h"
-#import "TGStringUtils.h"
 
 #import "TGContactListRequestBuilder.h"
 #import "TGUserDataRequestBuilder.h"
@@ -170,6 +168,19 @@ typedef void (^TGAddressBookCreated)(ABAddressBookRef addressBook, bool denied);
 @property (nonatomic) bool firstTimeSync;
 
 @end
+
+static int32_t hashForContactIds(int32_t nonRegisteredCount, std::vector<int32_t> const &contactIds) {
+    uint32_t acc = 0;
+    
+    uint32_t num = (uint32_t)nonRegisteredCount;
+    acc = (acc * 20261) + num;
+    
+    for (auto it : contactIds) {
+        uint32_t uid = (uint32_t)it;
+        acc = (acc * 20261) + uid;
+    }
+    return acc % 0x7FFFFFFF;
+}
 
 @implementation TGSynchronizeContactsManager
 
@@ -669,34 +680,18 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
     else if ([self.path hasSuffix:@"loadRemote)"])
     {
         std::vector<int> contactIds;
+        NSData *countData = [TGDatabaseInstance() customProperty:@"contactRemoteNonRegisteredCount"];
+        int32_t count = 0;
+        if (countData.length == 4) {
+            [countData getBytes:&count length:4];
+        }
+        
         [TGDatabaseInstance() loadRemoteContactUids:contactIds];
         
-        NSString *hashString = @"";
-        if (!contactIds.empty())
-        {
-            std::sort(contactIds.begin(), contactIds.end());
-            
-            NSMutableString *stringToHash = [[NSMutableString alloc] init];
-            for (std::vector<int>::iterator it = contactIds.begin(); it != contactIds.end(); it++)
-            {
-                if (stringToHash.length != 0)
-                    [stringToHash appendString:@","];
-                [stringToHash appendFormat:@"%d", *it];
-            }
-        
-            NSData *dataToHash = [stringToHash dataUsingEncoding:NSUTF8StringEncoding];
-        
-            unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
-            CC_MD5(dataToHash.bytes, (CC_LONG)dataToHash.length, md5Buffer);
-        
-            //TGLog(@"%@", stringToHash);
-        
-            hashString = [[NSString alloc] initWithFormat:@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", md5Buffer[0], md5Buffer[1], md5Buffer[2], md5Buffer[3], md5Buffer[4], md5Buffer[5], md5Buffer[6], md5Buffer[7], md5Buffer[8], md5Buffer[9], md5Buffer[10], md5Buffer[11], md5Buffer[12], md5Buffer[13], md5Buffer[14], md5Buffer[15]];
-            //TGLog(@"%@", hashString);
-        }
+        std::sort(contactIds.begin(), contactIds.end());
     
         _hadRemoteContacts = !contactIds.empty();
-        self.cancelToken = [TGTelegraphInstance doRequestContactList:hashString actor:self];
+        self.cancelToken = [TGTelegraphInstance doRequestContactList:hashForContactIds(count, contactIds) actor:self];
         
         return;
     }
@@ -2070,7 +2065,10 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
     if (remoteUids != currentUids)
     {
         _hadRemoteContacts = false;
-        self.cancelToken = [TGTelegraphInstance doRequestContactList:nil actor:self];
+        self.cancelToken = [TGTelegraphInstance doRequestContactList:0
+                            
+                            
+                                                               actor:self];
     }
     else
     {
@@ -2120,6 +2118,8 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         
         [[TGSynchronizeContactsManager instance] dispatchOnAddressBookQueue:^
         {
+            int32_t count = ((TLcontacts_Contacts$contacts_contacts *)result).saved_count;
+            [TGDatabaseInstance() setCustomProperty:@"contactRemoteNonRegisteredCount" value:[NSData dataWithBytes:&count length:4]];
             [TGDatabaseInstance() replaceRemoteContactUids:contactUids];
             
             [self importContacts:^(__unused bool imported)

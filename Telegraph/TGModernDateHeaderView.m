@@ -1,9 +1,8 @@
 #import "TGModernDateHeaderView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraphConversationMessageAssetsSource.h"
-#import "TGDateUtils.h"
-#import "TGFont.h"
-#import "TGImageUtils.h"
 
 @interface TGModernDateHeaderView ()
 {

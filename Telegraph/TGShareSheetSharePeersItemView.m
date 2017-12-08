@@ -1,8 +1,8 @@
 #import "TGShareSheetSharePeersItemView.h"
 
-#import "TGModernButton.h"
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGShareSheetSharePeersLayout.h"
 #import "TGModernMediaCollectionView.h"
@@ -13,13 +13,11 @@
 
 #import "TGDatabase.h"
 
-#import "TGSearchBar.h"
+#import <LegacyComponents/TGSearchBar.h>
 
 #import "TGGlobalMessageSearchSignals.h"
 #import "TGChatSearchController.h"
 #import "TGTelegraph.h"
-
-#import "TGPeerIdAdapter.h"
 
 #import "TGShareSheetView.h"
 
@@ -53,6 +51,8 @@
         _layout.scrollDirection = UICollectionViewScrollDirectionVertical;
         
         _collectionView = [[TGModernMediaCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_layout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.backgroundColor = nil;
         _collectionView.opaque = false;
         _collectionView.showsHorizontalScrollIndicator = false;

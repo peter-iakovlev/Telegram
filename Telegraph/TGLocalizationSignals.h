@@ -3,7 +3,7 @@
 
 @class TLLangPackDifference;
 
-@interface TGAvailableLocalization : NSObject
+@interface TGAvailableLocalization : NSObject <NSCoding>
     
 @property (nonatomic, strong, readonly) NSString *title;
 @property (nonatomic, strong, readonly) NSString *localizedTitle;
@@ -27,6 +27,7 @@
 
 @interface TGLocalizationSignals : NSObject
 
++ (SSignal *)storedLocalizations;
 + (SSignal *)suggestedLocalization;
 + (SSignal *)suggestedLocalizationData:(NSString *)code;
 + (SSignal *)availableLocalizations;

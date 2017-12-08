@@ -1,4 +1,4 @@
-#import "TGModernGalleryDefaultHeaderView.h"
+#import <LegacyComponents/TGModernGalleryDefaultHeaderView.h>
 
 @interface TGGenericPeerMediaGalleryDefaultHeaderView : UIView <TGModernGalleryDefaultHeaderView>
 

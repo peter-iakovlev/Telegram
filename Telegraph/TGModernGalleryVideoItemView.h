@@ -6,9 +6,9 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGModernGalleryItemView.h"
+#import <LegacyComponents/TGModernGalleryItemView.h>
 
-#import "TGModernGalleryZoomableItemView.h"
+#import <LegacyComponents/TGModernGalleryZoomableItemView.h>
 
 @class TGImageView;
 @class AVPlayer;

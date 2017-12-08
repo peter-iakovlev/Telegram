@@ -7,7 +7,7 @@
 
 @interface TLRPCcontacts_getContacts : TLMetaRpc
 
-@property (nonatomic, retain) NSString *n_hash;
+@property (nonatomic) int32_t n_hash;
 
 - (Class)responseClass;
 

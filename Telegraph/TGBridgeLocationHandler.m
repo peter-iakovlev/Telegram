@@ -1,7 +1,7 @@
 #import "TGBridgeLocationHandler.h"
 #import "TGBridgeLocationSubscription.h"
 
-#import "TGLocationSignals.h"
+#import <LegacyComponents/TGLocationSignals.h>
 
 #import "TGBridgeLocationVenue+TGLocationVenue.h"
 

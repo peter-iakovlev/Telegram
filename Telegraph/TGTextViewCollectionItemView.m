@@ -1,6 +1,6 @@
 #import "TGTextViewCollectionItemView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGTextViewCollectionItemView () <UITextViewDelegate>
 {

@@ -1,6 +1,6 @@
 #import "TGConversationHistoryRequestActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 #import "TGMessage+Telegraph.h"

@@ -1,14 +1,14 @@
 #import "TGWebSearchImageItemView.h"
 
-#import "TGMediaEditingContext.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGMediaEditingContext.h>
 #import "TGWebSearchImageItem.h"
-#import "PGPhotoEditorValues.h"
+#import <LegacyComponents/PGPhotoEditorValues.h>
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGCheckButtonView.h>
 
-#import "TGCheckButtonView.h"
-
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGWebSearchImageItemView ()
 {

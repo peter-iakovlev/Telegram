@@ -1,22 +1,14 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGWallpaperController.h"
 
-#import "TGHacks.h"
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGHighlightableButton.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGWallpaperInfo.h"
-#import "TGCustomImageWallpaperInfo.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
+#import <LegacyComponents/TGCustomImageWallpaperInfo.h>
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGWallpaperController () <UIScrollViewDelegate>
 {
@@ -35,6 +27,7 @@
     TGHighlightableButton *_cancelButton;
     
     UIView *_separatorView;
+    UIView *_bottomView;
 }
 
 @end
@@ -71,9 +64,9 @@
     
     if (self.navigationController == nil && [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
-        [TGHacks animateApplicationStatusBarAppearance:TGStatusBarAppearanceAnimationSlideUp delay:0.0 duration:0.5 completion:^
+        [[TGLegacyComponentsContext shared] animateApplicationStatusBarAppearance:TGStatusBarAppearanceAnimationSlideUp delay:0.0 duration:0.5 completion:^
         {
-            [TGHacks setApplicationStatusBarAlpha:0.0f];
+            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
         }];
     }
 }
@@ -84,8 +77,8 @@
  
     if (self.navigationController == nil && [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
     {
-        [TGHacks setApplicationStatusBarAlpha:1.0f];
-        [TGHacks animateApplicationStatusBarAppearance:TGStatusBarAppearanceAnimationSlideDown duration:iosMajorVersion() >= 7 ? 0.23 : 0.3 completion:nil];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
+        [[TGLegacyComponentsContext shared] animateApplicationStatusBarAppearance:TGStatusBarAppearanceAnimationSlideDown duration:iosMajorVersion() >= 7 ? 0.23 : 0.3 completion:nil];
     }
 }
 
@@ -159,7 +152,7 @@
     if (iosMajorVersion() >= 7 && [TGViewController isWidescreen])
     {
         UIToolbar *toolbar = [[UIToolbar alloc] initWithFrame:_panelView.bounds];
-        toolbar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+        toolbar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_panelView addSubview:toolbar];
     }
     else
@@ -190,9 +183,14 @@
     [_setButton setTitleShadowColor:[UIColor clearColor] forState:UIControlStateNormal];
     [_panelView addSubview:_setButton];
     
-    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, _panelView.frame.size.height)];
+    _separatorView = [[UIView alloc] initWithFrame:CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, 49.0f)];
     _separatorView.backgroundColor = UIColorRGBA(0x000000, 0.52f);
     [_panelView addSubview:_separatorView];
+    
+    _bottomView =  [[UIView alloc] initWithFrame:CGRectMake(0.0f, 49.0f, _panelView.frame.size.width, separatorWidth)];
+    _bottomView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _bottomView.backgroundColor = UIColorRGBA(0x000000, 0.52f);
+    [_panelView addSubview:_bottomView];
 }
 
 - (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration {
@@ -229,15 +227,22 @@
         _imageView.contentMode = UIViewContentModeScaleAspectFill;
     }
     
-    _panelView.frame = CGRectMake(0, screenSize.height - 49, screenSize.width, 49);
+    _panelView.frame = CGRectMake(0, screenSize.height - 49.0f - self.controllerSafeAreaInset.bottom, screenSize.width, 49.0f + self.controllerSafeAreaInset.bottom);
     
     CGFloat separatorWidth = TGScreenPixel;
     
-    _cancelButton.frame = CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, _panelView.frame.size.height);
+    _cancelButton.frame = CGRectMake(0, 0, CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 49.0f);
     
-    _setButton.frame = CGRectMake(_cancelButton.frame.origin.x + _cancelButton.frame.size.width + separatorWidth, 0, CGFloor(_panelView.frame.size.width / 2), _panelView.frame.size.height);
+    _setButton.frame = CGRectMake(_cancelButton.frame.origin.x + _cancelButton.frame.size.width + separatorWidth, 0, CGFloor(_panelView.frame.size.width / 2), 49.0f);
     
-    _separatorView.frame = CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, _panelView.frame.size.height);
+    _separatorView.frame = CGRectMake(CGFloor(_panelView.frame.size.width / 2) - separatorWidth, 0, separatorWidth, 49.0f);
+}
+
+- (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
+{
+    [super controllerInsetUpdated:previousInset];
+    
+    _panelView.frame = CGRectMake(0, self.view.bounds.size.height - 49.0f - self.controllerSafeAreaInset.bottom, self.view.bounds.size.width, 49.0f + self.controllerSafeAreaInset.bottom);
 }
 
 - (BOOL)shouldAutorotate

@@ -1,6 +1,7 @@
 #import "TGBridgeChat+TGConversation.h"
 #import "TGBridgeMediaAttachment+TGMediaAttachment.h"
-#import "TGConversation.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGBridgeChat (TGConversation)
 

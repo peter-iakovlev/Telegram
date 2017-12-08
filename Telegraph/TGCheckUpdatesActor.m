@@ -2,7 +2,7 @@
 
 #import "TGTelegraph.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGApplication.h"
 #import "TGAppDelegate.h"
@@ -65,7 +65,7 @@
         {
             TLhelp_AppUpdate$help_appUpdate *concreteUpdate = (TLhelp_AppUpdate$help_appUpdate *)updateDesc;
             
-            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:concreteUpdate.text delegate:[TGUpdateInterface instance] cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:TGLocalized(@"Update.Update"), nil];
+            TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:concreteUpdate.text delegate:[TGUpdateInterface instance] cancelButtonTitle:TGLocalized(@"Common.Cancel") otherButtonTitles:@"Update", nil];
             [TGUpdateInterface instance].updateUrl = concreteUpdate.url;
             [alertView show];
         });

@@ -1,6 +1,6 @@
 #import "TGChannelMembersControllerEmptyView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGChannelMembersControllerEmptyView () {
     UILabel *_label;

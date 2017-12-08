@@ -1,6 +1,6 @@
 #import "TGTextMessageBackgroundViewModel.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #define TGTextMessageBackgroundImageDef(name, incoming, filePhone, filePad) \
     static UIImage *name() \
@@ -12,8 +12,7 @@
             CGSize screenSize = TGScreenSize(); \
             CGFloat screenSide = MAX(screenSize.width, screenSize.height); \
             bool isLarge = (TGIsPad() || (screenSide >= 667.0f - FLT_EPSILON)); \
-TGLog(@"%d", isLarge ? 1 : 0);\
-            image = [[UIImage imageNamed:!isLarge ? filePhone : filePad] stretchableImageWithLeftCapWidth:incoming ? 23 : (40 - 23) topCapHeight:16]; \
+            image = [TGImageNamed(!isLarge ? filePhone : filePad) stretchableImageWithLeftCapWidth:incoming ? 23 : (40 - 23) topCapHeight:16]; \
         }); \
         return image; \
     }

@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-#import "TGBotInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGModernViewContext;
 

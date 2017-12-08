@@ -1,11 +1,10 @@
 #import "TGReplyHeaderVideoModel.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedMediaSignals.h"
 #import "TGSharedVideoSignals.h"
 #import "TGSharedMediaUtils.h"
-
-#import "TGVideoMediaAttachment.h"
 
 #import "TGSignalImageViewModel.h"
 #import "TGModernImageViewModel.h"
@@ -22,7 +21,7 @@
 {
     NSString *title = videoMedia.roundMessage ? TGLocalized(@"Message.VideoMessage") : TGLocalized(@"Message.Video");
     
-    CGFloat roundRadius = 16.5f * TGScreenScaling();
+    CGFloat roundRadius = 16.5f;
     CGFloat cornerRadius = videoMedia.roundMessage ? roundRadius : [TGReplyHeaderModel thumbnailCornerRadius];
     self = [super initWithPeer:peer incoming:incoming text:title imageSignalGenerator:videoMedia == nil ? nil : ^SSignal *
     {

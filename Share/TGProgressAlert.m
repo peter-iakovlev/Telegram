@@ -47,11 +47,13 @@
         [self addSubview:_textLabel];
         
         _separatorView = [[UIView alloc] init];
-        _separatorView.backgroundColor = TGColorWithHex(0xcccccc);
+        _separatorView.backgroundColor = [UIColor colorWithRed:0.8f green:0.8f blue:0.8f alpha:1.0f]; //[UIColor hexColor:0xcccccc];
         [self addSubview:_separatorView];
         
+        UIColor *accentColor = [UIColor colorWithRed:0.0f green:126.0f / 255.0f blue:229.0 / 255.0f alpha:1.0f]; //[UIColor hexColor:0x007ee5];
+        
         _progressView = [[UIView alloc] init];
-        _progressView.backgroundColor = TGColorWithHex(0x007ee5);
+        _progressView.backgroundColor = accentColor;
         [self addSubview:_progressView];
         
         _cancelButton = [[UIButton alloc] init];
@@ -62,8 +64,8 @@
         
         [_cancelButton setTitle:cancelText forState:UIControlStateNormal];
         [_cancelButton addTarget:self action:@selector(cancelPressed) forControlEvents:UIControlEventTouchUpInside];
-        [_cancelButton setTitleColor:TGColorWithHex(0x007ee5) forState:UIControlStateNormal];
-        [_cancelButton setTitleColor:[TGColorWithHex(0x007ee5) colorWithAlphaComponent:0.6f] forState:UIControlStateHighlighted];
+        [_cancelButton setTitleColor:accentColor forState:UIControlStateNormal];
+        [_cancelButton setTitleColor:[accentColor colorWithAlphaComponent:0.6f] forState:UIControlStateHighlighted];
         [self addSubview:_cancelButton];
     }
     return self;

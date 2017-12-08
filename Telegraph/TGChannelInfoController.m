@@ -1,23 +1,15 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGChannelInfoController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGConversation.h"
+#import "TGLegacyComponentsContext.h"
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
+
 #import "TGDatabase.h"
 
-#import "TGHacks.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "UIDevice+PlatformInfo.h"
+#import <LegacyComponents/UIDevice+PlatformInfo.h>
 #import "TGInterfaceAssets.h"
 
 #import "TGAppDelegate.h"
@@ -25,7 +17,6 @@
 #import "TGTelegramNetworking.h"
 
 #import "TGInterfaceManager.h"
-#import "TGNavigationBar.h"
 #import "TGTelegraphDialogListCompanion.h"
 #import "TGConversationChangeTitleRequestActor.h"
 #import "TGConversationChangePhotoActor.h"
@@ -43,16 +34,14 @@
 #import "TGBotUserInfoController.h"
 #import "TGAlertSoundController.h"
 
-#import "TGRemoteImageView.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGAlertView.h"
 #import "TGActionSheet.h"
 
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGGroupAvatarGalleryItem.h"
 #import "TGGroupAvatarGalleryModel.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGUserInfoVariantCollectionItem.h"
 #import "TGUserInfoTextCollectionItem.h"
@@ -61,10 +50,10 @@
 
 #import "TGSharedMediaController.h"
 
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGGroupManagementSignals.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGGroupInfoShareLinkController.h"
 
@@ -79,11 +68,10 @@
 
 #import "TGReportPeerOtherTextController.h"
 
-#import "TGMediaAvatarMenuMixin.h"
+#import <LegacyComponents/TGMediaAvatarMenuMixin.h>
+#import "TGWebSearchController.h"
 
 #import "TGCollectionMultilineInputItem.h"
-
-#import "TGHashtagSearchController.h"
 
 #import "TGShareMenu.h"
 #import "TGSendMessageSignals.h"
@@ -115,7 +103,6 @@
     TGCollectionMenuSection *_editingInfoSection;
     TGCollectionMultilineInputItem *_channelAboutItem;
     TGVariantCollectionItem *_channelLinkItem;
-    TGSwitchCollectionItem *_channelCommentsItem;
     
     TGCollectionMenuSection *_editingSignMessagesSection;
     TGSwitchCollectionItem *_signMessagesItem;
@@ -215,7 +202,7 @@
         
         _infoManagementItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Management") variant:@"" action:@selector(infoManagementPressed)];
         _infoBlacklistItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.BlackList") variant:@"" action:@selector(infoBlacklistPressed)];
-        _infoMembersItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Members") variant:@"" action:@selector(infoMembersPressed)];
+        _infoMembersItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Subscribers") variant:@"" action:@selector(infoMembersPressed)];
         _adminInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_infoManagementItem, _infoMembersItem]];
         
         _channelAboutItem = [[TGCollectionMultilineInputItem alloc] init];
@@ -233,8 +220,6 @@
         _channelLinkItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Edit.LinkItem") action:@selector(linkPressed)];
         _channelLinkItem.variant = _conversation.username.length == 0 ? @"" : [@"/" stringByAppendingString:_conversation.username];
         
-        _channelCommentsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Edit.EnableComments") isOn:!_conversation.channelIsReadOnly];
-        __unused TGCommentCollectionItem *commentsHelp = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.CreateCommentsHelp")];
         _editingInfoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_channelLinkItem, _channelAboutItem, [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.About.Help")]]];
         
         _signMessagesItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.SignMessages") isOn:false];
@@ -249,7 +234,7 @@
         _notificationsItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
         _notificationsItem.deselectAutomatically = true;
         _editingNotificationsItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Notifications") variant:nil action:@selector(notificationsPressed)];
-        _notificationsItem.deselectAutomatically = true;
+        _editingNotificationsItem.deselectAutomatically = true;
         _soundItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") variant:nil action:@selector(soundPressed)];
         _soundItem.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
         
@@ -405,7 +390,7 @@
             [_adminInfoSection addItem:_infoManagementItem];
             
             if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canBanUsers) {
-                //[_adminInfoSection addItem:_infoBlacklistItem];
+                [_adminInfoSection addItem:_infoBlacklistItem];
             }
             
             [_adminInfoSection addItem:_infoMembersItem];
@@ -424,7 +409,7 @@
         
         [self.menuSections addSection:_notificationsAndMediaSection];
         
-        if (_conversation.kind == TGConversationKindPersistentChannel && _conversation.channelRole != TGChannelRoleCreator) {
+        if (_conversation.kind == TGConversationKindPersistentChannel) {
             [self.menuSections addSection:_leaveSection];
         }
         self.collectionView.backgroundColor = [UIColor whiteColor];
@@ -517,7 +502,7 @@
                     [progressWindow dismiss:true];
                 });
             }] startWithNext:nil error:^(__unused id error) {
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.About.Error") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             } completed:^{
                 block();
             }];
@@ -545,11 +530,11 @@
 
 - (void)setGroupPhotoPressed
 {
-    if (!_conversation.chatIsAdmin)
+    if (_conversation.channelRole != TGChannelRoleCreator && !_conversation.channelAdminRights.canChangeInfo)
         return;
     
     __weak TGChannelInfoController *weakSelf = self;
-    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0)];
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0) saveEditedPhotos:TGAppDelegateInstance.saveEditedPhotos saveCapturedMedia:TGAppDelegateInstance.saveCapturedMedia];
     _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGChannelInfoController *strongSelf = weakSelf;
@@ -575,6 +560,31 @@
             return;
         
         strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        
+        __weak TGMediaAssetsController *weakAssetsController = assetsController;
+        __weak TGWebSearchController *weakController = searchController;
+        searchController.avatarCompletionBlock = ^(UIImage *image) {
+            __strong TGMediaAssetsController *strongAssetsController = weakAssetsController;
+            if (strongAssetsController.avatarCompletionBlock == nil)
+                return;
+            
+            strongAssetsController.avatarCompletionBlock(image);
+        };
+        searchController.dismiss = ^
+        {
+            __strong TGWebSearchController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissEmbeddedAnimated:true];
+        };
+        searchController.parentNavigationController = assetsController;
+        [searchController presentEmbeddedInController:assetsController animated:true];
+        
+        return searchController;
     };
     [_avatarMixin present];
 }
@@ -958,10 +968,6 @@
             }
         }
         
-        if (_channelCommentsItem.isOn != !conversation.channelIsReadOnly) {
-            [_channelCommentsItem setIsOn:!conversation.channelIsReadOnly animated:true];
-        }
-        
         if (!_editing) {
             _channelAboutItem.text = conversation.about;
         }
@@ -995,7 +1001,7 @@
     
     if (avatarView != nil && avatarView.image != nil)
     {
-        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
         modernGallery.previewMode = previewMode;
         if (previewMode)
             modernGallery.showInterface = false;
@@ -1064,7 +1070,7 @@
         
         if (!previewMode)
         {
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:modernGallery];
             controllerWindow.hidden = false;
         }
         else
@@ -1283,15 +1289,6 @@
             [[[TGProgressWindow alloc] init] dismissWithSuccess];
         } externalShareItemSignal:[SSignal single:externalString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
     }
-    else
-    {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.ShareNoLink") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
-        {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf linkPressed];
-        }] show];
-    }
 }
 
 - (void)leavePressed {
@@ -1417,7 +1414,7 @@
                         if (NSClassFromString(@"UIAlertController") != nil) {
                             
                         } else {
-                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.GenericError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                         }
                     } completed:^{
                         __strong TGChannelInfoController *strongSelf = weakSelf;
@@ -1476,24 +1473,16 @@
     else if ([link hasPrefix:@"hashtag://"])
     {
         NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
-        
-        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
-        //__weak TGChannelInfoController *weakSelf = self;
-       /*hashtagController.customResultBlock = ^(int32_t messageId) {
-            __strong TGChannelInfoController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
-                TGModernConversationController *controller = strongSelf.controller;
-                [controller.navigationController popToViewController:controller animated:true];
-            }
-        };*/
-        
-        [self.navigationController pushViewController:hashtagController animated:true];
+        [[TGInterfaceManager instance] displayHashtagOverview:[@"#" stringByAppendingString:hashtag] conversationId:_conversation.conversationId];
     } else {
         @try {
             NSURL *url = [NSURL URLWithString:link];
             if (url != nil) {
-                [[UIApplication sharedApplication] openURL:url];
+                if ([url.host.lowercaseString isEqualToString:@"telegra.ph"]) {
+                    [TGAppDelegateInstance handleOpenInstantView:link];
+                } else {
+                    [[UIApplication sharedApplication] openURL:url];
+                }
             }
         } @catch (NSException *e) {
         }
@@ -1533,7 +1522,7 @@
         TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
         controller.previewMode = false;
         
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
         controllerWindow.hidden = false;
     }
 }

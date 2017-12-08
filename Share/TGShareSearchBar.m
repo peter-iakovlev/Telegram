@@ -87,7 +87,7 @@
             imagePlain = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
             
             
-            CGContextSetFillColorWithColor(context, TGColorWithHex(0xc8c7cc).CGColor);
+            CGContextSetFillColorWithColor(context, [UIColor hexColor:0xc8c7cc].CGColor);
             CGFloat separatorHeight = 1.0f / [[UIScreen mainScreen] scale];
             CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
             
@@ -110,7 +110,7 @@
         _textFieldBackground.userInteractionEnabled = false;
         [_wrappingView addSubview:_textFieldBackground];
         
-        UIColor *placeholderColor = TGColorWithHex(0x8e8e93);
+        UIColor *placeholderColor = [UIColor hexColor:0x8e8e93];
         
         _placeholderLabel = [[UILabel alloc] init];
         _placeholderLabel.textAlignment = NSTextAlignmentLeft;
@@ -243,7 +243,7 @@
         _customCancelButton = [[TGShareButton alloc] initWithFrame:CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [self baseHeight])];
         [_customCancelButton setTitle:NSLocalizedString(@"Share.Cancel", nil) forState:UIControlStateNormal];
         
-        UIColor *buttonColor = TGAccentColor();
+        UIColor *buttonColor = [UIColor hexColor:0x007ee5];
         
         [_customCancelButton setTitleColor:buttonColor];
         _customCancelButton.titleLabel.font = [UIFont systemFontOfSize:17.0f];
@@ -328,6 +328,12 @@
     }
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -352,14 +358,14 @@
     CGSize placeholderSize = [_placeholderLabel.text sizeWithFont:_placeholderLabel.font];
     placeholderSize.width = MIN(placeholderSize.width, self.frame.size.width - rightPadding - 40.0f);
     
-    _textFieldBackground.frame = CGRectMake(8, 9 + [self topPadding], self.frame.size.width - 16 - rightPadding, [self inputHeight]);
+    _textFieldBackground.frame = CGRectMake(8 + _safeAreaInset.left, 9 + [self topPadding], self.frame.size.width - 16 - rightPadding - _safeAreaInset.left - _safeAreaInset.right, [self inputHeight]);
     
     _customSearchIcon.frame = CGRectMake(_showsCustomCancelButton ? (_textFieldBackground.frame.origin.x + 8.0f) : ((floor((self.frame.size.width - placeholderSize.width) / 2) + 10 + retinaPixel) - 20), [self searchIconOffset] + [self inputContentOffset] + 16 + retinaPixel + [self topPadding], _customSearchIcon.frame.size.width, _customSearchIcon.frame.size.height);
     
     _customSearchActivityIndicator.frame = (CGRect){{floor(_customSearchIcon.frame.origin.x + (_customSearchIcon.frame.size.width - _customSearchActivityIndicator.frame.size.width) / 2.0f), floor(_customSearchIcon.frame.origin.y + (_customSearchIcon.frame.size.height - _customSearchActivityIndicator.frame.size.height) / 2.0f) + 1.0f + retinaPixel}, _customSearchActivityIndicator.frame.size};
     
     bool isRTL = false;
-    _placeholderLabel.frame = CGRectMake(_showsCustomCancelButton ? (isRTL ? (CGRectGetMaxX(_textFieldBackground.frame) - placeholderSize.width - 32.0f) : 36) : (floor((self.frame.size.width - placeholderSize.width) / 2) + 10 + retinaPixel), [self inputContentOffset] + 14 + [self topPadding], placeholderSize.width, placeholderSize.height);
+    _placeholderLabel.frame = CGRectMake(_showsCustomCancelButton ? (isRTL ? (CGRectGetMaxX(_textFieldBackground.frame) - placeholderSize.width - 32.0f) : 36 + _safeAreaInset.left) : (floor((self.frame.size.width - placeholderSize.width) / 2) + 10 + retinaPixel), [self inputContentOffset] + 14 + [self topPadding], placeholderSize.width, placeholderSize.height);
     
     if (_customTextField != nil)
     {
@@ -374,7 +380,7 @@
     
     if (_customCancelButton != nil)
     {
-        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9) : 9), [self topPadding] + 2.0f, _cancelButtonWidth, [self baseHeight]);
+        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9) : 9) - _safeAreaInset.right, [self topPadding] + 2.0f, _cancelButtonWidth, [self baseHeight]);
     }
 }
 

@@ -1,16 +1,13 @@
 #import "TGDocumentWebpageFooterModel.h"
 
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernLabelViewModel.h"
 #import "TGDocumentMessageIconModel.h"
 #import "TGMessageImageViewModel.h"
 #import "TGAppDelegate.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
 #import "TGMessageImageView.h"
 #import "TGDocumentMessageIconView.h"
-#import "TGImageUtils.h"
 
 @interface TGDocumentWebpageFooterModel () <TGMessageImageViewDelegate> {
     TGWebPageMediaAttachment *_webPage;

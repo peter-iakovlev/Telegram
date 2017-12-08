@@ -8,12 +8,14 @@
 
 #import "TGGroupInfoCollectionItemView.h"
 
-#import "TGLetteredAvatarView.h"
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGTextField.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
+
+
+#import <LegacyComponents/TGTextField.h>
+
+#import "TGPresentation.h"
 
 @interface TGGroupInfoCollectionItemView ()
 {
@@ -72,6 +74,14 @@
     [_titleField removeTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _verifiedIcon.image = presentation.images.profileVerifiedIcon;
+}
+
 - (id)avatarView
 {
     return _avatarView;
@@ -88,7 +98,8 @@
         
         if (_isVerified) {
             if (_verifiedIcon == nil) {
-                _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconMedium.png"]];
+                _verifiedIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 16.0f, 16.0f)];
+                _verifiedIcon.image = self.presentation.images.profileVerifiedIcon;
             }
             if (_verifiedIcon.superview == nil) {
                 [self.contentView addSubview:_verifiedIcon];
@@ -144,7 +155,7 @@
             CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, UIColorRGB(0xd8d8d8).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0, 0.0, 64.0f, 64.0f));
-            UIImage *iconImage = [UIImage imageNamed:@"CreateGroupAvatarPlaceholderIcon.png"];
+            UIImage *iconImage = TGImageNamed(@"CreateGroupAvatarPlaceholderIcon.png");
             [iconImage drawAtPoint:CGPointMake(CGFloor((64.0f - iconImage.size.width) / 2.0f) + TGRetinaPixel, CGFloor((64.0f - iconImage.size.height) / 2.0f))];
             placeholder = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
@@ -261,7 +272,7 @@
     {
         _isBroadcast = isBroadcast;
         
-        _avatarIconView.image = _isBroadcast ? [UIImage imageNamed:@"BroadcastLargeAvatarIcon.png"] : nil;
+        _avatarIconView.image = _isBroadcast ? TGImageNamed(@"BroadcastLargeAvatarIcon.png") : nil;
         
         [self setNeedsLayout];
     }
@@ -281,7 +292,7 @@
             {
                 _titleField = [[TGTextField alloc] init];
                 [_titleField addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
-                _titleField.textColor = [UIColor blackColor];
+                _titleField.textColor = self.presentation.pallete.collectionMenuTextColor;
                 _titleField.font = TGSystemFontOfSize(20);
                 _titleField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
                 _titleField.enabled = !_updatingTitle;
@@ -292,7 +303,7 @@
                 } else {
                     _titleField.placeholder = TGLocalized(@"GroupInfo.GroupNamePlaceholder");
                 }
-                _titleField.placeholderColor = UIColorRGB(0xc7c7cd);
+                _titleField.placeholderColor = self.presentation.pallete.collectionMenuPlaceholderColor;
                 _titleField.placeholderFont = _titleField.font;
                 if (TGIsRTL())
                     _titleField.textAlignment = NSTextAlignmentRight;
@@ -303,7 +314,7 @@
             if (_editingSeparator == nil)
             {
                 _editingSeparator = [[UIView alloc] init];
-                _editingSeparator.backgroundColor = TGSeparatorColor();
+                _editingSeparator.backgroundColor = self.presentation.pallete.collectionMenuSeparatorColor;
                 _editingSeparator.userInteractionEnabled = false;
                 [self addSubview:_editingSeparator];
             }
@@ -398,10 +409,12 @@
     
     CGRect bounds = self.bounds;
     
+    _avatarView.frame = CGRectMake(15 + self.safeAreaInset.left, 10, 66, 66);
+    
     CGSize iconSize = _avatarIconView.image.size;
     _avatarIconView.frame = (CGRect){{CGFloor((_avatarView.frame.size.width - iconSize.width) / 2.0f), CGFloor((_avatarView.frame.size.height - iconSize.height) / 2.0f + 1.0f)}, iconSize};
     
-    CGFloat maxTitleWidth = bounds.size.width - 92 - 14;
+    CGFloat maxTitleWidth = bounds.size.width - 92 - 14 - self.safeAreaInset.left - self.safeAreaInset.right;
     
     if (_verifiedIcon.superview != nil) {
         maxTitleWidth -= _verifiedIcon.bounds.size.width + 5.0f;
@@ -418,7 +431,7 @@
     }
     
     titleSize.width = MIN(titleSize.width, maxTitleWidth);
-    CGRect titleLabelFrame = CGRectMake(92, floor((93.0f - titleSize.height) / 2.0f) - 2.0f, titleSize.width, titleSize.height);
+    CGRect titleLabelFrame = CGRectMake(92 + self.safeAreaInset.left, floor((93.0f - titleSize.height) / 2.0f) - 2.0f, titleSize.width, titleSize.height);
     
     _titleLabel.frame = titleLabelFrame;
     _titleField.frame = CGRectMake(titleLabelFrame.origin.x, 22, maxTitleWidth, 44);
@@ -427,7 +440,7 @@
         _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, titleLabelFrame.origin.x + titleSize.width + 4.0f, titleLabelFrame.origin.y + 5.0f + TGRetinaPixel);
     }
     
-    _editingSeparator.frame = CGRectMake(92.0f, 62.0f, bounds.size.width - 92.0f, TGScreenPixel);
+    _editingSeparator.frame = CGRectMake(92.0f + self.safeAreaInset.left, 62.0f, bounds.size.width - 92.0f - self.safeAreaInset.left, TGScreenPixel);
 }
 
 #pragma mark -

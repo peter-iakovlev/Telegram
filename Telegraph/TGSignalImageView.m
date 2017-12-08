@@ -1,9 +1,9 @@
 #import "TGSignalImageView.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 #import "TGInlineVideoView.h"
-#import "TGModernGalleryVideoView.h"
+#import <LegacyComponents/TGModernGalleryVideoView.h>
 
 @interface TGSignalImageView () <TGModernGalleryTransitionView>
 {

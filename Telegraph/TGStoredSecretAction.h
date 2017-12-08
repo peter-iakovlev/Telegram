@@ -1,8 +1,7 @@
 #import <Foundation/Foundation.h>
 
-#import "PSCoding.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMessage.h"
 #import "TGStoredOutgoingMessageFileInfo.h"
 #import "TGStoredIncomingMessageFileInfo.h"
 

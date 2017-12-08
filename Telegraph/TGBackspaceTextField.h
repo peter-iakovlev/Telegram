@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGTextField.h"
+#import <LegacyComponents/TGTextField.h>
 
 @interface TGBackspaceTextField : TGTextField
 

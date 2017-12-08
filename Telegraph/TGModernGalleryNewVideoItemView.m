@@ -1,29 +1,26 @@
 #import "TGModernGalleryNewVideoItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGVideoDownloadActor.h"
 #import "TGDownloadManager.h"
 
 #import "TGModernGalleryVideoItem.h"
 
-#import "TGMessage.h"
-#import "TGVideoMediaAttachment.h"
 #import "TGPreparedLocalDocumentMessage.h"
 
-#import "TGModernButton.h"
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 #import "TGModernGalleryVideoPlayerView.h"
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 #import "TGModernGalleryVideoFooterView.h"
-#import "TGModernGalleryDefaultFooterView.h"
+#import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
 
 #import "TGGenericPeerGalleryItem.h"
 
-#import "TGPeerIdAdapter.h"
 #import "TGGenericPeerMediaGalleryVideoItem.h"
 
 @interface TGModernGalleryNewVideoItemView () <ASWatcher>
@@ -35,7 +32,6 @@
     bool _downloading;
     int32_t _transactionId;
     bool _autoplayAfterDownload;
-    NSUInteger _currentLoopCount;
         
     SMetaDisposable *_stateDisposable;
     
@@ -164,11 +160,10 @@
     if (!_playerViewDetached)
         [_playerView reset];
     
-    _currentLoopCount = 0;
-    
     _autoplayAfterDownload = false;
     
-    [self footerView].hidden = true;
+    if ([self footerView] == _footerView)
+        [self footerView].hidden = true;
     
     [_stateDisposable dispose];
     _stateDisposable = nil;
@@ -188,7 +183,8 @@
     
     [_playerView reset];
     
-    [self footerView].hidden = true;
+    if ([self footerView] == _footerView)
+        [self footerView].hidden = true;
     
     CGSize dimensions = CGSizeZero;
     NSTimeInterval duration = 0.0;
@@ -280,6 +276,15 @@
         }
     };
     
+    _playerView.shouldLoop = ^bool(NSUInteger loopCount)
+    {
+        __strong TGModernGalleryNewVideoItemView *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            return [strongSelf shouldLoopVideo:loopCount];
+        
+        return false;
+    };
+    
     if (synchronously)
         checkMediaAvailability();
     else
@@ -348,7 +353,8 @@
 {
     if (!isFocused)
     {
-        [self footerView].hidden = true;
+        if ([self footerView] == _footerView)
+            [self footerView].hidden = true;
         [self setDefaultFooterHidden:false];
     }
 }

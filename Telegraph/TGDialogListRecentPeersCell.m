@@ -1,4 +1,7 @@
 #import "TGDialogListRecentPeersCell.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernMediaCollectionView.h"
 
 #import "TGShareSheetSharePeersLayout.h"
@@ -9,10 +12,7 @@
 
 #import "TGDialogListRecentPeers.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
-#import "TGModernButton.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGDialogListRecentPeersCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     NSArray *_recentPeers;
@@ -62,6 +62,8 @@
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.opaque = false;
@@ -190,7 +192,7 @@
     }
     
     _headerBackground.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, 27.0f);
-    _headerLabel.frame = CGRectMake(14.0f, 6.0f, _headerLabel.frame.size.width, _headerLabel.frame.size.height);
+    _headerLabel.frame = CGRectMake(14.0f + _safeAreaInset.left, 6.0f, _headerLabel.frame.size.width, _headerLabel.frame.size.height);
     _expandButton.frame = CGRectMake(self.frame.size.width - _expandButton.frame.size.width, 0.0f, _expandButton.frame.size.width, _expandButton.frame.size.height);
     
     _collectionView.frame = CGRectMake(0.0f, 27.0f, self.frame.size.width, self.frame.size.height - 27.0f);
@@ -362,6 +364,17 @@
         }
     }
     return 0;
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    
+    _collectionView.contentInset = UIEdgeInsetsMake(0.0f, safeAreaInset.left, 0.0f, safeAreaInset.right);
+    if (_collectionView.contentOffset.x < 44.0f + FLT_EPSILON)
+        _collectionView.contentOffset = CGPointMake(-safeAreaInset.left, 0.0f);
+    
+    [self setNeedsLayout];
 }
 
 @end

@@ -1,9 +1,8 @@
 #import "TGPreviewWebPageItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <WebKit/WebKit.h>
-
-#import "TGImageUtils.h"
-
-#import "TGWebPageMediaAttachment.h"
 
 #import "TGScrollIndicatorView.h"
 

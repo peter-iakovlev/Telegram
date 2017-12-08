@@ -9,5 +9,6 @@
     #import <Foundation/Foundation.h>
 
 #import <MTProtoKit/MTLogging.h>
-    #import "TGCommon.h"
+#import "TGCommon.h"
+
 #endif

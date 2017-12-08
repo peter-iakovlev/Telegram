@@ -1,7 +1,9 @@
 #import "TGPrivacySettingsController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGVariantCollectionItem.h"
 #import "TGDisclosureActionCollectionItem.h"
@@ -19,11 +21,9 @@
 #import "TGPasscodeSettingsController.h"
 #import "TGPasswordConfirmationController.h"
 
-#import "TGStringUtils.h"
-
 #import "TGAlertView.h"
 #import "TGPickerSheet.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAccountSettingsActor.h"
 
@@ -113,7 +113,7 @@
     if (accountTTLSetting.accountTTL != nil)
         return [TGStringUtils stringForMessageTimerSeconds:[accountTTLSetting.accountTTL unsignedIntegerValue]];
     
-    return TGLocalized(@"PrivacySettings.DeleteAccountNever");
+    return @"";
 }
 
 - (instancetype)init
@@ -155,32 +155,21 @@
         terminateSessionsItem.titleColor = [UIColor blackColor];
         terminateSessionsItem.deselectAutomatically = true;
         
+        NSString *passcodeTitle = TGLocalized(@"PrivacySettings.Passcode");
+        bool hasFaceId = false;
+        bool hasBiometrics = [TGPasscodeSettingsController supportsBiometrics:&hasFaceId];
+        if (hasFaceId)
+            passcodeTitle = TGLocalized(@"PrivacySettings.PasscodeAndFaceId");
+        else if (hasBiometrics)
+            passcodeTitle = TGLocalized(@"PrivacySettings.PasscodeAndTouchId");
+        
         TGCollectionMenuSection *securitySection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.SecurityTitle")],
-            [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.Passcode") action:@selector(passcodePressed)],
+            [[TGDisclosureActionCollectionItem alloc] initWithTitle:passcodeTitle action:@selector(passcodePressed)],
             [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.TwoStepAuth") action:@selector(passwordPressed)],
             [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.AuthSessions") action:@selector(authSessionsPressed)]
         ]];
         [self.menuSections addSection:securitySection];
-        
-        if (iosMajorVersion() >= 8 && false)
-        {
-            NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-            
-            TGSwitchCollectionItem *touchIdItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.TouchIdEnable") isOn:[[userDefaults objectForKey:@"enableTouchId"] boolValue]];
-            __weak TGPrivacySettingsController *weakSelf = self;
-            touchIdItem.toggled = ^(bool value, __unused TGSwitchCollectionItem *item)
-            {
-                TGPrivacySettingsController *strongSelf = weakSelf;
-                [strongSelf touchIdToggle:value];
-            };
-            
-            TGCollectionMenuSection *touchIdSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-                [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.TouchIdTitle")],
-                touchIdItem,
-            ]];
-            [self.menuSections addSection:touchIdSection];
-        }
         
         _accountExpirationItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.DeleteAccountIfAwayFor") action:@selector(deleteAccountExpirationPressed)];
         _accountExpirationItem.deselectAutomatically = true;
@@ -368,7 +357,7 @@
             }
         }
     }];
-    _pickerSheet.emptyValue = TGLocalized(@"PrivacySettings.DeleteAccountNever");
+    _pickerSheet.emptyValue = @"";
     
     if (TGAppDelegateInstance.rootController.currentSizeClass == UIUserInterfaceSizeClassCompact) {
         [_pickerSheet show];
@@ -506,7 +495,7 @@
         });
     }] startWithNext:nil error:^(id error)
     {
-        NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+        NSString *errorText = TGLocalized(@"Login.UnknownError");
         if ([error hasPrefix:@"FLOOD_WAIT"])
             errorText = TGLocalized(@"TwoStepAuth.FloodError");
         [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
@@ -629,7 +618,7 @@
                     accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
                 [self setAccountSettings:accountSettings];
                 
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"PrivacySettings.FloodControlError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             }
         });
     }

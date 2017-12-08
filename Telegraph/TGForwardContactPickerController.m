@@ -8,11 +8,11 @@
 
 #import "TGForwardContactPickerController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 
 #import "TGActionSheet.h"
-
-#import "TGStringUtils.h"
 
 @interface TGForwardContactPickerController ()
 

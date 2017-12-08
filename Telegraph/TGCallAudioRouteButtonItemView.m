@@ -1,5 +1,6 @@
 #import "TGCallAudioRouteButtonItemView.h"
-#import "TGImageUtils.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGCallAudioRouteButtonItemView ()
 {

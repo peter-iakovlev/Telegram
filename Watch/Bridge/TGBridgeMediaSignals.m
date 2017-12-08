@@ -7,7 +7,6 @@
 #import "TGBridgeClient.h"
 #import "TGFileCache.h"
 
-#import "TGImageUtils.h"
 #import "TGGeometry.h"
 
 #import "TGExtensionDelegate.h"

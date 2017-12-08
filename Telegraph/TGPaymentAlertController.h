@@ -1,4 +1,4 @@
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGArchivedStickerPacksAlertView.h"
 #import "TGPaymentAlertView.h"
@@ -7,6 +7,6 @@
 
 @property (nonatomic, strong, readonly) TGPaymentAlertView *view;
 
-- (instancetype)initWithParentController:(TGViewController *)parentController text:(NSString *)text;
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController text:(NSString *)text;
 
 @end

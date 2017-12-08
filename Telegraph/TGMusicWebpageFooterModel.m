@@ -1,15 +1,11 @@
 #import "TGMusicWebpageFooterModel.h"
 
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDocumentMessageIconModel.h"
 #import "TGModernLabelViewModel.h"
 #import "TGTelegraph.h"
 #import "TGMusicPlayer.h"
-
-#import "TGViewController.h"
-
-#import "TGFont.h"
 
 #import "TGMessageImageView.h"
 #import "TGDocumentMessageIconView.h"

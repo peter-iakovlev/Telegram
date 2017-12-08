@@ -2,7 +2,7 @@
 
 #import "TGTelegraph.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTimer.h"
 

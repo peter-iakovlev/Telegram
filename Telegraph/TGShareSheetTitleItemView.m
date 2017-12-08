@@ -1,7 +1,6 @@
 #import "TGShareSheetTitleItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGShareSheetTitleItemView () {
     UILabel *_titleLabel;

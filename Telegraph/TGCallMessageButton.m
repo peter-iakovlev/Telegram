@@ -1,6 +1,6 @@
 #import "TGCallMessageButton.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGCallMessageButton
 

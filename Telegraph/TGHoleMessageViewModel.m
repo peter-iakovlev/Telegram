@@ -1,7 +1,6 @@
 #import "TGHoleMessageViewModel.h"
 
-#import "TGUser.h"
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
@@ -15,9 +14,7 @@
 #import "TGModernRemoteImageView.h"
 
 #import "TGReusableLabel.h"
-#import "TGDoubleTapGestureRecognizer.h"
-
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 @interface TGHoleMessageViewModel () <UIGestureRecognizerDelegate> {
     TGModernImageViewModel *_backgroundModel;

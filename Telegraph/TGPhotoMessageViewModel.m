@@ -1,5 +1,7 @@
 #import "TGPhotoMessageViewModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernViewContext.h"
 
 #import "TGModernRemoteImageView.h"
@@ -9,9 +11,7 @@
 #import "TGModernColorViewModel.h"
 #import "TGModernButtonViewModel.h"
 
-#import "TGMessage.h"
-
-#import "TGStringUtils.h"
+#import "TGMessageGroupedLayout.h"
 
 @interface TGPhotoMessageViewModel ()
 {
@@ -56,6 +56,9 @@
         
         [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
         
+        if (_positionFlags != 0)
+            [previewUri appendFormat:@"&position=%d", _positionFlags];
+        
         NSString *legacyFilePath = nil;
         if ([legacyCacheUrl hasPrefix:@"file://"])
             legacyFilePath = [legacyCacheUrl substringFromIndex:@"file://".length];
@@ -98,6 +101,25 @@
 {
     [super updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     
+    [self updateImage];
+    
+    TGImageMediaAttachment *imageMedia = nil;
+    for (id attachment in message.mediaAttachments)
+    {
+        if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+        {
+            imageMedia = attachment;
+            break;
+        }
+    }
+    
+    _canDownload = _imageMedia.imageId != 0 || (![[imageMedia.imageInfo imageUrlForLargestSize:NULL] hasPrefix:@"http"]);
+}
+
+- (void)updateImage
+{
+    TGMessage *message = _message;
+    
     TGImageMediaAttachment *imageMedia = nil;
     for (id attachment in message.mediaAttachments)
     {
@@ -134,10 +156,20 @@
             
             CGSize thumbnailSize = CGSizeZero;
             CGSize renderSize = CGSizeZero;
-            [TGImageMessageViewModel calculateImageSizesForImageSize:largestSize thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
+            
+            if (self.groupedLayout != nil)
+            {
+                CGRect frame = [self.groupedLayout frameForMessageId:_message.mid];
+                thumbnailSize = frame.size;
+                renderSize = TGScaleToFill(largestSize, thumbnailSize);
+            }
+            else
+            {
+                [TGImageMessageViewModel calculateImageSizesForImageSize:largestSize thumbnailSize:&thumbnailSize renderSize:&renderSize squareAspect:message.messageLifetime > 0 && message.messageLifetime <= 60 && message.layer >= 17];
+            }
             
             [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
-            
+                        
             NSString *legacyFilePath = nil;
             if ([legacyCacheUrl hasPrefix:@"file://"])
                 legacyFilePath = [legacyCacheUrl substringFromIndex:@"file://".length];
@@ -158,8 +190,6 @@
         
         [self updateImageInfo:previewImageInfo];
     }
-    
-    _canDownload = _imageMedia.imageId != 0 || (![[imageMedia.imageInfo imageUrlForLargestSize:NULL] hasPrefix:@"http"]);
 }
 
 - (void)updateMessageAttributes

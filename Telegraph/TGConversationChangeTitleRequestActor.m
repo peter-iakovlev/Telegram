@@ -3,8 +3,8 @@
 #import "TGTelegraph.h"
 #import "TGTelegramNetworking.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGUserDataRequestBuilder.h"
 

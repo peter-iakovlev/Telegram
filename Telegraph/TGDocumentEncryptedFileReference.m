@@ -1,6 +1,6 @@
 #import "TGDocumentEncryptedFileReference.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGDocumentEncryptedFileReference
 

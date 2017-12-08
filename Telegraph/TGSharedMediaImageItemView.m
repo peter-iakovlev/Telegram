@@ -1,19 +1,16 @@
 #import "TGSharedMediaImageItemView.h"
 
-#import "TGImageMediaAttachment.h"
-#import "TGImageUtils.h"
-#import "TGRemoteImageView.h"
-#import "TGStringUtils.h"
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernCache.h"
+#import <LegacyComponents/TGRemoteImageView.h>
+#import <LegacyComponents/TGImageView.h>
+
+#import <LegacyComponents/TGModernCache.h>
 
 #import "TGSharedMediaImageViewQueue.h"
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
-
-#import "TGViewController.h"
 
 @interface TGSharedMediaImageItemView ()
 {

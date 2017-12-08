@@ -1,6 +1,6 @@
 #import "TGConversationHistoryAsyncRequestActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGSchema.h"
 

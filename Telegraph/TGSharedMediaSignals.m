@@ -1,5 +1,7 @@
 #import "TGSharedMediaSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGImageInfo+Telegraph.h"
 #import <libkern/OSAtomic.h>
 #import "TL/TLMetaScheme.h"
@@ -8,15 +10,11 @@
 #import "TGRemoteFileSignal.h"
 #import "TGRemoteHttpLocationSignal.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 #import "TGListThumbnailSignals.h"
-#import "TGImageBlur.h"
-#import "TGImageUtils.h"
-#import "TGModernCache.h"
+#import <LegacyComponents/TGImageBlur.h>
+#import <LegacyComponents/TGModernCache.h>
 
-#import "TGWebDocument.h"
-
-#import "TGStringUtils.h"
 #import "TGSharedMediaUtils.h"
 
 @implementation TGSharedMediaImageData
@@ -645,7 +643,7 @@
 {
     return ^(void *targetMemory, int width, int height, int stride)
     {
-        TGAddImageCorners(targetMemory, width, height, stride, (int)radius);
+        TGAddImageCorners(targetMemory, width, height, stride, (int)radius, 0);
     };
 }
 

@@ -19,11 +19,12 @@
 
 - (void)scrollToTopIfNeeded;
 
-- (void)setDelayVisibleItemsUpdate:(bool)delay;
 - (void)updateVisibleItemsNow;
 - (bool)disableDecorationViewUpdates;
 - (void)setDisableDecorationViewUpdates:(bool)disableDecorationViewUpdates;
 - (bool)updateRelativeBounds;
+
+- (void)setDimmed:(bool)dimmed frontCells:(NSArray *)frontCells animated:(bool)animated;
 
 - (UIView *)viewForDecorationAtIndex:(int)index;
 - (NSArray *)visibleDecorations;

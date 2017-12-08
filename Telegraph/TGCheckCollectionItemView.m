@@ -1,15 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGCheckCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGPresentation.h"
 
 @interface TGCheckCollectionItemView ()
 {
@@ -35,10 +28,18 @@
         _label.font = TGSystemFontOfSize(17);
         [self addSubview:_label];
         
-        _checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _checkView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
         [self addSubview:_checkView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _label.textColor = presentation.pallete.collectionMenuTextColor;
+    _checkView.image = presentation.images.collectionMenuCheckImage;
 }
 
 - (void)setTitle:(NSString *)title
@@ -72,17 +73,17 @@
     
     if (_alignToRight)
     {
-        _label.frame = CGRectMake(15.0f, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f, 26);
+        _label.frame = CGRectMake(15.0f + self.safeAreaInset.left, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f - self.safeAreaInset.left - self.safeAreaInset.right, 26);
         
         CGSize checkSize = _checkView.frame.size;
-        _checkView.frame = CGRectMake(bounds.size.width - 15.0f - checkSize.width, 16.0f, checkSize.width, checkSize.height);
+        _checkView.frame = CGRectMake(bounds.size.width - 15.0f - checkSize.width - self.safeAreaInset.right, 16.0f, checkSize.width, checkSize.height);
     }
     else
     {
-        _label.frame = CGRectMake(44.0f, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f, 26);
+        _label.frame = CGRectMake(44.0f + self.safeAreaInset.left, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f - self.safeAreaInset.left - self.safeAreaInset.right, 26);
         
         CGSize checkSize = _checkView.frame.size;
-        _checkView.frame = CGRectMake(15.0f, 16.0f, checkSize.width, checkSize.height);
+        _checkView.frame = CGRectMake(15.0f + self.safeAreaInset.left, 16.0f, checkSize.width, checkSize.height);
     }
 }
 

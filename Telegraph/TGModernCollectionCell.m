@@ -90,4 +90,21 @@
     return _contentViewForBinding;
 }
 
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    bool initial = [super pointInside:point withEvent:event];
+    
+    id item = _boundItem;
+    if (initial && item != nil && [item conformsToProtocol:@protocol(TGModernCollectionPointInsideSolver)])
+    {
+        if ([item pointInside] != nil)
+        {
+            CGPoint convertedPoint = [[self contentViewForBinding] convertPoint:point fromView:self];
+            return [item pointInside](convertedPoint);
+        }
+    }
+    
+    return initial;
+}
+
 @end

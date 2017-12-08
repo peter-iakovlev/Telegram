@@ -1,5 +1,7 @@
 #import "TGPaymentWebController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <WebKit/WebKit.h>
 
 #import "TGAlertView.h"

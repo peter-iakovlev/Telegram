@@ -1,9 +1,9 @@
 #import "TGIconSwitchView.h"
 
-#import "TGAnimationUtils.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "Freedom.h"
+#import "TGAnimationUtils.h"
+
 #import <objc/runtime.h>
 
 static const void *positionChangedKey = &positionChangedKey;
@@ -40,8 +40,8 @@ static const void *positionChangedKey = &positionChangedKey;
     self = [super initWithFrame:frame];
     if (self != nil) {
         if (iosMajorVersion() >= 8) {
-            _offIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PermissionSwitchOff.png"]];
-            _onIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PermissionSwitchOn.png"]];
+            _offIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"PermissionSwitchOff.png")];
+            _onIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"PermissionSwitchOn.png")];
             self.layer.cornerRadius = 16.0f;
             self.backgroundColor = [UIColor redColor];
             self.tintColor = [UIColor redColor];

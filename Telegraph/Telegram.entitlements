@@ -26,6 +26,9 @@
 	<key>com.apple.developer.in-app-payments</key>
 	<array>
 		<string>merchant.ph.telegra.Telegraph</string>
+		<string>merchant.yandex.ph.telegra.Telegraph</string>
+		<string>merchant.sberbank.ph.telegra.Telegraph</string>
+		<string>merchant.sberbank.test.ph.telegra.Telegraph</string>
 	</array>
 	<key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>

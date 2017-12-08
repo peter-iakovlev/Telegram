@@ -1,6 +1,9 @@
 #import "TGEmbedPIPController.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGEmbedPIPView.h"
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 #import <AVKit/AVKit.h>
 #import <MediaPlayer/MediaPlayer.h>
@@ -8,12 +11,9 @@
 #import "TGEmbedPIPPlaceholderView.h"
 #import "TGEmbedItemView.h"
 
-#import "Freedom.h"
-#import "TGImageUtils.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGAppDelegate.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGInterfaceManager.h"
 
@@ -75,7 +75,7 @@ void freedomPIPInit();
         TGEmbedPIPWindow *window = [[TGEmbedPIPWindow alloc] initWithFrame:TGAppDelegateInstance.rootController.applicationBounds];
         window.backgroundColor = [UIColor clearColor];
         window.rootViewController = self;
-        window.windowLevel = 100000000.0f + 0.001f;
+        window.windowLevel = UIWindowLevelStatusBar - 0.0001;
         window.hidden = false;
         _window = window;
         
@@ -567,9 +567,10 @@ void freedomPIPInit();
  
     bool isLandscape = UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation);
     
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
     CGFloat topBarHeight = isLandscape ? TGEmbedPIPLandscapeNavigationBarHeight : TGEmbedPIPPortraitNavigationBarHeight;
     CGFloat topMargin = TGEmbedPIPViewMargin + topBarHeight + statusBarHeight;
-    CGFloat bottomMargin = TGEmbedPIPViewMargin + 44.0f + _keyboardHeight;
+    CGFloat bottomMargin = TGEmbedPIPViewMargin + 44.0f + _keyboardHeight + (_keyboardHeight < FLT_EPSILON ? safeAreaInset.bottom : 0.0f);
     CGFloat hiddenWidth = size.width - TGEmbedPIPSlipSize;
     
     CGFloat bottomY = self.view.frame.size.height - bottomMargin - size.height;
@@ -579,14 +580,14 @@ void freedomPIPInit();
     {
         case TGEmbedPIPCornerTopLeft:
         {
-            CGRect rect = CGRectMake(TGEmbedPIPViewMargin, topY, size.width, size.height);
+            CGRect rect = CGRectMake(TGEmbedPIPViewMargin + safeAreaInset.left, topY, size.width, size.height);
             if (hidden)
                 rect.origin.x -= hiddenWidth;
             return rect;
         }
         case TGEmbedPIPCornerBottomRight:
         {
-            CGRect rect = CGRectMake(self.view.frame.size.width - TGEmbedPIPViewMargin - size.width, bottomY, size.width, size.height);
+            CGRect rect = CGRectMake(self.view.frame.size.width - TGEmbedPIPViewMargin - size.width - safeAreaInset.right, bottomY, size.width, size.height);
             if (hidden)
                 rect.origin.x += hiddenWidth;
             return rect;
@@ -594,7 +595,7 @@ void freedomPIPInit();
             
         case TGEmbedPIPCornerBottomLeft:
         {
-            CGRect rect = CGRectMake(TGEmbedPIPViewMargin, bottomY, size.width, size.height);
+            CGRect rect = CGRectMake(TGEmbedPIPViewMargin + safeAreaInset.left, bottomY, size.width, size.height);
             if (hidden)
                 rect.origin.x -= hiddenWidth;
             return rect;
@@ -603,7 +604,7 @@ void freedomPIPInit();
         case TGEmbedPIPCornerTopRight:
         default:
         {
-            CGRect rect = CGRectMake(self.view.frame.size.width - TGEmbedPIPViewMargin - size.width, topY, size.width, size.height);
+            CGRect rect = CGRectMake(self.view.frame.size.width - TGEmbedPIPViewMargin - size.width - safeAreaInset.right, topY, size.width, size.height);
             if (hidden)
                 rect.origin.x += hiddenWidth;
             return rect;

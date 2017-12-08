@@ -1,15 +1,17 @@
 #import "TGAccessChecker.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <CoreLocation/CoreLocation.h>
 #import "TGSynchronizeContactsActor.h"
-#import "TGMediaAssetsLibrary.h"
-#import "PGCamera.h"
+#import <LegacyComponents/TGMediaAssetsLibrary.h>
+#import <LegacyComponents/PGCamera.h>
 
 #import "TGAccessRequiredAlertView.h"
 
 @implementation TGAccessChecker
 
-+ (bool)checkAddressBookAuthorizationStatusWithAlertDismissComlpetion:(void (^)(void))alertDismissCompletion
+- (bool)checkAddressBookAuthorizationStatusWithAlertDismissComlpetion:(void (^)(void))alertDismissCompletion
 {
     if ([TGSynchronizeContactsManager instance].phonebookAccessStatus == TGPhonebookAccessStatusDisabled)
     {
@@ -22,7 +24,7 @@
     return true;
 }
 
-+ (bool)checkPhotoAuthorizationStatusForIntent:(TGPhotoAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
+- (bool)checkPhotoAuthorizationStatusForIntent:(TGPhotoAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
 {
     switch ([TGMediaAssetsLibrary authorizationStatus])
     {
@@ -66,7 +68,7 @@
     }
 }
 
-+ (bool)checkMicrophoneAuthorizationStatusForIntent:(TGMicrophoneAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
+- (bool)checkMicrophoneAuthorizationStatusForIntent:(TGMicrophoneAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
 {
     switch ([PGCamera microphoneAuthorizationStatus])
     {
@@ -111,7 +113,7 @@
     }
 }
 
-+ (bool)checkCameraAuthorizationStatusForIntent:(TGCameraAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
+- (bool)checkCameraAuthorizationStatusForIntent:(TGCameraAccessIntent)intent alertDismissCompletion:(void (^)(void))alertDismissCompletion
 {
 #if TARGET_IPHONE_SIMULATOR
     if (true) {
@@ -163,13 +165,28 @@
     }
 }
 
-+ (bool)checkLocationAuthorizationStatusForIntent:(TGLocationAccessIntent)intent alertDismissComlpetion:(void (^)(void))alertDismissCompletion
+- (bool)checkLocationAuthorizationStatusForIntent:(TGLocationAccessIntent)intent alertDismissComlpetion:(void (^)(void))alertDismissCompletion
 {
     switch ([CLLocationManager authorizationStatus])
     {
         case kCLAuthorizationStatusDenied:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:intent == TGLocationAccessIntentSend ? TGLocalized(@"AccessDenied.LocationDenied") : TGLocalized(@"AccessDenied.LocationTracking")
+            NSString *message = nil;
+            switch (intent)
+            {
+                case TGLocationAccessIntentSend:
+                    message = TGLocalized(@"AccessDenied.LocationDenied");
+                    break;
+                    
+                case TGLocationAccessIntentTracking:
+                    message = TGLocalized(@"AccessDenied.LocationTracking");
+                    break;
+                    
+                case TGLocationAccessIntentLiveLocation:
+                    message = TGLocalized(@"AccessDenied.LocationAlwaysDenied");
+                    break;
+            }
+            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
                                              showSettingsButton:true
                                                 completionBlock:alertDismissCompletion] show];
         }
@@ -182,6 +199,18 @@
                                                 completionBlock:alertDismissCompletion] show];
         }
             return false;
+            
+        case kCLAuthorizationStatusAuthorizedWhenInUse:
+        {
+            if (intent == TGLocationAccessIntentLiveLocation)
+            {
+                [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.LocationAlwaysDenied")
+                                                 showSettingsButton:true
+                                                    completionBlock:alertDismissCompletion] show];
+                return false;
+            }
+        }
+            return true;
 
         default:
             return true;

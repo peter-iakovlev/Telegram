@@ -1,6 +1,6 @@
 #import "TGInstantPageColorView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 const CGFloat TGInstantPageColorRadius = 23.0f;
 const CGFloat TGInstantPageColorSelectedRadius = 22.0f;

@@ -1,10 +1,10 @@
 #import "TGUsernameController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGCollectionMenuSection.h"
 #import "TGCommentCollectionItem.h"

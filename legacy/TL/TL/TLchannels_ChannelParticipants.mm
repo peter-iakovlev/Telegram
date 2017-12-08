@@ -80,3 +80,29 @@
 
 @end
 
+@implementation TLchannels_ChannelParticipants$channels_channelParticipantsNotModified : TLchannels_ChannelParticipants
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xf0173fe9;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xdf763428;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLchannels_ChannelParticipants$channels_channelParticipantsNotModified *object = [[TLchannels_ChannelParticipants$channels_channelParticipantsNotModified alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

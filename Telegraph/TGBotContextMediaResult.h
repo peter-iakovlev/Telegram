@@ -1,9 +1,6 @@
 #import "TGBotContextResult.h"
 
-#import "TGImageMediaAttachment.h"
-#import "TGDocumentMediaAttachment.h"
-
-//botInlineMediaResult flags:# id:string type:string photo:flags.0?Photo document:flags.1?Document title:flags.2?string description:flags.3?string send_message:BotInlineMessage = BotInlineResult;
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBotContextMediaResult : TGBotContextResult
 

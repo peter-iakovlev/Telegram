@@ -1,7 +1,6 @@
 #import "TGSharedMediaSectionHeaderView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSharedMediaSectionHeaderView ()
 {
@@ -23,7 +22,7 @@
         _dateLabel = [[UILabel alloc] init];
         _dateLabel.backgroundColor = [UIColor clearColor];
         _dateLabel.textColor = [UIColor blackColor];
-        _dateLabel.font = TGSystemFontOfSize(14.0f);
+        _dateLabel.font = TGSystemFontOfSize(17.0f);
         [self addSubview:_dateLabel];
         
         _summaryLabel = [[UILabel alloc] init];
@@ -50,8 +49,8 @@
 {
     [super layoutSubviews];
     
-    _dateLabel.frame = (CGRect){{8.0f, TGRetinaFloor((self.bounds.size.height - _dateLabel.frame.size.height) / 2.0f)}, _dateLabel.frame.size};
-    _summaryLabel.frame = (CGRect){{self.bounds.size.width - _summaryLabel.frame.size.width - 8.0f, TGRetinaFloor((self.bounds.size.height - _summaryLabel.frame.size.height) / 2.0f)}, _summaryLabel.frame.size};
+    _dateLabel.frame = (CGRect){{11.0f, TGRetinaFloor((self.bounds.size.height - _dateLabel.frame.size.height) / 2.0f)}, _dateLabel.frame.size};
+    _summaryLabel.frame = (CGRect){{self.bounds.size.width - _summaryLabel.frame.size.width - 11.0f, TGRetinaFloor((self.bounds.size.height - _summaryLabel.frame.size.height) / 2.0f)}, _summaryLabel.frame.size};
 }
 
 @end

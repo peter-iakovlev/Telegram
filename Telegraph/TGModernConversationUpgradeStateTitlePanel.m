@@ -1,10 +1,8 @@
 #import "TGModernConversationUpgradeStateTitlePanel.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
-#import "TGBackdropView.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGModernConversationUpgradeStateTitlePanel ()
 {
@@ -24,17 +22,8 @@
     self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, frame.size.width, 35.0f)];
     if (self)
     {
-        if (!TGBackdropEnabled())
-        {
-            _backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
-            [self addSubview:_backgroundView];
-        }
-        else
-        {
-            UIToolbar *toolbar = [[UIToolbar alloc] init];
-            _backgroundView = toolbar;
-            [self addSubview:_backgroundView];
-        }
+        _backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
+        [self addSubview:_backgroundView];
         
         _stripeLayer = [[CALayer alloc] init];
         _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;

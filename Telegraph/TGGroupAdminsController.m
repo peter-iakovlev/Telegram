@@ -1,6 +1,6 @@
 #import "TGGroupAdminsController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGGroupManagementSignals.h"
 
 #import "TGDatabase.h"
@@ -11,8 +11,8 @@
 
 #import "TGGroupInfoUserCollectionItem.h"
 
-#import "TGSearchBar.h"
-#import "TGSearchDisplayMixin.h"
+#import <LegacyComponents/TGSearchBar.h>
+#import <LegacyComponents/TGSearchDisplayMixin.h>
 
 #import "TGBotUserInfoController.h"
 #import "TGTelegraphUserInfoController.h"

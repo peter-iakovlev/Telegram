@@ -106,7 +106,6 @@
 - (UIImage *)messageLinkCornerLR;
 - (UIImage *)messageLinkCornerRL;
 
-- (UIImage *)messageAvatarPlaceholder:(int)uid;
 - (UIImage *)messageGenericAvatarPlaceholder;
 
 - (UIImage *)messageAttachmentImagePlaceholderIncoming;
@@ -128,6 +127,7 @@
 - (UIColor *)systemMessageBackgroundColor;
 - (UIImage *)dateListMessageBackground;
 - (UIImage *)systemShareButton;
+- (UIImage *)systemGoToButton;
 - (UIImage *)systemSwipeReplyIcon;
 - (UIImage *)systemReplyButton;
 - (UIImage *)systemReplyHighlightedButton;

@@ -60,6 +60,7 @@ namespace libtgvoip{
 
 	public interface class IStateCallback{
 		void OnCallStateChanged(CallState newState);
+		void OnSignalBarsChanged(int count);
 	};
 
     public ref class VoIPControllerWrapper sealed{
@@ -80,12 +81,15 @@ namespace libtgvoip{
 		Error GetLastError();
 		static Platform::String^ GetVersion();
 		int64 GetPreferredRelayID();
+		void SetAudioOutputGainControlEnabled(bool enabled);
 		static void UpdateServerConfig(Platform::String^ json);
 		static void SwitchSpeaker(bool external);
 		//static Platform::String^ TestAesIge();
 	private:
 		static void OnStateChanged(tgvoip::VoIPController* c, int state);
+		static void OnSignalBarsChanged(tgvoip::VoIPController* c, int count);
 		void OnStateChangedInternal(int state);
+		void OnSignalBarsChangedInternal(int count);
 		tgvoip::VoIPController* controller;
 		IStateCallback^ stateCallback;
     };

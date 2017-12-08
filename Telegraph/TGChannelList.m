@@ -1,11 +1,11 @@
 #import "TGChannelList.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGChannelStateSignals.h"
 #import "TGUpdateStateRequestBuilder.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGChannelList () {
     NSMutableArray *_channels;

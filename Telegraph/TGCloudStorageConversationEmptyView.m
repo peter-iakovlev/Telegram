@@ -1,12 +1,9 @@
 #import "TGCloudStorageConversationEmptyView.h"
 
-#import "TGViewController.h"
-
-#import "TGFont.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGWallpaperManager.h"
-#import "TGWallpaperInfo.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
 
 
 @interface TGCloudStorageConversationEmptyView () {
@@ -46,7 +43,7 @@
         [_containerView addSubview:backgroundImageView];
         
         
-        UIImageView *iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChatCloudInfoIcon.png"]];
+        UIImageView *iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ChatCloudInfoIcon.png")];
         iconView.frame = CGRectMake(CGFloor((minWidth - iconView.frame.size.width) / 2.0f), 26.0f, iconView.frame.size.width, iconView.frame.size.height);
         
         [_containerView addSubview:iconView];

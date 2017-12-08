@@ -5,7 +5,7 @@
 #import "TGBridgeChat.h"
 
 #import "TGStringUtils.h"
-#import "TGColor.h"
+#import "TGWatchColor.h"
 
 #import "WKInterfaceGroup+Signals.h"
 #import "TGBridgeMediaSignals.h"

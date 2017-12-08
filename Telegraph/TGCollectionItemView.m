@@ -1,16 +1,10 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGCollectionItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import <QuartzCore/QuartzCore.h>
 
-#import "TGImageUtils.h"
+#import "TGPresentation.h"
 
 @interface TGCollectionItemView ()
 {
@@ -29,34 +23,34 @@
         _separatorInset = 15.0f;
         
         self.backgroundView = [[UIView alloc] init];
-        self.backgroundView.backgroundColor = [UIColor whiteColor];
         
         self.selectedBackgroundView = [[UIView alloc] init];
-        self.selectedBackgroundView.backgroundColor = TGSelectionColor();
-        
-        static UIColor *stripeColor = nil;
-        
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            stripeColor = TGSeparatorColor();
-        });
         
         if (_topStripeView == nil)
         {
             _topStripeView = [[UIView alloc] init];
-            _topStripeView.backgroundColor = stripeColor;
             [self.backgroundView addSubview:_topStripeView];
         }
         
         if (_bottomStripeView == nil)
         {
             _bottomStripeView = [[UIView alloc] init];
-            _bottomStripeView.backgroundColor = stripeColor;
             [self.backgroundView addSubview:_bottomStripeView];
         }
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    if (!self.boundItem.transparent)
+        self.backgroundView.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
+    
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.collectionMenuCellSelectionColor;
+    _topStripeView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    _bottomStripeView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
 }
 
 - (void)setItemPosition:(int)itemPosition
@@ -85,11 +79,17 @@
     }
 }
 
+- (void)setIgnoreSeparatorInset:(bool)ignoreSeparatorInset
+{
+    _ignoreSeparatorInset = ignoreSeparatorInset;
+    [self setNeedsLayout];
+}
+
 - (void)_updateStripes
 {
     _topStripeView.alpha = (_itemPosition & (TGCollectionItemViewPositionFirstInBlock | TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionMiddleInBlock)) == 0 ? 0.0f : 1.0f;
     _bottomStripeView.alpha = (_itemPosition & (TGCollectionItemViewPositionLastInBlock | TGCollectionItemViewPositionIncludeNextSeparator)) == 0 ? 0.0f : 1.0f;
-    self.backgroundView.backgroundColor = _itemPosition == 0 ? [UIColor clearColor] : [UIColor whiteColor];
+    self.backgroundView.backgroundColor = _itemPosition == 0 ? [UIColor clearColor] : _presentation.pallete.collectionMenuCellBackgroundColor;
 }
 
 static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask, UIEdgeInsets selectionInsets, UIView *backgroundView)
@@ -174,6 +174,12 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
     }
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -189,15 +195,17 @@ static void adjustSelectedBackgroundViewFrame(CGSize viewSize, int positionMask,
         stripeHeight = TGScreenPixel;
     });
     
+    CGFloat separatorInset = !_ignoreSeparatorInset ? _separatorInset + self.safeAreaInset.left : 0.0f;
+    
     if (_itemPosition & TGCollectionItemViewPositionFirstInBlock)
         _topStripeView.frame = CGRectMake(0, 0, viewSize.width, stripeHeight);
     else
-        _topStripeView.frame = CGRectMake(_separatorInset, 0, viewSize.width - _separatorInset, stripeHeight);
+        _topStripeView.frame = CGRectMake(separatorInset, 0, viewSize.width - separatorInset, stripeHeight);
     
     if (_itemPosition & TGCollectionItemViewPositionLastInBlock)
         _bottomStripeView.frame = CGRectMake(0, viewSize.height - stripeHeight, viewSize.width, stripeHeight);
     else if (_itemPosition & TGCollectionItemViewPositionIncludeNextSeparator)
-        _bottomStripeView.frame = CGRectMake(_separatorInset, viewSize.height - stripeHeight, viewSize.width - _separatorInset, stripeHeight);
+        _bottomStripeView.frame = CGRectMake(separatorInset, viewSize.height - stripeHeight, viewSize.width - separatorInset, stripeHeight);
 }
 
 @end

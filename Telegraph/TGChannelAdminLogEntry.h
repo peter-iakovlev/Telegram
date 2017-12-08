@@ -1,8 +1,8 @@
 #import <Foundation/Foundation.h>
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGCachedConversationData.h"
-#import "TGConversation.h"
 
 @class TLChannelAdminLogEvent;
 
@@ -140,4 +140,19 @@
 
 @end
 
+@interface TGChannelAdminLogEntryChangeStickerPack : NSObject <TGChannelAdminLogEntryContent>
 
+@property (nonatomic, strong, readonly) id<TGStickerPackReference> previousStickerPack;
+@property (nonatomic, strong, readonly) id<TGStickerPackReference> stickerPack;
+
+- (instancetype)initWithPreviousStickerPack:(id<TGStickerPackReference>)previousStickerPack stickerPack:(id<TGStickerPackReference>)stickerPack;
+
+@end
+
+@interface TGChannelAdminLogEntryTogglePreHistoryHidden: NSObject <TGChannelAdminLogEntryContent>
+
+@property (nonatomic, readonly) bool value;
+
+- (instancetype)initWithValue:(bool)value;
+
+@end

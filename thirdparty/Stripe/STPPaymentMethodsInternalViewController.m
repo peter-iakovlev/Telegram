@@ -65,7 +65,10 @@ static NSInteger STPPaymentMethodAddCardSection = 1;
     [tableView registerClass:[STPPaymentMethodTableViewCell class] forCellReuseIdentifier:STPPaymentMethodCellReuseIdentifier];
     tableView.sectionHeaderHeight = 30;
     tableView.separatorStyle = UITableViewCellSeparatorStyleNone; // use fake separator views
-    tableView.separatorInset = UIEdgeInsetsMake(0, 18, 0, 0);
+    if (iosMajorVersion() >= 7)
+    {
+        tableView.separatorInset = UIEdgeInsetsMake(0, 18, 0, 0);
+    }
     self.tableView = tableView;
     [self.view addSubview:tableView];
     

@@ -1,12 +1,12 @@
 #import "TGFaqController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGHeaderCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGCollectionBottonDisclosureItem.h"
-
-#import "TGStringUtils.h"
 
 static NSArray *cachedResult = nil;
 

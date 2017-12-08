@@ -1,16 +1,14 @@
 #import "TGSuggestedLocalizationControllerView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAnimationUtils.h"
 
 #import "TGCommentCollectionItem.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGLocalizationSignals.h"
-#import "TGLocalization.h"
 
 @interface TGSuggestedLocalizationControllerView () <UITextFieldDelegate> {
     TGSuggestedLocalization *_suggestedLocalization;
@@ -154,7 +152,7 @@
         [_englishButton addTarget:self action:@selector(englishPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_englishButton];
         
-        _currentCheckView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _currentCheckView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuCheck.png")];
         [_englishButton addSubview:_currentCheckView];
         
         _suggestedButton = [[TGModernButton alloc] init];
@@ -169,7 +167,7 @@
         [_suggestedButton addTarget:self action:@selector(suggestedPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_suggestedButton];
         
-        _suggestedCheckView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _suggestedCheckView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuCheck.png")];
         _suggestedCheckView.hidden = true;
         [_suggestedButton addSubview:_suggestedCheckView];
         
@@ -197,7 +195,7 @@
         [_otherButton addTarget:self action:@selector(otherPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_otherButton];
         
-        _otherDisclosureView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
+        _otherDisclosureView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
         [_otherButton addSubview:_otherDisclosureView];
         
         //[_dimmingView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dimViewTapGesture:)]];

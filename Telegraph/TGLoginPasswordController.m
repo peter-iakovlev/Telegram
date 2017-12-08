@@ -1,10 +1,12 @@
 #import "TGLoginPasswordController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGLoginPasswordView.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
@@ -19,8 +21,6 @@
 
 #import "TGLoginCodeController.h"
 #import "TGLoginProfileController.h"
-
-#import "TGPhoneUtils.h"
 
 #import "TGPasswordRecoveryController.h"
 
@@ -206,7 +206,7 @@
             }
         } error:^(id error)
         {
-            NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+            NSString *errorText = TGLocalized(@"Login.UnknownError");
             if ([error hasPrefix:@"FLOOD_WAIT"])
                 errorText = TGLocalized(@"TwoStepAuth.FloodError");
             [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];

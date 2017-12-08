@@ -1,24 +1,25 @@
 #import "TGStickerAssociatedInputPanel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <AudioToolbox/AudioToolbox.h>
 
 #import "TGStickerAssociatedPanelCollectionLayout.h"
 #import "TGStickerAssociatedInputPanelCell.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGStickerItemPreviewView.h>
+#import <LegacyComponents/TGItemMenuSheetPreviewView.h>
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 
-#import "TGDocumentMediaAttachment.h"
-
-#import "TGItemPreviewController.h"
-#import "TGStickerItemPreviewView.h"
-#import "TGItemMenuSheetPreviewView.h"
-#import "TGMenuSheetButtonItemView.h"
-
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 #import "TGForceTouchGestureRecognizer.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGStickersMenu.h"
+
+#import "TGFavoriteStickersSignal.h"
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGStickerAssociatedInputPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGDoubleTapGestureRecognizerDelegate, UIGestureRecognizerDelegate>
 {
@@ -35,9 +36,12 @@
     UIImageView *_middleBackgroundView;
     
     __weak TGItemPreviewController *_previewController;
+    __weak TGMenuSheetButtonItemView *_faveItem;
     
     UILongPressGestureRecognizer *_pressGestureRecognizer;
     TGForceTouchGestureRecognizer *_forceTouchRecognizer;
+    
+    NSTimer *_actionsTimer;
 }
 
 @end
@@ -73,6 +77,8 @@
         
         _layout = [[TGStickerAssociatedPanelCollectionLayout alloc] init];
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_layout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.dataSource = self;
         _collectionView.delegate = self;
         _collectionView.backgroundColor = [UIColor clearColor];
@@ -129,7 +135,7 @@
 {
     [super layoutSubviews];
     
-    CGFloat localTargetOffset = _targetOffset;
+    CGFloat localTargetOffset = _targetOffset + self.safeAreaInset.left;
     
     CGFloat topPadding = 5.0f;
     CGFloat collectionTopPadding = topPadding;
@@ -145,7 +151,7 @@
     CGFloat itemWidth = [self collectionView:_collectionView layout:_layout sizeForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]].width;
     CGFloat collectionWidth = itemWidth * [self collectionView:_collectionView numberOfItemsInSection:0];
     
-    CGFloat padding = 2.0f;
+    CGFloat padding = 2.0f + self.safeAreaInset.left;
     CGFloat collectionPadding = 2.0f;
     
     CGFloat collectionOrigin = CGFloor((localTargetOffset - collectionWidth) / 2.0f);
@@ -199,6 +205,36 @@
         _documentSelected(_documentList[indexPath.row]);
 }
 
+- (void)startActionsTimer
+{
+    if (_actionsTimer != nil)
+    {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+    }
+    
+    _actionsTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(presentActions) interval:0.9 repeat:false];
+}
+
+- (void)presentActions
+{
+    if (_previewController != nil)
+    {
+        if (self.resultPreviewAppeared != nil)
+            self.resultPreviewAppeared();
+        
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
+        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+        
+        [previewView presentActions];
+    }
+    
+    [_actionsTimer invalidate];
+    _actionsTimer = nil;
+}
+
 - (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
@@ -210,7 +246,7 @@
         {
             TGDocumentMediaAttachment *document = _documentList[indexPath.item];
             
-            TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithFrame:CGRectZero];
+            TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
             
             __weak TGStickerAssociatedInputPanel *weakSelf = self;
             __weak TGStickerItemPreviewView *weakPreviewView = previewView;
@@ -232,12 +268,29 @@
             }];
             [actions addObject:sendItem];
             
+            TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+                if (strongSelf == nil || strongPreviewView == nil)
+                    return;
+                
+                [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                [strongPreviewView performDismissal];
+            }];
+            [actions addObject:faveItem];
+            _faveItem = faveItem;
+            
             TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
             {
                 __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
                 __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
                 if (strongSelf == nil || strongPreviewView == nil)
                     return;
+                
+                if (strongSelf.resultPreviewDisappeared != nil)
+                    strongSelf.resultPreviewDisappeared(false);
+                strongSelf->_previewController.onDismiss = nil;
                 
                 [strongPreviewView performDismissal];
                 
@@ -263,7 +316,12 @@
             
             [previewView setupWithMainItemViews:nil actionItemViews:actions];
             
-            TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentController previewView:previewView];
+            TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentController previewView:previewView];
+            controller.onDismiss = ^{
+                __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf.resultPreviewDisappeared != nil)
+                    strongSelf.resultPreviewDisappeared(true);
+            };
             _previewController = controller;
             
             controller.sourcePointForItem = ^(id item)
@@ -290,11 +348,18 @@
             TGStickerAssociatedInputPanelCell *cell = (TGStickerAssociatedInputPanelCell *)[_collectionView cellForItemAtIndexPath:indexPath];
             [cell setHighlighted:true animated:true];
 
+            if (!_forceTouchRecognizer.enabled)
+                [self startActionsTimer];
         }
     }
     else if (gestureRecognizer.state == UIGestureRecognizerStateChanged)
     {
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        if (_actionsTimer != nil)
+            [self startActionsTimer];
         
         NSIndexPath *cellIndexPath = [_collectionView indexPathForItemAtPoint:[gestureRecognizer locationInView:_collectionView]];
         if (cellIndexPath != nil)
@@ -311,6 +376,9 @@
     }
     else if (gestureRecognizer.state == UIGestureRecognizerStateEnded || gestureRecognizer.state == UIGestureRecognizerStateCancelled)
     {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+        
         for (TGStickerAssociatedInputPanelCell *cell in _collectionView.visibleCells)
             [cell setHighlighted:false animated:true];
         
@@ -328,8 +396,7 @@
     if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
     {
         AudioServicesPlaySystemSound(1519);
-        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
-        [previewView presentActions];
+        [self presentActions];
     }
 }
 
@@ -362,28 +429,30 @@
 - (void)previewStickerPack:(TGStickerPack *)stickerPack sticker:(TGDocumentMediaAttachment *)sticker {
     TGViewController *parentViewController = _controller;
     
-    TGOverlayController *innerController = [[TGOverlayController alloc] init];
-    innerController.view.backgroundColor = [UIColor clearColor];
-    
     __weak TGStickerAssociatedInputPanel *weakSelf = self;
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:parentViewController contentController:innerController keepKeyboard:true];
-    controllerWindow.dismissByMenuSheet = true;
-    controllerWindow.windowLevel = 100000000.0f + 0.002f;
-    controllerWindow.hidden = false;
     
     CGRect sourceRect = CGRectMake(CGFloor(self.bounds.size.width / 2.0f), [UIScreen mainScreen].bounds.size.height, 0.0f, 0.0f);
     
     id<TGStickerPackReference> packReference = stickerPack == nil ? sticker.stickerPackReference : nil;
-    [TGStickersMenu presentWithParentController:innerController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
+    TGMenuSheetController *controller = [TGStickersMenu presentWithParentController:parentViewController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
         __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
         if (strongSelf != nil) {
             if (strongSelf.documentSelected) {
                 strongSelf.documentSelected(document);
             }
         }
-    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:innerController.view sourceRect:^CGRect{
+    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
         return sourceRect;
     } centered:true existingController:nil];
+    if (!TGIsPad())
+    {
+        controller.willDismiss = ^(__unused bool manual) {
+            __strong TGStickerAssociatedInputPanel *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf.resultPreviewDisappeared(true);
+            }
+        };
+    }
 }
 
 @end

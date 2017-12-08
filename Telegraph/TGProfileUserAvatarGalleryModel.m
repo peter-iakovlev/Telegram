@@ -87,6 +87,8 @@
                 [self _replaceItems:updatedItems focusingOnItem:nil];
                 
                 [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/deleteProfilePhoto/(%lld)", concreteItem.imageId] options:@{@"imageId": @(concreteItem.imageId), @"accessHash": @(concreteItem.accessHash)} flags:0 watcher:TGTelegraphInstance];
+                
+                [self _commitDeletedGroupItem:concreteItem];
             }
         }
     }

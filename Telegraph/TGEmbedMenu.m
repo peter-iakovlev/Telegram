@@ -1,15 +1,12 @@
 #import "TGEmbedMenu.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
-#import "TGMenuSheetController.h"
-#import "TGMenuSheetView.h"
+#import <LegacyComponents/TGMenuSheetController.h>
+#import <LegacyComponents/TGMenuSheetView.h>
 
 #import "TGEmbedItemView.h"
 #import "TGEmbedPIPPlaceholderView.h"
-
-#import "TGWebPageMediaAttachment.h"
 
 #import "TGSendMessageSignals.h"
 
@@ -18,11 +15,13 @@
 #import "TGOpenInMenu.h"
 #import "TGShareMenu.h"
 
+#import "TGLegacyComponentsContext.h"
+
 @implementation TGEmbedMenu
 
 + (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController attachment:(TGWebPageMediaAttachment *)attachment peerId:(int64_t)peerId messageId:(int32_t)messageId cancelPIP:(bool)cancelPIP sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect
 {
-    TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+    TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
     controller.dismissesByOutsideTap = true;
     controller.hasSwipeGesture = true;
     controller.narrowInLandscape = true;

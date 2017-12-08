@@ -1,9 +1,9 @@
 #import "TGWebpageFooterModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernColorViewModel.h"
-
-#import "TGWebPageMediaAttachment.h"
 
 @interface TGWebpageFooterModel ()
 {

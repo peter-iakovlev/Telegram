@@ -1,7 +1,7 @@
 #import <UIKit/UIKit.h>
 
 #import "TGInstantPageDisplayView.h"
-#import "TGEmbedPlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
 
 @class TGPIPSourceLocation;
 

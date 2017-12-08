@@ -1,12 +1,15 @@
 #import "TGDownloadAudioSignal.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 #import "TGDownloadManager.h"
 
 #import "TGBridgeSignalManager.h"
 
-#import "TGMessage.h"
 #import "TGPreparedLocalDocumentMessage.h"
+
+#import "TGAudioMediaAttachment+Telegraph.h"
 
 @interface TGDownloadMediaAdapter : NSObject <ASWatcher>
 {

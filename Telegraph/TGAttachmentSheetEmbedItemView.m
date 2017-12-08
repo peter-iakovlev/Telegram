@@ -1,9 +1,6 @@
 #import "TGAttachmentSheetEmbedItemView.h"
 
-#import "TGViewController.h"
-#import "TGImageUtils.h"
-
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAudioSessionManager.h"
 

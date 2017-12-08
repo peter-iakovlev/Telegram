@@ -1,17 +1,15 @@
 #import "TGNotificationReplyPanelView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
-#import "TGModernButton.h"
-#import "HPGrowingTextView.h"
-#import "HPTextViewInternal.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/HPGrowingTextView.h>
+#import <LegacyComponents/HPTextViewInternal.h>
 
 #import "TGModernConversationInputTextPanel.h"
-#import "TGModernConversationAssociatedInputPanel.h"
+#import <LegacyComponents/TGModernConversationAssociatedInputPanel.h>
 #import "TGStickerAssociatedInputPanel.h"
 #import "TGStickerKeyboardView.h"
 
@@ -71,8 +69,8 @@
         static UIImage *keyboardImage;
         dispatch_once(&onceToken, ^
         {
-            stickerImage = TGTintedImage([UIImage imageNamed:@"ConversationInputFieldStickerIcon.png"], UIColorRGB(0xffffff));
-            keyboardImage = TGTintedImage([UIImage imageNamed:@"ConversationInputFieldKeyboardIcon.png"], UIColorRGB(0xffffff));
+            stickerImage = TGTintedImage(TGImageNamed(@"ConversationInputFieldStickerIcon.png"), UIColorRGB(0xffffff));
+            keyboardImage = TGTintedImage(TGImageNamed(@"ConversationInputFieldKeyboardIcon.png"), UIColorRGB(0xffffff));
         });
 
         _stickerModeButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 28, 28)];
@@ -92,7 +90,7 @@
         _sendButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.height, self.frame.size.height)];
         _sendButton.enabled = false;
         _sendButton.adjustsImageWhenHighlighted = false;
-        [_sendButton setImage:[UIImage imageNamed:@"NotificationSend"] forState:UIControlStateNormal];
+        [_sendButton setImage:TGComponentsImageNamed(@"PhotoPickerSendIcon") forState:UIControlStateNormal];
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
         
@@ -114,7 +112,8 @@
     [_wrapperView addSubview:_inputFieldClippingContainer];
     
     UIEdgeInsets internalInsets = [self _inputFieldInternalEdgeInsets];
-    _inputField = [[HPGrowingTextView alloc] initWithFrame:CGRectMake(internalInsets.left, internalInsets.top + TGRetinaPixel, _inputFieldClippingContainer.frame.size.width - internalInsets.left - internalInsets.right, _inputFieldClippingContainer.frame.size.height)];
+    _inputField = [[HPGrowingTextView alloc] initWithKeyCommandController:TGAppDelegateInstance.keyCommandController];
+    _inputField.frame = CGRectMake(internalInsets.left, internalInsets.top + TGRetinaPixel, _inputFieldClippingContainer.frame.size.width - internalInsets.left - internalInsets.right, _inputFieldClippingContainer.frame.size.height);
     _inputField.font = TGSystemFontOfSize(16);
     _inputField.clipsToBounds = true;
     _inputField.backgroundColor = nil;

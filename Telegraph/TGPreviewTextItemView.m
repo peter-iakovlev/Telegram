@@ -1,10 +1,9 @@
 #import "TGPreviewTextItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBotContextResult.h"
 #import "TGBotContextResultSendMessageText.h"
-
-#import "TGFont.h"
-
-#import "TGMessage.h"
 
 const CGFloat TGPreviewTextItemViewMargin = 21.0f;
 

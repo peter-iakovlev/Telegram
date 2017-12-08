@@ -1,18 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGModernConversationGenericEmptyListView.h"
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-
-#import "TGWallpaperInfo.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
 #import "TGWallpaperManager.h"
 
 @interface TGModernConversationGenericEmptyListView ()
@@ -51,7 +41,7 @@
         backgroundImageView.frame = _containerView.bounds;
         [_containerView addSubview:backgroundImageView];
         
-        UIImageView *iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernConversationEmptyListLogo.png"]];
+        UIImageView *iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernConversationEmptyListLogo.png")];
         CGSize iconSize = iconView.frame.size;
         iconView.frame = CGRectMake(CGFloor((_containerView.frame.size.width - iconSize.width) / 2.0f), 14.0f, iconSize.width, iconSize.height);
         [_containerView addSubview:iconView];

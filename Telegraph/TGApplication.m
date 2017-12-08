@@ -1,15 +1,12 @@
 #import "TGApplication.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
-#import "TGViewController.h"
-
-#import "TGHacks.h"
-
-#import "TGStringUtils.h"
 
 #import <SafariServices/SafariServices.h>
 #import "TGWebAppController.h"
-
+#import "TGHashtagOverviewController.h"
 #import "TGRootController.h"
 
 @interface TGApplication ()
@@ -38,12 +35,12 @@
 
 - (NSString *)telegramMeLinkFromText:(NSString *)text startPrivatePayload:(__autoreleasing NSString **)startPrivatePayload startGroupPayload:(__autoreleasing NSString **)startGroupPayload gamePayload:(__autoreleasing NSString **)gamePayload
 {
-    NSString *pattern = @"https?:\\/\\/telegram\\.me\\/([a-zA-Z0-9_\\/]+)(\\?.*)?$";
+    NSString *pattern = @"https?:\\/\\/(telegram\\.me|t\\.me|telegram\\.dog)\\/([a-zA-Z0-9_\\/]+)(\\?.*)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:NULL];
     NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
     if (match != nil)
     {
-        NSString *arguments = ([match numberOfRanges] >= 2 && [match rangeAtIndex:2].location != NSNotFound) ? [[text substringWithRange:[match rangeAtIndex:2]] substringFromIndex:1] : nil;
+        NSString *arguments = ([match numberOfRanges] >= 3 && [match rangeAtIndex:3].location != NSNotFound) ? [[text substringWithRange:[match rangeAtIndex:3]] substringFromIndex:1] : nil;
         if (arguments.length != 0)
         {
             NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:arguments];
@@ -59,7 +56,7 @@
             else
                 return nil;
         }
-        return [text substringWithRange:[match rangeAtIndex:1]];
+        return [text substringWithRange:[match rangeAtIndex:2]];
     }
     
     {
@@ -321,14 +318,21 @@
     }
     
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone && iosMajorVersion() >= 9 && ([url.scheme isEqual:@"http"] || [url.scheme isEqual:@"https"])) {
+        
+        UIViewController *parentController = TGAppDelegateInstance.window.rootViewController;
+        if ([parentController.presentedViewController isKindOfClass:[TGHashtagOverviewController class]])
+        {
+            parentController = parentController.presentedViewController;
+        }
+        
         if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
-                [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+                [parentController presentViewController:controller animated:true completion:nil];
             });
         } else {
             SFSafariViewController *controller = [[SFSafariViewController alloc] initWithURL:url entersReaderIfAvailable:false];
-            [TGAppDelegateInstance.window.rootViewController presentViewController:controller animated:true completion:nil];
+            [parentController presentViewController:controller animated:true completion:nil];
         }
         return true;
     }

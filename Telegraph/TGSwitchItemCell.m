@@ -1,6 +1,6 @@
 #import "TGSwitchItemCell.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGSwitchView.h"
 

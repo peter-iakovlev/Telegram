@@ -1,11 +1,9 @@
 #import "TGNotificationStickerPreviewView.h"
-#import "TGDocumentMediaAttachment.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageView.h"
-#import "UIImage+TG.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/UIImage+TG.h>
 
 @interface TGNotificationStickerImageView : TGImageView
 

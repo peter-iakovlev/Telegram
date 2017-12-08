@@ -1,6 +1,6 @@
 #import "TGBingSearchResultItem.h"
-#import "TGMediaSelectionContext.h"
-#import "TGMediaEditingContext.h"
+#import <LegacyComponents/TGMediaSelectionContext.h>
+#import <LegacyComponents/TGMediaEditingContext.h>
 
 @interface TGBingSearchResultItem (TGMediaItem) <TGMediaSelectableItem, TGMediaEditableItem>
 

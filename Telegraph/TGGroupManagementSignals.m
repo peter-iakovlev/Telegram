@@ -1,15 +1,15 @@
 #import "TGGroupManagementSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
 #import "TLUpdates+TG.h"
 
-#import "TGPeerIdAdapter.h"
-
 #import "TGConversation+Telegraph.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 #import "TGConversationAddMessagesActor.h"
 #import "TGTelegraph.h"
@@ -524,6 +524,8 @@
                 return [SSignal fail:@true];
             } else {
                 NSMutableDictionary<NSNumber *, TGPeerReadState *> *readStates = [[NSMutableDictionary alloc] init];
+                NSMutableDictionary<NSNumber *, TGUnseenPeerMentionsState *> *resetPeerUnseenMentionsStates = [[NSMutableDictionary alloc] init];
+                
                 for (TGConversation *conversation in peers) {
                     readStates[@(conversation.conversationId)] = (TGPeerReadState *)[NSNull null];
                 }
@@ -538,14 +540,18 @@
                     }
                     
                     readStates[@(peerId)] = [[TGPeerReadState alloc] initWithMaxReadMessageId:dialog.read_inbox_max_id maxOutgoingReadMessageId:dialog.read_outbox_max_id maxKnownMessageId:dialog.top_message unreadCount:dialog.unread_count];
+                    
+                    resetPeerUnseenMentionsStates[@(peerId)] = [[TGUnseenPeerMentionsState alloc] initWithVersion:0 count:dialog.unread_mentions_count maxIdWithPrecalculatedCount:dialog.top_message];
                 }
                 
-                return [SSignal single:readStates];
+                return [SSignal single:@{@"readStates": readStates, @"mentionStates": resetPeerUnseenMentionsStates}];
             }
         }];
         
-        SSignal *appliedReadStates = [[maybeAppliedReadStates onNext:^(NSDictionary<NSNumber *, TGPeerReadState *> *readStates) {
-            [TGDatabaseInstance() transactionResetPeerReadStates:readStates];
+        SSignal *appliedReadStates = [[maybeAppliedReadStates onNext:^(NSDictionary *dict) {
+            NSDictionary<NSNumber *, TGPeerReadState *> *readStates = dict[@"readStates"];
+            NSMutableDictionary<NSNumber *, TGUnseenPeerMentionsState *> *resetPeerUnseenMentionsStates = dict[@"mentionStates"];
+            [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:nil removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:readStates resetPeerUnseenMentionsStates:resetPeerUnseenMentionsStates clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:nil deleteEarlierHistory:nil];
         }] retryIf:^bool(id error) {
             if ([error respondsToSelector:@selector(boolValue)] && [error boolValue]) {
                 return true;
@@ -925,7 +931,7 @@
                      }
                  }];
                 
-                [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil clearConversationsWithPeerIds:nil removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false];
+                [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil resetPeerUnseenMentionsStates:nil clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:nil deleteEarlierHistory:nil];
                 
                 for (TGConversation *conversation in conversations) {
                     if (conversation.conversationId == peerId) {

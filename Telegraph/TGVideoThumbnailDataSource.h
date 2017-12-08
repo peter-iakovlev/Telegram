@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGImageDataSource.h"
+#import <LegacyComponents/TGImageDataSource.h>
 
 @interface TGVideoThumbnailDataSource : TGImageDataSource
 

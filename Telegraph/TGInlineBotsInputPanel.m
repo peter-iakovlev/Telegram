@@ -1,7 +1,6 @@
 #import "TGInlineBotsInputPanel.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGRecentContextBotsSignal.h"
 
@@ -9,8 +8,6 @@
 
 #import "TGInlineBotsSettingsCell.h"
 #import "TGInlineBotsInputCell.h"
-
-#import "TGHacks.h"
 
 @interface TGInlineBotsInputPanel () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     UIView *_bottomSeparatorView;
@@ -47,6 +44,8 @@
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _collectionLayout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.dataSource = self;
         _collectionView.delegate = self;
         _collectionView.backgroundColor = nil;

@@ -8,7 +8,7 @@
 
 #import "TGWallpaperImageDataSource.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGWallpaperImageDataSource
 

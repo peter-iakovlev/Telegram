@@ -1,16 +1,10 @@
 #import "TGPickerSheet.h"
 
-#import "TGOverlayControllerWindow.h"
-#import "TGOverlayController.h"
-#import "TGNavigationController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "TGSecretTimerValueControllerItemView.h"
-#import "TGPopoverController.h"
-
-#import "TGLocalization.h"
+#import <LegacyComponents/TGSecretTimerValueControllerItemView.h>
 
 @interface TGPickerSheetOverlayController () <UIPickerViewDelegate, UIPickerViewDataSource>
 {
@@ -121,7 +115,7 @@
         [_containerView addSubview:_pickerView];
     }
     
-    _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 100.0f, 44.0f)];
+    _cancelButton = [[TGModernButton alloc] initWithFrame:CGRectMake(self.controllerSafeAreaInset.left, 0.0f, 100.0f, 44.0f)];
     [_cancelButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
     _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
     [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
@@ -130,10 +124,9 @@
     [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_cancelButton];
     
-    _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(_containerView.frame.size.width - 140.0f, 0.0f, 140.0f, 44.0f)];
+    _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(_containerView.frame.size.width - 140.0f - self.controllerSafeAreaInset.right, 0.0f, 140.0f, 44.0f)];
     [_doneButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
     _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
-    _doneButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
     if (_banTimeout) {
         [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
     } else if (_dateMode) {
@@ -145,6 +138,15 @@
     _doneButton.titleLabel.font = TGBoldSystemFontOfSize(16.0f);
     [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_doneButton];
+}
+
+- (void)viewWillLayoutSubviews
+{
+    [super viewWillLayoutSubviews];
+    
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    _cancelButton.frame = CGRectMake(safeAreaInset.left, 0.0f, 100.0f, 44.0f);
+    _doneButton.frame = CGRectMake(_containerView.frame.size.width - 140.0f - safeAreaInset.right, 0.0f, 140.0f, 44.0f);
 }
 
 - (void)backgroundTapped:(UITapGestureRecognizer *)recognizer
@@ -242,12 +244,16 @@
 
 @interface TGPickerSheetPopoverContentController : TGViewController <UIPickerViewDataSource, UIPickerViewDelegate>
 {
+    UIDatePicker *_datePicker;
     UIPickerView *_pickerView;
+    bool _dateMode;
+    bool _banTimeout;
 }
 
 @property (nonatomic, strong) NSString *emptyValue;
 @property (nonatomic, copy) void (^onDismiss)();
 @property (nonatomic, copy) void (^onDone)(id item);
+@property (nonatomic, copy) void (^onDate)(NSTimeInterval);
 @property (nonatomic, strong) NSArray *timerValues;
 @property (nonatomic) NSUInteger selectedIndex;
 
@@ -255,13 +261,33 @@
 
 @implementation TGPickerSheetPopoverContentController
 
-- (instancetype)init
+- (instancetype)initWithEmptyValue:(NSString *)emptyValue
 {
     self = [super init];
     if (self != nil)
     {
+        _emptyValue = emptyValue;
         [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelButtonPressed)]];
         [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonPressed)]];
+    }
+    return self;
+}
+
+- (instancetype)initWithDateMode:(bool)banTimeout emptyValue:(NSString *)emptyValue
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _emptyValue = emptyValue;
+        _dateMode = true;
+        _banTimeout = banTimeout;
+        [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelButtonPressed)]];
+        
+        NSString *doneTitle = TGLocalized(@"Common.Done");
+        if (!_banTimeout && _dateMode)
+            doneTitle = TGLocalized(@"Conversation.JumpToDate");
+            
+        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:doneTitle style:UIBarButtonItemStyleDone target:self action:@selector(doneButtonPressed)]];
     }
     return self;
 }
@@ -280,8 +306,10 @@
 
 - (void)doneButtonPressed
 {
-    if (_onDone)
-    {
+    if (_dateMode && _onDate) { {
+        _onDate([_datePicker.date timeIntervalSince1970]);
+    }
+    } else if (!_dateMode && _onDone) {
         NSInteger index = [_pickerView selectedRowInComponent:0];
         if (index >= 0 && index < (NSInteger)_timerValues.count)
         {
@@ -301,11 +329,32 @@
     
     self.view.backgroundColor = [UIColor whiteColor];
     
-    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 44.0f, 320.0f, 216.0)];
-    _pickerView.dataSource = self;
-    _pickerView.delegate = self;
-    [_pickerView reloadAllComponents];
-    [self.view addSubview:_pickerView];
+//    _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 44.0f, 320.0f, 216.0)];
+//    _pickerView.dataSource = self;
+//    _pickerView.delegate = self;
+//    [_pickerView reloadAllComponents];
+//    [self.view addSubview:_pickerView];
+
+    if (_dateMode) {
+        _datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0.0f, 44.0f, 320.0f, 216.0)];
+        _datePicker.locale = [NSLocale localeWithLocaleIdentifier:effectiveLocalization().code];
+        _datePicker.datePickerMode = UIDatePickerModeDate;
+        
+        if (_banTimeout) {
+            _datePicker.datePickerMode = UIDatePickerModeDateAndTime;
+            _datePicker.minimumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
+        } else {
+            _datePicker.maximumDate = [NSDate dateWithTimeIntervalSinceNow:2.0];
+            _datePicker.minimumDate = [NSDate dateWithTimeIntervalSince1970:1376438400];
+        }
+        [self.view addSubview:_datePicker];
+    } else {
+        _pickerView = [[UIPickerView alloc] initWithFrame:CGRectMake(0.0f, 44.0f, 320.0f, 216.0)];
+        _pickerView.dataSource = self;
+        _pickerView.delegate = self;
+        [_pickerView reloadAllComponents];
+        [self.view addSubview:_pickerView];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -357,17 +406,16 @@
 
 @implementation TGPickerSheetPopoverController
 
-- (instancetype)initWithEmptyValue:(NSString *)emptyValue
+- (instancetype)initWithDateMode:(bool)dateMode banTimeout:(bool)banTimeout emptyValue:(NSString *)emptyValue
 {
-    TGPickerSheetPopoverContentController *contentController = [[TGPickerSheetPopoverContentController alloc] init];
+    TGPickerSheetPopoverContentController *contentController = dateMode ? [[TGPickerSheetPopoverContentController alloc] initWithDateMode:banTimeout emptyValue:emptyValue] : [[TGPickerSheetPopoverContentController alloc] initWithEmptyValue:emptyValue];
     contentController.emptyValue = emptyValue;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[contentController]];
     navigationController.presentationStyle = TGNavigationControllerPresentationStyleRootInPopover;
     self = [super initWithContentViewController:navigationController];
     if (self != nil)
     {
-        if (iosMajorVersion() < 8)
-            self.popoverContentSize = [contentController preferredContentSize];
+        [self setContentSize:[contentController preferredContentSize]];
     }
     return self;
 }
@@ -475,7 +523,7 @@
 {
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
     {
-        _popoverController = [[TGPickerSheetPopoverController alloc] initWithEmptyValue:_emptyValue];
+        _popoverController = [[TGPickerSheetPopoverController alloc] initWithDateMode:_dateSelection banTimeout:_banTimeout emptyValue:_emptyValue];
         
         __weak TGPickerSheet *weakSelf = self;
         _popoverController.pickerSheetContentController.timerValues = _items;
@@ -495,6 +543,18 @@
             {
                 if (strongSelf->_action)
                     strongSelf->_action(item);
+                
+                [strongSelf dismiss];
+            }
+        };
+        
+        _popoverController.pickerSheetContentController.onDate = ^(NSTimeInterval date)
+        {
+            __strong TGPickerSheet *strongSelf = weakSelf;
+            if (strongSelf != nil)
+            {
+                if (strongSelf->_dateAction)
+                    strongSelf->_dateAction(date);
                 
                 [strongSelf dismiss];
             }

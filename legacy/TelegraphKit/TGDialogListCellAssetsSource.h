@@ -18,9 +18,6 @@
 - (UIImage *)dialogListSearchCancelButton;
 - (UIImage *)dialogListSearchCancelButtonHighlighted;
 
-- (UIImage *)dialogListGroupChatIcon;
-- (UIImage *)dialogListGroupChatIconHighlighted;
-
 - (UIImage *)dialogListUnreadCountBadge;
 - (UIImage *)dialogListUnreadCountBadgeHighlighted;
 

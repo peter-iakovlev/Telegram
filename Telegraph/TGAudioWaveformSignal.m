@@ -1,13 +1,11 @@
 #import "TGAudioWaveformSignal.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "opus.h"
 #import "opusfile.h"
 
-#import "TGAudioWaveform.h"
-
 #import "TGSharedMediaUtils.h"
-#import "PSKeyValueEncoder.h"
-#import "PSKeyValueDecoder.h"
 
 @implementation TGAudioWaveformSignal
 

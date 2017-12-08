@@ -1,4 +1,4 @@
-#import "TGModernMediaListItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
 
 @interface TGModernMediaListImageItem : NSObject <TGModernMediaListItem>
 

@@ -1,10 +1,10 @@
 #import "TGWebSearchInternalImageItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGWebSearchInternalImageResult+TGMediaItem.h"
 
-#import "TGImageUtils.h"
-#import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGWebSearchInternalImageItemView.h"
 

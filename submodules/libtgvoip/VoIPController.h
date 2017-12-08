@@ -29,7 +29,7 @@
 #include "CongestionControl.h"
 #include "NetworkSocket.h"
 
-#define LIBTGVOIP_VERSION "1.0"
+#define LIBTGVOIP_VERSION "1.0.1"
 
 #define STATE_WAIT_INIT 1
 #define STATE_WAIT_INIT_ACK 2
@@ -317,13 +317,30 @@ public:
 	std::string GetCurrentAudioOutputID();
 	/**
 	 * Set the proxy server to route the data through. Call this before connecting.
-	 * @param protocol PROXY_NONE, PROXY_SOCKS4, or PROXY_SOCKS5
+	 * @param protocol PROXY_NONE or PROXY_SOCKS5
 	 * @param address IP address or domain name of the server
 	 * @param port Port of the server
 	 * @param username Username; empty string for anonymous
 	 * @param password Password; empty string if none
 	 */
 	void SetProxy(int protocol, std::string address, uint16_t port, std::string username, std::string password);
+		/**
+		 * Get the number of signal bars to display in the client UI.
+		 * @return the number of signal bars, from 1 to 4
+		 */
+		int GetSignalBarsCount();
+		/**
+		 * Set the callback to be called when the signal bar count changes.
+		 * @param f
+		 */
+		void SetSignalBarsCountCallback(void (*f)(VoIPController*, int));
+		/**
+		 * Enable or disable AGC (automatic gain control) on audio output. Should only be enabled on phones when the earpiece speaker is being used.
+		 * The audio output will be louder with this on.
+		 * AGC with speakerphone or other kinds of loud speakers has detrimental effects on some echo cancellation implementations.
+		 * @param enabled I usually pick argument names to be self-explanatory
+		 */
+		void SetAudioOutputGainControlEnabled(bool enabled);
 
 private:
 	struct PendingOutgoingPacket{
@@ -441,6 +458,7 @@ private:
 	double setEstablishedAt;
 	SocketSelectCanceller* selectCanceller;
 	NetworkSocket* openingTcpSocket;
+	unsigned char signalBarsHistory[4];
 
 	BufferPool outgoingPacketsBufferPool;
 	int udpConnectivityState;
@@ -453,6 +471,12 @@ private:
 	std::string proxyUsername;
 	std::string proxyPassword;
 	IPv4Address* resolvedProxyAddress;
+
+		int signalBarCount;
+		void (*signalBarCountCallback)(VoIPController*, int);
+
+		AutomaticGainControl* outputAGC;
+		bool outputAGCEnabled;
 	
 	/*** server config values ***/
 	uint32_t maxAudioBitrate;

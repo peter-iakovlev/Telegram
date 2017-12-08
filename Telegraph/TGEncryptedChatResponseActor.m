@@ -1,11 +1,12 @@
 #import "TGEncryptedChatResponseActor.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 #import <MTProtoKit/MTProtoKit.h>
 #import <MTProtoKit/MTEncryption.h>
 #import <MTProtoKit/MTKeychain.h>
-#import "TGStringUtils.h"
 
 #import "TGConversation+Telegraph.h"
 

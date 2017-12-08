@@ -1,12 +1,11 @@
 #import "TGCachePeerItemView.h"
 
-#import "TGFont.h"
-#import "TGLetteredAvatarView.h"
+#import "TGTelegraph.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
+
 
 @interface TGCachePeerItemView () {
     TGLetteredAvatarView *_avatarView;
@@ -41,7 +40,7 @@
         
         self.separatorInset = 65.0f;
         
-        _disclosureIndicator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
+        _disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
         [self.contentView addSubview:_disclosureIndicator];
     }
     return self;
@@ -94,12 +93,14 @@
         TGUser *user = peer;
         
         peerId = user.uid;
-        if (user.photoUrlSmall.length != 0) {
+        if ( peerId == TGTelegraphInstance.clientUserId) {
+            [_avatarView loadSavedMessagesWithSize:CGSizeMake(60.0f, 60.0f) placeholder:placeholder];
+        } else if (user.photoUrlSmall.length != 0) {
             [_avatarView loadImage:user.photoUrlSmall filter:@"circle:60x60" placeholder:placeholder];
         } else {
             [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
         }
-        _titleLabel.text = user.displayName;
+        _titleLabel.text = peerId == TGTelegraphInstance.clientUserId ? TGLocalized(@"DialogList.SavedMessages") : user.displayName;
     }
     
     _titleLabel.textColor = isSecret ? UIColorRGB(0x00a629) : [UIColor blackColor];
@@ -113,9 +114,9 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    _avatarView.frame = CGRectMake(14.0f, 4.0f, 40.0, 40.0f);
+    _avatarView.frame = CGRectMake(14.0f + self.safeAreaInset.left, 4.0f, 40.0, 40.0f);
     
-    _disclosureIndicator.frame = CGRectMake(self.bounds.size.width - _disclosureIndicator.frame.size.width - 15, CGFloor((self.bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
+    _disclosureIndicator.frame = CGRectMake(self.bounds.size.width - _disclosureIndicator.frame.size.width - 15 - self.safeAreaInset.right, CGFloor((self.bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
     
     CGSize sizeSize = [_sizeLabel.text sizeWithFont:_sizeLabel.font];
     sizeSize.width = CGCeil(sizeSize.width);

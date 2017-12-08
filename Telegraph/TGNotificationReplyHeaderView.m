@@ -1,12 +1,8 @@
 #import "TGNotificationReplyHeaderView.h"
 
-#import "TGFont.h"
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGReplyMessageMediaAttachment.h"
-#import "TGConversation.h"
-#import "TGMessage.h"
-#import "TGUser.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGReplyHeaderActionModel.h"
 

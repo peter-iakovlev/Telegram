@@ -1,25 +1,23 @@
 #import "TGEmbedPlayerController.h"
-#import "TGOverlayControllerWindow.h"
 
-#import "TGFont.h"
-#import <pop/POP.h>
-#import "TGHacks.h"
-#import "TGImageUtils.h"
-#import "TGPhotoEditorUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
-#import "TGEmbedPlayerView.h"
-#import "TGEmbedPlayerScrubber.h"
+#import <LegacyComponents/TGPhotoEditorUtils.h>
 
-#import "TGEmbedPlayerState.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGEmbedPlayerView.h>
+#import <LegacyComponents/TGEmbedPlayerScrubber.h>
+
+#import <LegacyComponents/TGEmbedPlayerState.h>
 
 #import "TGEmbedItemView.h"
 
-#import "TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h"
-#import "JNWSpringAnimation.h"
-#import "TGAnimationBlockDelegate.h"
+#import <LegacyComponents/TGModernGalleryZoomableScrollViewSwipeGestureRecognizer.h>
+#import <LegacyComponents/JNWSpringAnimation.h>
 
 #import <MediaPlayer/MediaPlayer.h>
+
+#import "TGLegacyComponentsContext.h"
 
 const CGFloat TGEmbedSwipeMinimumVelocity = 600.0f;
 const CGFloat TGEmbedSwipeVelocityThreshold = 700.0f;
@@ -36,7 +34,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     CGRect _initialPlayerFrame;
     
     UIButton *_wrapperView;
-    UIView *_topPanelView;
+    UIVisualEffectView *_topPanelView;
     UILabel *_positionLabel;
     UILabel *_remainingLabel;
     TGEmbedPlayerScrubber *_scrubber;
@@ -45,7 +43,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     
     TGModernButton *_fitButton;
     
-    UIView *_bottomPanelView;
+    UIVisualEffectView *_bottomPanelView;
     UIButton *_playButton;
     UIButton *_pauseButton;
     UIButton *_scanBackwardButton;
@@ -80,9 +78,11 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         
         self.isImportant = true;
         
-        TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithParentController:parentController contentController:self keepKeyboard:true];
+        TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:parentController contentController:self keepKeyboard:true];
         window.windowLevel = UIWindowLevelStatusBar - 0.0001;
         window.hidden = false;
+        
+        [TGViewController attemptAutorotation];
     }
     return self;
 }
@@ -91,6 +91,11 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 {
     [_stateDisposable dispose];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (BOOL)shouldAutorotate
+{
+    return true;
 }
 
 - (void)setAboveStatusBar
@@ -117,9 +122,15 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     _backView.hidden = true;
     [self.view addSubview:_backView];
     
+    if (iosMajorVersion() >= 11)
+        _backView.accessibilityIgnoresInvertColors = true;
+    
     _curtainView = [[UIView alloc] initWithFrame:CGRectZero];
     _curtainView.backgroundColor = [UIColor blackColor];
     [self.view addSubview:_curtainView];
+    
+    if (iosMajorVersion() >= 11)
+        _curtainView.accessibilityIgnoresInvertColors = true;
     
     _wrapperView = [[UIButton alloc] initWithFrame:self.view.bounds];
     _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -143,47 +154,46 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
     [_doneButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_doneButton sizeToFit];
-    [_topPanelView addSubview:_doneButton];
+    [_topPanelView.contentView addSubview:_doneButton];
     
     CGFloat doneButtonWidth = MAX(74.0f, _doneButton.frame.size.width);
-    _doneButton.frame = CGRectMake(-0.5f, 18.5f, doneButtonWidth, 30.0f);
+    _doneButton.frame = CGRectMake(-0.5f, _topPanelView.frame.size.height - 31 - TGScreenPixel, doneButtonWidth, 30.0f);
     
-    _positionLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(_doneButton.frame) - 4.0f, 13.0, 56.0f, 44.0f)];
+    _positionLabel = [[UILabel alloc] initWithFrame:CGRectMake(CGRectGetMaxX(_doneButton.frame) - 4.0f, _topPanelView.frame.size.height - 37.0f, 56.0f, 44.0f)];
     _positionLabel.backgroundColor = [UIColor clearColor];
     _positionLabel.font = TGSystemFontOfSize(13.0f);
     _positionLabel.text = @"0:00";
     _positionLabel.textAlignment = NSTextAlignmentCenter;
     _positionLabel.textColor = [UIColor blackColor];
     _positionLabel.userInteractionEnabled = false;
-    [_topPanelView addSubview:_positionLabel];
+    [_topPanelView.contentView addSubview:_positionLabel];
     
-    _remainingLabel = [[UILabel alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 104.0f, 13.0f, 56, 44.0f)];
+    _remainingLabel = [[UILabel alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 104.0f, _topPanelView.frame.size.height - 37.0f, 56, 44.0f)];
     _remainingLabel.backgroundColor = [UIColor clearColor];
     _remainingLabel.font = TGSystemFontOfSize(13.0f);
     _remainingLabel.text = @"-0:00";
     _remainingLabel.textAlignment = NSTextAlignmentCenter;
     _remainingLabel.textColor = [UIColor blackColor];
     _remainingLabel.userInteractionEnabled = false;
-    [_topPanelView addSubview:_remainingLabel];
+    [_topPanelView.contentView addSubview:_remainingLabel];
     
     __weak TGEmbedPlayerController *weakSelf = self;
-    _scrubber = [[TGEmbedPlayerScrubber alloc] initWithFrame:CGRectMake(CGRectGetMaxX(_positionLabel.frame) - 7.0f, 33.5f, 100, 3)];
+    _scrubber = [[TGEmbedPlayerScrubber alloc] initWithFrame:CGRectMake(CGRectGetMaxX(_positionLabel.frame) - 7.0f, _topPanelView.frame.size.height - 16.0f - TGScreenPixel, 100, 3)];
     _scrubber.onSeek = ^(CGFloat position)
     {
         __strong TGEmbedPlayerController *strongSelf = weakSelf;
         if (strongSelf != nil)
             [strongSelf->_playerView seekToFractPosition:position];
     };
-    [_topPanelView addSubview:_scrubber];
+    [_topPanelView.contentView addSubview:_scrubber];
     
     if ([_playerView supportsPIP] && !TGIsPad())
     {
-        _pipButton = [[UIButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 50.0f, 13.0f, 50.0f, 44.0f)];
-        _pipButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-        [_pipButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedVideoPIPIcon"], [UIColor blackColor]) forState:UIControlStateNormal];
-        [_pipButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedVideoPIPIcon"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
+        _pipButton = [[UIButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 50.0f, _topPanelView.frame.size.height - 37.0f, 50.0f, 44.0f)];
+        [_pipButton setImage:TGTintedImage(TGComponentsImageNamed(@"EmbedVideoPIPIcon"), [UIColor blackColor]) forState:UIControlStateNormal];
+        [_pipButton setImage:TGTintedImage(TGComponentsImageNamed(@"EmbedVideoPIPIcon"), [UIColor whiteColor]) forState:UIControlStateHighlighted];
         [_pipButton addTarget:self action:@selector(pipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [_topPanelView addSubview:_pipButton];
+        [_topPanelView.contentView addSubview:_pipButton];
     }
 
     UIBlurEffect *bottomPanelBlurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
@@ -198,7 +208,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_playButton setImage:[UIImage imageNamed:@"EmbedPlayButton"] forState:UIControlStateNormal];
     [_playButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedPlayButton"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
     [_playButton addTarget:self action:@selector(playButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_bottomPanelView addSubview:_playButton];
+    [_bottomPanelView.contentView addSubview:_playButton];
     
     _pauseButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 50, 45)];
     _pauseButton.adjustsImageWhenHighlighted = false;
@@ -206,7 +216,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_pauseButton setImage:[UIImage imageNamed:@"EmbedPauseButton"] forState:UIControlStateNormal];
     [_pauseButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedPauseButton"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
     [_pauseButton addTarget:self action:@selector(pauseButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_bottomPanelView addSubview:_pauseButton];
+    [_bottomPanelView.contentView addSubview:_pauseButton];
     
     _scanBackwardButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 50, 45)];
     _scanBackwardButton.adjustsImageWhenHighlighted = false;
@@ -214,7 +224,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_scanBackwardButton setImage:[UIImage imageNamed:@"EmbedScanBackwardButton"] forState:UIControlStateNormal];
     [_scanBackwardButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedScanBackwardButton"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
     [_scanBackwardButton addTarget:self action:@selector(scanBackwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_bottomPanelView addSubview:_scanBackwardButton];
+    [_bottomPanelView.contentView addSubview:_scanBackwardButton];
     
     _scanForwardButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 50, 45)];
     _scanForwardButton.adjustsImageWhenHighlighted = false;
@@ -222,7 +232,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_scanForwardButton setImage:[UIImage imageNamed:@"EmbedScanForwardButton"] forState:UIControlStateNormal];
     [_scanForwardButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedScanForwardButton"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
     [_scanForwardButton addTarget:self action:@selector(scanForwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_bottomPanelView addSubview:_scanForwardButton];
+    [_bottomPanelView.contentView addSubview:_scanForwardButton];
     
     static UIImage *minimumTrackImage = nil;
     static UIImage *maximumTrackImage = nil;
@@ -267,7 +277,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     _volumeView = volumeView;
 #endif
     
-    [_bottomPanelView addSubview:_volumeView];
+    [_bottomPanelView.contentView addSubview:_volumeView];
     
     _exitFullscreenButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 50, 50)];
     _exitFullscreenButton.adjustsImageWhenHighlighted = false;
@@ -275,7 +285,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_exitFullscreenButton setImage:[UIImage imageNamed:@"EmbedExitFullScreenButton"] forState:UIControlStateNormal];
     [_exitFullscreenButton setImage:TGTintedImage([UIImage imageNamed:@"EmbedExitFullScreenButton"], [UIColor whiteColor]) forState:UIControlStateHighlighted];
     [_exitFullscreenButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
-    [_bottomPanelView addSubview:_exitFullscreenButton];
+    [_bottomPanelView.contentView addSubview:_exitFullscreenButton];
     
     if ([_playerView _controlsType] == TGEmbedPlayerControlsTypeSimple)
     {
@@ -351,7 +361,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_wrapperView addGestureRecognizer:_panGestureRecognizer];
     
     if (fromRotation && !_aboveStatusBar)
-        [TGHacks setApplicationStatusBarAlpha:0.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
 }
 
 #pragma mark -
@@ -448,7 +458,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         
         _curtainView.hidden = true;
         if (!_aboveStatusBar)
-            [TGHacks setApplicationStatusBarAlpha:1.0f];
+            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
     }
     
     [UIView animateWithDuration:duration animations:^{
@@ -489,7 +499,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     }];
     
     if (!_aboveStatusBar)
-        [TGHacks setApplicationStatusBarAlpha:1.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
 }
 
 - (void)animateView:(UIView *)view to:(CGRect)toFrame completion:(void (^)(bool))completion
@@ -609,7 +619,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     if (animated)
     {
         if (updateStatusBar && !_aboveStatusBar)
-            [TGHacks setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
+            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
         
         _scrubber.layer.rasterizationScale = TGScreenScaling();
         _scrubber.layer.shouldRasterize = true;
@@ -665,6 +675,8 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         _scrubber.hidden = false;
     }
     
+    _positionLabel.hidden = (state.position < 0.0);
+    
     if (!_scrubber.hidden)
     {
         [_scrubber setDownloadProgress:state.downloadProgress];
@@ -716,35 +728,42 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [super viewWillLayoutSubviews];
     
     CGSize screenSize = TGScreenSize();
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    
+    CGFloat topInset = safeAreaInset.top > FLT_EPSILON ? safeAreaInset.top : ([self prefersStatusBarHidden] ? 0.0f : 20.0f);
+    _topPanelView.frame = CGRectMake(0, 0, self.view.bounds.size.width, topInset + 30.0f);
+    _doneButton.frame = CGRectMake(-0.5f + safeAreaInset.left, _topPanelView.frame.size.height - 31 - TGScreenPixel, _doneButton.frame.size.width, 30.0f);
+    _positionLabel.frame = CGRectMake(CGRectGetMaxX(_doneButton.frame) - 4.0f, _topPanelView.frame.size.height - 37.0f, 56.0f, 44.0f);
+    _pipButton.frame = CGRectMake(self.view.frame.size.width - 50.0f - safeAreaInset.right, _topPanelView.frame.size.height - 37.0f, 50.0f, 44.0f);
     
     if (self.view.frame.size.width > self.view.frame.size.height && (NSInteger)screenSize.height != 480)
     {
-        _remainingLabel.frame = CGRectMake(self.view.frame.size.width - 104.0f, _remainingLabel.frame.origin.y, _remainingLabel.frame.size.width, _remainingLabel.frame.size.height);
-        _scrubber.frame = CGRectMake(_scrubber.frame.origin.x, _scrubber.frame.origin.y, _remainingLabel.frame.origin.x - _scrubber.frame.origin.x, _scrubber.frame.size.height);
+        _remainingLabel.frame = CGRectMake(self.view.frame.size.width - 104.0f - safeAreaInset.right, _topPanelView.frame.size.height - 37.0f, _remainingLabel.frame.size.width, _remainingLabel.frame.size.height);
+        _scrubber.frame = CGRectMake(CGRectGetMaxX(_positionLabel.frame) - 7.0f, _topPanelView.frame.size.height - 16.0f - TGScreenPixel, _remainingLabel.frame.origin.x - _scrubber.frame.origin.x, _scrubber.frame.size.height);
         
-        _bottomPanelView.frame = CGRectMake(0, self.view.frame.size.height - 50.0f, self.view.frame.size.width, 50.0f);
+        _bottomPanelView.frame = CGRectMake(0, self.view.frame.size.height - 50.0f - safeAreaInset.bottom, self.view.frame.size.width, 50.0f + safeAreaInset.bottom);
         
-        _playButton.frame = CGRectMake(CGFloor((self.view.frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((_bottomPanelView.frame.size.height - _playButton.frame.size.height) / 2.0f), _playButton.frame.size.width, _playButton.frame.size.height);
+        _playButton.frame = CGRectMake(CGFloor((self.view.frame.size.width - _playButton.frame.size.width) / 2.0f), CGFloor((50.0f - _playButton.frame.size.height) / 2.0f), _playButton.frame.size.width, _playButton.frame.size.height);
         _pauseButton.frame = _playButton.frame;
         
-        _scanBackwardButton.frame = CGRectMake(_playButton.frame.origin.x - _scanBackwardButton.frame.size.width - 34.0f, CGFloor((_bottomPanelView.frame.size.height - _scanBackwardButton.frame.size.height) / 2.0f), _scanBackwardButton.frame.size.width, _scanBackwardButton.frame.size.height);
+        _scanBackwardButton.frame = CGRectMake(_playButton.frame.origin.x - _scanBackwardButton.frame.size.width - 34.0f, CGFloor((50.0f - _scanBackwardButton.frame.size.height) / 2.0f), _scanBackwardButton.frame.size.width, _scanBackwardButton.frame.size.height);
         
-        _scanForwardButton.frame = CGRectMake(CGRectGetMaxX(_playButton.frame) + 34.0f, CGFloor((_bottomPanelView.frame.size.height - _scanForwardButton.frame.size.height) / 2.0f), _scanForwardButton.frame.size.width, _scanForwardButton.frame.size.height);
+        _scanForwardButton.frame = CGRectMake(CGRectGetMaxX(_playButton.frame) + 34.0f, CGFloor((50.0f - _scanForwardButton.frame.size.height) / 2.0f), _scanForwardButton.frame.size.width, _scanForwardButton.frame.size.height);
         
-        _exitFullscreenButton.frame = CGRectMake(self.view.frame.size.width - _exitFullscreenButton.frame.size.width, CGFloor((_bottomPanelView.frame.size.height - _exitFullscreenButton.frame.size.height) / 2.0f), _exitFullscreenButton.frame.size.width, _exitFullscreenButton.frame.size.height);
+        _exitFullscreenButton.frame = CGRectMake(self.view.frame.size.width - _exitFullscreenButton.frame.size.width - safeAreaInset.right, CGFloor((50.0f - _exitFullscreenButton.frame.size.height) / 2.0f), _exitFullscreenButton.frame.size.width, _exitFullscreenButton.frame.size.height);
         
         CGFloat y = 15;
 #if TARGET_IPHONE_SIMULATOR
         y -= 6.5f;
 #endif
-        _volumeView.frame = CGRectMake(13.0f, y, floor(self.view.frame.size.width / 2.0 - 125.0f - 13.0f), 34.0f);
+        _volumeView.frame = CGRectMake(13.0f + safeAreaInset.left, y, floor(self.view.frame.size.width / 2.0 - 125.0f - 13.0f) - safeAreaInset.left, 34.0f);
     }
     else
     {
-        _remainingLabel.frame = CGRectMake(self.view.frame.size.width - 104.0f, _remainingLabel.frame.origin.y, _remainingLabel.frame.size.width, _remainingLabel.frame.size.height);
-        _scrubber.frame = CGRectMake(_scrubber.frame.origin.x, _scrubber.frame.origin.y, _remainingLabel.frame.origin.x - _scrubber.frame.origin.x, _scrubber.frame.size.height);
+        _remainingLabel.frame = CGRectMake(self.view.frame.size.width - 104.0f - safeAreaInset.right, _topPanelView.frame.size.height - 37.0f, _remainingLabel.frame.size.width, _remainingLabel.frame.size.height);
+        _scrubber.frame = CGRectMake(CGRectGetMaxX(_positionLabel.frame) - 7.0f, _topPanelView.frame.size.height - 16.0f - TGScreenPixel, _remainingLabel.frame.origin.x - _scrubber.frame.origin.x, _scrubber.frame.size.height);
         
-        _bottomPanelView.frame = CGRectMake(0, self.view.frame.size.height - 80.0f, self.view.frame.size.width, 80.0f);
+        _bottomPanelView.frame = CGRectMake(0, self.view.frame.size.height - 80.0f - safeAreaInset.bottom, self.view.frame.size.width, 80.0f + safeAreaInset.bottom);
         _playButton.frame = CGRectMake(CGFloor((self.view.frame.size.width - _playButton.frame.size.width) / 2.0f), 0, _playButton.frame.size.width, _playButton.frame.size.height);
         _pauseButton.frame = _playButton.frame;
         
@@ -787,6 +806,14 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 {
     CGSize playerSize = TGScaleToSize(_initialPlayerFrame.size, size);
     return CGRectMake(CGFloor((size.width - playerSize.width) / 2.0f), CGFloor((size.height - playerSize.height) / 2.0f), playerSize.width, playerSize.height);
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    if (!TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape([[LegacyComponentsGlobals provider] applicationStatusBarOrientation]))
+        return true;
+    
+    return [super prefersStatusBarHidden];
 }
 
 @end

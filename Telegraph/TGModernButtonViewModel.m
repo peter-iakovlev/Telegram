@@ -1,5 +1,7 @@
 #import "TGModernButtonViewModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernButtonView.h"
 
 @implementation TGModernButtonViewModel

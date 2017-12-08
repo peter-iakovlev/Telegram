@@ -1,7 +1,6 @@
 #import "TGPhonebookContact.h"
 
-#import "TGStringUtils.h"
-#import "TGPhoneUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGPhoneNumber
 

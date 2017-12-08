@@ -1,7 +1,7 @@
 #import "TGUploadFileSignals.h"
 
 #import "TL/TLMetaScheme.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGUploadFileHelper : NSObject <ASWatcher> {
     void (^_completion)(TLInputFile *);

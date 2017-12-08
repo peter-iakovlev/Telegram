@@ -55,6 +55,8 @@ const UIEdgeInsets TGWidgetCollectionSmallInsets = { 16.0f, 4.0f, 8.0f, 4.0f };
     [self.view addSubview:_effectView];
 
     _collectionView = [[UICollectionView alloc] initWithFrame:self.view.bounds collectionViewLayout:_collectionLayout];
+    if ([_collectionView respondsToSelector:@selector(setContentInsetAdjustmentBehavior:)])
+        _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _collectionView.backgroundColor = [UIColor clearColor];
     _collectionView.dataSource = self;

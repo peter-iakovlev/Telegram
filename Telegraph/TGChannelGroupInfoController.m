@@ -1,15 +1,15 @@
 #import "TGChannelGroupInfoController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGConversation.h"
+#import "TGLegacyComponentsContext.h"
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
+
 #import "TGDatabase.h"
 
-#import "TGHacks.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
-#import "UIDevice+PlatformInfo.h"
+#import <LegacyComponents/UIDevice+PlatformInfo.h>
 #import "TGInterfaceAssets.h"
 
 #import "TGAppDelegate.h"
@@ -17,7 +17,6 @@
 #import "TGTelegramNetworking.h"
 
 #import "TGInterfaceManager.h"
-#import "TGNavigationBar.h"
 #import "TGTelegraphDialogListCompanion.h"
 #import "TGConversationChangeTitleRequestActor.h"
 #import "TGConversationChangePhotoActor.h"
@@ -35,17 +34,14 @@
 #import "TGBotUserInfoController.h"
 #import "TGAlertSoundController.h"
 
-#import "TGRemoteImageView.h"
-
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGAlertView.h"
 #import "TGActionSheet.h"
 
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGGroupAvatarGalleryItem.h"
 #import "TGGroupAvatarGalleryModel.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGUserInfoVariantCollectionItem.h"
 #import "TGUserInfoTextCollectionItem.h"
@@ -54,10 +50,10 @@
 
 #import "TGSharedMediaController.h"
 
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGGroupManagementSignals.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGGroupInfoShareLinkController.h"
 
@@ -72,72 +68,41 @@
 
 #import "TGCollectionMultilineInputItem.h"
 
-#import "TGMediaAvatarMenuMixin.h"
+#import <LegacyComponents/TGMediaAvatarMenuMixin.h>
+#import "TGWebSearchController.h"
 
 #import "TGCollectionStaticMultilineTextItem.h"
 
-#import "TGHashtagSearchController.h"
-
 #import "TGSetupChannelAfterCreationController.h"
+#import "TGChannelStickersController.h"
+#import "TGChannelGroupHistoryController.h"
 
 #import "TGShareMenu.h"
 #import "TGSendMessageSignals.h"
+#import "TGStickersSignals.h"
 
 #import "TGChannelBanController.h"
 
-#import "TGLocalization.h"
-
 #import "TGChannelModeratorController.h"
 
-#import "TGSearchBar.h"
-#import "TGSearchDisplayMixin.h"
-
-#import "TGUser.h"
+#import <LegacyComponents/TGSearchBar.h>
+#import <LegacyComponents/TGSearchDisplayMixin.h>
 
 #import "TGContactCell.h"
-#import "TGFont.h"
-
-#import "TGDateUtils.h"
 
 #import "TGChannelManagementSignals.h"
 #import "TGGlobalMessageSearchSignals.h"
 
 #import "TGTelegraph.h"
 
-#import "TGImageUtils.h"
-
 #import "TGCachedConversationData.h"
 
 #import "TGGroupInfoUserCell.h"
 
+#import "TGLegacyComponentsContext.h"
+
 static const NSUInteger keepCachedMemberCount = 200;
 static const NSUInteger loadMoreMemberCount = 100;
-
-static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive)
-{
-    NSString *subtitleText = @"";
-    bool localSubtitleActive = false;
-    
-    if (user.uid > 0)
-    {
-        int lastSeen = user.presence.lastSeen;
-        if (user.presence.online)
-        {
-            localSubtitleActive = true;
-            subtitleText = TGLocalized(@"Presence.online");
-        }
-        else
-            subtitleText = [TGDateUtils stringForRelativeLastSeen:lastSeen];
-    }
-    else
-    {
-        subtitleText = [user.customProperties objectForKey:@"label"];
-    }
-    
-    *subtitleActive = localSubtitleActive;
-    
-    return subtitleText;
-}
 
 @interface TGChannelGroupInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, ASWatcher, TGSearchBarDelegate, TGSearchDisplayMixinDelegate, UITableViewDelegate, UITableViewDataSource>
 {
@@ -163,7 +128,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     
     TGCollectionMenuSection *_editDescriptionSection;
     TGVariantCollectionItem *_editGroupTypeItem;
+    TGVariantCollectionItem *_editGroupHistoryItem;
     TGCollectionMultilineInputItem *_editDescriptionItem;
+    TGVariantCollectionItem *_stickersItem;
     
     TGCollectionMultilineInputItem *_linkItem;
     TGCollectionMenuSection *_linkSection;
@@ -182,7 +149,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     id<SDisposable> _completeInfoDisposable;
     id<SDisposable> _cachedDataDisposable;
     id<SDisposable> _cachedMembersDisposable;
+    SMetaDisposable *_cachedStickerPackDisposable;
     
+    bool _canSetStickerPack;
     NSString *_privateLink;
     
     TGCollectionMenuSection *_usersSection;
@@ -278,6 +247,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         _descriptionSection = [[TGCollectionMenuSection alloc] initWithItems:@[descriptionHeaderItem, _descriptionItem]];
         
         _editGroupTypeItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.GroupType") action:@selector(editGroupTypePressed)];
+        _editGroupHistoryItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.GroupHistory") action:@selector(editGroupHistoryPressed)];
         
         _editDescriptionItem = [[TGCollectionMultilineInputItem alloc] init];
         _editDescriptionItem.selectable = false;
@@ -295,6 +265,8 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         TGCommentCollectionItem *editDescriptionComment = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.About.Help")];
         
         _editDescriptionSection = [[TGCollectionMenuSection alloc] initWithItems:@[_editDescriptionItem, editDescriptionComment]];
+        
+        _stickersItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Stickers") action:@selector(stickersPressed)];
         
         _linkItem = [[TGCollectionMultilineInputItem alloc] init];
         _linkItem.editable = false;
@@ -341,7 +313,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         
         _usersHeaderItem = [[TGHeaderCollectionItem alloc] initWithTitle:@""];
         _usersAddMemberItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addMemberPressed)];
-        _usersAddMemberItem.icon = [UIImage imageNamed:@"ModernContactListAddMemberIcon.png"];
+        _usersAddMemberItem.icon = TGImageNamed(@"ModernContactListAddMemberIcon.png");
         _usersAddMemberItem.iconOffset = CGPointMake(3.0f, 0.0f);
         _usersAddMemberItem.leftInset = 65.0f;
         
@@ -402,6 +374,8 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
              }
          }];
         
+        _cachedStickerPackDisposable = [[SMetaDisposable alloc] init];
+        
         _completeInfoDisposable = [[TGChannelManagementSignals updateChannelExtendedInfo:_conversation.conversationId accessHash:_conversation.accessHash updateUnread:true] startWithNext:nil];
         
         _cachedDataDisposable = [[[TGDatabaseInstance() channelCachedData:_conversation.conversationId] deliverOn:[SQueue mainQueue]] startWithNext:^(TGCachedConversationData *cachedData) {
@@ -431,6 +405,14 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
                     strongSelf->_bannedCount = cachedData.bannedCount;
                     //[strongSelf _setupSections:strongSelf->_editing];
                 }
+                
+                strongSelf->_canSetStickerPack = cachedData.canSetStickerPack;
+                
+                [strongSelf->_cachedStickerPackDisposable setDisposable:[[TGStickersSignals cachedStickerPack:cachedData.stickerPack] startWithNext:^(TGStickerPack *stickerPack) {
+                    [strongSelf->_stickersItem setVariant:stickerPack.title];
+                }]];
+                
+                [strongSelf->_editGroupHistoryItem setVariant:cachedData.preHistory ? TGLocalized(@"GroupInfo.GroupHistoryHidden") : TGLocalized(@"GroupInfo.GroupHistoryVisible")];
             }
         }];
         
@@ -596,30 +578,15 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     
     if (editing) {
         if ([self canEditChannel] && (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo)) {
-            [_groupInfoSection replaceItems:@[_groupInfoItem, _setGroupPhotoItem]];
+            TGCommentCollectionItem *editDescriptionComment = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.About.Help")];
+            [_editDescriptionSection addItem:editDescriptionComment];
+            
+            [_groupInfoSection replaceItems:@[_groupInfoItem, _setGroupPhotoItem, _editDescriptionItem, editDescriptionComment]];
         } else {
             [_groupInfoSection replaceItems:@[_groupInfoItem]];
         }
         
         [self.menuSections addSection:_groupInfoSection];
-        
-        while (_editDescriptionSection.items.count != 0) {
-            [_editDescriptionSection deleteItemAtIndex:0];
-        }
-        
-        if (_conversation.channelRole == TGChannelRoleCreator) {
-            [_editDescriptionSection addItem:_editGroupTypeItem];
-        }
-        
-        if (_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) {
-            [_editDescriptionSection addItem:_editDescriptionItem];
-            TGCommentCollectionItem *editDescriptionComment = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Group.About.Help")];
-            [_editDescriptionSection addItem:editDescriptionComment];
-        }
-        
-        if (_editDescriptionSection.items.count != 0) {
-            [self.menuSections addSection:_editDescriptionSection];
-        }
         
         while (_notificationsAndMediaSection.items.count != 0) {
             [_notificationsAndMediaSection deleteItemAtIndex:0];
@@ -639,6 +606,26 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             _notificationsAndMediaSection.insets = notificationsAndMediaSectionInsets;
             
             [self.menuSections addSection:_notificationsAndMediaSection];
+        }
+        
+        while (_editDescriptionSection.items.count != 0) {
+            [_editDescriptionSection deleteItemAtIndex:0];
+        }
+        
+        if (_conversation.channelRole == TGChannelRoleCreator) {
+            [_editDescriptionSection addItem:_editGroupTypeItem];
+        }
+        
+        if ((_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) && (_conversation.username.length == 0)) {
+            [_editDescriptionSection addItem:_editGroupHistoryItem];
+        }
+        
+        if ((_conversation.channelRole == TGChannelRoleCreator || _conversation.channelAdminRights.canChangeInfo) && _canSetStickerPack) {
+            [_editDescriptionSection addItem:_stickersItem];
+        }
+        
+        if (_editDescriptionSection.items.count != 0) {
+            [self.menuSections addSection:_editDescriptionSection];
         }
         
         while (_adminInfoSection.items.count != 0) {
@@ -734,6 +721,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     [_completeInfoDisposable dispose];
     [_cachedDataDisposable dispose];
     [_kickDisposables dispose];
+    [_cachedStickerPackDisposable dispose];
 }
 
 #pragma mark -
@@ -749,7 +737,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
+        
     [self check3DTouch];
 }
 
@@ -846,7 +834,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         return;
     
     __weak TGChannelGroupInfoController *weakSelf = self;
-    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithParentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0)];
+    _avatarMixin = [[TGMediaAvatarMenuMixin alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:self hasDeleteButton:(_conversation.chatPhotoSmall.length != 0) saveEditedPhotos:TGAppDelegateInstance.saveEditedPhotos saveCapturedMedia:TGAppDelegateInstance.saveCapturedMedia];
     _avatarMixin.didFinishWithImage = ^(UIImage *image)
     {
         __strong TGChannelGroupInfoController *strongSelf = weakSelf;
@@ -872,6 +860,31 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             return;
         
         strongSelf->_avatarMixin = nil;
+    };
+    _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        
+        __weak TGMediaAssetsController *weakAssetsController = assetsController;
+        __weak TGWebSearchController *weakController = searchController;
+        searchController.avatarCompletionBlock = ^(UIImage *image) {
+            __strong TGMediaAssetsController *strongAssetsController = weakAssetsController;
+            if (strongAssetsController.avatarCompletionBlock == nil)
+                return;
+            
+            strongAssetsController.avatarCompletionBlock(image);
+        };
+        searchController.dismiss = ^
+        {
+            __strong TGWebSearchController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            [strongController dismissEmbeddedAnimated:true];
+        };
+        searchController.parentNavigationController = assetsController;
+        [searchController presentEmbeddedInController:assetsController animated:true];
+        
+        return searchController;
     };
     [_avatarMixin present];
 }
@@ -1199,6 +1212,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             reloadData = true;
         }
         
+        if ((_conversation.username.length == 0 && conversation.username.length > 0) || (conversation.username.length == 0 && _conversation.username.length > 0)) {
+            reloadData = true;
+        }
+        
         _conversation = conversation;
         
         if (!TGStringCompare(_conversation.about, _descriptionItem.text)) {
@@ -1221,7 +1238,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             }
         }
         
-        _editGroupTypeItem.variant = _conversation.username.length == 0 ? TGLocalized(@"Channel.Setup.TypePrivate") : TGLocalized(@"Channel.Setup.TypePublic");
+        _editGroupTypeItem.variant = _conversation.username.length == 0 ? TGLocalized(@"Group.Setup.TypePrivate") : TGLocalized(@"Group.Setup.TypePublic");
         
         [_groupInfoItem setConversation:_conversation];
         
@@ -1313,7 +1330,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
                 if (userItem.user.uid == user.uid) {
                     if (userItem.user != nil) {
                         TGCachedConversationMember *member = memberDatas[@(userItem.user.uid)];
-                        if (member != nil && member.adminRights.hasAnyRights) {
+                        if (member != nil && (member.isCreator || member.adminRights.hasAnyRights)) {
                             userItem.customLabel = TGLocalized(@"GroupInfo.LabelAdmin");
                         } else {
                             userItem.customLabel = nil;
@@ -1416,7 +1433,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     
     if (avatarView != nil && avatarView.image != nil)
     {
-        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+        TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
         modernGallery.previewMode = previewMode;
         if (previewMode)
             modernGallery.showInterface = false;
@@ -1485,7 +1502,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         
         if (!previewMode)
         {
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:modernGallery];
             controllerWindow.hidden = false;
         }
         else
@@ -1537,10 +1554,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     }
     else if ([action isEqualToString:@"openAvatar"])
     {
-        if (_conversation.chatPhotoSmall.length == 0)
+        if (_conversation.chatPhotoSmall.length == 0 || _editing)
         {
-            if (_setGroupPhotoItem.enabled)
-                [self setGroupPhotoPressed];
+            [self setGroupPhotoPressed];
         }
         else
         {
@@ -1712,15 +1728,6 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             
             [[[TGProgressWindow alloc] init] dismissWithSuccess];
         } externalShareItemSignal:[SSignal single:shareString] sourceView:self.view sourceRect:sourceRect barButtonItem:nil];
-    }
-    else
-    {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.ShareNoLink") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
-          {
-              __strong TGChannelGroupInfoController *strongSelf = weakSelf;
-              if (strongSelf != nil)
-                  [strongSelf linkPressed];
-          }] show];
     }
 }
 
@@ -2171,6 +2178,23 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     }];
 }
 
+- (void)editGroupHistoryPressed {
+    TGChannelGroupHistoryController *controller = [[TGChannelGroupHistoryController alloc] initWithConversation:_conversation];
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller] navigationBarClass:[TGWhiteNavigationBar class]];
+    if ([self inPopover])
+    {
+        navigationController.modalPresentationStyle = UIModalPresentationCurrentContext;
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleChildInPopover;
+    }
+    [self presentViewController:navigationController animated:true completion:nil];
+}
+
+- (void)stickersPressed {
+    TGChannelStickersController *stickersController = [[TGChannelStickersController alloc] initWithConversation:_conversation];
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[stickersController]];
+    [self presentViewController:navigationController animated:true completion:nil];
+}
+
 - (void)followLink:(NSString *)link {
     if ([link hasPrefix:@"mention://"])
     {
@@ -2180,24 +2204,16 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     else if ([link hasPrefix:@"hashtag://"])
     {
         NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
-        
-        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
-        //__weak TGChannelInfoController *weakSelf = self;
-        /*hashtagController.customResultBlock = ^(int32_t messageId) {
-         __strong TGChannelInfoController *strongSelf = weakSelf;
-         if (strongSelf != nil) {
-         [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
-         TGModernConversationController *controller = strongSelf.controller;
-         [controller.navigationController popToViewController:controller animated:true];
-         }
-         };*/
-        
-        [self.navigationController pushViewController:hashtagController animated:true];
+        [[TGInterfaceManager instance] displayHashtagOverview:[@"#" stringByAppendingString:hashtag] conversationId:_conversation.conversationId];
     } else {
         @try {
             NSURL *url = [NSURL URLWithString:link];
             if (url != nil) {
-                [[UIApplication sharedApplication] openURL:url];
+                if ([url.host.lowercaseString isEqualToString:@"telegra.ph"]) {
+                    [TGAppDelegateInstance handleOpenInstantView:link];
+                } else {
+                    [[UIApplication sharedApplication] openURL:url];
+                }
             }
         } @catch (NSException *e) {
         }
@@ -2237,7 +2253,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
         controller.previewMode = false;
         
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
         controllerWindow.hidden = false;
     }
 }
@@ -2263,9 +2279,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
                         NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
                         NSString *errorText = TGLocalized(@"Profile.CreateEncryptedChatError");
                         if ([errorType isEqual:@"USER_BLOCKED"]) {
-                            errorText = conversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddBlocked") : TGLocalized(@"Channel.ErrorAddBlocked");
+                            errorText = conversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddBlocked") : TGLocalized(@"Group.ErrorAddBlocked");
                         } else if ([errorType isEqual:@"USERS_TOO_MUCH"]) {
-                            errorText = conversation.isChannelGroup ? TGLocalized(@"Group.ErrorAddTooMuch") : TGLocalized(@"Channel.ErrorAddTooMuch");
+                            errorText = conversation.isChannelGroup ? TGLocalized(@"ConversationProfile.UsersTooMuchError") : TGLocalized(@"Channel.ErrorAddTooMuch");
                         } else if ([errorType isEqual:@"USER_NOT_MUTUAL_CONTACT"]) {
                             errorText = TGLocalized(@"Group.ErrorNotMutualContact");
                         } else if ([errorType isEqual:@"ADMINS_TOO_MUCH"]) {
@@ -2361,10 +2377,11 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     _searchReferenceView.userInteractionEnabled = false;
     [self.view addSubview:_searchReferenceView];
     
-    CGFloat searchBarHeight = TGIsPad() ? 44.0f : 64.0f;
+    CGFloat safeAreaInset = !UIEdgeInsetsEqualToEdgeInsets(self.controllerSafeAreaInset, UIEdgeInsetsZero) ? self.controllerSafeAreaInset.top : 20.0f;
+    CGFloat searchBarHeight = TGIsPad() ? 44.0f : safeAreaInset + 44.0f;
     
     _searchBarOverlay = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.navigationController.view.frame.size.width, searchBarHeight)];
-    _searchBarOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _searchBarOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _searchBarOverlay.backgroundColor = UIColorRGB(0xf7f7f7);
     _searchBarOverlay.userInteractionEnabled = false;
     
@@ -2375,7 +2392,9 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
     
     [_searchBarWrapper addSubview:_searchBarOverlay];
     
-    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, TGIsPad() ? 0.0f : 20.0f, _searchBarWrapper.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleHeader];
+    
+    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, TGIsPad() ? 0.0f : safeAreaInset, _searchBarWrapper.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleHeader];
+    _searchBar.safeAreaInset = [self controllerSafeAreaInset];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _searchBar.customBackgroundView.image = nil;
     _searchBar.customActiveBackgroundView.image = nil;
@@ -2410,8 +2429,11 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
         [_searchMixin controllerInsetUpdated:inset];
         
         CGRect frame = _searchBarWrapper.frame;
+        CGFloat headerInset = !UIEdgeInsetsEqualToEdgeInsets(self.controllerSafeAreaInset, UIEdgeInsetsZero) ? self.controllerSafeAreaInset.top : 20.0f;
+        frame.size.height = 44 + headerInset;
+        
         if (!_searchMixin.isActive) {
-            frame.origin.y = self.controllerInset.top - 64.0f;
+            frame.origin.y = -frame.size.height;
         } else {
             frame.origin.y = 0.0f;
             if (self.navigationController.modalPresentationStyle == UIModalPresentationFormSheet) {
@@ -2419,6 +2441,10 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             }
         }
         _searchBarWrapper.frame = frame;
+        
+        frame = _searchBar.frame;
+        _searchBar.frame = CGRectMake(0.0f, TGIsPad() ? 0.0f : headerInset, _searchBarWrapper.frame.size.width, _searchBar.frame.size.height);
+        _searchBar.safeAreaInset = self.controllerSafeAreaInset;
     }
 }
 
@@ -2432,10 +2458,12 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
 {
     void (^changeBlock)(void) = ^
     {
+        CGFloat inset = !UIEdgeInsetsEqualToEdgeInsets(self.controllerSafeAreaInset, UIEdgeInsetsZero) ? self.controllerSafeAreaInset.top : 20.0f;
         CGRect frame = _searchBarWrapper.frame;
+        frame.size.height = 44 + inset;
         if (hidden)
         {
-            frame.origin.y = self.controllerInset.top - 64.0f;
+            frame.origin.y = -frame.size.height;
         }
         else
         {
@@ -2443,6 +2471,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool *subtitleActive
             if (self.navigationController.modalPresentationStyle == UIModalPresentationFormSheet)
                 frame.origin.y -= 20;
         }
+        
         _searchBarWrapper.frame = frame;
     };
     

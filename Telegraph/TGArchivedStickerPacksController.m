@@ -3,20 +3,22 @@
 #import "TGStickersSignals.h"
 #import "TGMaskStickersSignals.h"
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 #import "TGStickerPackCollectionItem.h"
 
 #import "TGStickersMenu.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGCommentCollectionItem.h"
 
 #import "TGArchivedStickerPacksAlert.h"
 
 #import "TGActionSheet.h"
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGArchivedStickerPacksController () {
     SMetaDisposable *_packsDisposable;
@@ -318,7 +320,7 @@
             }
             
             if (archivedPacks.count != 0) {
-                TGArchivedStickerPacksAlert *previewWindow = [[TGArchivedStickerPacksAlert alloc] initWithParentController:strongSelf stickerPacks:archivedPacks];
+                TGArchivedStickerPacksAlert *previewWindow = [[TGArchivedStickerPacksAlert alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:strongSelf stickerPacks:archivedPacks];
                 __weak TGArchivedStickerPacksAlert *weakPreviewWindow = previewWindow;
                 previewWindow.view.dismiss = ^
                 {

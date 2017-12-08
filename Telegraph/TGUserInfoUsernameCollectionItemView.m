@@ -1,7 +1,6 @@
 #import "TGUserInfoUsernameCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserInfoUsernameCollectionItemView ()
 {
@@ -60,15 +59,16 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    CGFloat separatorInset = 35.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGRetinaPixel;
+    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
     
-    CGSize labelSize = [_labelView sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
+    CGSize labelSize = [_labelView sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
     _labelView.frame = CGRectMake(leftPadding, 11.0f, labelSize.width, labelSize.height);
     
-    CGSize usernameSize = [_usernameLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
-    usernameSize.width = MIN(CGCeil(usernameSize.width), bounds.size.width - leftPadding - 10.0f);
+    CGSize usernameSize = [_usernameLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
+    usernameSize.width = MIN(CGCeil(usernameSize.width), bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f);
     usernameSize.height = CGCeil(usernameSize.height);
     _usernameLabel.frame = CGRectMake(leftPadding, 30.0f, usernameSize.width, usernameSize.height);
 }

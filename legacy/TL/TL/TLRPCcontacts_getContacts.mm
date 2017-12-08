@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 71;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x22c6aa08;
+    return (int32_t)0xc023849f;
 }
 
 - (int32_t)TLconstructorName
@@ -65,7 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCcontacts_getContacts$contacts_getContacts *object = [[TLRPCcontacts_getContacts$contacts_getContacts alloc] init];
-    object.n_hash = metaObject->getString((int32_t)0xd51ba198);
+    object.n_hash = metaObject->getInt32((int32_t)0xc152e470);
     return object;
 }
 
@@ -73,9 +73,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xd51ba198, value));
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.n_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc152e470, value));
     }
 }
 

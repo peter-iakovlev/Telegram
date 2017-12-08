@@ -1,11 +1,11 @@
 #import "TGWallpapersCollectionItem.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGWallpapersCollectionItemView.h"
 #import "TGWallpaperManager.h"
-
-#import "TGImageUtils.h"
 
 @interface TGWallpapersCollectionItem ()
 {
@@ -63,7 +63,11 @@
         
         if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
         {
-            if (widescreenWidth >= 736.0f - FLT_EPSILON)
+            if (widescreenWidth >= 812.0f - FLT_EPSILON)
+            {
+                itemSize = CGSizeMake(108.0f, 163.0f);
+            }
+            else if (widescreenWidth >= 736.0f - FLT_EPSILON)
             {
                 itemSize = CGSizeMake(122.0f, 216.0f);
             }

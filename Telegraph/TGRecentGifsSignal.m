@@ -1,8 +1,8 @@
 #import "TGRecentGifsSignal.h"
 
-#import "TGTelegraph.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
+#import "TGTelegraph.h"
 
 #import "TGStickersSignals.h"
 

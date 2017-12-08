@@ -8,7 +8,7 @@
 
 #import "TGUserInfoController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 
 #import "TGUserInfoCollectionItem.h"

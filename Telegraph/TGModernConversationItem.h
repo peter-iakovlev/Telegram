@@ -9,6 +9,7 @@
 #import "TGModernCollectionCell.h"
 
 #import "TGModernViewStorage.h"
+#import "TGMessageGroupedLayout.h"
 
 @class TGModernCollectionCell;
 @class TGModernViewModel;
@@ -43,10 +44,12 @@ typedef enum {
 - (CGSize)sizeForContainerSize:(CGSize)containerSize viewStorage:(TGModernViewStorage *)viewStorage;
 
 - (void)updateToItem:(TGModernConversationItem *)updatedItem viewStorage:(TGModernViewStorage *)viewStorage sizeChanged:(bool *)sizeChanged delayAvailability:(bool)delayAvailability containerSize:(CGSize)containerSize;
+- (void)updateToItem:(TGModernConversationItem *)updatedItem viewStorage:(TGModernViewStorage *)viewStorage sizeChanged:(bool *)sizeChanged delayAvailability:(bool)delayAvailability containerSize:(CGSize)containerSize force:(bool)force;
 - (void)updateProgress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated;
 - (void)updateInlineMediaContext;
 - (void)updateAnimationsEnabled;
 - (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
+- (void)updateGroupedLayout:(TGMessageGroupedLayout *)groupedLayout;
 
 @end

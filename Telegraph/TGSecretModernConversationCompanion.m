@@ -1,17 +1,17 @@
 #import "TGSecretModernConversationCompanion.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGInterfaceManager.h"
 #import "TGTelegraph.h"
 #import "TGActionSheet.h"
 #import "TGAlertView.h"
-#import "TGNavigationBar.h"
 #import "TGSecretChatUserInfoController.h"
 
 #import "TGMessageModernConversationItem.h"
-#import "TGMessage.h"
 
 #import "TGModernConversationController.h"
 #import "TGModernConversationTitleIcon.h"
@@ -24,18 +24,19 @@
 #import "TGAppDelegate.h"
 #import "TGDialogListController.h"
 #import "TGTelegraphDialogListCompanion.h"
-#import "TGPopoverController.h"
 
-#import "TGModernGalleryController.h"
-
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 
 #import "TGModernConversationUpgradeStateTitlePanel.h"
 
 #import "TGModernSendSecretMessageActor.h"
 
 #import "TGPickerSheet.h"
-#import "TGSecretTimerMenu.h"
+#import <LegacyComponents/TGSecretTimerMenu.h>
+
+#import "TGLegacyComponentsContext.h"
+
+#import "TGPresentationAssets.h"
 
 @interface TGSecretModernConversationCompanion () <TGSecretModernConversationAccessoryTimerViewDelegate>
 {
@@ -101,15 +102,7 @@
     lockIcon.bounds = CGRectMake(0.0f, 0.0f, 16, 16);
     lockIcon.offsetWeight = 0.5f;
     lockIcon.imageOffset = CGPointMake(3.0f, 5.0f);
-    
-    static UIImage *lockImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lockImage = [UIImage imageNamed:@"ModernConversationTitleIconLock.png"];
-    });
-    
-    lockIcon.image = lockImage;
+    lockIcon.image = [TGPresentationAssets chatTitleEncryptedIcon];
     lockIcon.iconPosition = TGModernConversationTitleIconPositionBeforeTitle;
     
     [self setAdditionalTitleIcons:@[lockIcon]];
@@ -251,7 +244,7 @@
     [controller.view endEditing:true];
     
     __weak TGSecretModernConversationCompanion *weakSelf = self;
-    [TGSecretTimerMenu presentInParentController:controller dark:false description:nil values:timerValues value:@(value) completed:^(NSNumber *value)
+    [TGSecretTimerMenu presentInParentController:controller context:[TGLegacyComponentsContext shared] dark:false description:nil values:timerValues value:@(value) completed:^(NSNumber *value)
     {
         __strong TGSecretModernConversationCompanion *strongSelf = weakSelf;
         [strongSelf _commitSetSelfDestructTimer:[value intValue]];
@@ -274,12 +267,6 @@
         
         if (_selfDestructTimer > 0 && _selfDestructTimer <= 60 && [self layer] < 17)
         {
-            TGUser *user = [TGDatabaseInstance() loadUser:_uid];
-            TGDispatchOnMainThread(^
-            {
-                NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Compatibility.SecretMediaVersionTooLow"), user.displayFirstName, user.displayFirstName];
-                [[[TGAlertView alloc] initWithTitle:text message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-            });
         }
         
         [TGDatabaseInstance() setMessageLifetimeForPeerId:_conversationId encryptedConversationId:_encryptedConversationId messageLifetime:value writeToActionQueue:true];
@@ -561,7 +548,7 @@
 
 - (void)controllerDidChangeInputText:(NSString *)inputText
 {
-    if (self.layer >= 23)
+    if ([self layer] >= 23)
         [super controllerDidChangeInputText:inputText];
 }
 
@@ -573,5 +560,24 @@
     return false;
 }
 
+- (bool)allowLiveLocations {
+    return false;
+}
+
+- (bool)messageSearchByUserAvailable {
+    return false;
+}
+
+- (bool)messageSearchByDateAvailable {
+    return false;
+}
+
+- (bool)supportsLiveLocations {
+    return false;
+}
+
+- (bool)allowMediaGrouping {
+    return [self layer] >= 73;
+}
 
 @end

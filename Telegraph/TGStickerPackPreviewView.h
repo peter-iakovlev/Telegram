@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 @class TGViewController;
 

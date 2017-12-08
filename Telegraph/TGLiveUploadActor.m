@@ -8,7 +8,7 @@
 
 #import "TGLiveUploadActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegramNetworking.h"
 #import "TGNetworkWorker.h"

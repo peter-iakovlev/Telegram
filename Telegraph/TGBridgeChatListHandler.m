@@ -1,11 +1,12 @@
 #import "TGBridgeChatListHandler.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeChatListSubscription.h"
 #import "TGBridgeServer.h"
 
 #import "TGChatListSignals.h"
-#import "TGConversation.h"
 #import "TGUserSignal.h"
-#import "TGUser.h"
 
 #import "TGBridgeChat+TGConversation.h"
 #import "TGBridgeUser+TGUser.h"

@@ -10,7 +10,7 @@
 
 #import <SSignalKit/SSignalKit.h>
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 #import "TGMessageRange.h"
 
@@ -98,6 +98,7 @@ typedef enum {
 @property (nonatomic, weak) TGModernConversationController *controller;
 @property (nonatomic, strong) TGModernViewContext *viewContext;
 
+@property (nonatomic) int32_t focusedOnMessageId;
 @property (nonatomic) int32_t mediaHiddenMessageId;
 
 @property (nonatomic) bool previewMode;
@@ -148,13 +149,12 @@ typedef enum {
 - (void)_updateInputPanel;
 - (UIView *)_conversationHeader;
 - (UIView *)_controllerInputTextPanelAccessoryView;
-- (NSString *)_controllerInfoButtonText;
 - (void)updateControllerInputText:(NSString *)inputText entities:(NSArray *)entities messageEditingContext:(TGMessageEditingContext *)messageEditingContext;
 - (void)controllerDidUpdateTypingActivity;
 - (void)controllerDidCancelTypingActivity;
 - (void)controllerDidChangeInputText:(NSString *)inputText;
-- (void)controllerWantsToSendTextMessage:(NSString *)text entities:(NSArray *)entities asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages disableLinkPreviews:(bool)disableLinkPreviews botContextResult:(TGBotContextResultAttachment *)botContextResult botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
-- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue asReplyToMessageId:(int32_t)replyMessageId botContextResult:(TGBotContextResultAttachment *)botContextResult botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
+- (void)controllerWantsToSendTextMessage:(NSString *)text entities:(NSArray *)entities asReplyToMessageId:(int32_t)replyMessageId withAttachedMessages:(NSArray *)withAttachedMessages completeGroups:(NSSet *)completeGroups disableLinkPreviews:(bool)disableLinkPreviews botContextResult:(TGBotContextResultAttachment *)botContextResult botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
+- (void)controllerWantsToSendMapWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue period:(int32_t)period asReplyToMessageId:(int32_t)replyMessageId botContextResult:(TGBotContextResultAttachment *)botContextResult botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
 - (NSURL *)fileUrlForDocumentMedia:(TGDocumentMediaAttachment *)documentMedia;
 - (NSDictionary *)imageDescriptionFromImage:(UIImage *)image stickers:(NSArray *)stickers caption:(NSString *)caption optionalAssetUrl:(NSString *)assetUrl allowRemoteCache:(bool)allowRemoteCache timer:(int32_t)timer;
 - (NSDictionary *)imageDescriptionFromBingSearchResult:(TGBingSearchResultItem *)item caption:(NSString *)caption;
@@ -170,7 +170,7 @@ typedef enum {
 - (NSDictionary *)documentDescriptionFromGoogleDriveItem:(TGGoogleDriveItem *)item;
 - (NSDictionary *)imageDescriptionFromInternalSearchImageResult:(TGWebSearchInternalImageResult *)item caption:(NSString *)caption;
 - (NSDictionary *)documentDescriptionFromInternalSearchResult:(TGWebSearchInternalGifResult *)item caption:(NSString *)caption;
-- (NSDictionary *)documentDescriptionFromRemoteDocument:(TGDocumentMediaAttachment *)document;
+- (NSDictionary *)documentDescriptionFromRemoteDocument:(TGDocumentMediaAttachment *)document caption:(NSString *)caption;
 - (NSDictionary *)documentDescriptionFromFileAtTempUrl:(NSURL *)url fileName:(NSString *)fileName mimeType:(NSString *)mimeType isAnimation:(bool)isAnimation caption:(NSString *)caption;
 - (void)controllerWantsToSendImagesWithDescriptions:(NSArray *)imageDescriptions asReplyToMessageId:(int32_t)replyMessageId botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
 - (void)controllerWantsToSendLocalVideoWithTempFilePath:(NSString *)tempVideoFilePath fileSize:(int32_t)fileSize previewImage:(UIImage *)previewImage duration:(NSTimeInterval)duration dimensions:(CGSize)dimenstions caption:(NSString *)caption assetUrl:(NSString *)assetUrl liveUploadData:(TGLiveUploadActorData *)liveUploadData asReplyToMessageId:(int32_t)replyMessageId botReplyMarkup:(TGBotReplyMarkup *)botReplyMarkup;
@@ -202,6 +202,10 @@ typedef enum {
 - (bool)shouldAutomaticallyDownloadPhotos;
 - (bool)shouldAutomaticallyDownloadAnimations;
 - (bool)shouldAutomaticallyDownloadVideoMessages;
+- (bool)shouldAutomaticallyDownloadVideos;
+- (bool)shouldAutomaticallyDownloadVideoOfSize:(int32_t)size;
+- (bool)shouldAutomaticallyDownloadDocuments;
+- (bool)shouldAutomaticallyDownloadDocumentOfSize:(int32_t)size;
 - (bool)allowMessageForwarding;
 - (bool)allowMessageExternalSharing;
 - (bool)allowReplies;
@@ -212,6 +216,8 @@ typedef enum {
 - (bool)allowCaptionedMedia;
 - (bool)allowVideoMessages;
 - (bool)allowSelfDescructingMedia;
+- (bool)allowLiveLocations;
+- (bool)allowMediaGrouping;
 - (bool)encryptUploads;
 - (bool)canPostMessages;
 - (NSDictionary *)userActivityData;
@@ -224,6 +230,7 @@ typedef enum {
 - (NSArray *)checkedMessageIds;
 - (TGUser *)checkedMessageModerateUser;
 - (bool)_isMessageChecked:(int32_t)messageId;
+- (bool)_isGroupChecked:(int64_t)groupedId;
 
 - (void)_setMessageFlags:(int32_t)messageId flags:(int)flags;
 - (void)_setMessageViewDate:(int32_t)messageId viewDate:(NSTimeInterval)viewDate;
@@ -270,19 +277,21 @@ typedef enum {
 - (void)serviceNotificationsForMessageIds:(NSArray *)messageIds;
 - (void)markMessagesAsViewed:(NSArray *)messageIds;
 
-- (SSignal *)userListForMention:(NSString *)mention canBeContextBot:(bool)canBeContextBot;
+- (SSignal *)userListForMention:(NSString *)mention canBeContextBot:(bool)canBeContextBot includeSelf:(bool)includeSelf;
 - (SSignal *)inlineResultForMentionText:(NSString *)mention text:(NSString *)text;
 - (SSignal *)hashtagListForHashtag:(NSString *)hashtag;
 - (SSignal *)commandListForCommand:(NSString *)command;
 
-- (void)navigateToMessageId:(int32_t)messageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
+- (void)navigateToMessageId:(int32_t)messageId scrollBackMessageId:(int32_t)scrollBackMessageId forceUnseenMention:(bool)forceUnseenMention animated:(bool)animated;
 
 - (void)navigateToMessageSearch;
 
 - (bool)isASingleBotGroup;
+- (bool)suppressesOutgoingUnreadContents;
 
 - (void)_controllerDidUpdateVisibleHoles:(NSArray *)holes;
 - (void)_controllerDidUpdateVisibleUnseenMessageIds:(NSArray *)unseenMessageIds;
+- (void)_controllerDidUpdateVisibleUnseenMentionMessageIds:(NSArray *)unseenMentionMessageIds;
 - (bool)_controllerShouldHideInputTextByDefault;
 - (bool)canDeleteMessage:(TGMessage *)message;
 - (bool)canModerateMessage:(TGMessage *)message;
@@ -336,5 +345,11 @@ typedef enum {
 - (NSNumber *)inlineMediaRestrictionTimeout;
 - (NSNumber *)mediaRestrictionTimeout;
 - (NSNumber *)stickerRestrictionTimeout;
+
+- (bool)messageSearchByUserAvailable;
+- (bool)messageSearchByDateAvailable;
+
+- (SSignal *)alphacodeListForQuery:(NSString *)query;
+- (void)performBotAutostart:(NSString *)param;
 
 @end

@@ -1,5 +1,5 @@
 #import "TGForceTouchGestureRecognizer.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import <UIKit/UIGestureRecognizerSubclass.h>
 
@@ -133,7 +133,7 @@ const NSTimeInterval TGForceTouchDelay = 0.4;
 
 - (bool)forceTouchAvailable
 {
-    return (iosMajorVersion() >= 9 && self.view.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable);
+    return (iosMajorVersion() >= 9 && [UIApplication sharedApplication].keyWindow.rootViewController.traitCollection.forceTouchCapability == UIForceTouchCapabilityAvailable);
 }
 
 @end

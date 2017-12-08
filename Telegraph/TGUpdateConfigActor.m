@@ -1,14 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUpdateConfigActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 
@@ -24,7 +18,6 @@
 
 #import "TGTelegramNetworking.h"
 
-#import "TGLocalization.h"
 #import "TGLocalizationSignals.h"
 
 static NSTimeInterval configInvalidationDate = 0.0;
@@ -209,11 +202,17 @@ static bool sharedExperimentalPasscodeBlurDisabledInitialized = false;
     int32_t maxSavedStickers = config.stickers_recent_limit;
     [TGDatabaseInstance() setCustomProperty:@"maxSavedStickers" value:[NSData dataWithBytes:&maxSavedStickers length:4]];
     
+    int32_t maxFavedStickers = config.stickers_faved_limit;
+    [TGDatabaseInstance() setCustomProperty:@"maxFavedStickers" value:[NSData dataWithBytes:&maxFavedStickers length:4]];
+    
     int32_t maxChannelMessageEditTime = config.edit_time_limit;
     [TGDatabaseInstance() setCustomProperty:@"maxChannelMessageEditTime" value:[NSData dataWithBytes:&maxChannelMessageEditTime length:4]];
 		
     int32_t phoneCallsEnabled = config.flags & (1 << 1);
     [TGDatabaseInstance() setCustomProperty:@"phoneCallsEnabled" value:[NSData dataWithBytes:&phoneCallsEnabled length:4]];
+    
+    int32_t phoneCallsP2PContacts = config.flags & (1 << 3);
+    [TGDatabaseInstance() setCustomProperty:@"phoneCallsP2PContacts" value:[NSData dataWithBytes:&phoneCallsP2PContacts length:4]];
     
     int32_t callReceiveTimeout = config.call_receive_timeout_ms;
     [TGDatabaseInstance() setCustomProperty:@"callReceiveTimeout" value:[NSData dataWithBytes:&callReceiveTimeout length:4]];

@@ -1,20 +1,16 @@
 #import "TGLocationThumbnailDataSource.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ASQueue.h>
 
 #import "TGWorkerPool.h"
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGLocationUtils.h"
-
-#import "TGImageBlur.h"
-#import "UIImage+TG.h"
-#import "NSObject+TGLock.h"
+#import <LegacyComponents/TGLocationUtils.h>
 
 #import "TGMapSnapshotterActor.h"
 #import "TGMediaStoreContext.h"
@@ -68,13 +64,14 @@ static ASQueue *taskManagementQueue()
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
     
     CGSize imageSize = CGSizeMake([args[@"width"] intValue], [args[@"height"] intValue]);
+    NSInteger offset = [args[@"offset"] integerValue];
     
     if (size != NULL)
         *size = imageSize;
     
     TGMapSnapshotOptions *options = [[TGMapSnapshotOptions alloc] init];
 
-    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:-10 zoom:15];
+    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:offset zoom:15];
     options.region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(latitude, [args[@"longitude"] doubleValue]), MKCoordinateSpanMake(0.003, 0.003));
     options.imageSize = CGSizeMake(imageSize.width + 1, imageSize.height + 24);
     
@@ -86,11 +83,12 @@ static ASQueue *taskManagementQueue()
     NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
     
     CGSize imageSize = CGSizeMake([args[@"width"] intValue], [args[@"height"] intValue]);
+    NSInteger offset = [args[@"offset"] integerValue];
     
     if (size != NULL)
         *size = imageSize;
     
-    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:-10 zoom:15];
+    CLLocationDegrees latitude = [TGLocationUtils adjustGMapLatitude:[args[@"latitude"] doubleValue] withPixelOffset:offset zoom:15];
     
     return [[NSString alloc] initWithFormat:@"https://maps.googleapis.com/maps/api/staticmap?center=%.5f,%.5f&zoom=15&size=%dx%d&sensor=false&scale=%d&format=jpg&mobile=true", latitude, [args[@"longitude"] doubleValue], (int)(imageSize.width), (int)(imageSize.height + 24), 2];
 }
@@ -203,7 +201,7 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
+        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, 0) decoded:true];
         flatDatas = [[NSMutableDictionary alloc] init];
     });
     
@@ -214,11 +212,11 @@ static ASQueue *taskManagementQueue()
         {
             if (cornerRadius == 0)
             {
-                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false) decoded:true];
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false, 0) decoded:true];
             }
             else
             {
-                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius) decoded:true];
+                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, 0) decoded:true];
             }
             
             flatDatas[@(cornerRadius)] = flatData;
@@ -238,6 +236,8 @@ static ASQueue *taskManagementQueue()
         NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:@"map-thumbnail://?".length]];
         bool isFlat = [args[@"flat"] boolValue];
         int cornerRadius = [args[@"cornerRadius"] intValue];
+        bool noPin = [args[@"noPin"] boolValue];
+        int position = [args[@"position"] intValue];
         
         static NSMutableDictionary *placeholderBySize = nil;
         static dispatch_once_t onceToken;
@@ -256,13 +256,18 @@ static ASQueue *taskManagementQueue()
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
         UIImage *image = nil;
         if (isFlat && (cornerRadius > 0 || cornerRadius == -1))
-            image = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], !isFlat, cornerRadius == -1 ? 0 : cornerRadius);
+            image = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], !isFlat, cornerRadius == -1 ? 0 : cornerRadius, 0);
         else
-            image = TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat);
+            image = TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat, 0);
         [image drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
-        CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
-        UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
-        [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+        
+        if (!noPin)
+        {
+            CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
+            UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
+            [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+        }
+        
         placeholder = UIGraphicsGetImageFromCurrentImageContext();
         if (placeholder != nil)
             placeholderBySize[sizeString] = placeholder;
@@ -321,14 +326,19 @@ static ASQueue *taskManagementQueue()
     CGRect imageRect = CGRectMake(0.0f, -12.0f, size.width + 1.0f, size.height + 24.0f);
     [image drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
     
-    UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
-    [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+    bool noPin = [args[@"noPin"] boolValue];
+    if (!noPin)
+    {
+        UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
+        [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+    }
     
     image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
     bool isFlat = [args[@"flat"] boolValue];
     int cornerRadius = [args[@"cornerRadius"] intValue];
+    int position = [args[@"position"] intValue];
     
     if (image != nil)
     {
@@ -340,9 +350,9 @@ static ASQueue *taskManagementQueue()
         
         UIImage *thumbnailImage = nil;
         if (isFlat && (cornerRadius > 0 || cornerRadius == -1))
-            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius == -1 ? 0 : cornerRadius, 0);
+            thumbnailImage = TGLoadedAttachmentWithCornerRadiusImage(image, size, averageColorPtr, !isFlat, cornerRadius == -1 ? 0 : cornerRadius, 0, position);
         else
-            thumbnailImage = TGLoadedAttachmentImage(image, size, averageColorPtr, !isFlat);
+            thumbnailImage = TGLoadedAttachmentImage(image, size, averageColorPtr, !isFlat, position);
         
         if (thumbnailImage != nil)
         {

@@ -1,4 +1,4 @@
-#import "TGModernGalleryDefaultFooterView.h"
+#import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
 
 @interface TGSecretPeerMessageFooterView : UIView <TGModernGalleryDefaultFooterView>
 

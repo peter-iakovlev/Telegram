@@ -1,28 +1,17 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGAnimationThumbnailDataSource.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGWorkerPool.h"
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGImageBlur.h"
-#import "UIImage+TG.h"
-#import "NSObject+TGLock.h"
+#import <LegacyComponents/TGImageBlur.h>
+#import <LegacyComponents/UIImage+TG.h>
 
 #import "TGMediaStoreContext.h"
 
@@ -231,8 +220,8 @@ static ASQueue *taskManagementQueue()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        normalImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
-        flatImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true) decoded:true];
+        normalImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, 0) decoded:true];
+        flatImageData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, 0) decoded:true];
     });
     
     return isFlat ? flatImageData : normalImageData;
@@ -253,7 +242,7 @@ static ASQueue *taskManagementQueue()
         NSNumber *averageColor = [[TGMediaStoreContext instance] mediaImageAverageColor:uri];
         if (averageColor != nil)
         {
-            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]), !isFlat);
+            UIImage *image = TGAverageColorAttachmentImage(UIColorRGB([averageColor intValue]), !isFlat, 0);
             return image;
         }
         
@@ -262,8 +251,8 @@ static ASQueue *taskManagementQueue()
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            normalPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], true);
-            flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false);
+            normalPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], true, 0);
+            flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false, 0);
         });
         
         return isFlat ? flatPlaceholder : normalPlaceholder;
@@ -443,9 +432,9 @@ static ASQueue *taskManagementQueue()
         uint32_t averageColorValue = [averageColor intValue];
         
         if (lowQualityThumbnail)
-            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+            thumbnailImage = TGBlurredAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat, 0);
         else
-            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+            thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat, 0);
         
         if (thumbnailImage != nil)
         {
@@ -463,7 +452,7 @@ static ASQueue *taskManagementQueue()
                 
                 if (!alreadyCached || (cachedLowQualityThumbnail && !lowQualityThumbnail))
                 {
-                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size, !isFlat);
+                    UIImage *cachedImage = TGReducedAttachmentImage(thumbnailImage, size, !isFlat, 0);
                     [cachedImage setAttachmentsFromDictionary:imageAttachments];
                     
                     if (cachedImage != nil)

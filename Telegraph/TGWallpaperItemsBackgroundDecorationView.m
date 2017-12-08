@@ -1,6 +1,6 @@
 #import "TGWallpaperItemsBackgroundDecorationView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGWallpaperItemsBackgroundDecorationView ()
 {

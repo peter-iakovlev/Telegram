@@ -1,13 +1,14 @@
 #import "TGVideoConverter.h"
-#import "ActionStage.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "ATQueue.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGPhotoEditorUtils.h"
+#import <LegacyComponents/TGPhotoEditorUtils.h>
 
-#import "TGVideoEditAdjustments.h"
-#import "TGPaintingData.h"
+#import <LegacyComponents/TGVideoEditAdjustments.h>
+#import <LegacyComponents/TGPaintingData.h>
 
 #import <SSignalKit/SSignalKit.h>
 #import <AVFoundation/AVFoundation.h>

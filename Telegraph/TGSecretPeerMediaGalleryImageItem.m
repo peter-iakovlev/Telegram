@@ -1,7 +1,8 @@
 #import "TGSecretPeerMediaGalleryImageItem.h"
 
-#import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGSecretPeerMediaGalleryImageItemView.h"
 

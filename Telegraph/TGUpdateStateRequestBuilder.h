@@ -6,11 +6,11 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "ASActor.h"
+#import <LegacyComponents/ASActor.h>
 
 #import <SSignalKit/SSignalKit.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TL/TLMetaScheme.h"
 

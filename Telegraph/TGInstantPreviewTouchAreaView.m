@@ -10,8 +10,8 @@
 
 #import "TGModernConversationCollectionTouchBehaviour.h"
 
-#import "ASHandle.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/ASHandle.h>
+#import <LegacyComponents/TGTimerTarget.h>
 
 @interface TGInstantPreviewTouchAreaView () <TGModernConversationCollectionTouchBehaviour>
 {

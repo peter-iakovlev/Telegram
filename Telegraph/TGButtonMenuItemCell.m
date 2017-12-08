@@ -1,8 +1,8 @@
 #import "TGButtonMenuItemCell.h"
 
-#import "TGInterfaceAssets.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
+#import "TGInterfaceAssets.h"
 
 @interface TGButtonMenuItemCell ()
 

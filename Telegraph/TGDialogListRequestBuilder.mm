@@ -1,14 +1,15 @@
 #import "TGDialogListRequestBuilder.h"
 
-#import "ASCommon.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 
 #import "TGTelegraph.h"
 
 #import "TGMessage+Telegraph.h"
 #import "TGConversation+Telegraph.h"
 
-#import "ActionStage.h"
-#import "SGraphListNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphListNode.h>
 
 #import "TGUserDataRequestBuilder.h"
 
@@ -19,7 +20,6 @@
 #include <set>
 
 #import "TGDownloadMessagesSignal.h"
-#import "TGPeerIdAdapter.h"
 
 #import "TLUser$modernUser.h"
 
@@ -158,6 +158,7 @@
     {
         NSMutableDictionary *multipleMessagesByConversation = [[NSMutableDictionary alloc] init];
         NSMutableDictionary<NSNumber *, TGDatabaseMessageDraft *> *updatePeerDrafts = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary<NSNumber *, TGUnseenPeerMentionsState *> *resetPeerUnseenMentionsStates = [[NSMutableDictionary alloc] init];
         
         for (TGMessage *message in completeMessages)
         {
@@ -347,6 +348,10 @@
                 if (dialog.flags & (1 << 2)) {
                     [pinnedPeerIds addObject:@(peerId)];
                 }
+                
+                if (dialog.unread_mentions_count != 0) {
+                    resetPeerUnseenMentionsStates[@(peerId)] = [[TGUnseenPeerMentionsState alloc] initWithVersion:0 count:dialog.unread_mentions_count maxIdWithPrecalculatedCount:dialog.top_message];
+                }
             }
         }
         
@@ -397,7 +402,7 @@
                 }
             }
             
-            if (message != nil) {
+            if (message != nil && (dialog.flags & (1 << 2)) == 0) {
                 TGDialogListRemoteOffset *currentOffset = [[TGDialogListRemoteOffset alloc] initWithDate:(int32_t)message.date peerId:peerId accessHash:accessHash messageId:message.mid];
                 if (remoteOffset == nil || [currentOffset compare:remoteOffset] == NSOrderedAscending) {
                     remoteOffset = currentOffset;
@@ -450,7 +455,7 @@
             }
         }];
         
-        [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil clearConversationsWithPeerIds:nil removeConversationsWithPeerIds:nil updatePinnedConversations:_replaceList ? pinnedPeerIds : nil synchronizePinnedConversations:false forceReplacePinnedConversations:false];
+        [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:nil updatePeerDrafts:updatePeerDrafts removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil resetPeerUnseenMentionsStates:resetPeerUnseenMentionsStates clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:_replaceList ? pinnedPeerIds : nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:nil deleteEarlierHistory:nil];
         
         [ActionStageInstance() dispatchResource:@"/dialogListReloaded" resource:@true];
         

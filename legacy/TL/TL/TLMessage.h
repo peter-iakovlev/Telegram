@@ -46,6 +46,6 @@
 @property (nonatomic) int32_t views;
 @property (nonatomic) int32_t edit_date;
 @property (nonatomic, retain) NSString *post_author;
+@property (nonatomic) int64_t grouped_id;
 
 @end
-

@@ -4,14 +4,12 @@
 #import <AddressBook/AddressBook.h>
 #import <CoreLocation/CoreLocation.h>
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMessage.h"
-
-#import "TGImageManager.h"
+#import <LegacyComponents/TGImageManager.h>
 #import "TGDownloadManager.h"
 #import "TGVideoDownloadActor.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGMusicPlayerItemSignals.h"
 
@@ -109,7 +107,7 @@
         else
             [uri appendFormat:@"local-id=%" PRId64 "", localImageId];
                 
-        [uri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)largestSize.width, (int)largestSize.height, (int)largestSize.width, (int)largestSize.height];
+        [uri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d&flat=1&cornerRadius=-1", (int)largestSize.width, (int)largestSize.height, (int)largestSize.width, (int)largestSize.height];
         
         NSString *legacyFilePath = nil;
         if ([legacyCacheUrl hasPrefix:@"file://"])

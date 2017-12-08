@@ -1,6 +1,6 @@
 #import "TGGoogleDriveItem.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "GDGoogleDriveMetadata.h"
 

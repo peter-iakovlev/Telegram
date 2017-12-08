@@ -1,6 +1,6 @@
 #import "TGRoundVideoWebpageFooterModel.h"
 
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernTextViewModel.h"
 #import "TGSignalImageViewModel.h"
@@ -11,9 +11,6 @@
 #import "TGRoundMessageRingViewModel.h"
 #import "TGRoundMessageTimeViewModel.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 #import "TGSharedPhotoSignals.h"
@@ -21,18 +18,12 @@
 
 #import "TGReusableLabel.h"
 
-#import "TGMessage.h"
-
-#import "TGImageManager.h"
+#import <LegacyComponents/TGImageManager.h>
 
 #import "TGPreparedLocalDocumentMessage.h"
 #import "TGTelegraph.h"
 
-#import "TGViewController.h"
-
 #import "TGAppDelegate.h"
-
-#import "TGTextCheckingResult.h"
 
 #import "TGAnimationUtils.h"
 
@@ -174,7 +165,7 @@ static UIFont *durationFont()
                 }
             };
             
-            CGFloat radius = 100.0f * TGScreenScaling();
+            CGFloat radius = 100.0f;
             [_imageViewModel setSignalGenerator:^SSignal *{
                 return [TGSharedFileSignals squareFileThumbnail:webPage.document ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:radius]];
             } identifier:key];

@@ -1,8 +1,6 @@
 #import "TGInterfaceAssets.h"
 
-#import "TGImageUtils.h"
-
-#import "NSObject+TGLock.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #include <map>
 #import <CommonCrypto/CommonDigest.h>
@@ -16,56 +14,6 @@ static std::map<int64_t, int> uidToColor;
 
 static TG_SYNCHRONIZED_DEFINE(gidToColor) = PTHREAD_MUTEX_INITIALIZER;
 static std::map<int64_t, int> gidToColor;
-
-static inline int colorIndexForUid(int64_t uid)
-{
-    static const int numColors = 8;
-
-    int colorIndex = 0;
-
-    TG_SYNCHRONIZED_BEGIN(uidToColor);
-    std::map<int64_t, int>::iterator it = uidToColor.find(uid);
-    if (it != uidToColor.end())
-    colorIndex = it->second;
-    else
-    {
-        char buf[16];
-        snprintf(buf, 16, "%lld%d", uid, TGTelegraphInstance.clientUserId);
-        unsigned char digest[CC_MD5_DIGEST_LENGTH];
-        CC_MD5(buf, (CC_LONG)strlen(buf), digest);
-        colorIndex = ABS(digest[ABS(uid % 16)]) % numColors;
-        
-        uidToColor.insert(std::pair<int64_t, int>(uid, colorIndex));
-    }
-    TG_SYNCHRONIZED_END(uidToColor);
-    
-    return colorIndex;
-}
-
-static inline int colorIndexForGroupId(int64_t groupId)
-{
-    static const int numColors = 4;
-    
-    int colorIndex = 0;
-    
-    TG_SYNCHRONIZED_BEGIN(gidToColor);
-    std::map<int64_t, int>::iterator it = gidToColor.find(groupId);
-    if (it != gidToColor.end())
-        colorIndex = it->second;
-    else
-    {
-        char buf[16];
-        snprintf(buf, 16, "%lld", groupId);
-        unsigned char digest[CC_MD5_DIGEST_LENGTH];
-        CC_MD5(buf, (CC_LONG)strlen(buf), digest);
-        colorIndex = ABS(digest[ABS(groupId % 16)]) % numColors;
-        
-        gidToColor.insert(std::pair<int64_t, int>(groupId, colorIndex));
-    }
-    TG_SYNCHRONIZED_END(gidToColor);
-    
-    return colorIndex;
-}
 
 @implementation TGInterfaceAssets
 
@@ -100,27 +48,31 @@ static inline int colorIndexForGroupId(int64_t groupId)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        userColors[0] = UIColorRGB(0xfc5c51);
-        userColors[1] = UIColorRGB(0xfa790f);
-        userColors[2] = UIColorRGB(0x0fb297);
-        userColors[3] = UIColorRGB(0x3ca5ec);
-        userColors[4] = UIColorRGB(0x3d72ed);
-        userColors[5] = UIColorRGB(0x895dd5);
-        //userColors[6] = UIColorRGB(0x00a1c4);
-        //userColors[7] = UIColorRGB(0xeb7002);
+        userColors[0] = UIColorRGB(0xfc5c51); // red
+        userColors[1] = UIColorRGB(0xfa790f); // orange
+        userColors[2] = UIColorRGB(0x895dd5); // violet
+        userColors[3] = UIColorRGB(0x0fb297); // green
+        userColors[4] = UIColorRGB(0x00c1a6); // cyan
+        userColors[5] = UIColorRGB(0x3ca5ec); // light blue
+        userColors[6] = UIColorRGB(0x3d72ed); // blue
     });
     
-    return userColors[colorIndexForUid(uid) % 6];
+    return userColors[[self userColorIndex:uid]];
 }
 
 - (int)userColorIndex:(int)uid
 {
-    return colorIndexForUid(uid);
+    return uid % 7;
 }
 
 - (int)groupColorIndex:(int64_t)groupId
 {
-    return colorIndexForGroupId(groupId);
+    int64_t peerId = groupId;
+    if (TGPeerIdIsChannel(peerId))
+        peerId = TGChannelIdFromPeerId(peerId);
+    else if (TGPeerIdIsGroup(peerId))
+        peerId = TGGroupIdFromPeerId(peerId);
+    return labs(peerId) % 7;
 }
 
 - (UIColor *)groupColor:(int64_t)groupId
@@ -130,17 +82,16 @@ static inline int colorIndexForGroupId(int64_t groupId)
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        userColors[0] = UIColorRGB(0xfc5c51);
-        userColors[1] = UIColorRGB(0xfa790f);
-        userColors[2] = UIColorRGB(0x0fb297);
-        userColors[3] = UIColorRGB(0x3ca5ec);
-        userColors[4] = UIColorRGB(0x3d72ed);
-        userColors[5] = UIColorRGB(0x895dd5);
-        //userColors[6] = UIColorRGB(0x00a1c4);
-        //userColors[7] = UIColorRGB(0xeb7002);
+        userColors[0] = UIColorRGB(0xfc5c51); // red
+        userColors[1] = UIColorRGB(0xfa790f); // orange
+        userColors[2] = UIColorRGB(0x895dd5); // violet
+        userColors[3] = UIColorRGB(0x0fb297); // green
+        userColors[4] = UIColorRGB(0x00c0c2); // cyan
+        userColors[5] = UIColorRGB(0x3ca5ec); // light blue
+        userColors[6] = UIColorRGB(0x3d72ed); // blue
     });
     
-    return userColors[colorIndexForGroupId(groupId) % 6];
+    return userColors[[self groupColorIndex:groupId]];
 }
 
 + (UIColor *)listsBackgroundColor
@@ -248,22 +199,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     return image;
 }
 
-- (UIImage *)dialogListGroupChatIcon
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"DialogListGroupChatIcon.png"];
-    return image;
-}
-
-- (UIImage *)dialogListGroupChatIconHighlighted
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"DialogListGroupChatIcon_Highlighted.png"];
-    return image;
-}
-
 - (UIImage *)dialogListUnreadCountBadge
 {
     static UIImage *image = nil;
@@ -306,16 +241,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     return image;
 }
 
-- (UIImage *)avatarPlaceholder:(int)uid
-{
-    if (uid <= 0)
-        return [self avatarPlaceholderGeneric];
-    
-    int colorIndex = colorIndexForUid(uid);
-    
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"DialogListAvatar%d.png", colorIndex + 1]];
-}
-
 - (UIImage *)avatarPlaceholderGeneric
 {
     static UIImage *image = nil;
@@ -332,25 +257,9 @@ static inline int colorIndexForGroupId(int64_t groupId)
     return image;
 }
 
-- (UIImage *)groupAvatarPlaceholder:(int64_t)conversationId
-{
-    int colorIndex = colorIndexForGroupId(conversationId);
-    
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"DialogListGroupAvatar%d.png", colorIndex + 1]];
-}
-
 - (UIImage *)groupAvatarPlaceholderGeneric
 {
     return [self avatarPlaceholderGeneric];
-}
-
-- (UIImage *)smallAvatarPlaceholder:(int)uid
-{
-    if (uid <= 0)
-        return [self smallAvatarPlaceholderGeneric];
-    
-    int colorIndex = colorIndexForUid(uid);
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"SmallAvatar%d.png", colorIndex + 1]];
 }
 
 - (UIImage *)smallAvatarPlaceholderGeneric
@@ -359,13 +268,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     if (image == nil)
         image = [UIImage imageNamed:@"DialogListAvatarPlaceholderSmall.png"];
     return image;
-}
-
-- (UIImage *)smallGroupAvatarPlaceholder:(int64_t)conversationId
-{
-    int colorIndex = colorIndexForGroupId(conversationId);
-    
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"DialogListGroupAvatarSmall%d.png", colorIndex + 1]];
 }
 
 - (UIImage *)smallGroupAvatarPlaceholderGeneric
@@ -477,16 +379,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     return image;
 }
 
-+ (UIImage *)profileAvatarPlaceholder:(int)uid
-{
-    if (uid <= 0)
-        return [TGInterfaceAssets profileAvatarPlaceholderGeneric];
-    
-    int colorIndex = colorIndexForUid(uid);
-    
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"ProfileAvatar%d.png", colorIndex + 1]];
-}
-
 + (UIImage *)profileAvatarPlaceholderGeneric
 {
     static UIImage *image = nil;
@@ -575,16 +467,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     if (image == nil)
         image = [UIImage imageNamed:@"MembersAvatarOverlay.png"];
     return image;
-}
-
-+ (UIImage *)conversationAvatarPlaceholder:(int)uid
-{
-    if (uid <= 0)
-        return [TGInterfaceAssets conversationGenericAvatarPlaceholder:false];
-    
-    int colorIndex = colorIndexForUid(uid);
-    
-    return [UIImage imageNamed:[[NSString alloc] initWithFormat:@"ConversationAvatar%d.png", colorIndex + 1]];
 }
 
 + (UIImage *)conversationGenericAvatarPlaceholder:(bool)useMonochrome
@@ -795,32 +677,6 @@ static inline int colorIndexForGroupId(int64_t groupId)
     {
         image = [UIImage imageNamed:@"BannerAvatarOverlay.png"];
     });
-    return image;
-}
-
-+ (UIImage *)notificationAvatarPlaceholder:(int)uid
-{
-    if (uid <= 0)
-        return [TGInterfaceAssets notificationAvatarPlaceholderGeneric];
-    
-    int numColors = 8;
-    static NSMutableArray *imageArray = nil;
-    if (imageArray == nil)
-    {
-        imageArray = [[NSMutableArray alloc] init];
-        for (int i = 0; i < numColors; i++)
-             [imageArray addObject:[NSNull null]];
-    }
-    
-    int colorIndex = colorIndexForUid(uid);
-    
-    UIImage *image = [imageArray objectAtIndex:MAX(0, colorIndex % numColors)];
-    if ([image isKindOfClass:[UIImage class]])
-        return image;
-    
-    image = TGScaleAndRoundCornersWithOffset([[TGInterfaceAssets instance] smallAvatarPlaceholder:uid], CGSizeMake(33, 33), CGPointMake(0.5f, 0.0f), CGSizeMake(34, 34), 4, [TGInterfaceAssets notificationAvatarOverlay], false, nil);
-    [imageArray replaceObjectAtIndex:colorIndex % numColors withObject:image];
-    
     return image;
 }
 

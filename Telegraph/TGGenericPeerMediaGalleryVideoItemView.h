@@ -1,5 +1,5 @@
 #import "TGModernGalleryNewVideoItemView.h"
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @interface TGGenericPeerMediaGalleryVideoItemView : TGModernGalleryNewVideoItemView <TGPIPAblePlayerContainerView>
 

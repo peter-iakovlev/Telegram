@@ -1,13 +1,8 @@
 #import "TGNotificationPreviewView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGNotificationView.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGMessage.h"
-#import "TGUser.h"
-#import "TGConversation.h"
-#import "TGPeerIdAdapter.h"
 
 const UIEdgeInsets TGNotificationPreviewContentInset = { 0, 62, 0, 10 };
 
@@ -37,7 +32,7 @@ const CGFloat TGNotificationTextHeaderMargin = 4.0f;
         
         if (isSecretMessage)
         {
-            _lockIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"NotificationLockIcon"]];
+            _lockIcon = [[UIImageView alloc] initWithImage:TGImageNamed(@"NotificationLockIcon")];
             _lockIcon.frame = CGRectOffset(_lockIcon.frame, -13, 2.5f);
             [_titleLabel addSubview:_lockIcon];
         }

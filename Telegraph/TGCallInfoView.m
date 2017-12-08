@@ -1,9 +1,7 @@
 #import "TGCallInfoView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
 #import "TGCallSession.h"
 
 #import "TGMarqueeLabel.h"
@@ -25,7 +23,9 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
 {
     TGMarqueeLabel *_nameLabel;
     UILabel *_statusLabel;
+    TGCallReceptionView *_receptionView;
     bool _needsFontUpdate;
+    CGFloat _statusWidth;
     
     TGCallState _currentState;
     
@@ -60,12 +60,15 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         
         _statusLabel = [[UILabel alloc] init];
         _statusLabel.font = TGSystemFontOfSize([TGCallInfoView statusFontSize]);
-        _statusLabel.textAlignment = NSTextAlignmentCenter;
         _statusLabel.textColor = [UIColor whiteColor];
         _statusLabel.hidden = true;
         _statusLabel.text = @"Status";
         [_statusLabel sizeToFit];
         [self addSubview:_statusLabel];
+        
+        _receptionView = [[TGCallReceptionView alloc] init];
+        _receptionView.alpha = 0.0f;
+        [self addSubview:_receptionView];
     }
     return self;
 }
@@ -160,26 +163,34 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         [self setNeedsLayout];
     }
     
+    [_receptionView setSignalBars:state.signalBars];
+    
     _statusLabel.hidden = false;
     
+    CGFloat previousStatusWidth = _statusWidth;
+    
+    TGCallState previousState = _currentState;
     _currentState = state.state;
     switch (_currentState)
     {
         case TGCallStateRequesting:
         {
             _statusLabel.text = TGLocalized(@"Call.StatusRequesting");
+            _statusWidth = 0.0f;
         }
             break;
             
         case TGCallStateWaiting:
         {
             _statusLabel.text = TGLocalized(@"Call.StatusWaiting");
+            _statusWidth = 0.0f;
         }
             break;
             
         case TGCallStateWaitingReceived:
         {
             _statusLabel.text = TGLocalized(@"Call.StatusRinging");
+            _statusWidth = 0.0f;
         }
             break;
             
@@ -187,12 +198,14 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         case TGCallStateReady:
         {
             _statusLabel.text = TGLocalized(@"Call.StatusIncoming");
+            _statusWidth = 0.0f;
         }
             break;
             
         case TGCallStateAccepting:
         {
             _statusLabel.text = TGLocalized(@"Call.StatusConnecting");
+            _statusWidth = 0.0f;
         }
             break;
             
@@ -204,6 +217,7 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
                 case TGCallTransmissionStateInitializing:
                 {
                     _statusLabel.text = TGLocalized(@"Call.StatusConnecting");
+                    _statusWidth = 0.0f;
                 }
                     break;
                     
@@ -212,17 +226,31 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
                 {
                     NSString *durationString = duration >= 60 * 60 ? [NSString stringWithFormat:@"%02d:%02d:%02d", (int)(duration / 3600.0), (int)(duration / 60.0) % 60, (int)duration % 60] : [NSString stringWithFormat:@"%02d:%02d", (int)(duration / 60.0) % 60, (int)duration % 60];
                     _statusLabel.text = [NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), durationString];
+                    
+                    if (duration >= 60 * 60)
+                        _statusWidth = [self widthForStatusString:[NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), @"00:00:00"]];
+                    else
+                        _statusWidth = [self widthForStatusString:[NSString stringWithFormat:TGLocalized(@"Call.StatusOngoing"), @"00:00"]];
                 }
                     break;
                     
                 case TGCallTransmissionStateFailed:
                 {
                     _statusLabel.text = TGLocalized(@"Call.StatusFailed");
+                    _statusWidth = [self widthForStatusString:_statusLabel.text];
                 }
                     break;
                     
                 default:
                     break;
+            }
+            
+            if (state.transmissionState == TGCallTransmissionStateEstablished && _receptionView.alpha < FLT_EPSILON)
+            {
+                [UIView animateWithDuration:0.2 animations:^
+                {
+                    _receptionView.alpha = 1.0f;
+                }];
             }
         }
             break;
@@ -241,12 +269,30 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
                 _statusLabel.text = TGLocalized(@"Call.StatusNoAnswer");
             else
                 _statusLabel.text = TGLocalized(@"Call.StatusEnded");
+            
+            _statusWidth = 0.0f;
+            
+            if (previousState != _currentState)
+            {
+                [UIView animateWithDuration:0.2 animations:^
+                {
+                    _receptionView.alpha = 0.0f;
+                } completion:nil];
+            }
         }
             break;
             
         default:
             break;
     }
+    
+    if (fabs(_statusWidth - previousStatusWidth) > FLT_EPSILON)
+        [self setNeedsLayout];
+}
+
+- (CGFloat)widthForStatusString:(NSString *)string
+{
+    return [string sizeWithFont:_statusLabel.font forWidth:FLT_MAX lineBreakMode:NSLineBreakByCharWrapping].width + 2.0f;
 }
 
 - (void)onPause
@@ -270,7 +316,19 @@ const CGFloat TGCallInfoNormalStatusFontSize = 18.0f;
         
         _needsFontUpdate = false;
     }
-    _statusLabel.frame = CGRectMake(0, _nameLabel.frame.size.height + [TGCallInfoView spacing], self.frame.size.width, ceil(_statusLabel.frame.size.height));
+    
+    if (_statusWidth > FLT_EPSILON)
+    {
+        _statusLabel.textAlignment = NSTextAlignmentLeft;
+        _statusLabel.frame = CGRectMake(round((self.frame.size.width - _statusWidth) / 2.0f) + 14.0f, _nameLabel.frame.size.height + [TGCallInfoView spacing], _statusWidth, ceil(_statusLabel.frame.size.height));
+    }
+    else
+    {
+        _statusLabel.textAlignment = NSTextAlignmentCenter;
+        _statusLabel.frame = CGRectMake(0, _nameLabel.frame.size.height + [TGCallInfoView spacing], self.frame.size.width, ceil(_statusLabel.frame.size.height));
+    }
+    CGSize qualitySize = TGCallQualityViewSize;
+    _receptionView.frame = CGRectMake((self.frame.size.width - _statusWidth - 7.0f) / 2.0f - qualitySize.width + 15.0f, floor(CGRectGetMidY(_statusLabel.frame) - qualitySize.height / 2.0f) + 1.0f + TGScreenPixel, qualitySize.width, qualitySize.height);
 }
 
 @end

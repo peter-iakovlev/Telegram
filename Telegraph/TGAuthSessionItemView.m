@@ -1,11 +1,8 @@
 #import "TGAuthSessionItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAuthSession.h"
-
-#import "TGDateUtils.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
 
 @interface TGAuthSessionItemView ()
 {
@@ -96,9 +93,9 @@
     CGSize statusSize = [_statusLabel.text sizeWithFont:_statusLabel.font];
     statusSize.width = CGCeil(statusSize.width);
     statusSize.height = CGCeil(statusSize.height);
-    _statusLabel.frame = CGRectMake(self.editingContentView.frame.size.width - statusSize.width - 12.0f, 9.0f, statusSize.width, statusSize.height);
+    _statusLabel.frame = CGRectMake(self.editingContentView.frame.size.width - statusSize.width - 12.0f - self.safeAreaInset.right, 9.0f, statusSize.width, statusSize.height);
     
-    CGFloat leftInset = 16.0f + (self.enableEditing && self.showsDeleteIndicator ? 38.0f : 0.0f);
+    CGFloat leftInset = 16.0f + (self.enableEditing && self.showsDeleteIndicator ? 38.0f : 0.0f) + self.safeAreaInset.left;
     
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
     titleSize.width = MIN(CGCeil(titleSize.width), _statusLabel.frame.origin.x - 10.0f - leftInset);

@@ -1,6 +1,8 @@
 #import "TGConversationDeleteActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
@@ -8,8 +10,6 @@
 #import "TGUpdateStateRequestBuilder.h"
 
 #import "TGDownloadManager.h"
-
-#import "TGPeerIdAdapter.h"
 
 #import "TGChannelManagementSignals.h"
 

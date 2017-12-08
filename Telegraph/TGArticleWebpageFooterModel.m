@@ -1,6 +1,6 @@
 #import "TGArticleWebpageFooterModel.h"
 
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernTextViewModel.h"
 #import "TGSignalImageViewModel.h"
@@ -9,9 +9,6 @@
 #import "TGModernTextViewModel.h"
 #import "TGModernButtonViewModel.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 #import "TGSharedPhotoSignals.h"
@@ -19,23 +16,19 @@
 
 #import "TGReusableLabel.h"
 
-#import "TGMessage.h"
-
-#import "TGImageManager.h"
+#import <LegacyComponents/TGImageManager.h>
 
 #import "TGPreparedLocalDocumentMessage.h"
 #import "TGTelegraph.h"
-#import "TGGifConverter.h"
-
-#import "TGViewController.h"
+#import <LegacyComponents/TGGifConverter.h>
 
 #import "TGAppDelegate.h"
-
-#import "TGTextCheckingResult.h"
 
 #import "TGCurrencyFormatter.h"
 
 #import "TGAnimationUtils.h"
+
+#import "TGPresentationAssets.h"
 
 static UIImage *instantPageButtonBackground(UIColor *color, bool fill) {
     CGFloat diameter = 14.0f;
@@ -154,7 +147,7 @@ static UIImage *durationBackgroundImage()
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        CGFloat radius = 2.0f;
+        CGFloat radius = 4.0f;
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
         CGContextRef context = UIGraphicsGetCurrentContext();
         CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.6f).CGColor);
@@ -235,6 +228,8 @@ static UIImage *durationGameBackgroundImage()
         }
         
         bool isInstagram = [webPage.siteName.lowercaseString isEqualToString:@"instagram"];
+        bool isTwitter = [webPage.siteName.lowercaseString isEqualToString:@"twitter"];
+        bool isInstantGallery = isInstagram || isTwitter;
         bool isCoub = [webPage.siteName.lowercaseString isEqualToString:@"coub"];
         bool isGame = [webPage.pageType isEqualToString:@"game"];
         bool isInvoice = [webPage.pageType isEqualToString:@"invoice"];
@@ -294,7 +289,7 @@ static UIImage *durationGameBackgroundImage()
         
         bool hasSize = false;
         
-        if (!_imageInText && webPage.document != nil && ([webPage.document.mimeType isEqualToString:@"image/gif"] || [webPage.document.mimeType isEqualToString:@"video/mp4"]) && !isInstagram) {
+        if (!_imageInText && webPage.document != nil && ([webPage.document.mimeType isEqualToString:@"image/gif"] || [webPage.document.mimeType isEqualToString:@"video/mp4"]) && !isInstantGallery) {
             
             if ([webPage.document isAnimated]) {
                 _isAnimation = true;
@@ -342,9 +337,12 @@ static UIImage *durationGameBackgroundImage()
                     static CGSize fitSizeGame;
                     static dispatch_once_t onceToken;
                     dispatch_once(&onceToken, ^{
-                        if ([TGViewController hasLargeScreen]) {
-                            fitSize = CGSizeMake(220.0f, 220.0f);
-                            fitSizeGame = CGSizeMake(240.0f, 240.0f);
+                        if ([TGViewController hasVeryLargeScreen] && ![TGViewController hasTallScreen]) {
+                            fitSize = CGSizeMake(294.0f, 294.0f);
+                            fitSizeGame = CGSizeMake(294.0f, 294.0f);
+                        } else if ([TGViewController hasLargeScreen]) {
+                            fitSize = CGSizeMake(256.0f, 256.0f);
+                            fitSizeGame = CGSizeMake(256.0f, 256.0f);
                         } else {
                             fitSize = CGSizeMake(200.0f, 200.0f);
                             fitSizeGame = CGSizeMake(200.0f, 200.0f);
@@ -361,8 +359,10 @@ static UIImage *durationGameBackgroundImage()
                     static CGSize defaultFitSize;
                     static dispatch_once_t onceToken;
                     dispatch_once(&onceToken, ^{
-                        if ([TGViewController hasLargeScreen]) {
-                            defaultFitSize = CGSizeMake(225.0f, 220.0f);
+                        if ([TGViewController hasVeryLargeScreen] && ![TGViewController hasTallScreen]) {
+                            defaultFitSize = CGSizeMake(294.0f, 294.0f);
+                        } else if ([TGViewController hasLargeScreen]) {
+                            defaultFitSize = CGSizeMake(256.0f, 256.0f);
                         } else {
                             defaultFitSize = CGSizeMake(200.0f, 200.0f);
                         }
@@ -379,6 +379,7 @@ static UIImage *durationGameBackgroundImage()
                 }
             }
             _imageViewModel = [[TGSignalImageViewModel alloc] init];
+            _imageViewModel.ignoresInvertColors = true;
             _imageViewModel.viewUserInteractionDisabled = false;
             _imageViewModel.transitionContentRect = contentFrame;
             if (_isAnimation || _isVideo) {
@@ -391,7 +392,7 @@ static UIImage *durationGameBackgroundImage()
                     }
                 };
                 [_imageViewModel setSignalGenerator:^SSignal *{
-                    return [TGSharedFileSignals squareFileThumbnail:webPage.document ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f]];
+                    return [TGSharedFileSignals squareFileThumbnail:webPage.document ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f]];
                 } identifier:key];
             } else {
                 if (_imageInText) {
@@ -405,7 +406,7 @@ static UIImage *durationGameBackgroundImage()
                     };
                     [_imageViewModel setSignalGenerator:^SSignal *
                     {
-                        return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] cacheKey:key];
+                        return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f] cacheKey:key];
                     } identifier:key];
                 } else {
                     NSString *key;
@@ -423,7 +424,7 @@ static UIImage *durationGameBackgroundImage()
                     };
                     [_imageViewModel setSignalGenerator:^SSignal *
                     {
-                        return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:8.0f] downloadLargeImage:isInstagram || isGame || isInvoice placeholder:nil];
+                        return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f] downloadLargeImage:isInstantGallery || isGame || isInvoice placeholder:nil];
                     } identifier:key];
                 }
             }
@@ -442,7 +443,7 @@ static UIImage *durationGameBackgroundImage()
             {
                 if (imageSize.width >= 30.0f && imageSize.height >= 26.0f)
                 {
-                    if (nDuration != nil)
+                    if (nDuration != nil || isCoub || (isInstantGallery && _webPage.instantPage != nil))
                     {
                         _durationModel = [[TGModernFlatteningViewModel alloc] init];
                         
@@ -450,7 +451,27 @@ static UIImage *durationGameBackgroundImage()
                         [_durationModel addSubmodel:_durationBackgroundModel];
                         
                         NSString *durationText = @"";
-                        if (isCoub)
+                        if (isInstantGallery && _webPage.instantPage != nil)
+                        {
+                            if (_webPage.instantPage != nil)
+                            {
+                                for (TGInstantPageBlock *block in _webPage.instantPage.blocks)
+                                {
+                                    if ([block isKindOfClass:[TGInstantPageBlockSlideshow class]] || [block isKindOfClass:[TGInstantPageBlockCollage class]])
+                                    {
+                                        int32_t itemsCount = 0;
+                                        if ([block isKindOfClass:[TGInstantPageBlockSlideshow class]])
+                                            itemsCount = (int32_t)(((TGInstantPageBlockSlideshow *)block).items.count);
+                                        else
+                                            itemsCount = (int32_t)(((TGInstantPageBlockCollage *)block).items.count);
+                                        durationText = [[NSString alloc] initWithFormat:@"%d %@ %d", 1, TGLocalized(@"Common.of"), itemsCount];
+                                        
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else if (isCoub)
                         {
                             durationText = TGLocalized(@"Coub.TapForSound");
                         }
@@ -472,7 +493,7 @@ static UIImage *durationGameBackgroundImage()
                     }
                     else if ([webPage.pageType isEqualToString:@"video"] && isInstagram)
                     {
-                        _serviceIconModel = [[TGModernImageViewModel alloc] initWithImage:[UIImage imageNamed:@"InlineMediaInstagramVideoIcon.png"]];
+                        _serviceIconModel = [[TGModernImageViewModel alloc] initWithImage:TGImageNamed(@"InlineMediaInstagramVideoIcon.png")];
                         [_serviceIconModel sizeToFit];
                         [_imageViewModel addSubmodel:_serviceIconModel];
                     } else if (isInvoice) {
@@ -508,12 +529,14 @@ static UIImage *durationGameBackgroundImage()
         }
         
         NSString *buttonType = nil;
-        if (_webPage.instantPage != nil)
+        if (_webPage.instantPage != nil && !isInstantGallery)
             buttonType = @"instantPage";
         else if ([_webPage.pageType isEqualToString:@"telegram_channel"])
             buttonType = @"viewChannel";
         else if ([_webPage.pageType isEqualToString:@"telegram_chat"] || [_webPage.pageType isEqualToString:@"telegram_megagroup"])
             buttonType = @"viewGroup";
+        else if ([_webPage.pageType isEqualToString:@"telegram_message"])
+            buttonType = @"viewMessage";
         
         if (buttonType != nil) {
             static UIImage *incomingBackground = nil;
@@ -541,7 +564,7 @@ static UIImage *durationGameBackgroundImage()
                 if ([buttonType isEqualToString:@"instantPage"])
                 {
                     title = TGLocalized(@"Conversation.InstantPagePreview");
-                    iconImage = [UIImage imageNamed:@"ConversationInstantPageButtonIconIncoming.png"];
+                    iconImage = [TGPresentationAssets chatInstantViewIcon:UIColorRGB(0x3ca7fe)];
                 }
                 else if ([buttonType isEqualToString:@"viewChannel"])
                 {
@@ -550,6 +573,10 @@ static UIImage *durationGameBackgroundImage()
                 else if ([buttonType isEqualToString:@"viewGroup"])
                 {
                     title = TGLocalized(@"Conversation.ViewGroup");
+                }
+                else if ([buttonType isEqualToString:@"viewMessage"])
+                {
+                    title = TGLocalized(@"Conversation.ViewMessage");
                 }
                 
                 button = [TGArticleWebpageFooterModel cachedActionButtonForTitle:title iconImage:iconImage];
@@ -875,7 +902,8 @@ static UIImage *durationGameBackgroundImage()
     if (_durationModel != nil)
     {
         CGRect durationBackgroundFrame = CGRectMake(0.0f, 0.0f, _durationLabelModel.frame.size.width + 12.0f - ((_isGame || _isInvoice) ? 1.0f : 0.0f), 18.0f);
-        if (!_isGame && !_isInvoice && _webPage.instantPage != nil) {
+        bool isInstantGallery = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"];
+        if (!_isGame && !_isInvoice && _webPage.instantPage != nil && !isInstantGallery) {
             durationBackgroundFrame.size.width += 20.0f;
             durationBackgroundFrame.size.height += 8.0f;
         }
@@ -883,16 +911,16 @@ static UIImage *durationGameBackgroundImage()
         CGRect durationModelFrame = CGRectMake(_imageViewModel.frame.size.width - _durationBackgroundModel.frame.size.width - 4.0f, _imageViewModel.frame.size.height - _durationBackgroundModel.frame.size.height - 4.0f, _durationBackgroundModel.frame.size.width, _durationBackgroundModel.frame.size.height);
         if (_isGame || _isInvoice) {
             durationModelFrame.origin = CGPointMake(4.0f, 4.0f);
-        } else if (_webPage.instantPage != nil) {
+        } else if (_webPage.instantPage != nil && !isInstantGallery) {
             durationModelFrame.origin = CGPointMake(4.0f, 4.0f);
         }
         if (!CGSizeEqualToSize(_durationModel.frame.size, durationModelFrame.size))
             [_durationModel setNeedsSubmodelContentsUpdate];
         _durationModel.frame = durationModelFrame;
         
-        CGRect durationLabelFrame = CGRectMake(5.0f, 0.0f, _durationLabelModel.frame.size.width, _durationLabelModel.frame.size.height);
+        CGRect durationLabelFrame = CGRectMake(6.0f, 0.0f, _durationLabelModel.frame.size.width, _durationLabelModel.frame.size.height);
         
-        if (!_isGame && !_isInvoice && _webPage.instantPage != nil) {
+        if (!_isGame && !_isInvoice && _webPage.instantPage != nil && !isInstantGallery) {
             durationLabelFrame.origin.x += 16.0f;
             durationLabelFrame.origin.y += 2.0f;
         }
@@ -1056,9 +1084,9 @@ static UIImage *durationGameBackgroundImage()
 
 - (void)updateOverlayAnimated:(bool)animated {
     bool isCoub = [[_webPage.siteName lowercaseString] isEqualToString:@"coub"];
-    bool isInstagram = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"];
+    bool isInstantGallery = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"];
     
-    if (!_isVideo && isInstagram) {
+    if (!_isVideo && isInstantGallery) {
         [_imageViewModel setNone];
     }
     else if (_imageViewModel.manualProgress) {

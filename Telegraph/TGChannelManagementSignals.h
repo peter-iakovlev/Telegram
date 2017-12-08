@@ -1,12 +1,14 @@
 #import <Foundation/Foundation.h>
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGChannelAdminLogEntry.h"
 
 @class TGMessageHole;
 @class TGConversation;
 @class TGUser;
+@class TGStickerPack;
 
 @class TLChannelParticipant;
 
@@ -55,6 +57,9 @@ typedef struct {
 + (SSignal *)updateChannelPhoto:(int64_t)peerId accessHash:(int64_t)accessHash uploadedFile:(SSignal *)uploadedFile;
 + (SSignal *)updateChannelExtendedInfo:(int64_t)peerId accessHash:(int64_t)accessHash updateUnread:(bool)updateUnread;
 
++ (SSignal *)updateChannelStickerPack:(int64_t)peerId accessHash:(int64_t)accessHash stickerPack:(TGStickerPack *)stickerPack;
++ (SSignal *)togglePreHistoryHidden:(int64_t)peerId accessHash:(int64_t)accessHash enabled:(bool)enabled;
+
 + (SSignal *)updatedPeerMessageViews:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 + (SSignal *)consumeMessages:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds;
 
@@ -66,6 +71,7 @@ typedef struct {
 + (SSignal *)channelBannedMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
 + (SSignal *)channelMembers:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
 + (SSignal *)channelAdmins:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count;
++ (SSignal *)channelAdmins:(int64_t)peerId accessHash:(int64_t)accessHash offset:(NSUInteger)offset count:(NSUInteger)count hash:(int32_t)hash;
 + (SSignal *)channelInviterUser:(int64_t)peerId accessHash:(int64_t)accessHash;
 
 + (SSignal *)deleteChannel:(int64_t)peerId accessHash:(int64_t)accessHash;
@@ -84,5 +90,7 @@ typedef struct {
 + (SSignal *)channelAdminLogEvents:(int64_t)peerId accessHash:(int64_t)accessHash minEntryId:(int64_t)minEntryId count:(int32_t)count filter:(TGChannelEventFilter)filter searchQuery:(NSString *)searchQuery userIds:(NSArray *)userIds;
 
 + (TGCachedConversationMember *)parseMember:(TLChannelParticipant *)desc;
+
++ (SSignal *)updatedChannelAdmins:(int64_t)peerId accessHash:(int64_t)accessHash;
 
 @end

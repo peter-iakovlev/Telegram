@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @class TGConversation;
 @class TGInstantPageMedia;
@@ -27,5 +27,7 @@
 - (void)updateScreenPosition:(CGRect)screenPosition screenSize:(CGSize)screenSize;
 
 - (void)updatePresentation:(TGInstantPagePresentation *)presentation;
+
+- (void)updateSafeAreaInset:(UIEdgeInsets)safeAreaInset;
 
 @end

@@ -1,4 +1,4 @@
-#import "TGModernMediaListItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
 
 @protocol TGMediaEditableItem;
 @class TGMediaEditingContext;

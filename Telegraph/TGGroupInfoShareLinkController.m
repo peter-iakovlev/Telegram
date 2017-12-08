@@ -1,5 +1,7 @@
 #import "TGGroupInfoShareLinkController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGGroupManagementSignals.h"
 
 #import "TGHeaderCollectionItem.h"
@@ -8,9 +10,7 @@
 #import "TGButtonCollectionItem.h"
 
 #import "TGAlertView.h"
-#import "TGProgressWindow.h"
-
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGChannelManagementSignals.h"
 

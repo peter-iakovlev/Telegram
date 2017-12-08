@@ -33,46 +33,6 @@
 
 @end
 
-@implementation TLcontacts_Contacts$contacts_contacts : TLcontacts_Contacts
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x6f8b8cb2;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x1eb2e51b;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
-{
-    TLcontacts_Contacts$contacts_contacts *object = [[TLcontacts_Contacts$contacts_contacts alloc] init];
-    object.contacts = metaObject->getArray((int32_t)0x48dc7107);
-    object.users = metaObject->getArray((int32_t)0x933e5ff3);
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
-{
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.contacts;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x48dc7107, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.users;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x933e5ff3, value));
-    }
-}
-
-
-@end
-
 @implementation TLcontacts_Contacts$contacts_contactsNotModified : TLcontacts_Contacts
 
 
@@ -94,6 +54,53 @@
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
 {
+}
+
+
+@end
+
+@implementation TLcontacts_Contacts$contacts_contacts : TLcontacts_Contacts
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xeae87e42;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x1eb2e51b;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLcontacts_Contacts$contacts_contacts *object = [[TLcontacts_Contacts$contacts_contacts alloc] init];
+    object.contacts = metaObject->getArray((int32_t)0x48dc7107);
+    object.saved_count = metaObject->getInt32((int32_t)0xce0590f1);
+    object.users = metaObject->getArray((int32_t)0x933e5ff3);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.contacts;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x48dc7107, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.saved_count;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xce0590f1, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.users;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x933e5ff3, value));
+    }
 }
 
 

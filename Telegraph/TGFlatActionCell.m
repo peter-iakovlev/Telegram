@@ -1,11 +1,8 @@
 #import "TGFlatActionCell.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGInterfaceAssets.h"
-
-#import "TGImageUtils.h"
-#import "TGFont.h"
-
-#import "TGPhoneUtils.h"
 
 static UIImage *plusImage() {
     static UIImage *image = nil;
@@ -76,10 +73,8 @@ static UIImage *plusImage() {
         _titleLabel.text = TGLocalized(@"Compose.NewGroup");
     else if (mode == TGFlatActionCellModeCreateEncrypted)
         _titleLabel.text = TGLocalized(@"Compose.NewEncryptedChat");
-    else if (mode == TGFlatActionCellModeChannels)
-        _titleLabel.text = TGLocalized(@"Channels.Title");
     else if (mode == TGFlatActionCellModeCreateChannel)
-        _titleLabel.text = TGLocalized(@"Compose.NewChannelButton");
+        _titleLabel.text = TGLocalized(@"Compose.NewChannel");
     else if (mode == TGFlatActionCellModeCreateChannelGroup)
         _titleLabel.text = TGLocalized(@"Compose.NewChannelGroupButton");
     else if (mode == TGFlatActionCellModeAddPhoneNumber)
@@ -87,25 +82,12 @@ static UIImage *plusImage() {
     else if (mode == TGFlatActionCellModeShareApp)
         _titleLabel.text = TGLocalized(@"Contacts.ShareTelegram");
 
-    static UIImage *inviteIcon = nil;
-    static UIImage *friendsIcon = nil;
-    static UIImage *encryptedIcon = nil;
-    static UIImage *broadcastsIcon = nil;
-    
-    if (inviteIcon == nil)
-    {
-        inviteIcon = plusImage();
-        friendsIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListCreateGroupIcon.png"], TGAccentColor());
-        encryptedIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListCreateSecretChatIcon.png"], TGAccentColor());
-        broadcastsIcon = TGTintedImage([UIImage imageNamed:@"ModernContactListBroadcastIcon.png"], TGAccentColor());
-    }
-    
     CGFloat verticalOffset = TGIsPad() ? 4.0f : 0.0f;
     CGFloat horizontalOffset = TGIsPad() ? 8.0f : 0.0f;
     
     if (mode == TGFlatActionCellModeInvite)
     {
-        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListAddMemberIcon.png"], TGAccentColor());
+        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListAddMemberIcon.png"), TGAccentColor());
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -114,6 +96,10 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts || mode == TGFlatActionCellModeCreateChannelGroup)
     {
+        static UIImage *friendsIcon = nil;
+        if (friendsIcon == nil)
+            friendsIcon = TGTintedImage(TGImageNamed(@"ModernContactListCreateGroupIcon.png"), TGAccentColor());
+        
         _iconView.image = friendsIcon;
         [_iconView sizeToFit];
         
@@ -123,6 +109,10 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeCreateEncrypted)
     {
+        static UIImage *encryptedIcon = nil;
+        if (encryptedIcon == nil)
+            encryptedIcon = TGTintedImage(TGImageNamed(@"ModernContactListCreateSecretChatIcon.png"), TGAccentColor());
+            
         _iconView.image = encryptedIcon;
         [_iconView sizeToFit];
         
@@ -132,6 +122,10 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeChannels || mode == TGFlatActionCellModeCreateChannel)
     {
+        static UIImage *broadcastsIcon = nil;
+        if (broadcastsIcon == nil)
+            broadcastsIcon = TGTintedImage(TGImageNamed(@"ModernContactListBroadcastIcon.png"), TGAccentColor());
+            
         _iconView.image = broadcastsIcon;
         [_iconView sizeToFit];
         
@@ -141,7 +135,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeAddPhoneNumber)
     {
-        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListAddMemberIcon.png"], TGAccentColor());
+        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListAddMemberIcon.png"), TGAccentColor());
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -150,7 +144,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeShareApp)
     {
-        _iconView.image = TGTintedImage([UIImage imageNamed:@"ModernContactListInviteIcon.png"], TGAccentColor());
+        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListInviteIcon.png"), TGAccentColor());
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;

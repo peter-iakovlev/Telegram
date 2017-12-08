@@ -11,13 +11,13 @@
 
 #import "TGBridgeMediaSignals.h"
 
-#import "TGPeerIdAdapter.h"
-
 #import "TGBridgeUser.h"
 #import "TGBridgeMessage.h"
 #import "TGBridgeUserCache.h"
 
 #import "TGBridgeContext.h"
+
+#import "TGBridgePeerIdAdapter.h"
 
 NSString *const TGMessageViewMessageRowIdentifier = @"TGMessageViewMessageRow";
 

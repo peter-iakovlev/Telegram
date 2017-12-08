@@ -1,12 +1,10 @@
 #import "TGReplyHeaderFileModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedMediaSignals.h"
 #import "TGSharedFileSignals.h"
 #import "TGSharedMediaUtils.h"
-
-#import "TGDocumentMediaAttachment.h"
-
-#import "TGImageMediaAttachment.h"
 
 #import "TGSignalImageViewModel.h"
 
@@ -14,7 +12,6 @@
 
 @interface TGReplyHeaderFileModel ()
 {
-    //TGSignalImageViewModel *_imageModel;
 }
 
 @end
@@ -42,7 +39,20 @@
         imageMedia.imageInfo = fileMedia.thumbnailInfo;
     }
     
-    self = [super initWithPeer:peer incoming:incoming text:caption == nil ? text : caption truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:44.0f system:system];
+    for (id attribute in fileMedia.attributes)
+    {
+        if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
+        {
+            TGDocumentAttributeAudio *audio = (TGDocumentAttributeAudio *)attribute;
+            if (audio.title.length > 0)
+            {
+                text = audio.title;
+                if (audio.performer.length > 0)
+                    text = [[NSString alloc] initWithFormat:@"%@ — %@", audio.performer, text];
+            }
+        }
+    }
+    
     self = [super initWithPeer:peer incoming:incoming text:caption == nil ? text : caption imageSignalGenerator:imageMedia == nil ? nil : ^SSignal *
             {
                 return [TGSharedPhotoSignals squarePhotoThumbnail:imageMedia ofSize:CGSizeMake(33.0f, 33.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]] downloadLargeImage:false placeholder:nil];

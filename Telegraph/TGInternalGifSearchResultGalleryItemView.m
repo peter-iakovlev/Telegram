@@ -1,29 +1,29 @@
 #import "TGInternalGifSearchResultGalleryItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGInternalGifSearchResultGalleryItem.h"
 
-#import "TGImageView.h"
-#import "TGModernAnimatedImagePlayer.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/TGModernAnimatedImagePlayer.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "ATQueue.h"
 
 #import "TGMediaStoreContext.h"
 
-#import "TGModernGalleryTransitionView.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 #import "TGVTAcceleratedVideoView.h"
 
 #import "TGPreparedLocalDocumentMessage.h"
 
-#import "TGMediaSelectionContext.h"
+#import <LegacyComponents/TGMediaSelectionContext.h>
 
 @interface TGInternalGifSearchResultGalleryItemView () <ASWatcher> {
     UIView *_containerView;

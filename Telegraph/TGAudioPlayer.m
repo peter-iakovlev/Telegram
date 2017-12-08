@@ -8,12 +8,12 @@
 
 #import "TGAudioPlayer.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/ASQueue.h>
 
 #import "TGOpusAudioPlayerAU.h"
 #import "TGNativeAudioPlayer.h"
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 #import "TGAppDelegate.h"
 
 #import <SSignalKit/SSignalKit.h>

@@ -1,9 +1,8 @@
 #import "TGSharedMediaSelectionPanelView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGModernButton.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGSharedMediaSelectionPanelView ()
 {
@@ -118,7 +117,13 @@
 
 - (void)layoutLabel
 {
-    _label.frame = CGRectMake(CGFloor((self.frame.size.width - _label.frame.size.width) / 2.0f), CGFloor((self.frame.size.height - _label.frame.size.height) / 2.0f) + 1.0f, _label.frame.size.width, _label.frame.size.height);
+    _label.frame = CGRectMake(CGFloor((self.frame.size.width - _label.frame.size.width) / 2.0f), CGFloor((45.0f - _label.frame.size.height) / 2.0f) + 1.0f, _label.frame.size.width, _label.frame.size.height);
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews
@@ -128,8 +133,8 @@
     CGRect frame = self.frame;
     
     _separatorView.frame = CGRectMake(0.0f, 0.0f, frame.size.width, TGScreenPixel);
-    _forwardButton.frame = CGRectMake(frame.size.width - 56.0f, TGRetinaPixel, 56.0f, 44.0f);
-    _deleteButton.frame = CGRectMake(0.0f, TGRetinaPixel, 52.0f, 44.0f);
+    _forwardButton.frame = CGRectMake(frame.size.width - 56.0f - _safeAreaInset.right, TGScreenPixel, 56.0f, 44.0f);
+    _deleteButton.frame = CGRectMake(_safeAreaInset.left, TGScreenPixel, 52.0f, 44.0f);
     _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, 44.0f);
     
     [self layoutLabel];

@@ -1,4 +1,4 @@
-#import "TGModernGalleryImageItem.h"
+#import <LegacyComponents/TGModernGalleryImageItem.h>
 
 @interface TGUserAvatarGalleryItem : TGModernGalleryImageItem
 
@@ -7,7 +7,7 @@
 
 @property (nonatomic, readonly) bool isCurrent;
 
-- (instancetype)initWithLegacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageSize:(CGSize)imageSize isCurrent:(bool)isCurrent;
+- (instancetype)initWithLegacyThumbnailUrl:(NSString *)legacyThumbnailUrl legacyUrl:(NSString *)legacyUrl imageId:(int64_t)imageId imageSize:(CGSize)imageSize isCurrent:(bool)isCurrent;
 
 - (NSString *)filePath;
 

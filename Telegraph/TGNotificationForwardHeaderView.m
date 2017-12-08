@@ -1,10 +1,6 @@
 #import "TGNotificationForwardHeaderView.h"
-#import "TGForwardedMessageMediaAttachment.h"
 
-#import "TGFont.h"
-
-#import "TGUser.h"
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 const CGFloat TGNotificationForwardHeaderHeight = 29.0f;
 

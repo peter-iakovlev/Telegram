@@ -1,7 +1,7 @@
 #import "TGSharedLocationSignals.h"
 
 #import "TGSharedMediaSignals.h"
-#import "TGImageBlur.h"
+#import <LegacyComponents/TGImageBlur.h>
 
 @implementation TGSharedLocationSignals
 

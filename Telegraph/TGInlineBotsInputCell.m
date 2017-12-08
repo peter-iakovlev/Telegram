@@ -1,7 +1,8 @@
 #import "TGInlineBotsInputCell.h"
 
-#import "TGLetteredAvatarView.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGInlineBotsInputCell () {
     TGLetteredAvatarView *_avatarView;

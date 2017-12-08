@@ -30,3 +30,11 @@
 "Share.TouchId" = "Pincode eingeben";
 
 "Share.AddCaption" = "Schreibe eine Nachricht...";
+
+"Share.PasscodeFailedAttempts_1" = "1 fehlgeschlagener Versuch";
+"Share.PasscodeFailedAttempts_2" = "2 fehlgeschlagene Versuche";
+"Share.PasscodeFailedAttempts_3_10" = "%@ fehlgeschlagene Versuche";
+"Share.PasscodeFailedAttempts_any" = "%@ fehlgeschlagener Versuch";
+"Share.PasscodeTryAgainIn1Minute" = "In 1 Minute erneut versuchen";
+
+"Share.SavedMessages" = "Gespeichertes";

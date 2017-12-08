@@ -1,19 +1,15 @@
 #import "TGBotConversationHeaderView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTextMessageBackgroundViewModel.h"
 #import "TGModernTextViewModel.h"
 #import "TGReusableLabel.h"
 #import "TGModernFlatteningViewModel.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGViewController.h"
-
-#import "TGMessage.h"
-
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 @interface TGBotConversationHeaderView () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {

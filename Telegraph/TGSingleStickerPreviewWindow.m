@@ -1,6 +1,8 @@
 #import "TGSingleStickerPreviewWindow.h"
 
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGSingleStickerPreviewController : TGOverlayController
 {
@@ -69,7 +71,7 @@
 {
     TGSingleStickerPreviewView *stickerPreviewView = [[TGSingleStickerPreviewView alloc] init];
     
-    self = [super initWithParentController:parentController contentController:[[TGSingleStickerPreviewController alloc] initWithStickerPreviewView:stickerPreviewView] keepKeyboard:true];
+    self = [super initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:parentController contentController:[[TGSingleStickerPreviewController alloc] initWithStickerPreviewView:stickerPreviewView] keepKeyboard:true];
     if (self != nil)
     {
         _view = stickerPreviewView;

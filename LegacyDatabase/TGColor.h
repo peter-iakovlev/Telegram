@@ -1,19 +1,19 @@
 #import <Foundation/Foundation.h>
-
 #import <UIKit/UIKit.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-    
-UIColor *TGAccentColor();
-UIColor *TGDestructiveAccentColor();
-UIColor *TGSelectionColor();
-UIColor *TGSeparatorColor();
+@interface UIColor (TGColor)
 
-UIColor *TGColorWithHex(int hex);
-UIColor *TGColorWithHexAndAlpha(int hex, CGFloat alpha);
++ (UIColor *)hexColor:(NSInteger)hex;
++ (UIColor *)hexColor:(NSInteger)hex withAlpha:(CGFloat)alpha;
 
-#ifdef __cplusplus
-}
-#endif
+@end
+
+@interface TGColor : NSObject
+
++ (UIColor *)colorForUserId:(int32_t)userId myUserId:(int32_t)myUserId;
++ (UIColor *)colorForGroupId:(int64_t)groupId;
+
++ (UIColor *)accentColor;
++ (UIColor *)subtitleColor;
+
+@end

@@ -1,15 +1,6 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUserInfoAddPhoneCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserInfoAddPhoneCollectionItemView ()
 {
@@ -34,9 +25,7 @@
         CGFloat separatorHeight = TGScreenPixel;
         self.selectionInsets = UIEdgeInsetsMake(separatorHeight, 0.0f, 0.0f, 0.0f);
         
-        _addIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuAddIcon.png"]];
-        CGSize addIconSize = _addIconView.frame.size;
-        _addIconView.frame = CGRectMake(12.0f, CGFloor((44.0f - addIconSize.height) / 2.0f) + 1.0f, addIconSize.width, addIconSize.height);
+        _addIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuAddIcon.png")];
         [self addSubview:_addIconView];
         
         _labelView = [[UILabel alloc] init];
@@ -45,8 +34,6 @@
         _labelView.font = TGSystemFontOfSize(14.0f);
         _labelView.text = TGLocalized(@"UserInfo.AddPhone");
         [_labelView sizeToFit];
-        CGSize labelSize = _labelView.frame.size;
-        _labelView.frame = CGRectMake(46.0f, 13.0f, labelSize.width, labelSize.height);
         [self addSubview:_labelView];
     }
     return self;
@@ -59,7 +46,14 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
+    CGFloat separatorInset = 15.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
+    
+    CGSize addIconSize = _addIconView.frame.size;
+    _addIconView.frame = CGRectMake(12.0f + self.safeAreaInset.left, CGFloor((44.0f - addIconSize.height) / 2.0f) + 1.0f, addIconSize.width, addIconSize.height);
+    
+    CGSize labelSize = _labelView.frame.size;
+    _labelView.frame = CGRectMake(46.0f + self.safeAreaInset.left, 13.0f, labelSize.width, labelSize.height);
 }
 
 @end

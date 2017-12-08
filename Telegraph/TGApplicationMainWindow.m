@@ -1,6 +1,6 @@
 #import "TGApplicationMainWindow.h"
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "UIViewController+Proxy.h"
 

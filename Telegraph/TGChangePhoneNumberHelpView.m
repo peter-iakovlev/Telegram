@@ -1,9 +1,8 @@
 #import "TGChangePhoneNumberHelpView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGChangePhoneNumberHelpView ()
 {
@@ -23,7 +22,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        _iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChangePhoneHelpIcon.png"]];
+        _iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ChangePhoneHelpIcon.png")];
         _iconView.userInteractionEnabled = true;
         UITapGestureRecognizer *debugTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(debugTapGesture:)];
         debugTapRecognizer.numberOfTapsRequired = 7;
@@ -88,7 +87,7 @@
         CGSize buttonSize = _changeButton.frame.size;
         _changeButton.frame = CGRectMake(0.0f, 0.0f, buttonSize.width, buttonSize.height + 20.0f);
         
-        UIImageView *arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernTourButtonRightArrow.png"]];
+        UIImageView *arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernTourButtonRightArrow.png")];
         CGSize arrowSize = arrowView.frame.size;
         arrowView.frame = CGRectMake(_changeButton.frame.size.width - arrowSize.width, CGFloor((_changeButton.frame.size.height - arrowView.frame.size.height) / 2.0f) + 1.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
         

@@ -1,29 +1,15 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGAudioSliderView.h"
 
-#import <MTProtoKit/MTTime.h>
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAudioSliderButton.h"
 #import "TGAudioSliderArea.h"
 
-#import "TGImageUtils.h"
-
 #import "TGAudioWaveformView.h"
-#import "TGAudioWaveform.h"
 
 #import "TGSharedMediaUtils.h"
 
 #import "TGMusicPlayer.h"
-
-#import <pop/POP.h>
 
 @interface TGAudioSliderView () <TGAudioSliderAreaDelegate>
 {

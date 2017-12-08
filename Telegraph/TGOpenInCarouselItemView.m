@@ -1,7 +1,8 @@
 #import "TGOpenInCarouselItemView.h"
-#import "TGOpenInCarouselCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGOpenInCarouselCell.h"
 
 #import "TGOpenInAppItem.h"
 
@@ -30,6 +31,8 @@
         layout.minimumLineSpacing = 2.0f;
         
         _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:layout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.alwaysBounceHorizontal = true;
         _collectionView.backgroundColor = [UIColor whiteColor];
         _collectionView.dataSource = self;

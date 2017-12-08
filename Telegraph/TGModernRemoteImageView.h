@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 #import "TGModernView.h"
 
 @interface TGModernRemoteImageView : TGRemoteImageView <TGModernView>

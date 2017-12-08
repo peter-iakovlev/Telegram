@@ -1,4 +1,5 @@
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSingleStickerPreviewView.h"
 
 @interface TGSingleStickerPreviewWindow : TGOverlayControllerWindow

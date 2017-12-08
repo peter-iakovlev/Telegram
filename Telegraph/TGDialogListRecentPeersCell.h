@@ -9,6 +9,7 @@
 @property (nonatomic, copy) void (^peerLongTap)(id);
 
 @property (nonatomic) bool expanded;
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
 
 + (CGFloat)heightForWidth:(CGFloat)width count:(NSInteger)count expanded:(bool)expanded;
 

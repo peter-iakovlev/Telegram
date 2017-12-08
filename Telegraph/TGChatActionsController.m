@@ -1,11 +1,14 @@
 #import "TGChatActionsController.h"
-#import "TGAppDelegate.h"
-#import "TGOverlayControllerWindow.h"
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGAppDelegate.h"
+
 #import "TGForceTouchGestureRecognizer.h"
 
 #import "TGChatActionsView.h"
+
+#import "TGLegacyComponentsContext.h"
 
 NSString *const TGChatActionsSourceRectKey = @"sourceRect";
 NSString *const TGChatActionsAvatarSnapshotKey = @"avatarSnapshot";
@@ -48,8 +51,7 @@ NSString *const TGChatActionsAvatarSnapshotKey = @"avatarSnapshot";
         _conversation = conversation;
         self.parametersBlock = parametersBlock;
         
-        TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithParentController:parentController contentController:self keepKeyboard:true];
-        window.windowLevel = 100000000.0f;
+        TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:parentController contentController:self keepKeyboard:true];
         window.hidden = false;
     }
     return self;

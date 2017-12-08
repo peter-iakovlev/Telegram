@@ -8,8 +8,9 @@
 
 #import "TGUserCollectionItem.h"
 
-#import "ASHandle.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ASHandle.h>
 
 #import "TGUserCollectionItemView.h"
 

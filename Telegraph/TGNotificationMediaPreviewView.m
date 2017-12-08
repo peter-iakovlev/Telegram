@@ -1,14 +1,11 @@
 #import "TGNotificationMediaPreviewView.h"
-#import "TGMessage.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGImageMessageViewModel.h"
 #import "TGVideoMessageViewModel.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 const int32_t TGNotificationMediaCornerRadius = 5;
 
@@ -217,10 +214,11 @@ const int32_t TGNotificationMediaCornerRadius = 5;
             {
                 TGLocationMediaAttachment *locationAttachment = (TGLocationMediaAttachment *)attachment;
                 
-                [self setIcon:[UIImage imageNamed:@"MediaLocation"] text:TGLocalized(@"Message.Location")];
+                NSString *text = locationAttachment.period > 0 ? TGLocalized(@"Message.LiveLocation") : TGLocalized(@"Message.Location");
+                [self setIcon:[UIImage imageNamed:@"MediaLocation"] text:text];
                 
                 imageSize = CGSizeMake(240, 128);
-                _imageUri = [NSString stringWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&cornerRadius=%" PRId32 "", locationAttachment.latitude, locationAttachment.longitude, (int)imageSize.width, (int)imageSize.height, TGNotificationMediaCornerRadius];
+                _imageUri = [NSString stringWithFormat:@"map-thumbnail://?latitude=%f&longitude=%f&width=%d&height=%d&flat=1&offset=-10&cornerRadius=%" PRId32 "", locationAttachment.latitude, locationAttachment.longitude, (int)imageSize.width, (int)imageSize.height, TGNotificationMediaCornerRadius];
             }
                 break;
                 

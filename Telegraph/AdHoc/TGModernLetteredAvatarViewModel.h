@@ -10,6 +10,8 @@
 
 @interface TGModernLetteredAvatarViewModel : TGModernViewModel
 
+@property (nonatomic, assign) CGFloat fontSize;
+
 - (instancetype)initWithSize:(CGSize)size placeholder:(UIImage *)placeholder;
 
 - (void)setAvatarUri:(NSString *)avatarUri;

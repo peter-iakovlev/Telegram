@@ -1,12 +1,11 @@
 #import "TGPaymentCheckoutHeaderItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSignalImageView.h"
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
-#import "TGImageMediaAttachment.h"
 #import "TGSharedMediaSignals.h"
 
 @interface TGPaymentCheckoutHeaderItemView () {
@@ -88,16 +87,16 @@
     CGFloat leftInset = _photo == nil ? 15.0f : 160.0f;
     CGSize size = self.bounds.size;
     
-    _imageView.frame = CGRectMake(15.0f, 15.0f, 134.0f, 134.0f);
+    _imageView.frame = CGRectMake(15.0f + self.safeAreaInset.left, 15.0f, 134.0f, 134.0f);
     
-    _titleLabel.frame = CGRectMake(leftInset, 16.0f, size.width - leftInset - 5.0f, 18.0f);
+    _titleLabel.frame = CGRectMake(leftInset + self.safeAreaInset.left, 16.0f, size.width - leftInset - 5.0f - self.safeAreaInset.left - self.safeAreaInset.right, 18.0f);
     
-    CGSize textSize = [_textLabel.text sizeWithFont:_textLabel.font constrainedToSize:CGSizeMake(size.width - leftInset, size.height - 35.0f - 20.0f) lineBreakMode:NSLineBreakByWordWrapping];
+    CGSize textSize = [_textLabel.text sizeWithFont:_textLabel.font constrainedToSize:CGSizeMake(size.width - leftInset - self.safeAreaInset.left - self.safeAreaInset.right, size.height - 35.0f - 20.0f) lineBreakMode:NSLineBreakByWordWrapping];
     textSize.width = CGCeil(textSize.width);
     textSize.height = CGCeil(textSize.height);
-    _textLabel.frame = CGRectMake(leftInset, 35.0f, size.width - leftInset - 5.0f, textSize.height);
+    _textLabel.frame = CGRectMake(leftInset + self.safeAreaInset.left, 35.0f, size.width - leftInset - 5.0f - self.safeAreaInset.left - self.safeAreaInset.right, textSize.height);
     
-    _labelLabel.frame = CGRectMake(leftInset, CGRectGetMaxY(_textLabel.frame) + 1.0, size.width - leftInset - 5.0f, 18.0f);
+    _labelLabel.frame = CGRectMake(leftInset + self.safeAreaInset.left, CGRectGetMaxY(_textLabel.frame) + 1.0, size.width - leftInset - 5.0f - self.safeAreaInset.left - self.safeAreaInset.right, 18.0f);
     
     _separatorView.frame = CGRectMake(0.0f, size.height - TGScreenPixel, size.width, TGScreenPixel);
 }

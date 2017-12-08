@@ -1,9 +1,10 @@
 #import "TGWallpaperItemCell.h"
 
-#import "TGWallpaperInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGRemoteImageView.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
+
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGWallpaperItemCell ()
 {
@@ -27,7 +28,7 @@
         _imageView.contentMode = UIViewContentModeScaleAspectFill;
         [self addSubview:_imageView];
         
-        UIImage *indicatorImage = [UIImage imageNamed:@"ModernWallpaperSelectedIndicator.png"];
+        UIImage *indicatorImage = TGImageNamed(@"ModernWallpaperSelectedIndicator.png");
         _selectedView = [[UIImageView alloc] initWithFrame:CGRectMake(frame.size.width - 5.0f - indicatorImage.size.width, frame.size.height - 4.0f - indicatorImage.size.height, indicatorImage.size.width, indicatorImage.size.height)];
         _selectedView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin;
         _selectedView.image = indicatorImage;

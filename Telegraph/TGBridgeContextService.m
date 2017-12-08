@@ -1,7 +1,7 @@
 #import "TGBridgeContextService.h"
 #import "TGChatListSignals.h"
 
-#import "PGCamera.h"
+#import <LegacyComponents/PGCamera.h>
 
 #import "TGBridgeChat+TGConversation.h"
 #import "TGBridgeUser+TGUser.h"

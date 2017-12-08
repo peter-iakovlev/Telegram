@@ -6,18 +6,19 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "ASActor.h"
+#import <LegacyComponents/ASActor.h>
 
 #import "TLauth_SentCode.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 typedef enum {
     TGSendCodeErrorUnknown = -1,
     TGSendCodeErrorInvalidPhone = -2,
     TGSendCodeErrorFloodWait = -3,
     TGSendCodeErrorNetwork = -4,
-    TGSendCodeErrorPhoneFlood = -5
+    TGSendCodeErrorPhoneFlood = -5,
+    TGSendCodeErrorPhoneBanned = -6
 } TGSendCodeError;
 
 @interface TGSendCodeRequestBuilder : ASActor <ASWatcher>

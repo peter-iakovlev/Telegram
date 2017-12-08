@@ -1,12 +1,13 @@
 #import "TGChannelAboutSetupController.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGChannelManagementSignals.h"
 
 #import "TGCollectionMultilineInputItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
 @interface TGChannelAboutSetupController () {
@@ -107,7 +108,7 @@
             [_updateAboutDisposable setDisposable:[[[[TGChannelManagementSignals updateChannelAbout:_conversation.conversationId accessHash:_conversation.accessHash about:_inputItem.text] deliverOn:[SQueue mainQueue]] onDispose:^{
                 [progressWindow dismiss:true];
             }] startWithNext:nil error:^(__unused id error) {
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.About.Error") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
             } completed:^{
                 __strong TGChannelAboutSetupController *strongSelf = weakSelf;
                 if (strongSelf != nil) {

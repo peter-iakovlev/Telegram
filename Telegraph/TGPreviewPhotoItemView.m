@@ -1,9 +1,9 @@
 #import "TGPreviewPhotoItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGPhotoEditorUtils.h"
-#import "TGImageMediaAttachment.h"
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGPhotoEditorUtils.h>
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"

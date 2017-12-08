@@ -1,18 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import <UIKit/UIKit.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
-
-#import "TGUser.h"
+#import <LegacyComponents/ActionStage.h>
 
 typedef enum {
     TGContactsModeRegistered = 1,
@@ -35,7 +25,8 @@ typedef enum {
     TGContactsModeSearchGlobal = (2 << 17),
     TGContactsModeIgnoreBots = (2 << 18),
     TGContactsModeCalls = (2 << 19),
-    TGContactsModeSortByImporters = (2 << 20)
+    TGContactsModeSortByImporters = (2 << 20),
+    TGContactsModeGlobalSearchIncludeAll = (2 << 21)
 } TGContactsMode;
 
 @interface TGContactsController : TGViewController <TGViewControllerNavigationBarAppearance, ASWatcher>

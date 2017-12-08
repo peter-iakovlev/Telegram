@@ -7,6 +7,7 @@
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic, strong) TLGeoPoint *geo_point;
+@property (nonatomic) int32_t period;
 @property (nonatomic, strong) TLReplyMarkup *reply_markup;
 
 @end

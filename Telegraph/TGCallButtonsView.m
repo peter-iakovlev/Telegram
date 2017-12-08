@@ -1,6 +1,7 @@
 #import "TGCallButtonsView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGCallSession.h"
 
 #import "TGCallButton.h"

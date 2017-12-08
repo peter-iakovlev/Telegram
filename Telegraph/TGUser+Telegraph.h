@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TL/TLMetaScheme.h"
 
@@ -23,8 +23,12 @@ int extractUserLinkFromUpdate(TLUpdate$updateContactLink *linkUpdate);
 }
 #endif
 
+@class TGNotificationPrivacyAccountSetting;
+
 @interface TGUser (Telegraph)
 
 - (id)initWithTelegraphUserDesc:(TLUser *)user;
+
+- (TGUser *)applyPrivacyRules:(TGNotificationPrivacyAccountSetting *)privacyRules currentTime:(NSTimeInterval)currentTime;
 
 @end

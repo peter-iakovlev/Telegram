@@ -16,6 +16,12 @@
 
 @end
 
+@protocol TGModernCollectionPointInsideSolver <NSObject>
+
+@property (nonatomic, copy, readonly) bool (^pointInside)(CGPoint point);
+
+@end
+
 @interface TGModernCollectionCell : UICollectionViewCell
 {
     @public

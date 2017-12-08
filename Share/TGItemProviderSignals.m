@@ -6,7 +6,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <PassKit/PassKit.h>
 
-#import "TGPhoneUtils.h"
+#import "TGLegacyDatabasePhoneUtils.h"
 #import "TGMimeTypeMap.h"
 
 #import "TGContactModel.h"
@@ -214,37 +214,110 @@
     }];
 }
 
++ (SSignal *)detectRoundVideo:(AVAsset *)asset
+{
+    SSignal *imageSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsriber)
+    {
+        AVAssetImageGenerator *imageGenerator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+        imageGenerator.appliesPreferredTrackTransform = true;
+        [imageGenerator generateCGImagesAsynchronouslyForTimes:@[ [NSValue valueWithCMTime:kCMTimeZero] ] completionHandler:^(CMTime requestedTime, CGImageRef  _Nullable image, CMTime actualTime, AVAssetImageGeneratorResult result, NSError * _Nullable error)
+        {
+            if (error != nil)
+            {
+                [subsriber putError:nil];
+            }
+            else
+            {
+                [subsriber putNext:[UIImage imageWithCGImage:image]];
+                [subsriber putCompletion];
+            }
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [imageGenerator cancelAllCGImageGeneration];
+        }];
+    }];
+    
+    return [imageSignal map:^NSNumber *(UIImage *image)
+    {
+        CFDataRef pixelData = CGDataProviderCopyData(CGImageGetDataProvider(image.CGImage));
+        const UInt8 *data = CFDataGetBytePtr(pixelData);
+        
+        bool (^isWhitePixel)(NSInteger, NSInteger) = ^bool(NSInteger x, NSInteger y)
+        {
+            int pixelInfo = ((image.size.width  * y) + x ) * 4;
+            
+            UInt8 red = data[pixelInfo];
+            UInt8 green = data[(pixelInfo + 1)];
+            UInt8 blue = data[pixelInfo + 2];
+            
+            return (red > 250 && green > 250 && blue > 250);
+        };
+        
+        CFRelease(pixelData);
+
+        return @(isWhitePixel(0, 0) && isWhitePixel(image.size.width - 1, 0) && isWhitePixel(0, image.size.height - 1) && isWhitePixel(image.size.width - 1, image.size.height - 1));
+    }];
+}
+
 + (SSignal *)signalForVideoItemProvider:(NSItemProvider *)itemProvider
 {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    SSignal *assetSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
         [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeMovie options:nil completionHandler:^(NSURL *url, NSError *error)
-         {
-             if (error != nil)
-                 [subscriber putError:nil];
-             else
-             {
-                 NSString *extension = url.pathExtension;
-                 NSString *mimeType = [TGMimeTypeMap mimeTypeForExtension:[extension lowercaseString]];
-                 if (mimeType == nil)
-                     mimeType = @"application/octet-stream";
-                 
-                 AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:url options:nil];
-                 NSString *software = nil;
-                 AVMetadataItem *softwareItem = [[AVMetadataItem metadataItemsFromArray:asset.metadata withKey:AVMetadataCommonKeySoftware keySpace:AVMetadataKeySpaceCommon] firstObject];
-                 if ([softwareItem isKindOfClass:[AVMetadataItem class]] && ([softwareItem.value isKindOfClass:[NSString class]]))
-                     software = (NSString *)[softwareItem value];
-                 
-                 bool isAnimation = false;
-                 if ([software hasPrefix:@"Boomerang"])
-                     isAnimation = true;
-                 
-                 [subscriber putNext:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation)}];
-                 [subscriber putCompletion];
-             }
-         }];
+        {
+            if (error != nil)
+            {
+                [subscriber putError:nil];
+            }
+            else
+            {
+                AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:url options:nil];
+                [subscriber putNext:asset];
+                [subscriber putCompletion];
+            }
+        }];
         
         return nil;
+    }];
+    
+    return [assetSignal mapToSignal:^SSignal *(AVURLAsset *asset)
+    {
+        AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+        if (videoTrack == nil)
+        {
+            return [SSignal fail:nil];
+        }
+        else
+        {
+            CGSize dimensions = CGRectApplyAffineTransform((CGRect){CGPointZero, videoTrack.naturalSize}, videoTrack.preferredTransform).size;
+            NSString *extension = asset.URL.pathExtension;
+            NSString *mimeType = [TGMimeTypeMap mimeTypeForExtension:[extension lowercaseString]];
+            if (mimeType == nil)
+                mimeType = @"application/octet-stream";
+            
+            NSString *software = nil;
+            AVMetadataItem *softwareItem = [[AVMetadataItem metadataItemsFromArray:asset.metadata withKey:AVMetadataCommonKeySoftware keySpace:AVMetadataKeySpaceCommon] firstObject];
+            if ([softwareItem isKindOfClass:[AVMetadataItem class]] && ([softwareItem.value isKindOfClass:[NSString class]]))
+                software = (NSString *)[softwareItem value];
+            
+            bool isAnimation = false;
+            if ([software hasPrefix:@"Boomerang"])
+                isAnimation = true;
+            
+            if (isAnimation || fabs(dimensions.width - dimensions.height) > FLT_EPSILON)
+            {
+                return [SSignal single:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation)}];
+            }
+            else
+            {
+                return [[self detectRoundVideo:asset] mapToSignal:^SSignal *(NSNumber *isRoundVideo)
+                {
+                    return [SSignal single:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation), @"isRoundMessage": isRoundVideo}];
+                }];
+            }
+        }
     }];
 }
 

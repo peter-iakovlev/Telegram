@@ -6,7 +6,7 @@
 #import "TGDatabase.h"
 #import "TL/TLMetaScheme.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegramNetworking.h"
 
@@ -253,10 +253,10 @@
             
             [data appendData:actionData];
             
-            messageData = [TGModernSendSecretMessageActor encryptMessage:data key:key keyId:keyId];
+            messageData = [TGModernSendSecretMessageActor encryptMessage:data key:key keyId:keyId currentClientIsCreator:_isCreator v2:concreteAction.layer >= 73];
         }
         else
-            messageData = [TGModernSendSecretMessageActor encryptMessage:actionData key:key keyId:keyId];
+            messageData = [TGModernSendSecretMessageActor encryptMessage:actionData key:key keyId:keyId currentClientIsCreator:_isCreator v2:false];
         
         TGSecretOutgoingRequest *request = [[TGSecretOutgoingRequest alloc] init];
         request.actionId = actionId;
@@ -367,10 +367,10 @@
             
             [data appendData:concreteAction.data];
             
-            messageData = [TGModernSendSecretMessageActor encryptMessage:data key:key keyId:keyId];
+            messageData = [TGModernSendSecretMessageActor encryptMessage:data key:key keyId:keyId currentClientIsCreator:_isCreator v2:concreteAction.layer >= 73];
         }
         else
-            messageData = [TGModernSendSecretMessageActor encryptMessage:concreteAction.data key:key keyId:keyId];
+            messageData = [TGModernSendSecretMessageActor encryptMessage:concreteAction.data key:key keyId:keyId currentClientIsCreator:_isCreator v2:false];
         
         TGSecretOutgoingRequest *request = [[TGSecretOutgoingRequest alloc] init];
         request.actionId = actionId;

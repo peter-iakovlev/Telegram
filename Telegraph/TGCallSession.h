@@ -75,6 +75,7 @@ typedef enum {
 @property (nonatomic, readonly) TGCallStateData *stateData;
 @property (nonatomic, readonly) TGCallTransmissionState transmissionState;
 @property (nonatomic, readonly) CFAbsoluteTime startTime;
+@property (nonatomic, readonly) NSInteger signalBars;
 
 @property (nonatomic, readonly) TGUser *peer;
 @property (nonatomic, readonly) NSData *keySha256;
@@ -85,6 +86,6 @@ typedef enum {
 @property (nonatomic, readonly) bool mute;
 @property (nonatomic, readonly) bool speaker;
 
-- (instancetype)initWithOutgoing:(bool)outgoing callStateData:(TGCallStateData *)stateData transmissionState:(TGCallTransmissionState)transmissionState peer:(TGUser *)peer keySha256:(NSData *)keySha256 startTime:(CFAbsoluteTime)startTime mute:(bool)mute speaker:(bool)speaker audioRoutes:(NSArray *)audioRoutes activeAudioRoute:(TGAudioRoute *)activeAudioRoute;
+- (instancetype)initWithOutgoing:(bool)outgoing callStateData:(TGCallStateData *)stateData transmissionState:(TGCallTransmissionState)transmissionState peer:(TGUser *)peer keySha256:(NSData *)keySha256 startTime:(CFAbsoluteTime)startTime signalBars:(NSInteger)signalBars mute:(bool)mute speaker:(bool)speaker audioRoutes:(NSArray *)audioRoutes activeAudioRoute:(TGAudioRoute *)activeAudioRoute;
 
 @end

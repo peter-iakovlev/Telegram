@@ -1,24 +1,16 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGAudioDownloadActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TL/TLMetaScheme.h"
-
-#import "TGAudioMediaAttachment.h"
-
-#import "TGStringUtils.h"
 
 #import <CommonCrypto/CommonDigest.h>
 
 #import "TGTelegramNetworking.h"
+
+#import "TGAudioMediaAttachment+Telegraph.h"
 
 @implementation TGAudioDownloadActor
 

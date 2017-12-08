@@ -1,6 +1,6 @@
 #import "TGPreparedGameMessage.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGPreparedGameMessage
 

@@ -8,7 +8,8 @@
 #import "TGBridgeContext.h"
 #import "TGBridgeMessage.h"
 
-#import "TGPeerIdAdapter.h"
+#import "../Extension/TGStringUtils.h"
+#import "TGBridgePeerIdAdapter.h"
 
 const CGFloat TGNeoStickerMessageHeight38mm = 72.0f;
 const CGFloat TGNeoStickerMessageHeight42mm = 84.0f;

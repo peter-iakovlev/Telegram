@@ -1,9 +1,8 @@
 #import "TGGenericPeerMediaListImageItem.h"
 
-#import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGGenericPeerMediaListImageItem ()
 {

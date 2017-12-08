@@ -1,25 +1,33 @@
 #import "TGGroupAvatarGalleryModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGGroupAvatarGalleryItem.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 
-#import "TGImageMediaAttachment.h"
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
+#import "TGGenericPeerMediaGalleryDefaultFooterView.h"
+
+#import "TGGenericPeerGalleryGroupItem.h"
 
 #import "TGActionSheet.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
-#import "TGAccessChecker.h"
-#import "TGMediaAssetsLibrary.h"
+#import <LegacyComponents/TGMediaAssetsLibrary.h>
 
 #import "TGMessageSearchSignals.h"
+
+#import "TGImageFileReference.h"
 
 @interface TGGroupAvatarGalleryModel () {
     bool _displayCounter;
     id<SDisposable> _searchDisposable;
+    
+    TGGenericPeerMediaGalleryDefaultFooterView *_footerView;
+    NSMutableDictionary *_groupedItems;
 }
 
 @end
@@ -30,7 +38,9 @@
     self = [super init];
     if (self != nil)
     {
-        TGGroupAvatarGalleryItem *item = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:messageId legacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageSize:imageSize];
+        _groupedItems = [[NSMutableDictionary alloc] init];
+        
+        TGGroupAvatarGalleryItem *item = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:messageId legacyThumbnailUrl:legacyThumbnailUrl legacyUrl:legacyUrl imageId:0 imageSize:imageSize];
         [self _replaceItems:@[item] focusingOnItem:item];
         
         if (peerId != 0) {
@@ -42,6 +52,7 @@
                     NSMutableArray *items = [[NSMutableArray alloc] init];
                     bool addedItem = false;
                     
+                    NSMutableArray *groupItems = [[NSMutableArray alloc] init];
                     for (TGMessage *message in messages) {
                         TGActionMediaAttachment *actionInfo = message.actionInfo;
                         if (actionInfo != nil && actionInfo.actionType == TGMessageActionChatEditPhoto) {
@@ -50,13 +61,20 @@
                                 NSString *imageLegacyThumbnailUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeZero resultingSize:NULL];
                                 if (TGStringCompare(imageLegacyThumbnailUrl, legacyThumbnailUrl)) {
                                     [items addObject:item];
-                                    addedItem = legacyThumbnailUrl;
+                                    addedItem = true;
+                                    
+                                    TGGroupAvatarGalleryItem *photoItem = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:message.mid legacyThumbnailUrl:imageLegacyThumbnailUrl legacyUrl:legacyUrl imageId:imageMedia.imageId imageSize:imageSize];
+                                    [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithImageAttachment:imageMedia]];
+                                    strongSelf->_groupedItems[@(imageMedia.imageId)] = photoItem;
                                 } else {
                                     CGSize imageSize = CGSizeZero;
                                     NSString *legacyUrl = [imageMedia.imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(599.0f, 599.0f) actualSize:&imageSize];
                                     
-                                    TGGroupAvatarGalleryItem *photoItem = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:message.mid legacyThumbnailUrl:imageLegacyThumbnailUrl legacyUrl:legacyUrl imageSize:imageSize];
+                                    TGGroupAvatarGalleryItem *photoItem = [[TGGroupAvatarGalleryItem alloc] initWithMessageId:message.mid legacyThumbnailUrl:imageLegacyThumbnailUrl legacyUrl:legacyUrl imageId:imageMedia.imageId imageSize:imageSize];
                                     [items addObject:photoItem];
+                                    
+                                    [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithImageAttachment:imageMedia]];
+                                    strongSelf->_groupedItems[@(imageMedia.imageId)] = photoItem;
                                 }
                             }
                         }
@@ -66,8 +84,10 @@
                         [items insertObject:item atIndex:0];
                     }
                     
-                    [strongSelf _replaceItems:items focusingOnItem:item];
+                    if (groupItems.count > 1)
+                        [strongSelf->_footerView setGroupItems:groupItems];
                     
+                    [strongSelf _replaceItems:items focusingOnItem:item];
                 }
             }];
         }
@@ -143,7 +163,7 @@
     if (data == nil)
         return;
     
-    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+    if (![[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
         return;
     
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -151,7 +171,7 @@
     
     [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
     {
-        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
         [progressWindow dismiss:true];
     } completed:^
     {
@@ -181,6 +201,27 @@
     } else {
         return nil;
     }
+}
+
+- (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
+{
+    _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    __weak TGGroupAvatarGalleryModel *weakSelf = self;
+    _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
+    {
+        __strong TGGroupAvatarGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        id<TGModernGalleryItem> galleryItem = strongSelf->_groupedItems[@(item.keyId)];
+        [strongSelf _focusOnItem:(id<TGModernGalleryItem>)galleryItem synchronously:synchronously];
+    };
+    return _footerView;
+}
+
+- (void)_interItemTransitionProgressChanged:(CGFloat)progress
+{
+    [_footerView setInterItemTransitionProgress:progress];
 }
 
 @end

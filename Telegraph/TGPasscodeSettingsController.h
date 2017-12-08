@@ -2,7 +2,7 @@
 
 @interface TGPasscodeSettingsController : TGCollectionMenuController
 
-+ (bool)supportsTouchId;
++ (bool)supportsBiometrics:(bool *)isFaceId;
 + (bool)enableTouchId;
 
 @end

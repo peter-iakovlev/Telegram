@@ -1,5 +1,5 @@
 #import "TGBridgeLocationVenue+TGLocationVenue.h"
-#import "TGLocationVenue.h"
+#import <LegacyComponents/TGLocationVenue.h>
 
 @implementation TGBridgeLocationVenue (TGLocationVenue)
 

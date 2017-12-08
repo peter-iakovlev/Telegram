@@ -10,6 +10,9 @@
 
 @interface TGModernConversationAvatarButton : UIButton
 
+@property (nonatomic, readonly) NSString *avatarUrl;
+@property (nonatomic, assign) bool preview;
+
 - (void)setOrientation:(UIInterfaceOrientation)orientation;
 
 - (void)setAvatarConversationId:(int64_t)avatarConversationId;

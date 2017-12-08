@@ -20,5 +20,6 @@
 @interface TGItemPreviewHandle : NSObject
 
 @property (nonatomic, assign) NSTimeInterval requiredPressDuration;
+@property (nonatomic, copy) bool (^shouldBegin)(CGPoint point);
 
 @end

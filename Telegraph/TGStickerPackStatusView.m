@@ -1,8 +1,8 @@
 #import "TGStickerPackStatusView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 static UIImage *plusImage() {
     static UIImage *image = nil;

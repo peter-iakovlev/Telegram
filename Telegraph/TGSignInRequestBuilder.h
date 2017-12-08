@@ -6,11 +6,11 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "ASActor.h"
+#import <LegacyComponents/ASActor.h>
 
 #import "TL/TLMetaScheme.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 typedef enum {
     TGSignInResultInvalidToken = -1,

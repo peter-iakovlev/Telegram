@@ -1,13 +1,13 @@
 #import "TGChatMessageListSignal.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
 #import "TGSharedPtrWrapper.h"
-
-#import "TGPeerIdAdapter.h"
 
 @interface TGChatMessageListAdapter : NSObject <ASWatcher>
 {

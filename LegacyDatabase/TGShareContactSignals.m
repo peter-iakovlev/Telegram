@@ -1,6 +1,6 @@
 #import "TGShareContactSignals.h"
 
-#import "ApiLayer70.h"
+#import "ApiLayer73.h"
 #import "TGUploadedMessageContentMedia.h"
 
 @implementation TGShareContactSignals
@@ -9,7 +9,7 @@
 {
     SSignal *(^contentSignal)(TGPhoneNumberModel *) = ^SSignal *(TGPhoneNumberModel *phone)
     {
-        Api70_InputMedia_inputMediaContact *inputContact = [Api70_InputMedia inputMediaContactWithPhoneNumber:phone.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName];
+        Api73_InputMedia_inputMediaContact *inputContact = [Api73_InputMedia inputMediaContactWithPhoneNumber:phone.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName];
         
         return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputContact]];
     };

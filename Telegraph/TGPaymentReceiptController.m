@@ -1,6 +1,7 @@
 #import "TGPaymentReceiptController.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGBotSignals.h"
 
@@ -8,14 +9,12 @@
 #import "TGPaymentCheckoutPriceItem.h"
 #import "TGSeparatorCollectionItem.h"
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGPaymentCheckoutInfoController.h"
-#import "TGNavigationController.h"
-#import "TGShippingMethodController.h"
 #import "TGPaymentMethodController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGPaymentPasswordAlert.h"
 #import "TGTwoStepConfigSignal.h"
@@ -210,7 +209,7 @@
     }
     
     if (_receipt != nil) {
-        int32_t totalPrice = 0;
+        int64_t totalPrice = 0;
         for (TGInvoicePrice *price in _receipt.invoice.prices) {
             NSString *string = [[TGCurrencyFormatter shared] formatAmount:price.amount currency:_receipt.invoice.currency];
             

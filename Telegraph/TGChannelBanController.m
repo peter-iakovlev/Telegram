@@ -1,5 +1,7 @@
 #import "TGChannelBanController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGCheckCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGHeaderCollectionItem.h"
@@ -12,9 +14,6 @@
 
 #import "TGSwitchCollectionItem.h"
 
-#import "TGChannelBannedRights.h"
-
-#import "TGStringUtils.h"
 #import "TGActionSheet.h"
 
 #import "TGTelegramNetworking.h"

@@ -114,6 +114,25 @@
         }
         
         content = [[TGChannelAdminLogEntryToggleAdmin alloc] initWithUserId:action.prev_participant.user_id previousRights:previousRights rights:rights];
+    } else if ([event.action isKindOfClass:[TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet class]]) {
+        TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet *action = (TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet *)event.action;
+        
+        TGStickerPackIdReference *previousStickerPack = nil;
+        if ([action.prev_stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetID class]]) {
+            TLInputStickerSet$inputStickerSetID *prevStickerSet = (TLInputStickerSet$inputStickerSetID *)action.prev_stickerset;
+            previousStickerPack = [[TGStickerPackIdReference alloc] initWithPackId:prevStickerSet.n_id packAccessHash:prevStickerSet.access_hash shortName:nil];
+        }
+        TGStickerPackIdReference *stickerPack = nil;
+        if ([action.n_new_stickerset isKindOfClass:[TLInputStickerSet$inputStickerSetID class]]) {
+            TLInputStickerSet$inputStickerSetID *newStickerSet = (TLInputStickerSet$inputStickerSetID *)action.n_new_stickerset;
+            stickerPack = [[TGStickerPackIdReference alloc] initWithPackId:newStickerSet.n_id packAccessHash:newStickerSet.access_hash shortName:nil];
+        }
+        
+        content = [[TGChannelAdminLogEntryChangeStickerPack alloc] initWithPreviousStickerPack:previousStickerPack stickerPack:stickerPack];
+    } else if ([event.action isKindOfClass:[TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden class]]) {
+        TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden *action = (TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden *)event.action;
+        
+        content = [[TGChannelAdminLogEntryTogglePreHistoryHidden alloc] initWithValue:action.n_new_value];
     }
     
     return [self initWithEntryId:event.n_id timestamp:event.date userId:event.user_id content:content];
@@ -296,3 +315,27 @@
 
 @end
 
+@implementation TGChannelAdminLogEntryChangeStickerPack
+
+- (instancetype)initWithPreviousStickerPack:(id<TGStickerPackReference>)previousStickerPack stickerPack:(id<TGStickerPackReference>)stickerPack {
+    self = [super init];
+    if (self != nil) {
+        _previousStickerPack = previousStickerPack;
+        _stickerPack = stickerPack;
+    }
+    return self;
+}
+
+@end
+
+@implementation TGChannelAdminLogEntryTogglePreHistoryHidden
+
+- (instancetype)initWithValue:(bool)value {
+    self = [super init];
+    if (self != nil) {
+        _value = value;
+    }
+    return self;
+}
+
+@end

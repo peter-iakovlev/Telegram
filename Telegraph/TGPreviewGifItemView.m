@@ -1,25 +1,24 @@
 #import "TGPreviewGifItemView.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
-#import "TGPhotoEditorUtils.h"
+#import <LegacyComponents/ActionStage.h>
+
+#import <LegacyComponents/TGPhotoEditorUtils.h>
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
 #import "TGMediaStoreContext.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGVTAcceleratedVideoView.h"
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "TGDocumentMediaAttachment.h"
 #import "TGPreparedLocalDocumentMessage.h"
 #import "TGBotContextExternalResult.h"
 
 #import "TGTelegraph.h"
-#import "TGGifConverter.h"
+#import <LegacyComponents/TGGifConverter.h>
 
 #import "TGTelegramNetworking.h"
 

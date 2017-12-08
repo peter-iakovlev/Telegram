@@ -1,8 +1,8 @@
 #import "TGGifGalleryAddAccessoryView.h"
 
-#import "TGModernGalleryItem.h"
+#import <LegacyComponents/TGModernGalleryItem.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGGifGalleryAddAccessoryView ()
 {

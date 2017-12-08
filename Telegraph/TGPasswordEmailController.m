@@ -1,11 +1,11 @@
 #import "TGPasswordEmailController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGUsernameCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGModernButton.h"
-
-#import "TGFont.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGAlertView.h"
 

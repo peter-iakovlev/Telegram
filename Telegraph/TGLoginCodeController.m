@@ -1,19 +1,8 @@
 #import "TGLoginCodeController.h"
 
-#import "TGToolbarButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGPhoneUtils.h"
-
-#import "TGHacks.h"
-#import "TGFont.h"
-
-#import "TGProgressWindow.h"
-
-#import "TGStringUtils.h"
-
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGLoginProfileController.h"
 
@@ -22,19 +11,15 @@
 #import "TGSignInRequestBuilder.h"
 #import "TGSendCodeRequestBuilder.h"
 
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGDatabase.h"
 
-#import "TGLoginInactiveUserController.h"
+#import <LegacyComponents/TGTextField.h>
 
-#import "TGActivityIndicatorView.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGTextField.h"
-
-#import "TGTimerTarget.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGAlertView.h"
 
@@ -327,7 +312,7 @@
     _callSentLabel.frame = CGRectMake((int)((screenSize.width - _callSentLabel.frame.size.width) / 2), labelAnchor, _callSentLabel.frame.size.width, _callSentLabel.frame.size.height);
     
     if (_messageSentToTelegram) {
-        _otherDeviceView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"LoginCodeOtherDevice.png"]];
+        _otherDeviceView = [[UIImageView alloc] initWithImage:TGImageNamed(@"LoginCodeOtherDevice.png")];
         [self.view addSubview:_otherDeviceView];
     }
     
@@ -776,38 +761,18 @@
         {
             self.inProgress = false;
             
-            if ([((SGraphObjectNode *)resource).object boolValue])
-                [TGAppDelegateInstance presentMainController];
-            else
-            {
-                if (![[self.navigationController.viewControllers lastObject] isKindOfClass:[TGLoginInactiveUserController class]])
-                {
-                    TGLoginInactiveUserController *inactiveUserController = [[TGLoginInactiveUserController alloc] init];
-                    [self pushControllerRemovingSelf:inactiveUserController];
-                }
-            }
+            [TGAppDelegateInstance presentMainController];
         });
     }
     else if ([path isEqualToString:@"/tg/contactListSynchronizationState"])
     {
         if (![((SGraphObjectNode *)resource).object boolValue])
         {
-            bool activated = [TGDatabaseInstance() haveRemoteContactUids];
-            
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 self.inProgress = false;
                 
-                if (activated)
-                    [TGAppDelegateInstance presentMainController];
-                else
-                {
-                    if (![[self.navigationController.viewControllers lastObject] isKindOfClass:[TGLoginInactiveUserController class]])
-                    {
-                        TGLoginInactiveUserController *inactiveUserController = [[TGLoginInactiveUserController alloc] init];
-                        [self pushControllerRemovingSelf:inactiveUserController];
-                    }
-                }
+                [TGAppDelegateInstance presentMainController];
             });
         }
     }
@@ -924,6 +889,8 @@
                         errorText = TGLocalized(@"Login.NetworkError");
                     else if (resultCode == TGSendCodeErrorPhoneFlood)
                         errorText = TGLocalized(@"Login.PhoneFloodError");
+                    else if (resultCode == TGSendCodeErrorPhoneBanned)
+                        errorText = TGLocalized(@"Login.PhoneBannedError");
                     
                     TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];
@@ -955,6 +922,8 @@
                         errorText = TGLocalized(@"Login.NetworkError");
                     else if (resultCode == TGSendCodeErrorPhoneFlood)
                         errorText = TGLocalized(@"Login.PhoneFloodError");
+                    else if (resultCode == TGSendCodeErrorPhoneBanned)
+                        errorText = TGLocalized(@"Login.PhoneBannedError");
                     
                     TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
                     [alertView show];

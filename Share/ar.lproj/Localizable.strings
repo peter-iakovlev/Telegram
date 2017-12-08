@@ -30,3 +30,11 @@
 "Share.TouchId" = "قم بإدخال رمز المرور الخاص بك";
 
 "Share.AddCaption" = "اكتب ملاحظة";
+
+"Share.PasscodeFailedAttempts_1" = "محاولة واحدة فاشلة لإدخال رمز المرور";
+"Share.PasscodeFailedAttempts_2" = "محاولتان فاشلتان لإدخال رمز المرور";
+"Share.PasscodeFailedAttempts_3_10" = "%@ محاولات فاشلة لإدخال رمز المرور";
+"Share.PasscodeFailedAttempts_any" = "%@ محاولة فاشلة لإدخال رمز المرور";
+"Share.PasscodeTryAgainIn1Minute" = "حاول مرة أخرى بعد دقيقة";
+
+"Share.SavedMessages" = "الرسائل المحفوظة";

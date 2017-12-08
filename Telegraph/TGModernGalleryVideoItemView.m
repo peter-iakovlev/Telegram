@@ -1,42 +1,33 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGModernGalleryVideoItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import <AVFoundation/AVFoundation.h>
 
-#import "TGImageUtils.h"
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGModernGalleryVideoItem.h"
-#import "TGVideoMediaAttachment.h"
 
 #import "TGVideoDownloadActor.h"
 
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 #import "TGModernGalleryRotationGestureRecognizer.h"
 #import "TGModernGalleryVideoFooterView.h"
-#import "TGModernGalleryVideoView.h"
-#import "TGModernGalleryVideoContentView.h"
-#import "TGModernGalleryDefaultFooterView.h"
+#import <LegacyComponents/TGModernGalleryVideoView.h>
+#import <LegacyComponents/TGModernGalleryVideoContentView.h>
+#import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
-#import "TGTimerTarget.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGTimerTarget.h>
+#import <LegacyComponents/TGObserverProxy.h>
 
-#import "TGModernButton.h"
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGDownloadManager.h"
-#import "TGMessage.h"
 
 #import "TGAudioSessionManager.h"
 

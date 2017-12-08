@@ -1,10 +1,9 @@
 #import "TGCallButton.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDefaultPasscodeBackground.h"
-#import "TGImageBasedPasscodeBackground.h"
+#import <LegacyComponents/TGDefaultPasscodeBackground.h>
+#import <LegacyComponents/TGImageBasedPasscodeBackground.h>
 
 @interface TGCallButtonBackgroundLayer : CALayer
 

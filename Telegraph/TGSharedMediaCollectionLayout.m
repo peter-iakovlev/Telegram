@@ -49,7 +49,7 @@
             
             TGSharedMediaSectionHeader *sectionHeader = [[TGSharedMediaSectionHeader alloc] init];
             sectionHeader.index = i;
-            CGFloat headerHeight = 36.0f;
+            CGFloat headerHeight = 42.0f;
             sectionHeader.bounds = CGRectMake(0.0f, 0.0f, self.collectionView.bounds.size.width, headerHeight);
             sectionHeader.floatingFrame = CGRectMake(0.0f, firstItemAttributes.frame.origin.y - sectionHeader.bounds.size.height, sectionHeader.bounds.size.width, CGRectGetMaxY(lastItemAttributes.frame) - (firstItemAttributes.frame.origin.y - sectionHeader.bounds.size.height));
             [sectionHeaders addObject:sectionHeader];

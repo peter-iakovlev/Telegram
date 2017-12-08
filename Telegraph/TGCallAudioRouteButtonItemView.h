@@ -1,4 +1,4 @@
-#import "TGMenuSheetButtonItemView.h"
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 
 @interface TGCallAudioRouteButtonItemView : TGMenuSheetButtonItemView
 

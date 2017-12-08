@@ -8,11 +8,7 @@
 
 #import "TGAudioMessageViewModel.h"
 
-#import "TGImageUtils.h"
-#import "TGMessage.h"
-#import "TGPeerIdAdapter.h"
-
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernViewContext.h"
 #import "TGTelegraphConversationMessageAssetsSource.h"
@@ -28,7 +24,7 @@
 
 #import "TGAudioSliderView.h"
 #import "TGModernViewInlineMediaContext.h"
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 #import "TGReplyHeaderModel.h"
 
@@ -45,6 +41,8 @@
 #import "TGDocumentMessageIconView.h"
 
 #import "TGReusableLabel.h"
+
+#import "TGAudioMediaAttachment+Telegraph.h"
 
 typedef enum {
     TGAudioMessageButtonPlay = 0,
@@ -411,6 +409,22 @@ static CTFontRef textFontForSize(CGFloat size)
         *needsContentsUpdate = updateContents;
     
     CGFloat width = MAX(160, MIN(205, _duration * 30));
+    
+    CGFloat minVoiceLength = 2.0f;
+    CGFloat maxVoiceLength = 50.0f;
+    CGFloat maxVoiceWidth = 205.0f;
+    CGFloat minVoiceWidth = 124.0f;
+    
+    CGFloat calcDuration = MAX(minVoiceLength, MIN(maxVoiceLength, _duration));
+    
+    //CGFloat b = ((CGFloat)log(maxVoiceWidth / minVoiceWidth)) / (maxVoiceLength);
+    //CGFloat a = minVoiceWidth / expf(0.0f);
+    
+    //width = a * exp(b * MIN(maxVoiceLength, (CGFloat)_duration));
+    
+    width = minVoiceWidth + (maxVoiceWidth - minVoiceWidth) * (calcDuration - minVoiceLength) / (maxVoiceLength - minVoiceLength);
+    width = CGFloor(width);
+    
     CGFloat height = 50.0f;
     
     if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
@@ -420,7 +434,7 @@ static CTFontRef textFontForSize(CGFloat size)
             height -= 10.0f;
         }
     } else {
-        height += (infoWidth > (width - 80.0f) ? 12.0f : 0.0f);
+        height += (infoWidth > (width - 60.0f) ? 12.0f : 0.0f);
         if (infoWidth < FLT_EPSILON) {
             height -= 2.0f;
         }

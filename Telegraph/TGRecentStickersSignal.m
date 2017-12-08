@@ -1,8 +1,8 @@
 #import "TGRecentStickersSignal.h"
 
-#import "TGTelegraph.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
+#import "TGTelegraph.h"
 
 #import "TGStickersSignals.h"
 
@@ -84,7 +84,7 @@ static bool _syncedStickers = false;
         [data getBytes:&value length:4];
     }
     
-    return value <= 0 ? 200 : value;
+    return value <= 0 ? 30 : value;
 }
 
 + (void)_enqueueStickerAction:(TGStickerSyncAction *)action {

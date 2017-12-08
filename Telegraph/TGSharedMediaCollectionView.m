@@ -14,6 +14,10 @@
 
 @implementation TGSharedMediaCollectionView
 
+- (bool)disableGalleryTransitionOffsetFix {
+    return true;
+}
+
 - (instancetype)initWithFrame:(CGRect)frame collectionViewLayout:(UICollectionViewLayout *)layout
 {
     self = [super initWithFrame:frame collectionViewLayout:layout];

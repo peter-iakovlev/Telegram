@@ -1,8 +1,9 @@
 #import "TGServiceSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TL/TLMetaScheme.h"
 #import "TGTelegramNetworking.h"
-#import "TGPeerIdAdapter.h"
 #import "TGTelegraph.h"
 
 #import "TGMessage+Telegraph.h"

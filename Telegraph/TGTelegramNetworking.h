@@ -91,7 +91,9 @@ typedef enum {
 
 @interface TGTelegramNetworking : NSObject
 
++ (void)preload;
 + (TGTelegramNetworking *)instance;
++ (TGTelegramNetworking *)maybeInstance;
 
 - (SMulticastSignalManager *)genericTasksSignalManager;
 

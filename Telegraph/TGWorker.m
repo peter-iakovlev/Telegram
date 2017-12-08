@@ -8,7 +8,7 @@
 
 #import "TGWorker.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/ASQueue.h>
 
 @interface TGWorker ()
 {

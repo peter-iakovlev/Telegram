@@ -1,11 +1,11 @@
 #import "TGPaymentMethodController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGPaymentForm.h"
 
 #import "TGCheckCollectionItem.h"
 #import "TGButtonCollectionItem.h"
-
-#import "TGNavigationController.h"
 
 #import "Stripe.h"
 

@@ -1,6 +1,6 @@
-#import "TGModernGalleryImageItem.h"
+#import <LegacyComponents/TGModernGalleryImageItem.h>
 #import "TGWebSearchResultsGalleryItem.h"
-#import "TGModernGalleryEditableItem.h"
+#import <LegacyComponents/TGModernGalleryEditableItem.h>
 
 #import "TGWebSearchInternalImageResult.h"
 

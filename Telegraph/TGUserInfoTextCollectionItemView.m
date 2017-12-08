@@ -1,12 +1,12 @@
 #import "TGUserInfoTextCollectionItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernTextViewModel.h"
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
 @interface TGUserInfoTextCollectionItemViewTextView : UIButton {
@@ -335,18 +335,19 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorView.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    CGFloat separatorInset = 35.0f + self.safeAreaInset.left;
+    _separatorView.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGRetinaPixel;
+    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
     
-    CGSize labelSize = [_labelView.text sizeWithFont:_labelView.font constrainedToSize:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
+    CGSize labelSize = [_labelView.text sizeWithFont:_labelView.font constrainedToSize:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByWordWrapping];
     labelSize.width = CGCeil(labelSize.width);
     labelSize.height = CGCeil(labelSize.height);
     _labelView.frame = CGRectMake(leftPadding, 11.0f, labelSize.width, labelSize.height);
     
-    CGRect frame = CGRectMake(35.0f, CGFloor(labelSize.height + 1.0f) + 8.0f, _textContentView.textModel.frame.size.width, _textContentView.textModel.frame.size.height);
+    CGRect frame = CGRectMake(35.0f + self.safeAreaInset.left, CGFloor(labelSize.height + 1.0f) + 8.0f, _textContentView.textModel.frame.size.width, _textContentView.textModel.frame.size.height);
     
-    if (!CGSizeEqualToSize(_textContentView.frame.size, frame.size))
+    if (!CGSizeEqualToSize(_textContentView.frame.size, frame.size) || !CGPointEqualToPoint(_textContentView.frame.origin, frame.origin))
     {
         _textContentView.frame = frame;
         [_textContentView setNeedsDisplay];

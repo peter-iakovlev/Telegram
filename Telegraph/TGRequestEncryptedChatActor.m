@@ -1,6 +1,8 @@
 #import "TGRequestEncryptedChatActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 
@@ -12,8 +14,6 @@
 #import "TGConversation+Telegraph.h"
 
 #import "TGConversationAddMessagesActor.h"
-
-#import "TGStringUtils.h"
 
 #import "TGAppDelegate.h"
 

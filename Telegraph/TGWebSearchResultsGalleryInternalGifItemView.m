@@ -1,28 +1,25 @@
 #import "TGWebSearchResultsGalleryInternalGifItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGWebSearchResultsGalleryInternalGifItem.h"
 
-#import "TGImageView.h"
-#import "TGModernAnimatedImagePlayer.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/TGModernAnimatedImagePlayer.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "ATQueue.h"
 
 #import "TGMediaStoreContext.h"
 
-#import "TGModernGalleryTransitionView.h"
-
-#import "TGImageInfo.h"
+#import <LegacyComponents/TGModernGalleryTransitionView.h>
 
 #import "TGPreparedLocalDocumentMessage.h"
-#import "TGDocumentMediaAttachment.h"
 
 @interface TGWebSearchResultsGalleryInternalGifItemView () <ASWatcher>
 {

@@ -40,16 +40,6 @@
 
 @end
 
-@interface TLInputMedia$inputMediaVenue : TLInputMedia
-
-@property (nonatomic, retain) TLInputGeoPoint *geo_point;
-@property (nonatomic, retain) NSString *title;
-@property (nonatomic, retain) NSString *address;
-@property (nonatomic, retain) NSString *provider;
-@property (nonatomic, retain) NSString *venue_id;
-
-@end
-
 @interface TLInputMedia$inputMediaGifExternal : TLInputMedia
 
 @property (nonatomic, retain) NSString *url;
@@ -102,6 +92,24 @@
 @property (nonatomic, retain) NSString *caption;
 @property (nonatomic, retain) NSArray *stickers;
 @property (nonatomic) int32_t ttl_seconds;
+
+@end
+
+@interface TLInputMedia$inputMediaGeoLive : TLInputMedia
+
+@property (nonatomic, retain) TLInputGeoPoint *geo_point;
+@property (nonatomic) int32_t period;
+
+@end
+
+@interface TLInputMedia$inputMediaVenue : TLInputMedia
+
+@property (nonatomic, retain) TLInputGeoPoint *geo_point;
+@property (nonatomic, retain) NSString *title;
+@property (nonatomic, retain) NSString *address;
+@property (nonatomic, retain) NSString *provider;
+@property (nonatomic, retain) NSString *venue_id;
+@property (nonatomic, retain) NSString *venue_type;
 
 @end
 

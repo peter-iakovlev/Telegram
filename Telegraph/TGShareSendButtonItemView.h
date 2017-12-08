@@ -1,4 +1,4 @@
-#import "TGMenuSheetItemView.h"
+#import <LegacyComponents/TGMenuSheetItemView.h>
 
 @interface TGShareSendButtonItemView : TGMenuSheetItemView
 
@@ -8,7 +8,7 @@
 
 @property (nonatomic, readonly) NSString *caption;
 
-- (instancetype)initWithActionTitle:(NSString *)actionTitle action:(void (^)(void))action sendAction:(void (^)(NSString *caption))sendAction;
+- (instancetype)initWithTopActionTitle:(NSString *)topActionTitle topAction:(void (^)(void))topAction bottomActionTitle:(NSString *)bottomActionTitle bottomAction:(void (^)(void))bottomAction sendAction:(void (^)(NSString *caption))sendAction;
 
 - (void)setSelectedCount:(NSInteger)count;
 

@@ -1,15 +1,11 @@
 #import "TGReplyHeaderModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <CoreText/CoreText.h>
 
 #import "TGModernColorViewModel.h"
 #import "TGModernTextViewModel.h"
-
-#import "TGUser.h"
-#import "TGConversation.h"
-
-#import "TGImageUtils.h"
-#import "TGFont.h"
 
 #import "TGReusableLabel.h"
 
@@ -93,7 +89,7 @@ static UIColor *colorForLine(bool incoming)
         _leftInset = leftInset;
         _system = system;
         
-        _lineModel = [[TGModernColorViewModel alloc] initWithColor:system ? [UIColor whiteColor] : colorForLine(incoming)];
+        _lineModel = [[TGModernColorViewModel alloc] initWithColor:system ? [UIColor whiteColor] : colorForLine(incoming) cornerRadius:1.0f];
         [self addSubmodel:_lineModel];
         
         NSString *title = @"";

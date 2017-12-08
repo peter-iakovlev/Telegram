@@ -1,5 +1,6 @@
 #import "TGAttachmentSheetWindow.h"
-#import "TGOverlayControllerWindow.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGNotificationWindow.h"
 #import "TGAppDelegate.h"

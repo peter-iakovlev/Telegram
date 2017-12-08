@@ -1,6 +1,6 @@
 #import "TGRecentHashtagsSignal.h"
 
-#import "PSKeyValueEncoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGRecentHashtagsSignal
 

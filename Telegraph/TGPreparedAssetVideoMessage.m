@@ -1,10 +1,10 @@
 #import "TGPreparedAssetVideoMessage.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
-#import "TGMessage.h"
-
-#import "TGImageInfo.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGPreparedAssetVideoMessage ()
 {
@@ -14,7 +14,7 @@
 
 @implementation TGPreparedAssetVideoMessage
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage groupedId:(int64_t)groupedId
 {
     self = [super init];
     if (self != nil)
@@ -38,6 +38,7 @@
         _attributes = attributes;
         _stickerDocuments = stickerDocuments;
         _roundMessage = roundMessage;
+        self.groupedId = groupedId;
         
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
@@ -159,6 +160,7 @@
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
     message.outgoing = true;
+    message.groupedId = self.groupedId;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -189,7 +191,10 @@
     }
     
     message.mediaAttachments = attachments;
-    message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:_adjustments isCloud:_isCloud useMediaCache:_useMediaCache liveUpload:_liveUpload passthrough:_passthrough roundMessage:_roundMessage]};
+    
+    NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
+    contentProperties[@"mediaAsset"] = [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier assetURL:_assetURL isVideo:true editAdjustments:_adjustments isCloud:_isCloud useMediaCache:_useMediaCache liveUpload:_liveUpload passthrough:_passthrough roundMessage:_roundMessage];
+    message.contentProperties = contentProperties;
     
     return message;
 }

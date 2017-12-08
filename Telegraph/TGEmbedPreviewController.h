@@ -1,4 +1,4 @@
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGWebPageMediaAttachment;
 

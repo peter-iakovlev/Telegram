@@ -1,7 +1,7 @@
 #import "TGFastCameraControlPanel.h"
-#import "TGModernButton.h"
-#import "TGCameraShutterButton.h"
-#import "TGCameraInterfaceAssets.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGCameraShutterButton.h>
+#import <LegacyComponents/TGCameraInterfaceAssets.h>
 
 @interface TGFastCameraControlPanel ()
 {

@@ -1,15 +1,6 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGUserInfoVariantCollectionItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserInfoVariantCollectionItemView ()
 {
@@ -49,7 +40,7 @@
         _variantLabel.textColor = UIColorRGB(0x8e8e93);
         [self addSubview:_variantLabel];
         
-        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
+        _arrowView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
         [self addSubview:_arrowView];
     }
     return self;
@@ -93,23 +84,24 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    CGFloat separatorInset = 35.0f + self.safeAreaInset.left;
+    _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGRetinaPixel;
+    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
     
-    CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
+    CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
     _titleLabel.frame = CGRectMake(leftPadding, 12.0f, titleSize.width, titleSize.height);
     
-    CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - 10.0f, CGFLOAT_MAX)];
-    _variantLabel.frame = CGRectMake(bounds.size.width - 34.0f - variantSize.width, 12.0f, variantSize.width, variantSize.height);
+    CGSize variantSize = [_variantLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
+    _variantLabel.frame = CGRectMake(bounds.size.width - 34.0f - variantSize.width - self.safeAreaInset.right, 12.0f, variantSize.width, variantSize.height);
     
     if (_variantImageView != nil)
     {
-        _variantImageView.frame = CGRectMake(bounds.size.width - 34.0f - _variantImageView.frame.size.width, CGFloor((bounds.size.height - _variantImageView.frame.size.height) / 2.0f), _variantImageView.frame.size.width, _variantImageView.frame.size.height);
+        _variantImageView.frame = CGRectMake(bounds.size.width - 34.0f - _variantImageView.frame.size.width - self.safeAreaInset.right, CGFloor((bounds.size.height - _variantImageView.frame.size.height) / 2.0f), _variantImageView.frame.size.width, _variantImageView.frame.size.height);
     }
     
     CGSize arrowSize = _arrowView.bounds.size;
-    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width, 15.0f, arrowSize.width, arrowSize.height);
+    _arrowView.frame = CGRectMake(bounds.size.width - 15.0f - arrowSize.width - self.safeAreaInset.right, 15.0f, arrowSize.width, arrowSize.height);
 }
 
 @end

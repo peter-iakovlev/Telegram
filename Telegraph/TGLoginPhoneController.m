@@ -1,45 +1,31 @@
 #import "TGLoginPhoneController.h"
 
-#import "TGImageUtils.h"
-
-#import "TGToolbarButton.h"
-#import "TGPhoneUtils.h"
-
-#import "TGNavigationBar.h"
-#import "TGNavigationController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGAppDelegate.h"
-
-#import "TGHacks.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
 
 #import "TGInterfaceAssets.h"
 
 #import "TGLoginCodeController.h"
 #import "TGLoginCountriesController.h"
 
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGLoginProfileController.h"
 
 #import <CoreTelephony/CTCarrier.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGHighlightableButton.h"
 #import "TGBackspaceTextField.h"
-
-#import "TGActivityIndicatorView.h"
 
 #import "TGSendCodeRequestBuilder.h"
 
 #import "TGAlertView.h"
 
-#import "TGObserverProxy.h"
-
-#import "TGPhoneUtils.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGUpdateStateRequestBuilder.h"
 
@@ -206,8 +192,8 @@
     [self.view addSubview:_termsOfServiceLabel];
     _termsOfServiceLabel.hidden = !(TGIsPad() || [TGViewController isWidescreen] || [TGViewController hasLargeScreen]);
     
-    UIImage *rawCountryImage = [UIImage imageNamed:@"ModernAuthCountryButton.png"];
-    UIImage *rawCountryImageHighlighted = [UIImage imageNamed:@"ModernAuthCountryButtonHighlighted.png"];
+    UIImage *rawCountryImage = TGImageNamed(@"ModernAuthCountryButton.png");
+    UIImage *rawCountryImageHighlighted = TGImageNamed(@"ModernAuthCountryButtonHighlighted.png");
     
     _countryButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, screenSize.width, rawCountryImage.size.height)];
     _countryButton.exclusiveTouch = true;
@@ -222,7 +208,7 @@
     _countryButton.frame = CGRectMake(0.0f, [TGViewController isWidescreen] ? 131.0f : 90.0f, screenSize.width, rawCountryImage.size.height);
     [self.view addSubview:_countryButton];
     
-    UIImage *rawInputImage = [UIImage imageNamed:@"ModernAuthPhoneBackground.png"];
+    UIImage *rawInputImage = TGImageNamed(@"ModernAuthPhoneBackground.png");
     _inputBackgroundView = [[UIImageView alloc] initWithImage:[rawInputImage stretchableImageWithLeftCapWidth:(int)(rawInputImage.size.width / 2) topCapHeight:(int)(rawInputImage.size.height / 2)]];
     _inputBackgroundView.frame = CGRectMake(0.0f, _countryButton.frame.origin.y + 57.0f, screenSize.width, rawInputImage.size.height + TGScreenPixel);
     [self.view addSubview:_inputBackgroundView];
@@ -453,14 +439,15 @@
     CGSize termsOfServiceSize = [_termsOfServiceLabel sizeThatFits:CGSizeMake(278.0f, CGFLOAT_MAX)];
     
     CGFloat keyboardHeight = 216.0f;
+    CGFloat longSize = MAX(screenSize.width, screenSize.height);
     if (TGIsPad()) {
-        CGFloat longSize = MAX(screenSize.width, screenSize.height);
-        
         if (fabs(longSize - 1024.0f) < FLT_EPSILON)
             keyboardHeight = (screenSize.width > screenSize.height) ? 370.0f : 300.0f;
         else
             keyboardHeight = (screenSize.width > screenSize.height) ? 435.0f : 350.0f;
     }
+    else if (fabs(longSize - 812.0f) < FLT_EPSILON)
+        keyboardHeight = 291.0f;
     
     CGFloat topOrigin = 20.0f + 44.0f + 10.0f + titleAdditionalOffset;
     CGFloat bottomOffset = screenSize.height - keyboardHeight - 10.0f;
@@ -1013,6 +1000,10 @@
                     errorText = TGLocalized(@"Login.NetworkError");
                 else if (resultCode == TGSendCodeErrorPhoneFlood)
                     errorText = TGLocalized(@"Login.PhoneFloodError");
+                else if (resultCode == TGSendCodeErrorPhoneBanned) {
+                    okButton = true;
+                    errorText = TGLocalized(@"Login.PhoneBannedError");
+                }
                 
                 __weak TGLoginPhoneController *weakSelf = self;
                 [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:okButton ? TGLocalized(@"Login.PhoneNumberHelp") : nil completionBlock:^(bool okButtonPressed)
@@ -1026,12 +1017,31 @@
                             {
                                 NSString *phoneFormatted = [TGPhoneUtils formatPhone:_phoneNumber forceInternational:true];
                                 
-                                MFMailComposeViewController *composeController = [[MFMailComposeViewController alloc] init];
-                                composeController.mailComposeDelegate = strongSelf;
-                                [composeController setToRecipients:@[@"login@stel.com"]];
-                                [composeController setSubject:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneSubject"), phoneFormatted]];
-                                [composeController setMessageBody:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneBody"), phoneFormatted] isHTML:false];
-                                [self presentViewController:composeController animated:true completion:nil];
+                                if (resultCode == TGSendCodeErrorPhoneBanned) {
+                                    MFMailComposeViewController *composeController = [[MFMailComposeViewController alloc] init];
+                                    composeController.mailComposeDelegate = strongSelf;
+                                    [composeController setToRecipients:@[@"login@stel.com"]];
+                                    [composeController setSubject:[[NSString alloc] initWithFormat:TGLocalized(@"Login.BannedPhoneSubject"), phoneFormatted]];
+                                    
+                                    CTCarrier *carrier = [[CTTelephonyNetworkInfo new] subscriberCellularProvider];
+                                    NSString *contryCode = carrier.mobileCountryCode;
+                                    NSString *networkCode = carrier.mobileNetworkCode;
+                                    
+                                    [composeController setMessageBody:[[NSString alloc] initWithFormat:TGLocalized(@"Login.BannedPhoneBody"), phoneFormatted] isHTML:false];
+                                    [self presentViewController:composeController animated:true completion:nil];
+                                } else {
+                                    MFMailComposeViewController *composeController = [[MFMailComposeViewController alloc] init];
+                                    composeController.mailComposeDelegate = strongSelf;
+                                    [composeController setToRecipients:@[@"login@stel.com"]];
+                                    [composeController setSubject:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneSubject"), phoneFormatted]];
+                                    
+                                    CTCarrier *carrier = [[CTTelephonyNetworkInfo new] subscriberCellularProvider];
+                                    NSString *contryCode = carrier.mobileCountryCode;
+                                    NSString *networkCode = carrier.mobileNetworkCode;
+                                    
+                                    [composeController setMessageBody:[[NSString alloc] initWithFormat:TGLocalized(@"Login.EmailPhoneBody"), phoneFormatted, contryCode ?: @"<>", networkCode ?: @"<>"] isHTML:false];
+                                    [self presentViewController:composeController animated:true completion:nil];
+                                }
                             }
                         }
                         else

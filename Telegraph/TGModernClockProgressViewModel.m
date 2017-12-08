@@ -1,8 +1,8 @@
 #import "TGModernClockProgressViewModel.h"
 
-#import "TGModernClockProgressView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import "TGModernClockProgressView.h"
 
 @interface TGModernClockProgressViewModel ()
 {
@@ -39,7 +39,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockFrame.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockFrame.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -52,7 +52,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockWhiteFrame.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockWhiteFrame.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -65,7 +65,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockIncomingFrame.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockIncomingFrame.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -87,7 +87,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockMin.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockMin.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -100,7 +100,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockWhiteMin.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockWhiteMin.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -113,7 +113,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockIncomingMin.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockIncomingMin.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
 
@@ -135,7 +135,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockHour.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockHour.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -148,7 +148,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage =[UIImage imageNamed:@"ClockWhiteHour.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockWhiteHour.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             
@@ -161,7 +161,7 @@
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
             {
-                UIImage *rawImage = [UIImage imageNamed:@"ClockIncomingHour.png"];
+                UIImage *rawImage = TGImageNamed(@"ClockIncomingHour.png");
                 image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
             });
             

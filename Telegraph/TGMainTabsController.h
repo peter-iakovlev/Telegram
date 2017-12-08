@@ -1,16 +1,18 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import <UIKit/UIKit.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-@interface TGMainTabsController : UITabBarController <TGViewControllerNavigationBarAppearance>
+@class TGPresentation;
+
+@interface TGMainTabsController : UITabBarController <TGViewControllerNavigationBarAppearance, TGNavigationControllerTabsController>
+
+@property (nonatomic, copy) void (^debugReady)(void);
+@property (nonatomic, copy) void (^onControllerInsetUpdated)(CGFloat);
+
+- (instancetype)initWithPresentation:(TGPresentation *)presentation;
+- (void)setPresentation:(TGPresentation *)presentation;
+
+- (void)setIgnoreKeyboardFrameChange:(bool)ignore restoringFocus:(bool)restoringFocus;
 
 - (void)setUnreadCount:(int)unreadCount;
 - (void)setMissedCallsCount:(int)callsCount;
@@ -21,5 +23,7 @@
 
 - (CGRect)frameForRightmostTab;
 - (UIView *)viewForRightmostTab;
+
+- (void)controllerInsetUpdated:(UIEdgeInsets)newInset;
 
 @end

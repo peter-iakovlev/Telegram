@@ -2,6 +2,7 @@
 
 #import <LegacyDatabase/LegacyDatabase.h>
 
+#import <AudioToolbox/AudioToolbox.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 
 @interface TGSharePasscodeView () <UITextFieldDelegate>
@@ -19,6 +20,8 @@
     UITextField *_textField;
     UIView *_textFieldBackground;
     
+    UILabel *_errorLabel;
+    
     id _keyboardObserver;
     CGFloat _keyboardHeight;
     
@@ -27,6 +30,11 @@
     bool _allowTouchId;
     bool _usingTouchId;
     bool _alternativeMethodSelected;
+    
+    NSInteger _attempts;
+    double _invalidAttemptDate;
+    
+    NSTimer *_shouldWaitTimer;
 }
 
 @end
@@ -45,7 +53,7 @@
         
         _allowTouchId = allowTouchId;
         
-        self.backgroundColor = TGColorWithHex(0xefeff4);
+        self.backgroundColor = [UIColor hexColor:0xefeff4];
         
         _navigationBar = [[UINavigationBar alloc] init];
         _navigationBar.shadowImage = [[UIImage alloc] init];
@@ -63,11 +71,11 @@
         _textFieldBackground = [[UIView alloc] init];
         _textFieldBackground.backgroundColor = [UIColor whiteColor];
         UIView *topSeparator = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f, 0.5f)];
-        topSeparator.backgroundColor = TGColorWithHex(0xc8c7cc);
+        topSeparator.backgroundColor = [UIColor hexColor:0xc8c7cc];
         topSeparator.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_textFieldBackground addSubview:topSeparator];
         UIView *bottomSeparator = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -0.5f, 0.0f, 0.5f)];
-        bottomSeparator.backgroundColor = TGColorWithHex(0xc8c7cc);
+        bottomSeparator.backgroundColor = [UIColor hexColor:0xc8c7cc];
         bottomSeparator.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         [_textFieldBackground addSubview:bottomSeparator];
         [self addSubview:_textFieldBackground];
@@ -90,6 +98,16 @@
         [_titleLabel sizeToFit];
         [self addSubview:_titleLabel];
         
+        _errorLabel = [[UILabel alloc] init];
+        _errorLabel.backgroundColor = [UIColor clearColor];
+        _errorLabel.textColor = [UIColor hexColor:0x697487];
+        _errorLabel.font = [UIFont systemFontOfSize:13.0f];
+        _errorLabel.text = @"error";
+        _errorLabel.textAlignment = NSTextAlignmentCenter;
+        [_errorLabel sizeToFit];
+        _errorLabel.text = nil;
+        [self addSubview:_errorLabel];
+        
         __weak TGSharePasscodeView *weakSelf = self;
         _keyboardObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIKeyboardWillChangeFrameNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification)
         {
@@ -102,6 +120,17 @@
                 [self layoutSubviews];
             }
         }];
+        
+        _attempts = [[[TGSharePasscodeView userDefaults] objectForKey:@"Passcode_invalidAttempts"] integerValue];
+        _invalidAttemptDate = [[[TGSharePasscodeView userDefaults] objectForKey:@"Passcode_invalidAttemptDate"] doubleValue];
+        
+        if ([self invalidPasscodeAttempts] >= 6 && ![self shouldWaitBeforeAttempting])
+        {
+            [self resetInvalidPasscodeAttempts];
+        }
+        
+        _shouldWaitTimer = [[NSTimer alloc] initWithFireDate:[NSDate dateWithTimeIntervalSinceNow:0.0] interval:1.0 target:self selector:@selector(checkShouldWait) userInfo:nil repeats:true];
+        [[NSRunLoop mainRunLoop] addTimer:_shouldWaitTimer forMode:NSRunLoopCommonModes];
     }
     return self;
 }
@@ -109,6 +138,91 @@
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:_keyboardObserver];
+    [_shouldWaitTimer invalidate];
+    _shouldWaitTimer = nil;
+}
+
+- (NSInteger)invalidPasscodeAttempts {
+    return _attempts;
+}
+
+- (void)addInvalidPasscodeAttempt {
+    NSInteger newInvalidAttempts = _attempts + 1;
+    double newLastInvalidAttemptDate = CFAbsoluteTimeGetCurrent();
+    
+    [[TGSharePasscodeView userDefaults] setObject:@(newInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+    [[TGSharePasscodeView userDefaults] setObject:@(newLastInvalidAttemptDate) forKey:@"Passcode_invalidAttemptDate"];
+    [[TGSharePasscodeView userDefaults] synchronize];
+    
+    _attempts = newInvalidAttempts;
+    _invalidAttemptDate = newLastInvalidAttemptDate;
+}
+
+- (void)resetInvalidPasscodeAttempts {
+    NSInteger newInvalidAttempts = 0;
+    double newLastInvalidAttemptDate = 0;
+    
+    [[TGSharePasscodeView userDefaults] setObject:@(newInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+    [[TGSharePasscodeView userDefaults] setObject:@(newLastInvalidAttemptDate) forKey:@"Passcode_invalidAttemptDate"];
+    [[TGSharePasscodeView userDefaults] synchronize];
+    
+    _attempts = newInvalidAttempts;
+    _invalidAttemptDate = newLastInvalidAttemptDate;
+}
+
+- (bool)shouldWaitBeforeAttempting
+{
+    if ([self invalidPasscodeAttempts] < 6)
+        return false;
+    
+    NSTimeInterval invalidAttemptDate = _invalidAttemptDate;
+    NSTimeInterval waitInterval = 60.0;
+    
+#ifdef DEBUG
+    //waitInterval = 5.0;
+#endif
+    
+    return CFAbsoluteTimeGetCurrent() - invalidAttemptDate < waitInterval;
+}
+
+- (void)checkShouldWait
+{
+    if ([self invalidPasscodeAttempts] >= 6 && ![self shouldWaitBeforeAttempting])
+    {
+        [self resetInvalidPasscodeAttempts];
+    }
+    [self setErrorTitle:[self currentErrorText]];
+}
+
+- (NSString *)integerValueFormat:(NSString *)prefix value:(NSInteger)value
+{
+    if (value == 1)
+        return [prefix stringByAppendingString:@"1"];
+    else if (value == 2)
+        return [prefix stringByAppendingString:@"2"];
+    else if (value >= 3 && value <= 10)
+        return [prefix stringByAppendingString:@"3_10"];
+    else
+        return [prefix stringByAppendingString:@"any"];
+}
+
+- (NSString *)currentErrorText
+{
+    NSInteger attemptCount = [self invalidPasscodeAttempts];
+    if (attemptCount == 0)
+        return @"";
+    else if (attemptCount < 6)
+    {
+        NSString *format = [self integerValueFormat:@"Share.PasscodeFailedAttempts_" value:attemptCount];
+        return [[NSString alloc] initWithFormat:NSLocalizedString(format, nil), [[NSString alloc] initWithFormat:@"%d",(int)attemptCount]];
+    }
+    else
+        return NSLocalizedString(@"Share.PasscodeTryAgainIn1Minute", nil);
+}
+
+- (void)setErrorTitle:(NSString *)error
+{
+    _errorLabel.text = error;
 }
 
 - (void)showKeyboard
@@ -118,6 +232,17 @@
 
 - (void)nextPressed
 {
+    if ([self shouldWaitBeforeAttempting])
+    {
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        _textField.text = @"";
+        return;
+    }
+    else if ([self invalidPasscodeAttempts] >= 6)
+    {
+        [self resetInvalidPasscodeAttempts];
+    }
+    
     if (_verify)
     {
         __weak TGSharePasscodeView *weakSelf = self;
@@ -127,7 +252,10 @@
             {
                 __strong TGSharePasscodeView *strongSelf = weakSelf;
                 if (strongSelf != nil)
+                {
                     [strongSelf showInvalidPasscodeAlert];
+                    [strongSelf addInvalidPasscodeAttempt];
+                }
             }
         });
     }
@@ -153,16 +281,30 @@
     {
         if (_textField.text.length == 4)
         {
+            if ([self shouldWaitBeforeAttempting])
+            {
+                AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+                _textField.text = @"";
+                return;
+            }
+            else if ([self invalidPasscodeAttempts] >= 6)
+            {
+                [self resetInvalidPasscodeAttempts];
+            }
+            
             if (_verify)
             {
                 __weak TGSharePasscodeView *weakSelf = self;
                 _verify(_textField.text, ^(bool result)
                 {
-                    if (!result)
+                    __strong TGSharePasscodeView *strongSelf = weakSelf;
+                    if (strongSelf != nil)
                     {
-                        __strong TGSharePasscodeView *strongSelf = weakSelf;
-                        if (strongSelf != nil)
+                        if (!result)
+                        {
                             [strongSelf showInvalidPasscodeAlert];
+                            [strongSelf addInvalidPasscodeAttempt];
+                        }
                     }
                 });
             }
@@ -174,16 +316,30 @@
 
 - (BOOL)textFieldShouldReturn:(UITextField *)__unused textField
 {
+    if ([self shouldWaitBeforeAttempting])
+    {
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
+        _textField.text = @"";
+        return false;
+    }
+    else if ([self invalidPasscodeAttempts] >= 6)
+    {
+        [self resetInvalidPasscodeAttempts];
+    }
+    
     if (_verify)
     {
         __weak TGSharePasscodeView *weakSelf = self;
         _verify(_textField.text, ^(bool result)
         {
-            if (!result)
+            __strong TGSharePasscodeView *strongSelf = weakSelf;
+            if (strongSelf != nil)
             {
-                __strong TGSharePasscodeView *strongSelf = weakSelf;
-                if (strongSelf != nil)
+                if (!result)
+                {
                     [strongSelf showInvalidPasscodeAlert];
+                    [strongSelf addInvalidPasscodeAttempt];
+                }
             }
         });
     }
@@ -197,13 +353,34 @@
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:NSLocalizedString(@"Share.ErrorInvalidPasscode", nil) preferredStyle:UIAlertControllerStyleAlert];
     [alertController addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Share.OK", nil) style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action)
     {
+        [_textField becomeFirstResponder];
     }]];
     [alertPresentationController presentViewController:alertController animated:true completion:nil];
+    
+    if (_simpleMode)
+        _textField.text = @"";
 }
 
 - (bool)supportsTouchId
 {
     return [[[LAContext alloc] init] canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:nil];
+}
+
++ (NSUserDefaults *)userDefaults
+{
+    static dispatch_once_t onceToken;
+    static NSUserDefaults *userDefaults;
+    dispatch_once(&onceToken, ^
+    {
+        NSString *groupName = [@"group." stringByAppendingString:[[NSBundle mainBundle] bundleIdentifier]];
+        
+        if ([groupName hasSuffix:@".Share"])
+            groupName = [groupName substringWithRange:NSMakeRange(0, groupName.length - @".Share".length)];
+        
+        userDefaults = [[NSUserDefaults alloc] initWithSuiteName:groupName];
+    });
+    
+    return userDefaults;
 }
 
 - (void)refreshTouchId
@@ -271,6 +448,8 @@
     _textField.frame = CGRectMake(textFieldInset, topOffset, self.frame.size.width - textFieldInset * 2.0f, textFieldHeight);
     
     _titleLabel.frame = CGRectMake((CGFloat)floor((self.frame.size.width - _titleLabel.frame.size.width) / 2.0f), topOffset - 35.0f, _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    
+    _errorLabel.frame = CGRectMake(0.0f, topOffset + textFieldHeight + 20.0f, self.frame.size.width, _titleLabel.frame.size.height);
 }
 
 @end

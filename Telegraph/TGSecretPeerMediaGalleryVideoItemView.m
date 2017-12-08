@@ -1,14 +1,14 @@
 #import "TGSecretPeerMediaGalleryVideoItemView.h"
 
+#import <AVFoundation/AVFoundation.h>
 #import "TGTelegraph.h"
-#import "TGUser.h"
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGTimerTarget.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGUser.h>
+#import <LegacyComponents/TGFont.h>
+#import <LegacyComponents/TGImageUtils.h>
+#import <LegacyComponents/TGTimerTarget.h>
+#import <LegacyComponents/TGStringUtils.h>
 
-#import "TGRemoteImageView.h"
-#import "TGCircularProgressView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGSecretPeerMediaGalleryVideoItem.h"
 
@@ -19,7 +19,6 @@
     TGSecretPeerMediaTimerView *_timerView;
     
     NSTimer *_countdownAnimationTimer;
-    NSTimer *_labelUpdateTimer;
     
     NSTimeInterval _startTime;
     NSTimeInterval _endTime;
@@ -32,6 +31,8 @@
     
     UIView *_footerLabelContainer;
     UILabel *_footerLabel;
+    
+    UIEdgeInsets _safeAreaInset;
 }
 
 @end
@@ -76,6 +77,12 @@
     [self invalidateTimer];
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self layoutSubviews];
+}
+
 - (void)prepareForRecycle
 {
     [super prepareForRecycle];
@@ -100,15 +107,25 @@
     [self updateFooter:item];
     [super setItem:item synchronously:synchronously];
     
-    _startTime = item.messageCountdownTime;
-    _endTime = _startTime + item.messageLifetime;
-
+    NSTimeInterval duration = ((TGVideoMediaAttachment *)item.media).duration + 1.0;
+    NSTimeInterval currentTime = CFAbsoluteTimeGetCurrent();
+    
+    if (item.messageCountdownTime > FLT_EPSILON && duration > item.messageCountdownTime + item.messageLifetime - currentTime)
+    {
+        _startTime = currentTime;
+        _endTime =  _startTime + duration;
+    }
+    else
+    {
+        _startTime = item.messageCountdownTime;
+        _endTime = _startTime + item.messageLifetime;
+    }
+    
     if (ABS(_startTime) > DBL_EPSILON)
     {
         _timerView.hidden = false;
         
         [self updateProgress];
-        [self updateLabel];
         [self startTimer];
     }
     else
@@ -128,30 +145,18 @@
         [_countdownAnimationTimer invalidate];
         _countdownAnimationTimer = nil;
     }
-    
-    if (_labelUpdateTimer != nil)
-    {
-        [_labelUpdateTimer invalidate];
-        _labelUpdateTimer = nil;
-    }
 }
 
 - (void)startTimer
 {
     [self invalidateTimer];
     
-    _countdownAnimationTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(countdownAnimationTimerEvent) interval:0.04 repeat:true];
-    _labelUpdateTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(updateLabelTimerEvent) interval:0.15 repeat:true];
+    _countdownAnimationTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(countdownAnimationTimerEvent) interval:0.02 repeat:true];
 }
 
 - (void)countdownAnimationTimerEvent
 {
     [self updateProgress];
-}
-
-- (void)updateLabelTimerEvent
-{
-    [self updateLabel];
 }
 
 - (void)updateProgress
@@ -161,22 +166,6 @@
         progress = 1.0f;
     
     [_timerView.progressView setProgress:MAX(0.0f, MIN(progress, 1.0f))];
-}
-
-- (void)updateLabel
-{
-    int remainingSeconds = MAX(0, (int)(_endTime - CFAbsoluteTimeGetCurrent()));
-    
-    NSString *text = nil;
-    
-    text = [TGStringUtils stringForShortMessageTimerSeconds:remainingSeconds];
-    
-    if (!TGStringCompare(text, _timerView.progressLabel.text))
-    {
-        _timerView.progressLabel.text = text;
-        [_timerView.progressLabel sizeToFit];
-        [self setNeedsLayout];
-    }
 }
 
 - (void)updateFooter:(TGSecretPeerMediaGalleryVideoItem *)item
@@ -189,7 +178,7 @@
         {
             _footerLabel.text = [NSString stringWithFormat:TGLocalized(@"SecretVideo.NotViewedYet"), peer.displayFirstName];
             [_footerLabel sizeToFit];
-            [self setNeedsLayout];
+            [self layoutSubviews];
         }
     }
 }
@@ -198,16 +187,11 @@
 {
     [super layoutSubviews];
     
-    CGFloat infoBackgroundWidth = 3.0f * 2.0f + 21.0f + _timerView.progressLabel.frame.size.width + 12.0f;
-    _timerView.infoBackgroundView.frame = CGRectMake(self.frame.size.width - 7.0f - infoBackgroundWidth, 27.0f, infoBackgroundWidth, 28.0f);
+    CGFloat topInset = UIEdgeInsetsEqualToEdgeInsets(_safeAreaInset, UIEdgeInsetsZero) ? 20.0f : _safeAreaInset.top;
+    _timerView.infoBackgroundView.frame = CGRectMake(self.frame.size.width - 28.0f - 9.0f - _safeAreaInset.right, topInset + 7.0f, 28.0f, 28.0f);
     
-    CGSize timerSize = _timerView.timerFrameView.frame.size;
-    _timerView.timerFrameView.frame = CGRectMake(CGRectGetMaxX(_timerView.infoBackgroundView.frame) - 3.5f - timerSize.width, _timerView.infoBackgroundView.frame.origin.y + 3.5f, timerSize.width, timerSize.height);
-    
-    CGSize progressSize = _timerView.progressView.frame.size;
-    _timerView.progressView.frame = CGRectMake(_timerView.timerFrameView.frame.origin.x + ((timerSize.width - progressSize.width) / 2.0f), _timerView.timerFrameView.frame.origin.y + ((timerSize.height - progressSize.height) / 2.0f), progressSize.width, progressSize.height);
-    
-    _timerView.progressLabel.frame = CGRectMake(_timerView.infoBackgroundView.frame.origin.x + 9.0f, _timerView.infoBackgroundView.frame.origin.y + 5.0f + TGRetinaPixel, _timerView.progressLabel.frame.size.width, _timerView.progressLabel.frame.size.height);
+    CGSize timerSize = _timerView.progressView.frame.size;
+    _timerView.progressView.frame = CGRectMake(_timerView.infoBackgroundView.frame.origin.x + 1.0f, _timerView.infoBackgroundView.frame.origin.y + 1.0f, timerSize.width, timerSize.height);
     
     CGFloat innerPadding = 24.0f;
     _footerLabel.frame = CGRectMake(-innerPadding, 12.0f, self.frame.size.width - 88.0f + innerPadding * 2.0f, _footerLabel.frame.size.height);

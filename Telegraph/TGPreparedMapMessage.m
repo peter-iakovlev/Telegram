@@ -1,19 +1,10 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGPreparedMapMessage.h"
 
-#import "TGMessage.h"
-#import "TGLocationMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGPreparedMapMessage
 
-- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
+- (instancetype)initWithLatitude:(double)latitude longitude:(double)longitude venue:(TGVenueAttachment *)venue period:(int32_t)period replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -21,6 +12,7 @@
         _latitude = latitude;
         _longitude = longitude;
         _venue = venue;
+        _period = period;
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
     }
@@ -41,6 +33,7 @@
     locationAttachment.latitude = _latitude;
     locationAttachment.longitude = _longitude;
     locationAttachment.venue = _venue;
+    locationAttachment.period = _period;
     [attachments addObject:locationAttachment];
     
     if (self.replyMessage != nil)

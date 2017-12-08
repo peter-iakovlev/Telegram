@@ -1,19 +1,17 @@
 #import "TGInstagramThumbnailDataSource.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ASQueue.h>
 
 #import "TGWorkerPool.h"
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-
-#import "TGImageBlur.h"
-#import "UIImage+TG.h"
-#import "NSObject+TGLock.h"
+#import <LegacyComponents/TGImageBlur.h>
+#import <LegacyComponents/UIImage+TG.h>
 
 #import "TGMediaStoreContext.h"
 
@@ -161,7 +159,7 @@ static ASQueue *taskManagementQueue()
     if (placeholder == nil)
     {
         UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        [TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat) drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
+        [TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat, 0) drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
         CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
         UIImage *buttonImage = [UIImage imageNamed:@"ModernMessageInstagramLogoPlaceholder.png"];
         [buttonImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - buttonImage.size.width) / 2.0f), imageRect.origin.y + CGFloor((imageRect.size.height - buttonImage.size.height) / 2.0f), buttonImage.size.width, buttonImage.size.height)];
@@ -260,7 +258,7 @@ static ASQueue *taskManagementQueue()
         bool needsAverageColor = averageColor == nil;
         uint32_t averageColorValue = [averageColor intValue];
         
-        thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat);
+        thumbnailImage = TGLoadedAttachmentImage(thumbnailSourceImage, size, needsAverageColor ? &averageColorValue : NULL, !isFlat, 0);
         
         if (thumbnailImage != nil)
         {

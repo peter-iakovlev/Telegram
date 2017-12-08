@@ -1,6 +1,6 @@
 #import "TGAccountSettingsActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegramNetworking.h"
 #import <MTProtoKit/MTRequest.h>
 #import "TL/TLMetaScheme.h"

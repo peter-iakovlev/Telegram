@@ -18,6 +18,7 @@ typedef enum {
 } TGCollectionItemViewPosition;
 
 @class TGCollectionItem;
+@class TGPresentation;
 
 @interface TGCollectionItemView : UICollectionViewCell
 {
@@ -27,10 +28,15 @@ typedef enum {
     int _itemPosition;
 }
 
+
+@property (nonatomic) bool ignoreSeparatorInset;
+
+@property (nonatomic) UIEdgeInsets safeAreaInset;
 @property (nonatomic) CGFloat separatorInset;
 @property (nonatomic) UIEdgeInsets selectionInsets;
 
 @property (nonatomic, strong) TGCollectionItem *boundItem;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)setItemPosition:(int)itemPosition;
 - (void)setItemPosition:(int)itemPosition animated:(bool)animated;

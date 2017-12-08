@@ -1,15 +1,16 @@
 #import "TGItemCollectionGalleryItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGItemCollectionGalleryItemView.h"
 #import "TGItemCollectionGalleryVideoItemView.h"
 
-#import "TGVideoMediaAttachment.h"
-
 @implementation TGItemCollectionGalleryItem
 
-- (instancetype)initWithMedia:(TGInstantPageMedia *)media {
+- (instancetype)initWithIndex:(int32_t)index media:(TGInstantPageMedia *)media {
     self = [super init];
     if (self != nil) {
+        _index = index;
         _media = media;
     }
     return self;

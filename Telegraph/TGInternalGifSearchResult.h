@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGWebSearchResult.h"
-#import "TGWebPageMediaAttachment.h"
 
 @interface TGInternalGifSearchResult : NSObject <TGWebSearchResult>
 

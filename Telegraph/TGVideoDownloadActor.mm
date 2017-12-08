@@ -1,16 +1,14 @@
 #import "TGVideoDownloadActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 
-#import "TGVideoMediaAttachment.h"
+#import <LegacyComponents/TGCache.h>
 
-#import "TGCache.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGFileDownloadActor.h"
 
@@ -777,6 +775,9 @@ public:
                 [ActionStageInstance() dispatchOnStageQueue:^
                 {
                     __strong TGVideoDownloadActor *strongSelf = weakSelf;
+                    if (strongSelf == nil) {
+                        return;
+                    }
                     
                     if (error == nil) {
                         if ([result isKindOfClass:[TLupload_File$upload_file class]]) {

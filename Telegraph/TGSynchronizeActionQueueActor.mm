@@ -299,10 +299,31 @@
                 
                 _currentClearConversation = true;
                 
-                if (_currentDeleteConversationId <= INT_MIN)
-                    [self deleteHistorySuccess:nil];
-                else
-                    self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:true maxId:_currentDeleteConversationTopMessageId accessHash:0 offset:0 actor:self];
+                if (TGPeerIdIsChannel(_currentDeleteConversationId)) {
+                    TLRPCchannels_deleteHistory$channels_deleteHistory *deleteHistory = [[TLRPCchannels_deleteHistory$channels_deleteHistory alloc] init];
+                    deleteHistory.max_id = _currentDeleteConversationTopMessageId;
+                    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+                    inputChannel.channel_id = TGChannelIdFromPeerId(_currentDeleteConversationId);
+                    inputChannel.access_hash = ((TGConversation *)[TGDatabaseInstance() loadChannels:@[@(_currentDeleteConversationId)]][@(_currentDeleteConversationId)]).accessHash;
+                    deleteHistory.channel = inputChannel;
+                    __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                    [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:deleteHistory] startWithNext:nil error:^(__unused id error) {
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf deleteHistorySuccess:nil];
+                        }
+                    } completed:^{
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf deleteHistorySuccess:nil];
+                        }
+                    }]];
+                } else {
+                    if (_currentDeleteConversationId <= INT_MIN)
+                        [self deleteHistorySuccess:nil];
+                    else
+                        self.cancelToken = [TGTelegraphInstance doDeleteConversation:_currentDeleteConversationId onlyClear:true maxId:_currentDeleteConversationTopMessageId accessHash:0 offset:0 actor:self];
+                }
             }
             else if (clearSecretConversationsActions.count != 0)
             {
@@ -331,35 +352,87 @@
             }
             else if (readMessageContentActions.count != 0)
             {
-                TLRPCmessages_readMessageContents$messages_readMessageContents *readMessageContents = [[TLRPCmessages_readMessageContents$messages_readMessageContents alloc] init];
-                
+                NSMutableArray *regularActions = [[NSMutableArray alloc] init];
                 NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+                
+                NSMutableDictionary *messageIdsByChannel = [[NSMutableDictionary alloc] init];
+                NSMutableDictionary *actionsByChannel = [[NSMutableDictionary alloc] init];
+                
                 for (NSValue *value in readMessageContentActions)
                 {
                     TGDatabaseAction action;
                     [value getValue:&action];
-                    [messageIds addObject:@((int32_t)action.subject)];
+                    
+                    if (action.arg1 == 1) {
+                        int64_t peerId = TGPeerIdFromChannelId(action.arg0);
+                        NSMutableArray *array = messageIdsByChannel[@(peerId)];
+                        NSMutableArray *actions = actionsByChannel[@(peerId)];
+                        if (array == nil) {
+                            array = [[NSMutableArray alloc] init];
+                            messageIdsByChannel[@(peerId)] = array;
+                            actions = [[NSMutableArray alloc] init];
+                            actionsByChannel[@(peerId)] = actions;
+                        }
+                        [array addObject:@((int32_t)action.subject)];
+                        [actions addObject:value];
+                    } else {
+                        [regularActions addObject:value];
+                        [messageIds addObject:@((int32_t)action.subject)];
+                    }
                 }
-                readMessageContents.n_id = messageIds;
                 
-                __weak TGSynchronizeActionQueueActor *weakSelf = self;
-                [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:readMessageContents] startWithNext:nil error:^(__unused id error)
-                {
-                    __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
-                    if (strongSelf != nil)
+                if (messageIds.count != 0) {
+                    TLRPCmessages_readMessageContents$messages_readMessageContents *readMessageContents = [[TLRPCmessages_readMessageContents$messages_readMessageContents alloc] init];
+                    readMessageContents.n_id = messageIds;
+                    
+                    __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                    [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:readMessageContents] startWithNext:nil error:^(__unused id error)
                     {
-                        [TGDatabaseInstance() confirmQueuedActions:readMessageContentActions requireFullMatch:false];
-                        [strongSelf execute:nil];
-                    }
-                } completed:^
-                {
-                    __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
-                    if (strongSelf != nil)
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            [TGDatabaseInstance() confirmQueuedActions:regularActions requireFullMatch:true];
+                            [strongSelf execute:nil];
+                        }
+                    } completed:^
                     {
-                        [TGDatabaseInstance() confirmQueuedActions:readMessageContentActions requireFullMatch:false];
-                        [strongSelf execute:nil];
-                    }
-                }]];
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            [TGDatabaseInstance() confirmQueuedActions:regularActions requireFullMatch:true];
+                            [strongSelf execute:nil];
+                        }
+                    }]];
+                } else if (messageIdsByChannel.count != 0) {
+                    NSNumber *nPeerId = messageIdsByChannel.allKeys.firstObject;
+                    NSArray *messageIds = messageIdsByChannel[nPeerId];
+                    
+                    TLRPCchannels_readMessageContents$channels_readMessageContents *readMessageContents = [[TLRPCchannels_readMessageContents$channels_readMessageContents alloc] init];
+                    TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
+                    inputChannel.channel_id = TGChannelIdFromPeerId([nPeerId longLongValue]);
+                    inputChannel.access_hash = ((TGConversation *)[TGDatabaseInstance() loadChannels:@[nPeerId]][nPeerId]).accessHash;
+                    readMessageContents.channel = inputChannel;
+                    readMessageContents.n_id = messageIds;
+                    
+                    __weak TGSynchronizeActionQueueActor *weakSelf = self;
+                    [_currentDisposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:readMessageContents] startWithNext:nil error:^(__unused id error)
+                    {
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            [TGDatabaseInstance() confirmQueuedActions:actionsByChannel[nPeerId] requireFullMatch:true];
+                            [strongSelf execute:nil];
+                        }
+                    } completed:^
+                    {
+                        __strong TGSynchronizeActionQueueActor *strongSelf = weakSelf;
+                        if (strongSelf != nil)
+                        {
+                            [TGDatabaseInstance() confirmQueuedActions:actionsByChannel[nPeerId] requireFullMatch:true];
+                            [strongSelf execute:nil];
+                        }
+                    }]];
+                }
             }
             else if (screenshotMessageContentActions.count != 0) {
                 TLRPCmessages_sendScreenshotNotification$messages_sendScreenshotNotification *sendScreenshotNotification = [[TLRPCmessages_sendScreenshotNotification$messages_sendScreenshotNotification alloc] init];

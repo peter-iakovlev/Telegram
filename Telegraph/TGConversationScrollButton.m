@@ -1,7 +1,6 @@
 #import "TGConversationScrollButton.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGConversationScrollButton () {
     UIImageView *_badgeBackround;
@@ -12,47 +11,56 @@
 
 @implementation TGConversationScrollButton
 
-- (instancetype)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, 38.0f, 38.0f)];
+- (instancetype)initWithMentions:(bool)mentions {
+    self = [super initWithFrame:CGRectMake(0.0f, 0.0f, 38.0f, 38.0f)];
     if (self != nil) {
         static UIImage *image = nil;
+        static UIImage *mentionsImage = nil;
         static UIImage *badgeBackgroundImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(38.0f, 38.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, 37.0f, 37.0f));
-            CGContextSetStrokeColorWithColor(context, UIColorRGB(0xb2b2b2).CGColor);
-            CGContextSetLineWidth(context, TGScreenPixel);
-            CGContextStrokeEllipseInRect(context, CGRectMake(0.25f, 0.25f, 37.5f, 37.5f));
-            
-            CGFloat arrowLineWidth = 1.5f;
-            CGFloat scale = (int)TGScreenScaling();
-            if (scale >= 3.0)
-                arrowLineWidth = 5.0f / 3.0f;
-            
-            CGContextSetLineWidth(context, arrowLineWidth);
-            CGContextSetStrokeColorWithColor(context, UIColorRGB(0x858e99).CGColor);
-            CGContextSetLineCap(context, kCGLineCapRound);
-            CGContextSetLineJoin(context, kCGLineJoinRound);
-            CGContextBeginPath(context);
-            CGPoint position = CGPointMake(9.0f - TGRetinaPixel, 15.0f);
-            CGContextMoveToPoint(context, position.x + 1.0f, position.y + 1.0f);
-            CGContextAddLineToPoint(context, position.x + 10.0f, position.y + 10.0f);
-            CGContextAddLineToPoint(context, position.x + 19.0f, position.y + 1.0f);
-            CGContextStrokePath(context);
-            image = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
+            for (int i = 0; i < 2; i++) {
+                UIGraphicsBeginImageContextWithOptions(CGSizeMake(38.0f, 38.0f), false, 0.0f);
+                CGContextRef context = UIGraphicsGetCurrentContext();
+                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+                CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, 37.0f, 37.0f));
+                CGContextSetStrokeColorWithColor(context, UIColorRGB(0xb2b2b2).CGColor);
+                CGContextSetLineWidth(context, TGScreenPixel);
+                CGContextStrokeEllipseInRect(context, CGRectMake(0.25f, 0.25f, 37.5f, 37.5f));
+                
+                if (i == 1) {
+                    UIImage *icon = TGImageNamed(@"ChatNavigateToUnseenMentionsIcon.png");
+                    [icon drawAtPoint:CGPointMake(CGFloor((38.0f - icon.size.width) / 2.0f), CGFloor((38.0f - icon.size.height) / 2.0f))];
+                    mentionsImage = UIGraphicsGetImageFromCurrentImageContext();
+                } else {
+                    CGFloat arrowLineWidth = 1.5f;
+                    CGFloat scale = (int)TGScreenScaling();
+                    if (scale >= 3.0)
+                        arrowLineWidth = 5.0f / 3.0f;
+                    
+                    CGContextSetLineWidth(context, arrowLineWidth);
+                    CGContextSetStrokeColorWithColor(context, UIColorRGB(0x858e99).CGColor);
+                    CGContextSetLineCap(context, kCGLineCapRound);
+                    CGContextSetLineJoin(context, kCGLineJoinRound);
+                    CGContextBeginPath(context);
+                    CGPoint position = CGPointMake(9.0f - TGRetinaPixel, 15.0f);
+                    CGContextMoveToPoint(context, position.x + 1.0f, position.y + 1.0f);
+                    CGContextAddLineToPoint(context, position.x + 10.0f, position.y + 10.0f);
+                    CGContextAddLineToPoint(context, position.x + 19.0f, position.y + 1.0f);
+                    CGContextStrokePath(context);
+                    image = UIGraphicsGetImageFromCurrentImageContext();
+                }
+                UIGraphicsEndImageContext();
+            }
             
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(22.0f, 22.0f), false, 0.0f);
-            context = UIGraphicsGetCurrentContext();
+            CGContextRef context = UIGraphicsGetCurrentContext();
             CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 22.0f, 22.0f));
             badgeBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:11 topCapHeight:11];
             UIGraphicsEndImageContext();
         });
-        [self setImage:image forState:UIControlStateNormal];
+        [self setImage:mentions ? mentionsImage : image forState:UIControlStateNormal];
         
         _badgeBackround = [[UIImageView alloc] initWithImage:badgeBackgroundImage];
         _badgeLabel = [[UILabel alloc] init];

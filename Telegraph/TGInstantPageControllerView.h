@@ -1,7 +1,7 @@
 #import <UIKit/UIKit.h>
 
 #import "TGInstantPageLayout.h"
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @class TGConversation;
 @class TGWebPageMediaAttachment;
@@ -33,6 +33,7 @@
 @property (nonatomic, copy) void (^fontSizeChanged)(CGFloat multiplier);
 @property (nonatomic, copy) void (^fontSerifChanged)(bool serif);
 @property (nonatomic, copy) void (^autoNightThemeChanged)(bool enabled);
+@property (nonatomic, copy) void (^openInPressed)();
 
 @property (nonatomic, strong) TGWebPageMediaAttachment *webPage;
 @property (nonatomic, strong) TGInstantPagePresentation *presentation;
@@ -42,6 +43,7 @@
 @property (nonatomic, readonly) CGFloat statusBarOffset;
 
 @property (nonatomic, assign) CGFloat statusBarHeight;
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
 
 @property (nonatomic, assign) int64_t peerId;
 @property (nonatomic, assign) int32_t messageId;

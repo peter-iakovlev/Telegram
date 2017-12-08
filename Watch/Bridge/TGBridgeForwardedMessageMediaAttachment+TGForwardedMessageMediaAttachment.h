@@ -1,5 +1,6 @@
 #import "TGBridgeForwardedMessageMediaAttachment.h"
-#import "TGForwardedMessageMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeForwardedMessageMediaAttachment (TGForwardedMessageMediaAttachment)
 

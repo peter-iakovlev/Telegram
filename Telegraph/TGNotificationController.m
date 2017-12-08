@@ -1,12 +1,13 @@
 #import "TGNotificationController.h"
-#import "TGOverlayControllerWindow.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import <objc/runtime.h>
 #import <AVFoundation/AVFoundation.h>
 
-#import "TGOverlayController.h"
-#import "TGMenuSheetController.h"
-#import "TGModernGalleryContainerView.h"
+#import "TGLegacyComponentsContext.h"
+#import <LegacyComponents/TGMenuSheetController.h>
+#import <LegacyComponents/TGModernGalleryContainerView.h>
 #import "TGPickerSheet.h"
 #import "TGSingleStickerPreviewWindow.h"
 #import "TGModernConversationController.h"
@@ -17,15 +18,13 @@
 #import "TGNotificationOverlayView.h"
 #import "TGNotificationView.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
-#import "TGConversation.h"
 #import "TGDatabase.h"
-#import "TGPeerIdAdapter.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 #import "TGDownloadManager.h"
 
 #import "TGSendMessageSignals.h"
@@ -34,7 +33,7 @@
 #import "TGConversationSignals.h"
 #import "TGChatMessageListSignal.h"
 #import "TGStickersSignals.h"
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGMediaStoreContext.h"
 #import "TGPreparedRemoteImageMessage.h"
@@ -46,12 +45,14 @@
 #import "TGGenericPeerPlaylistSignals.h"
 #import "TGInstantPageController.h"
 
+#import "TGAudioMediaAttachment+Telegraph.h"
+
 const NSTimeInterval TGNotificationTimerInterval = 0.5;
 const NSUInteger TGNotificationInterItemDelay = 2;
 const NSUInteger TGNotificationInterItemDelayAfterHide = 1;
 const NSUInteger TGNotificationExpandedTimeout = 60;
 
-@interface TGNotificationWindow : UIWindow
+@interface TGNotificationWindow : TGOverlayControllerWindow
 
 @property (nonatomic, copy) bool (^pointInside)(CGPoint);
 
@@ -130,9 +131,12 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 {
     if (_window == nil)
     {
+        
         _window = [[TGNotificationWindow alloc] initWithFrame:TGAppDelegateInstance.rootController.applicationBounds overInAppBrowser:[TGAppDelegateInstance.rootController.presentedViewController isKindOfClass:[SFSafariViewController class]]];
         _window.tag = 0xbeef;
-        _window.rootViewController = self;
+        _window.rootViewController = [[TGNotificationWindowViewController alloc] init];
+        [_window.rootViewController addChildViewController:self];
+        [_window.rootViewController.view addSubview:self.view];
         
         __weak TGNotificationController *weakSelf = self;
         _window.pointInside = ^bool(CGPoint point)
@@ -158,6 +162,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 
 - (void)removeWindow
 {
+    self.view = nil;
     _window.rootViewController = nil;
     
     _window.hidden = true;
@@ -182,8 +187,12 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     [_overlayView addTarget:self action:@selector(overlayPressed) forControlEvents:UIControlEventTouchUpInside];
     [_wrapperView addSubview:_overlayView];
     
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    safeAreaInset.top = safeAreaInset.top > FLT_EPSILON ? safeAreaInset.top - 20.0f : 0.0f;
+    
     __weak TGNotificationController *weakSelf = self;
     _notificationView = [[TGNotificationView alloc] initWithFrame:CGRectMake(0, 0, 0, TGNotificationDefaultHeight)];
+    _notificationView.safeAreaInset = safeAreaInset;
     _notificationView.sendTextMessage = ^(NSString *text)
     {
         __strong TGNotificationController *strongSelf = weakSelf;
@@ -583,7 +592,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     void (^changeBlock)(void) = ^
     {
-        _notificationView.frame = CGRectOffset(_notificationView.frame, 0, -_notificationView.frame.size.height);
+        _notificationView.frame = CGRectOffset(_notificationView.frame, 0, -_notificationView.frame.size.height - MAX(0, _notificationView.frame.origin.y));
         _overlayView.alpha = 0.0f;
     };
     void (^finishBlock)(BOOL) = ^(__unused BOOL finished)
@@ -625,13 +634,13 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     _notificationView.isPresented = true;
     _notificationView.frame = CGRectMake(0, -TGNotificationDefaultHeight, _wrapperView.frame.size.width, TGNotificationDefaultHeight);
     
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    CGFloat inset = safeAreaInset.top > FLT_EPSILON ? safeAreaInset.top - 20.0f : 0.0f;
     [UIView animateWithDuration:0.35 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:^
     {
-        _notificationView.frame = CGRectMake(0, 0, _notificationView.frame.size.width, _notificationView.frame.size.height);
+        _notificationView.frame = CGRectMake(0, inset, _notificationView.frame.size.width, _notificationView.frame.size.height);
     } completion:^(__unused BOOL finished)
     {
-
-        
         if (iosMajorVersion() > 8)
         {
             [self _updateStatusBarHiding:true];
@@ -717,8 +726,12 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
  
     bool shouldShrink = ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone && UIInterfaceOrientationIsLandscape(toInterfaceOrientation));
     
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    safeAreaInset.top = safeAreaInset.top > FLT_EPSILON ? safeAreaInset.top - 20.0f : 0.0f;
+    
+    CGFloat origin = safeAreaInset.top;
     CGFloat height = _notificationView.isExpanded && !shouldShrink ? [_notificationView expandedHeight] : [_notificationView shrinkedHeight];
-    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, _wrapperView.frame.size.width, height);
+    _notificationView.frame = CGRectMake(0, origin, _wrapperView.frame.size.width, height);
     [_notificationView setShrinked:shouldShrink];
 }
 
@@ -726,8 +739,16 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 {
     [super viewWillLayoutSubviews];
     
-    _overlayView.center = self.view.center;
-    _notificationView.frame = CGRectMake(0, _notificationView.frame.origin.y, _wrapperView.frame.size.width, _notificationView.frame.size.height);
+    if (!_notificationView.isHiding)
+    {
+        UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+        safeAreaInset.top = safeAreaInset.top > FLT_EPSILON ? safeAreaInset.top - 20.0f : 0.0f;
+        
+        CGFloat origin = safeAreaInset.top; // _notificationView.frame.origin.y;
+        _overlayView.center = self.view.center;
+        _notificationView.safeAreaInset = safeAreaInset;
+        _notificationView.frame = CGRectMake(0, origin, _wrapperView.frame.size.width, _notificationView.frame.size.height);
+    }
 }
 
 - (UIWindow *)window
@@ -983,6 +1004,10 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
             }
         }
     }
+    
+    if (self.willPlayAudioAttachment != nil && isVoice)
+        self.willPlayAudioAttachment();
+    
     [TGTelegraphInstance.musicPlayer setPlaylist:[TGGenericPeerPlaylistSignals playlistForPeerId:peerId important:true atMessageId:messageId voice:isVoice] initialItemKey:@(messageId) metadata:@{@"peerId": @(peerId), @"voice": @(isVoice)}];
     
     [self hideAnimated:true];
@@ -1047,7 +1072,14 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
             NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
             contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
             
-            TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = message.mid, .arg0 = 0, .arg1 = 0};
+            int32_t convType = 0;
+            int32_t convPeerId = 0;
+            if (TGPeerIdIsChannel(message.cid)) {
+                convType = 1;
+                convPeerId = TGChannelIdFromPeerId(message.cid);
+            }
+            
+            TGDatabaseAction action = { .type = TGDatabaseActionReadMessageContents, .subject = message.mid, .arg0 = convPeerId, .arg1 = convType};
             [TGDatabaseInstance() storeQueuedActions:[NSArray arrayWithObject:[[NSValue alloc] initWithBytes:&action objCType:@encode(TGDatabaseAction)]]];
             [ActionStageInstance() requestActor:@"/tg/service/synchronizeactionqueue/(global)" options:nil watcher:TGTelegraphInstance];
             
@@ -1257,9 +1289,9 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
 
 @implementation TGNotificationWindow
 
-- (instancetype)initWithFrame:(CGRect)frame overInAppBrowser:(bool)overInAppBrowser
+- (instancetype)initWithFrame:(CGRect)__unused frame overInAppBrowser:(bool)overInAppBrowser
 {
-    self = [super initWithFrame:frame];
+    self = [super initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:nil contentController:nil keepKeyboard:true];
     if (self != nil)
     {
         [self setHugeWindowLevel:!overInAppBrowser];
@@ -1275,7 +1307,7 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-    TGNotificationController *controller = (TGNotificationController *)self.rootViewController;
+    TGNotificationController *controller = (TGNotificationController *)(self.rootViewController.childViewControllers.firstObject);
     
     CGPoint localPoint = [controller.view convertPoint:point fromView:self];
     UIView *result = [controller.view hitTest:localPoint withEvent:event];

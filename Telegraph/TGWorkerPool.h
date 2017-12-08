@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "ASQueue.h"
+#import <LegacyComponents/ASQueue.h>
 
 @class TGWorkerTask;
 

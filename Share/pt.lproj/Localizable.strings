@@ -30,3 +30,11 @@
 "Share.TouchId" = "Insira sua senha";
 
 "Share.AddCaption" = "Escrever um comentário...";
+
+"Share.PasscodeFailedAttempts_1" = "1 Tentativa de Senha Falhada";
+"Share.PasscodeFailedAttempts_2" = "2 Tentativas de Senha Falhadas";
+"Share.PasscodeFailedAttempts_3_10" = "%@ Tentativas de Senha Falhadas";
+"Share.PasscodeFailedAttempts_any" = "%@ Tentativa de Senha Falhada";
+"Share.PasscodeTryAgainIn1Minute" = "Tente novamente em 1 minuto";
+
+"Share.SavedMessages" = "Mensagens Salvas";

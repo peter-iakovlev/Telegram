@@ -1,5 +1,5 @@
 #import "TGBridgeChat.h"
-#import "TGPeerIdAdapter.h"
+#import "TGBridgePeerIdAdapter.h"
 
 NSString *const TGBridgeChatIdentifierKey = @"identifier";
 NSString *const TGBridgeChatDateKey = @"date";

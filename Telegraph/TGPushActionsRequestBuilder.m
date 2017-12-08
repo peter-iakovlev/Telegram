@@ -21,7 +21,10 @@ static NSString *devicePushToken = nil;
 {
     if (devicePushToken == nil)
     {
-        [TGAppDelegateInstance requestDeviceToken:self];
+        TGDispatchOnMainThread(^
+        {
+            [TGAppDelegateInstance requestDeviceToken:self];
+        });
         
         [ActionStageInstance() actionFailed:self.path reason:-1];
         

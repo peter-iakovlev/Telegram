@@ -1,18 +1,17 @@
 #import "TGInstantPageChannelView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
-#import "TGConversation.h"
 #import "TGChannelManagementSignals.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGInstantPageChannelView ()
 {
     TGConversation *_channel;
     bool _overlay;
+    UIEdgeInsets _safeAreaInset;
     
     UIButton *_backgroundButton;
     UILabel *_titleLabel;
@@ -53,7 +52,7 @@
         _joinButton.userInteractionEnabled = false;
         [self addSubview:_joinButton];
         
-        _checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"InstantViewCheck"]];
+        _checkView = [[UIImageView alloc] initWithImage:TGImageNamed(@"InstantViewCheck")];
         _checkView.alpha = 0.0f;
         [self addSubview:_checkView];
         
@@ -81,6 +80,11 @@
 
 - (void)dealloc {
     [_disposable dispose];
+}
+
+- (void)updateSafeAreaInset:(UIEdgeInsets)safeAreaInset {
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
 }
 
 - (void)updatePresentation:(TGInstantPagePresentation *)presentation {
@@ -119,7 +123,7 @@
     
     _titleLabel.textColor = panelTextColor;
     [_joinButton setTitleColor:actionColor forState:UIControlStateNormal];
-    _checkView.image = TGTintedImage([UIImage imageNamed:@"InstantViewCheck"], panelSubtextColor);
+    _checkView.image = TGTintedImage(TGImageNamed(@"InstantViewCheck"), panelSubtextColor);
 }
 
 - (void)buttonPressed {
@@ -196,9 +200,9 @@
     _backgroundButton.frame = self.bounds;
     
     UIEdgeInsets insets = [TGInstantPageChannelView insets];
-    _titleLabel.frame = CGRectMake(insets.left, floor((self.frame.size.height - _titleLabel.frame.size.height) / 2.0f), _titleLabel.frame.size.width, _titleLabel.frame.size.height);
-    _joinButton.frame = CGRectMake(self.frame.size.width - _joinButton.bounds.size.width - insets.right, 0.0f, _joinButton.bounds.size.width, self.frame.size.height);
-    _checkView.frame = CGRectMake(self.frame.size.width - _checkView.bounds.size.width - insets.right, floor((self.frame.size.height - _checkView.bounds.size.height) / 2.0f), _checkView.bounds.size.width, _checkView.bounds.size.height);
+    _titleLabel.frame = CGRectMake(insets.left + _safeAreaInset.left, floor((self.frame.size.height - _titleLabel.frame.size.height) / 2.0f), _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    _joinButton.frame = CGRectMake(self.frame.size.width - _joinButton.bounds.size.width - insets.right - _safeAreaInset.right, 0.0f, _joinButton.bounds.size.width, self.frame.size.height);
+    _checkView.frame = CGRectMake(self.frame.size.width - _checkView.bounds.size.width - insets.right - _safeAreaInset.right, floor((self.frame.size.height - _checkView.bounds.size.height) / 2.0f), _checkView.bounds.size.width, _checkView.bounds.size.height);
 }
 
 + (CGFloat)height {

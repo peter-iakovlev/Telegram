@@ -1,9 +1,8 @@
 #import "TGAttachmentSheetCheckmarkVariantItemView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGAttachmentSheetCheckmarkVariantItemView () {
     TGModernButton *_button;

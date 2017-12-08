@@ -1,7 +1,8 @@
 #import "TGWatchReplyCollectionItemView.h"
 
-#import "TGFont.h"
-#import "TGTextField.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGTextField.h>
 
 @interface TGWatchReplyCollectionItemView () <UITextFieldDelegate>
 {
@@ -47,7 +48,7 @@
     [super layoutSubviews];
     
     CGFloat textOffset = 14.0f;
-    _textField.frame = CGRectMake(textOffset, 0.0f, self.contentView.frame.size.width - 8.0f - 2.0f - textOffset, self.contentView.frame.size.height);
+    _textField.frame = CGRectMake(textOffset + self.safeAreaInset.left, 0.0f, self.contentView.frame.size.width - 8.0f - 2.0f - textOffset - self.safeAreaInset.left - self.safeAreaInset.right, self.contentView.frame.size.height);
 }
 
 - (void)becomeFirstResponder

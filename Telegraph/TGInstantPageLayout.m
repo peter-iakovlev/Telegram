@@ -1,10 +1,8 @@
 #import "TGInstantPageLayout.h"
 
-#import "TGFont.h"
-#import <CoreText/CoreText.h>
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGDateUtils.h"
+#import <CoreText/CoreText.h>
 
 #import "TGInstantPageImageView.h"
 #import "TGInstantPageEmbedView.h"
@@ -14,10 +12,6 @@
 #import "TGInstantPageAudioView.h"
 
 #import "TGEmbedPIPController.h"
-
-#import "TGImageMediaAttachment.h"
-#import "TGVideoMediaAttachment.h"
-#import "TGDocumentMediaAttachment.h"
 
 static const NSString *TGLineSpacingFactorAttribute = @"TGLineSpacingFactorAttribute";
 static const NSString *TGUrlAttribute = @"TGUrlAttribute";
@@ -1312,11 +1306,18 @@ typedef enum {
     return [[TGInstantPageTextItem alloc] initWithFrame:CGRectMake(0.0f, 0.0f, boundingWidth, height) lines:lines text:string.string];
 }
 
-+ (TGInstantPageLayout *)layoutBlock:(TGInstantPageBlock *)block boundingWidth:(CGFloat)boundingWidth horizontalInset:(CGFloat)horizontalInset isCover:(bool)isCover previousItems:(NSArray *)previousItems fillToWidthAndHeight:(bool)fillToWidthAndHeight images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos documents:(NSDictionary<NSNumber *, TGDocumentMediaAttachment *> *)documents webPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId mediaIndexCounter:(NSInteger *)mediaIndexCounter embedIndexCounter:(NSInteger *)embedIndexCounter overlay:(bool)overlay presentation:(TGInstantPagePresentation *)presentation {
++ (int64_t)generateGroupedId
+{
+    int64_t value;
+    arc4random_buf(&value, sizeof(int64_t));
+    return value;
+}
+
++ (TGInstantPageLayout *)layoutBlock:(TGInstantPageBlock *)block boundingWidth:(CGFloat)boundingWidth horizontalInset:(CGFloat)horizontalInset isCover:(bool)isCover previousItems:(NSArray *)previousItems fillToWidthAndHeight:(bool)fillToWidthAndHeight images:(NSDictionary<NSNumber *, TGImageMediaAttachment *> *)images videos:(NSDictionary<NSNumber *, TGVideoMediaAttachment *> *)videos documents:(NSDictionary<NSNumber *, TGDocumentMediaAttachment *> *)documents webPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId mediaIndexCounter:(NSInteger *)mediaIndexCounter embedIndexCounter:(NSInteger *)embedIndexCounter overlay:(bool)overlay presentation:(TGInstantPagePresentation *)presentation groupedId:(int64_t)groupedId {
     CGFloat multiplier = presentation.fontSizeMultiplier;
     
     if ([block isKindOfClass:[TGInstantPageBlockCover class]]) {
-        return [self layoutBlock:((TGInstantPageBlockCover *)block).block boundingWidth:boundingWidth horizontalInset:horizontalInset isCover:true previousItems:previousItems fillToWidthAndHeight:fillToWidthAndHeight images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
+        return [self layoutBlock:((TGInstantPageBlockCover *)block).block boundingWidth:boundingWidth horizontalInset:horizontalInset isCover:true previousItems:previousItems fillToWidthAndHeight:fillToWidthAndHeight images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation groupedId:groupedId];
     } else if ([block isKindOfClass:[TGInstantPageBlockTitle class]]) {
         TGInstantPageStyleStack *styleStack = [[TGInstantPageStyleStack alloc] init];
         [styleStack pushItem:[[TGInstantPageStyleFontSizeItem alloc] initWithSize:round(28.0f * multiplier)]];
@@ -1442,7 +1443,6 @@ typedef enum {
         TGInstantPageTextItem *item = [self layoutTextItemWithString:[self attributedStringForRichText:((TGInstantPageBlockFooter *)block).text styleStack:styleStack] boundingWidth:boundingWidth - horizontalInset - horizontalInset];
         item.frame = CGRectOffset(item.frame, horizontalInset, 0.0f);
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:item.frame.size items:@[item]];
-
     } else if ([block isKindOfClass:[TGInstantPageBlockDivider class]]) {
         CGFloat lineWidth = CGFloor(boundingWidth / 2.0f);
         TGInstantPageShapeItem *shapeItem = [[TGInstantPageShapeItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - lineWidth) / 2.0f), 0.0f, lineWidth, 1.0f) shapeFrame:CGRectMake(0.0f, 0.0f, lineWidth, 1.0f) shape:TGInstantPageShapeRect color:[presentation.subtextColor colorWithAlphaComponent:0.4f]];
@@ -1594,7 +1594,7 @@ typedef enum {
                 CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
                 TGImageMediaAttachment *mediaWithCaption = [imageMedia copy];
                 mediaWithCaption.caption = richPlainText(photoBlock.caption);
-                TGInstantPageMediaItem *mediaItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - filledSize.width) / 2.0f), 0.0f, filledSize.width, filledSize.height) media:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption] arguments:[[TGInstantPageImageMediaArguments alloc] initWithInteractive:true roundCorners:false fit:false]];
+                TGInstantPageMediaItem *mediaItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - filledSize.width) / 2.0f), 0.0f, filledSize.width, filledSize.height) media:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption groupedId:groupedId] arguments:[[TGInstantPageImageMediaArguments alloc] initWithInteractive:true roundCorners:false fit:false]];
                 [items addObject:mediaItem];
                 contentSize.height += filledSize.height;
                 
@@ -1646,7 +1646,7 @@ typedef enum {
                 TGVideoMediaAttachment *videoWithCaption = [videoMedia copy];
                 videoWithCaption.caption = richPlainText(videoBlock.caption);
                 videoWithCaption.loopVideo = videoBlock.loop;
-                TGInstantPageMediaItem *mediaItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - filledSize.width) / 2.0f), 0.0f, filledSize.width, filledSize.height) media:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:videoWithCaption] arguments:[[TGInstantPageVideoMediaArguments alloc] initWithInteractive:true autoplay:videoBlock.autoplay || videoBlock.loop]];
+                TGInstantPageMediaItem *mediaItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - filledSize.width) / 2.0f), 0.0f, filledSize.width, filledSize.height) media:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:videoWithCaption groupedId:groupedId] arguments:[[TGInstantPageVideoMediaArguments alloc] initWithInteractive:true autoplay:videoBlock.autoplay || videoBlock.loop]];
                 [items addObject:mediaItem];
                 contentSize.height += filledSize.height;
                 
@@ -1701,6 +1701,7 @@ typedef enum {
         NSMutableArray<TGInstantPageMedia *> *medias = [[NSMutableArray alloc] init];
         CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
         
+        int64_t slideshowGroupedId = [self generateGroupedId];
         NSMutableArray *items = [[NSMutableArray alloc] init];
         
         for (TGInstantPageBlock *subBlock in slideshowBlock.items) {
@@ -1717,8 +1718,22 @@ typedef enum {
                         
                         CGSize filledSize = TGFitSize(imageSize, CGSizeMake(boundingWidth, 1200.0f));
                         contentSize.height = MIN(MAX(contentSize.height, filledSize.height), boundingWidth);
-                        [medias addObject:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption]];
+                        [medias addObject:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption groupedId:slideshowGroupedId]];
                     }
+                }
+            } else if ([subBlock isKindOfClass:[TGInstantPageBlockVideo class]]) {
+                TGInstantPageBlockVideo *videoBlock = (TGInstantPageBlockVideo *)subBlock;
+                TGVideoMediaAttachment *videoMedia = videos[@(videoBlock.videoId)];
+                if (videoMedia != nil) {
+                    TGVideoMediaAttachment *mediaWithCaption = [videoMedia copy];
+                    mediaWithCaption.caption = richPlainText(videoBlock.caption);
+                    NSInteger mediaIndex = *mediaIndexCounter;
+                    (*mediaIndexCounter)++;
+                    
+                    CGSize videoSize = videoMedia.dimensions;
+                    CGSize filledSize = TGFitSize(videoSize, CGSizeMake(boundingWidth, 1200.0f));
+                    contentSize.height = MIN(MAX(contentSize.height, filledSize.height), boundingWidth);
+                    [medias addObject:[[TGInstantPageMedia alloc] initWithIndex:mediaIndex media:mediaWithCaption groupedId:groupedId]];
                 }
             }
         }
@@ -1749,13 +1764,14 @@ typedef enum {
         
         NSMutableArray *items = [[NSMutableArray alloc] init];
         
+        int64_t collageGroupedId = [self generateGroupedId];
         CGPoint nextItemOrigin = CGPointMake(0.0f, 0.0f);
         for (TGInstantPageBlock *subBlock in collageBlock.items) {
             if (nextItemOrigin.x + itemSize > boundingWidth) {
                 nextItemOrigin.x = 0.0f;
                 nextItemOrigin.y += itemSize + spacing;
             }
-            TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:itemSize horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:true images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
+            TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:itemSize horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:true images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation groupedId:collageGroupedId];
             [items addObjectsFromArray:[subLayout flattenedItemsWithOrigin:nextItemOrigin]];
             nextItemOrigin.x += itemSize + spacing;
         }
@@ -1778,7 +1794,7 @@ typedef enum {
         if (postBlock.author.length != 0) {
             TGImageMediaAttachment *avatar = postBlock.authorPhotoId == 0 ? nil : images[@(postBlock.authorPhotoId)];
             if (avatar != nil) {
-                TGInstantPageMediaItem *avatarItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(horizontalInset + lineInset + 1.0f, contentSize.height - 2.0f, 50.0f, 50.0f) media:[[TGInstantPageMedia alloc] initWithIndex:-1 media:avatar] arguments:[[TGInstantPageImageMediaArguments alloc] initWithInteractive:false roundCorners:true fit:false]];
+                TGInstantPageMediaItem *avatarItem = [[TGInstantPageMediaItem alloc] initWithFrame:CGRectMake(horizontalInset + lineInset + 1.0f, contentSize.height - 2.0f, 50.0f, 50.0f) media:[[TGInstantPageMedia alloc] initWithIndex:-1 media:avatar groupedId:0] arguments:[[TGInstantPageImageMediaArguments alloc] initWithInteractive:false roundCorners:true fit:false]];
                 [items addObject:avatarItem];
                 avatarInset += 62.0f;
                 avatarVerticalInset += 6.0f;
@@ -1827,7 +1843,7 @@ typedef enum {
             
             TGInstantPageBlock *previousBlock = nil;
             for (TGInstantPageBlock *subBlock in postBlock.blocks) {
-                TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation];
+                TGInstantPageLayout *subLayout = [self layoutBlock:subBlock boundingWidth:boundingWidth - horizontalInset - horizontalInset - lineInset horizontalInset:0.0f isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:mediaIndexCounter embedIndexCounter:embedIndexCounter overlay:overlay presentation:presentation groupedId:groupedId];
                 CGFloat spacing = spacingBetweenBlocks(previousBlock, subBlock) * presentation.fontSizeMultiplier;
                 NSArray *blockItems = [subLayout flattenedItemsWithOrigin:CGPointMake(horizontalInset + lineInset, contentSize.height + spacing)];
                 [items addObjectsFromArray:blockItems];
@@ -1906,7 +1922,7 @@ typedef enum {
     return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(0.0f, 0.0f) items:@[]];
 }
 
-+ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth presentation:(TGInstantPagePresentation *)presentation {
++ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth safeAreaInset:(UIEdgeInsets)safeAreaInset presentation:(TGInstantPagePresentation *)presentation {
     NSArray<TGInstantPageBlock *> *pageBlocks = webPage.instantPage.blocks;
     
     CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
@@ -1960,7 +1976,7 @@ typedef enum {
             spacingBetween -= previousLayout.contentSize.height - previousLayout.items.firstObject.frame.size.height;
         }
         
-        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter overlay:(spacingBetween < -FLT_EPSILON) presentation:presentation];
+        TGInstantPageLayout *blockLayout = [self layoutBlock:block boundingWidth:boundingWidth horizontalInset:17.0f + safeAreaInset.left isCover:false previousItems:items fillToWidthAndHeight:false images:images videos:videos documents:documents webPage:webPage peerId:peerId messageId:messageId mediaIndexCounter:&mediaIndexCounter embedIndexCounter:&embedIndexCounter overlay:(spacingBetween < -FLT_EPSILON) presentation:presentation groupedId:0];
         
         CGFloat spacing = blockLayout.contentSize.height > FLT_EPSILON ? spacingBetween : 0.0f;
         NSArray *blockItems = [blockLayout flattenedItemsWithOrigin:CGPointMake(0.0f, contentSize.height + spacing)];

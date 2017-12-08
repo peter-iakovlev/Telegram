@@ -1,5 +1,5 @@
 #import "TGContactModel.h"
-#import "TGPhoneUtils.h"
+#import "TGLegacyDatabasePhoneUtils.h"
 
 @implementation TGPhoneNumberModel
 
@@ -8,8 +8,8 @@
     self = [super init];
     if (self != nil)
     {
-        _phoneNumber = [TGPhoneUtils cleanInternationalPhone:phoneNumber forceInternational:false];
-        _displayPhoneNumber = [TGPhoneUtils formatPhone:_phoneNumber forceInternational:false];
+        _phoneNumber = [TGLegacyDatabasePhoneUtils cleanInternationalPhone:phoneNumber forceInternational:false];
+        _displayPhoneNumber = [TGLegacyDatabasePhoneUtils formatPhone:_phoneNumber forceInternational:false];
         _label = label;
     }
     return self;

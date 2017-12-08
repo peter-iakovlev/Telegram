@@ -9,8 +9,9 @@
 @property (nonatomic, strong) NSString *username;
 @property (nonatomic) bool usernameValid;
 @property (nonatomic) bool usernameChecking;
+@property (nonatomic) bool clearable;
 
-@property (nonatomic) bool autoCapitalize;
+@property (nonatomic) UITextAutocapitalizationType autocapitalizationType;
 @property (nonatomic) bool secureEntry;
 @property (nonatomic) UIKeyboardType keyboardType;
 @property (nonatomic) UIReturnKeyType returnKeyType;
@@ -19,6 +20,7 @@
 
 @property (nonatomic, copy) void (^usernameChanged)(NSString *);
 @property (nonatomic, copy) void (^returnPressed)(TGUsernameCollectionItem *);
+@property (nonatomic, copy) NSString *(^textPasted)(NSRange, NSString *);
 
 - (void)becomeFirstResponder;
 

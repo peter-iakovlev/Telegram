@@ -1,7 +1,7 @@
 #import "TGSynchronizationStateRequestActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegramNetworking.h"
 
@@ -15,11 +15,11 @@
 - (void)execute:(NSDictionary *)__unused options
 {
     int state = [ActionStageInstance() requestActorStateNow:@"/tg/service/updatestate"] ? 1 : 0;
-    if ([[TGTelegramNetworking instance] isUpdating])
+    if ([[TGTelegramNetworking maybeInstance] isUpdating])
         state |= 1;
-    if ([[TGTelegramNetworking instance] isConnecting])
+    if ([[TGTelegramNetworking maybeInstance] isConnecting])
         state |= 2;
-    if (![[TGTelegramNetworking instance] isNetworkAvailable])
+    if (![[TGTelegramNetworking maybeInstance] isNetworkAvailable])
         state |= 4;
     
     [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphObjectNode alloc] initWithObject:[NSNumber numberWithInt:state]]];

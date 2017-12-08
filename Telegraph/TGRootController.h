@@ -1,4 +1,4 @@
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import <SSignalKit/SSignalKit.h>
 
@@ -22,6 +22,7 @@
 
 - (SSignal *)sizeClass;
 - (bool)isSplitView;
+- (bool)isSlideOver;
 - (CGRect)applicationBounds;
 
 - (bool)callStatusBarHidden;
@@ -31,6 +32,8 @@
 - (void)popToContentController:(UIViewController *)contentController;
 - (void)clearContentControllers;
 - (NSArray *)viewControllers;
+
+- (void)resetControllers;
 
 - (void)localizationUpdated;
 

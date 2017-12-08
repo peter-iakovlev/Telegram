@@ -23,6 +23,9 @@ typedef enum {
 + (SSignal *)registerDeviceToken:(NSString *)deviceToken voip:(bool)voip;
 + (SSignal *)unregisterDeviceToken:(NSString *)deviceToken voip:(bool)voip;
 
++ (SSignal *)currentContactsJoinedNotificationSettings;
++ (SSignal *)updateContactsJoinedNotificationSettings:(bool)enabled;
+
 + (SSignal *)fetchBackupIps:(bool)isTestingEnvironment;
 
 @end

@@ -11,6 +11,7 @@
 @property (nonatomic, copy) void (^fontSizeChanged)(CGFloat multiplier);
 @property (nonatomic, copy) void (^fontSerifChanged)(bool serif);
 @property (nonatomic, copy) void (^autoNightThemeChanged)(bool enabled);
+@property (nonatomic, copy) void (^openInPressed)(void);
 
 - (instancetype)initWithFrame:(CGRect)frame presentation:(TGInstantPagePresentation *)presentation autoNightThemeEnabled:(bool)autoNightThemeEnabled;
 

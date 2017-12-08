@@ -1,13 +1,8 @@
 #import "TGDialogListSearchCell.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-
-#import "TGLabel.h"
-
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGColor.h"
 
@@ -106,6 +101,25 @@
     return self;
 }
 
+- (void)dealloc
+{
+    [_channelDisposable dispose];
+}
+
+- (SMetaDisposable *)channelDisposable
+{
+    if (_channelDisposable == nil)
+        _channelDisposable = [[SMetaDisposable alloc] init];
+    return _channelDisposable;
+}
+
+- (void)prepareForReuse
+{
+    [super prepareForReuse];
+    
+    [_channelDisposable setDisposable:nil];
+}
+
 - (void)setBoldMode:(int)index
 {
     _boldMode = index;
@@ -181,7 +195,11 @@
         UIGraphicsEndImageContext();
     });
     
-    if (_avatarUrl != nil)
+    if (_isSavedMessages)
+    {
+        [_avatarView loadSavedMessagesWithSize:CGSizeMake(40.0f, 40.0f) placeholder:placeholder];
+    }
+    else if (_avatarUrl != nil)
     {
         _avatarView.fadeTransitionDuration = animated ? 0.14 : 0.3;
         if (![_avatarUrl isEqualToString:_avatarView.currentUrl])
@@ -245,8 +263,8 @@
     }
     
     CGRect frame = self.selectedBackgroundView.frame;
-    frame.origin.y = true ? -1 : 0;
-    frame.size.height = self.frame.size.height + (true ? 1 : 0);
+    frame.origin.y = -1;
+    frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
     
     CGSize viewSize = self.contentView.frame.size;
@@ -260,7 +278,7 @@
     CGRect unreadCountBackgroundFrame = CGRectMake(frame.size.width - 11.0f - backgroundWidth, 15.0f, backgroundWidth, 20.0f);
     _unreadCountBackgrond.frame = unreadCountBackgroundFrame;
     CGRect unreadCountLabelFrame = _unreadCountLabel.frame;
-    unreadCountLabelFrame.origin = CGPointMake(unreadCountBackgroundFrame.origin.x + TGRetinaFloor(((unreadCountBackgroundFrame.size.width - countTextWidth) / 2.0f)) - (TGIsRetina() ? 0.0f : 0.0f), unreadCountBackgroundFrame.origin.y + 1.0f -TGRetinaPixel);
+    unreadCountLabelFrame.origin = CGPointMake(unreadCountBackgroundFrame.origin.x + TGRetinaFloor(((unreadCountBackgroundFrame.size.width - countTextWidth) / 2.0f)) - (TGIsRetina() ? 0.0f : 0.0f), unreadCountBackgroundFrame.origin.y + 1.0f - TGScreenPixel);
     _unreadCountLabel.frame = unreadCountLabelFrame;
     
     if (!_unreadCountBackgrond.hidden)
@@ -303,7 +321,7 @@
     }
     else
     {
-        titleLabelsY = 4.0f + TGRetinaPixel;
+        titleLabelsY = 4.0f + TGScreenPixel;
         
         if (!_titleLabelFirst.hidden)
         {
@@ -325,7 +343,7 @@
     }
     
     if (!_verifiedIcon.hidden) {
-        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, avatarWidth + 21 + leftPadding + titleWidth + 3.0f, titleLabelsY + 5.0f - TGRetinaPixel);
+        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, avatarWidth + 21 + leftPadding + titleWidth + 3.0f, titleLabelsY + 5.0f - TGScreenPixel);
     }
 }
 

@@ -1,13 +1,10 @@
 #import "TGReplyHeaderActionModel.h"
 
-#import "TGUser.h"
-#import "TGActionMediaAttachment.h"
-#import "TGImageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDatabase.h"
 
 #import "TGTelegraph.h"
-#import "TGStringUtils.h"
 #import "TGCurrencyFormatter.h"
 
 @implementation TGReplyHeaderActionModel
@@ -199,7 +196,7 @@
             }
             
             NSString *baseString = TGLocalized(formatStringBase);
-            baseString = [baseString stringByReplacingOccurrencesOfString:@"%@" withString:@"{game}"];
+            baseString = [baseString stringByReplacingOccurrencesOfString:@"%@" withString:@"{score}"];
             
             NSMutableString *formatString = [[NSMutableString alloc] initWithString:baseString];
             

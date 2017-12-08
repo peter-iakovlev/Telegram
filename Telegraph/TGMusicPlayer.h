@@ -18,6 +18,12 @@ typedef struct {
 } TGMusicPlayerItemPosition;
 
 typedef enum {
+    TGMusicPlayerOrderTypeNewestFirst,
+    TGMusicPlayerOrderTypeOldestFirst,
+    TGMusicPlayerOrderTypeShuffle
+} TGMusicPlayerOrderType;
+
+typedef enum {
     TGMusicPlayerRepeatTypeNone,
     TGMusicPlayerRepeatTypeAll,
     TGMusicPlayerRepeatTypeOne
@@ -39,7 +45,7 @@ typedef enum {
 
 @property (nonatomic, readonly) NSTimeInterval timestamp;
 
-@property (nonatomic, readonly) bool shuffle;
+@property (nonatomic, readonly) TGMusicPlayerOrderType orderType;
 @property (nonatomic, readonly) TGMusicPlayerRepeatType repeatType;
 
 @property (nonatomic, strong, readonly) SSignal *albumArt;
@@ -53,8 +59,10 @@ typedef enum {
 
 - (SSignal *)playingStatus;
 - (SSignal *)playlistFinished;
+- (SSignal *)playlist;
 
 - (void)setPlaylist:(SSignal *)playlist initialItemKey:(id<NSCopying>)initialItemKey metadata:(id)metadata;
+- (void)playMediaFromItem:(TGMusicPlayerItem *)item;
 
 - (void)controlPlay;
 - (void)controlPause;
@@ -65,7 +73,7 @@ typedef enum {
 - (void)controlSeekToPosition:(CGFloat)position;
 - (void)_dispatch:(dispatch_block_t)block;
 
-- (void)controlShuffle;
+- (void)controlOrder;
 - (void)controlRepeat;
 
 + (bool)isHeadsetPluggedIn;

@@ -1,14 +1,10 @@
 #import "TGLoginResetAccountControllerView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
-#import "TGStringUtils.h"
-
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 @interface TGLoginResetAccountControllerView () {
     UIView *_grayBackground;

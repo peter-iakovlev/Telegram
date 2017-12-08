@@ -1,5 +1,7 @@
 #import "TGProxySetupController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
 #import "TGAppDelegate.h"
@@ -12,8 +14,6 @@
 #import "TGCommentCollectionItem.h"
 
 #import "TGAlertView.h"
-
-#import "TGStringUtils.h"
 
 #import "TGDatabase.h"
 

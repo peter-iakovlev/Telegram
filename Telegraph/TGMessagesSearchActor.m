@@ -2,8 +2,8 @@
 
 #import "TGUserDataRequestBuilder.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGDatabase.h"
 
@@ -15,6 +15,8 @@
 
 #import "TGConversation+Telegraph.h"
 #import "TGMessage+Telegraph.h"
+
+#import "TLRPCmessages_search.h"
 
 @interface TGMessagesSearchActor ()
 {
@@ -54,7 +56,7 @@
             
             MTRequest *request = [[MTRequest alloc] init];
             
-            TLRPCmessages_search$messages_search *search = [[TLRPCmessages_search$messages_search alloc] init];
+            TLRPCmessages_search *search = [[TLRPCmessages_search alloc] init];
             search.peer = [[TLInputPeer$inputPeerEmpty alloc] init];
             search.q = query;
             search.filter = [[TLMessagesFilter$inputMessagesFilterEmpty alloc] init];
@@ -63,6 +65,7 @@
             search.offset = 0;
             search.limit = 100;
             search.max_id = 0;
+            search.from_id = [[TLInputUser$inputUserEmpty alloc] init];
             request.body = search;
             
             __weak TGMessagesSearchActor *weakSelf = self;

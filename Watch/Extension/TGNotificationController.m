@@ -18,7 +18,7 @@
 #import "TGBridgeUser.h"
 #import "TGBridgeUserCache.h"
 
-#import "TGPeerIdAdapter.h"
+#import "TGBridgePeerIdAdapter.h"
 
 #import <WatchConnectivity/WatchConnectivity.h>
 

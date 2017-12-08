@@ -1,6 +1,6 @@
 #import "TGWebSearchResult.h"
-#import "TGModernMediaListItem.h"
-#import "TGModernMediaListSelectableItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
+#import <LegacyComponents/TGModernMediaListSelectableItem.h>
 
 @protocol TGWebSearchListItem <TGModernMediaListItem, TGModernMediaListSelectableItem>
 

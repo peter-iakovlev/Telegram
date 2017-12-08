@@ -1,4 +1,4 @@
-#import "TGModernGalleryZoomableItemView.h"
+#import <LegacyComponents/TGModernGalleryZoomableItemView.h>
 
 @interface TGGenericPeerMediaGalleryGifItemView : TGModernGalleryZoomableItemView
 

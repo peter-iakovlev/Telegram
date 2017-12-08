@@ -176,6 +176,7 @@
     object.views = metaObject->getInt32((int32_t)0xe59deddf);
     object.edit_date = metaObject->getInt32((int32_t)0xd476805c);
     object.post_author = metaObject->getString((int32_t)0x6d88316);
+    object.grouped_id = metaObject->getInt64((int32_t)0x0695dbc4);
     return object;
 }
 
@@ -271,8 +272,13 @@
         value.nativeObject = self.post_author;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6d88316, value));
     }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.grouped_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x0695dbc4, value));
+    }
 }
-
 
 @end
 

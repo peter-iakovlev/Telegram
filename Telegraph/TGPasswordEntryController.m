@@ -1,8 +1,8 @@
 #import "TGPasswordEntryController.h"
 
-#import "TGTelegraph.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGNavigationController.h"
+#import "TGTelegraph.h"
 
 #import "TGUsernameCollectionItem.h"
 #import "TGCommentCollectionItem.h"
@@ -11,7 +11,7 @@
 #import "TGTwoStepVerifyPasswordSignal.h"
 #import "TGTwoStepRecoverySignals.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAlertView.h"
 
@@ -178,17 +178,6 @@
                             [strongSelf dismissViewControllerAnimated:true completion:nil];
                             
                             [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-                            
-                            /*if (_resetSection == nil)
-                            {
-                                TGButtonCollectionItem *resetItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"TwoStepAuth.ResetAccount") action:@selector(resetAccountPressed)];
-                                resetItem.titleColor = TGDestructiveAccentColor();
-                                resetItem.deselectAutomatically = true;
-                                TGCommentCollectionItem *resetHelpItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"TwoStepAuth.ResetAccountHelp")];
-                                strongSelf->_resetSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetItem, resetHelpItem]];
-                                [strongSelf.menuSections addSection:strongSelf->_resetSection];
-                                [strongSelf.collectionView reloadData];
-                            }*/
                         }
                     }
                 };
@@ -206,7 +195,7 @@
             }
         } error:^(id error)
         {
-            NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+            NSString *errorText = TGLocalized(@"Login.UnknownError");
             if ([error hasPrefix:@"FLOOD_WAIT"])
                 errorText = TGLocalized(@"TwoStepAuth.FloodError");
             [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
@@ -215,17 +204,6 @@
     else
     {
         [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryUnavailable") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-        
-        /*if (_resetSection == nil)
-        {
-            TGButtonCollectionItem *resetItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"TwoStepAuth.ResetAccount") action:@selector(resetAccountPressed)];
-            resetItem.titleColor = TGDestructiveAccentColor();
-            resetItem.deselectAutomatically = true;
-            TGCommentCollectionItem *resetHelpItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"TwoStepAuth.ResetAccountHelp")];
-            _resetSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetItem, resetHelpItem]];
-            [self.menuSections addSection:_resetSection];
-            [self.collectionView reloadData];
-        }*/
     }
 }
 

@@ -6,7 +6,7 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TL/TLMetaScheme.h"
 
@@ -16,6 +16,7 @@
 #import "SecretLayer23.h"
 #import "SecretLayer46.h"
 #import "SecretLayer66.h"
+#import "SecretLayer73.h"
 
 #import "TGStoredIncomingMessageFileInfo.h"
 
@@ -32,5 +33,6 @@
 - (instancetype)initWithDecryptedMessageDesc23:(Secret23_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
 - (instancetype)initWithDecryptedMessageDesc45:(Secret46_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
 - (instancetype)initWithDecryptedMessageDesc66:(Secret46_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
+- (instancetype)initWithDecryptedMessageDesc73:(Secret66_DecryptedMessage *)desc encryptedFile:(TGStoredIncomingMessageFileInfo *)encryptedFile conversationId:(int64_t)conversationId fromUid:(int)fromUid date:(int)date;
 
 @end

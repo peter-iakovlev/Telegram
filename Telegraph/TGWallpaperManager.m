@@ -1,21 +1,12 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGWallpaperManager.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGWallpaperInfo.h"
-#import "TGColorWallpaperInfo.h"
-#import "TGBuiltinWallpaperInfo.h"
+#import <LegacyComponents/ActionStage.h>
 
-#import "TGImageUtils.h"
-#import "TGViewController.h"
+#import <LegacyComponents/TGWallpaperInfo.h>
+#import <LegacyComponents/TGColorWallpaperInfo.h>
+#import <LegacyComponents/TGBuiltinWallpaperInfo.h>
 
 #import "TGAppDelegate.h"
 

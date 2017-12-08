@@ -11,5 +11,6 @@
 
 + (SSignal *)chatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize;
 + (SSignal *)chatListAvatarWithContext:(TGShareContext *)context letters:(NSString *)letters peerId:(TGPeerId)peerId imageSize:(CGSize)imageSize;
++ (SSignal *)chatListAvatarForSavedMessagesWithContext:(TGShareContext *)context imageSize:(CGSize)imageSize;
 
 @end

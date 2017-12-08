@@ -8,10 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "TGMessage.h"
-#import "TGImageInfo.h"
-#import "TGVideoMediaAttachment.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 typedef enum {
     TGMediaItemTypePhoto = 0,

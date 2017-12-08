@@ -1,7 +1,7 @@
 #import "TGMediaStoreContext.h"
 
 #import "ATQueue.h"
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
 #import <pthread.h>
 
@@ -33,8 +33,10 @@
     {
         _mediaImageAverageColorCache = [[NSMutableDictionary alloc] init];
         
-        float factor = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 3.0f : 1.0f;
+        CGFloat factor = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 3.0f : 1.0f;
         _mediaImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:(NSUInteger)(2 * 1024 * 1024 * factor) hardMemoryLimit:(NSUInteger)(3 * 1024 * 1024 * factor)];
+        
+        factor = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad || TGScreenScaling() > 2.0f ? 3.0f : 1.0f;
         _mediaReducedImageCache = [[TGMemoryImageCache alloc] initWithSoftMemoryLimit:(NSUInteger)(1.5 * 1024 * 1024 * factor) hardMemoryLimit:(NSUInteger)(2.5 * 1024 * 1024 * factor)];
         
         pthread_rwlock_init(&_mediaImageAverageColorCacheLock, NULL);

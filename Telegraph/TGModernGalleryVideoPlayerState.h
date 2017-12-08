@@ -1,4 +1,4 @@
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @interface TGModernGalleryVideoPlayerState : NSObject <TGPIPAblePlayerState>
 

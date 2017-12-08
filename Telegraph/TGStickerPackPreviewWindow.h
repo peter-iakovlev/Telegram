@@ -1,14 +1,15 @@
 #import <UIKit/UIKit.h>
 
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGStickerPackPreviewView.h"
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 @interface TGStickerPackPreviewWindow : TGOverlayControllerWindow
 
 @property (nonatomic, strong, readonly) TGStickerPackPreviewView *view;
 
-- (instancetype)initWithParentController:(TGViewController *)parentController stickerPack:(TGStickerPack *)stickerPack;
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController stickerPack:(TGStickerPack *)stickerPack;
 
 @end

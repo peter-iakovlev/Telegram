@@ -1,6 +1,6 @@
 #import "TGArchivedStickerPacksAlert.h"
 
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGArchivedStickerPacksAlertController : TGOverlayController {
     TGArchivedStickerPacksAlertView *_archivedStickerPacksAlertView;
@@ -58,11 +58,11 @@
 
 @implementation TGArchivedStickerPacksAlert
 
-- (instancetype)initWithParentController:(TGViewController *)parentController stickerPacks:(NSArray *)stickerPacks {
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController stickerPacks:(NSArray *)stickerPacks {
     TGArchivedStickerPacksAlertView *alertView = [[TGArchivedStickerPacksAlertView alloc] init];
     alertView.controller = parentController;
     
-    self = [super initWithParentController:parentController contentController:[[TGArchivedStickerPacksAlertController alloc] initWithArchivedStickerPacksAlertView:alertView]];
+    self = [super initWithManager:manager parentController:parentController contentController:[[TGArchivedStickerPacksAlertController alloc] initWithArchivedStickerPacksAlertView:alertView]];
     if (self != nil)
     {
         _view = alertView;

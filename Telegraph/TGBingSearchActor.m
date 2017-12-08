@@ -1,11 +1,10 @@
 #import "TGBingSearchActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
-
-#import "TGStringUtils.h"
-#import "TGPhoneUtils.h"
 
 #import "TGBingSearchResultItem.h"
 

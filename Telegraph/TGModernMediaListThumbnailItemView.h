@@ -1,4 +1,4 @@
-#import "TGModernMediaListItemContentView.h"
+#import <LegacyComponents/TGModernMediaListItemContentView.h>
 
 #import <SSignalKit/SSignalKit.h>
 

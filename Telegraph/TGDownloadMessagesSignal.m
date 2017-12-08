@@ -1,5 +1,7 @@
 #import "TGDownloadMessagesSignal.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
@@ -7,9 +9,10 @@
 
 #import "TGMessage+Telegraph.h"
 
-#import "TGPeerIdAdapter.h"
-
 #import "TGStickersSignals.h"
+
+#import "TGTelegraph.h"
+#import "TGDatabase.h"
 
 @implementation TGDownloadMessage
 
@@ -158,6 +161,100 @@
         }
         return [SSignal combineSignals:signals];
     }];
+}
+
++ (SSignal *)loadUnseenMentionMessageId:(int64_t)peerId accessHash:(int64_t)accessHash maxId:(int32_t)maxId {
+    TLRPCmessages_getUnreadMentions$messages_getUnreadMentions *getUnreadMentions = [[TLRPCmessages_getUnreadMentions$messages_getUnreadMentions alloc] init];
+    int32_t limit = 100;
+    getUnreadMentions.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
+    getUnreadMentions.offset_id = maxId;
+    getUnreadMentions.add_offset = -limit;
+    getUnreadMentions.limit = limit;
+    getUnreadMentions.max_id = INT32_MAX;
+    getUnreadMentions.min_id = maxId - 1;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getUnreadMentions] mapToSignal:^SSignal *(TLmessages_Messages *result) {
+        return [TGDatabaseInstance() modify:^id{
+            NSMutableArray *messageIds = [[NSMutableArray alloc] init];
+            NSMutableArray *messageUpdates = [[NSMutableArray alloc] init];
+            for (TLMessage *message in result.messages) {
+                [messageIds addObject:@(message.n_id)];
+                [messageUpdates addObject:[[TGDatabaseUpdateMentionUnread alloc] initWithPeerId:peerId messageId:message.n_id]];
+            }
+            [TGDatabaseInstance() _addUnreadMensionMessageIds:peerId messageIds:messageIds replaceAfter:maxId <= 1 ? 1 : 0 afterFinal:(int32_t)messageIds.count < limit];
+            [TGDatabaseInstance() transactionUpdateMessages:messageUpdates updateConversationDatas:nil];
+            
+            return messageIds.firstObject;
+        }];
+    }];
+}
+
++ (SSignal *)earliestUnseenMentionMessageId:(int64_t)peerId accessHash:(int64_t)accessHash {
+    return [[TGDatabaseInstance() modify:^id{
+        int32_t loadRequiredAfterMessageId = 0;
+        int32_t localId = [TGDatabaseInstance() _nextUnreadMentionMessageId:peerId loadRequiredAfterMessageId:&loadRequiredAfterMessageId];
+        
+        if (localId != 0) {
+            [TGDatabaseInstance() transactionUpdateMessages:@[[[TGDatabaseUpdateMentionUnread alloc] initWithPeerId:peerId messageId:localId]] updateConversationDatas:nil];
+            
+            return [SSignal single:@(localId)];
+        } else if (loadRequiredAfterMessageId != 0) {
+            return [self loadUnseenMentionMessageId:peerId accessHash:accessHash maxId:loadRequiredAfterMessageId];
+        } else {
+            [TGDatabaseInstance() _addUnreadMensionMessageIds:peerId messageIds:@[] replaceAfter:1 afterFinal:true];
+            return [SSignal single:nil];
+        }
+    }] switchToLatest];
+}
+
+static dispatch_block_t recursiveBlock(void (^block)(dispatch_block_t recurse))
+{
+    return ^
+    {
+        block(recursiveBlock(block));
+    };
+}
+
++ (SSignal *)clearUnseenMentions:(int64_t)peerId {
+    SSignal *clear = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        SMetaDisposable *disposable = [[SMetaDisposable alloc] init];
+        void (^start)() = recursiveBlock(^(dispatch_block_t recurse) {
+            TLRPCmessages_readMentions$messages_readMentions *readMentions = [[TLRPCmessages_readMentions$messages_readMentions alloc] init];
+            int64_t accessHash = 0;
+            if (TGPeerIdIsChannel(peerId)) {
+                accessHash = ((TGConversation *)[TGDatabaseInstance() loadChannels:@[@(peerId)]][@(peerId)]).accessHash;
+            }
+            readMentions.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
+            [disposable setDisposable:[[[TGTelegramNetworking instance] requestSignal:readMentions] startWithNext:^(TLmessages_AffectedHistory *result) {
+                if (result != nil) {
+                    if (!TGPeerIdIsChannel(peerId)) {
+                        [[TGTelegramNetworking instance] updatePts:result.pts ptsCount:result.pts_count seq:0];
+                    }
+                }
+                
+                if (result.offset > 0) {
+                    recurse();
+                } else {
+                    [subscriber putCompletion];
+                }
+            } error:^(__unused id error) {
+                [subscriber putCompletion];
+            } completed:nil]];
+        });
+        
+        start();
+        
+        return [[SBlockDisposable alloc] initWithBlock:^{
+            [disposable dispose];
+        }];
+    }];
+    
+    return [clear then:[[TGDatabaseInstance() modify:^id{
+        NSMutableDictionary<NSNumber *, TGUnseenPeerMentionsState *> *resetPeerUnseenMentionsStates = [[NSMutableDictionary alloc] init];
+        resetPeerUnseenMentionsStates[@(peerId)] = [[TGUnseenPeerMentionsState alloc] initWithVersion:0 count:0 maxIdWithPrecalculatedCount:0];
+        [TGDatabaseInstance() transactionResetPeerUnseenMentionsStates:resetPeerUnseenMentionsStates];
+        return [SSignal complete];
+    }] switchToLatest]];
 }
 
 @end

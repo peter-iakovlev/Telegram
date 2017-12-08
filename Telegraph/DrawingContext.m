@@ -1,6 +1,6 @@
 #import "DrawingContext.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 static void DrawingContextDataProviderReleaseDataCallback(void *info, __unused const void *data, __unused size_t size) {
     free(info);

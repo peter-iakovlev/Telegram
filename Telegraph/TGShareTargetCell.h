@@ -6,5 +6,6 @@
 
 - (void)setupWithPeer:(id)peer;
 - (void)setChecked:(bool)checked animated:(bool)animated;
+- (void)setIsLastCell:(bool)lastCell;
 
 @end

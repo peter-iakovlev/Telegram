@@ -1,11 +1,11 @@
 #import "TGBingSearchResultItem+TGMediaItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <objc/runtime.h>
-#import "UIImage+TG.h"
-#import "TGImageManager.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGPhotoEditorUtils.h"
+#import <LegacyComponents/UIImage+TG.h>
+#import <LegacyComponents/TGImageManager.h>
+#import <LegacyComponents/TGPhotoEditorUtils.h>
 
 @implementation TGBingSearchResultItem (TGMediaItem)
 

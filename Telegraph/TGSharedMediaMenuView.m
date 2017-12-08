@@ -1,10 +1,8 @@
 #import "TGSharedMediaMenuView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGSharedMediaMenuView ()
 {

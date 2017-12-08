@@ -2,7 +2,7 @@
 
 #import "TGExternalImageSearchResult.h"
 
-#import "PSCoding.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGImageInfo;
 

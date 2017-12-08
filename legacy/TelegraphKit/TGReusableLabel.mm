@@ -1,20 +1,12 @@
 #import "TGReusableLabel.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import <CoreText/CoreText.h>
-
-#import "NSObject+TGLock.h"
 
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#import "TGDateUtils.h"
-#import "TGFont.h"
-
-#import "TGTextCheckingResult.h"
-#import "TGMessage.h"
 
 @interface TGReusableLabelLayoutData ()
 {

@@ -13,6 +13,12 @@
 
 @implementation TGTwoStepSetPaswordSignal
 
++ (SSignal *)setPassword:(NSString *)password hint:(NSString *)hint email:(NSString *)email {
+    return [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *config) {
+        return [self setPasswordWithCurrentSalt:nil currentPassword:nil nextSalt:config.nextSalt nextPassword:password nextHint:hint email:email];
+    }];
+}
+
 + (SSignal *)setPasswordWithCurrentSalt:(NSData *)currentSalt currentPassword:(NSString *)currentPassword nextSalt:(NSData *)nextSalt nextPassword:(NSString *)nextPassword nextHint:(NSString *)nextHint email:(NSString *)email
 {
     TLRPCaccount_updatePasswordSettings$account_updatePasswordSettings *updatePasswordSettings = [[TLRPCaccount_updatePasswordSettings$account_updatePasswordSettings alloc] init];

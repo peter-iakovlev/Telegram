@@ -1,7 +1,6 @@
 #import "TGGroupInfoContactListCreateLinkCell.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGGroupInfoContactListCreateLinkCell ()
 {
@@ -36,7 +35,7 @@
         _titleLabel.text = TGLocalized(@"GroupInfo.InviteByLink");
         [self.contentView addSubview:_titleLabel];
         
-        _iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernContactListInviteFriendsIcon.png"]];
+        _iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernContactListInviteFriendsIcon.png")];
         [self.contentView addSubview:_iconView];
         
         CGFloat verticalOffset = TGIsPad() ? 4.0f : 0.0f;

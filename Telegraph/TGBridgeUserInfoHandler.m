@@ -1,4 +1,7 @@
 #import "TGBridgeUserInfoHandler.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeUserInfoSubscription.h"
 
 #import "TGUserSignal.h"
@@ -6,7 +9,6 @@
 
 #import "TGDatabase.h"
 
-#import "TGUser.h"
 #import "TGBridgeMessage+TGMessage.h"
 #import "TGBridgeUser+TGUser.h"
 #import "TGBridgeBotInfo+TGBotInfo.h"

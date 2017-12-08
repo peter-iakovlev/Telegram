@@ -5,7 +5,7 @@
 
 #import "TGSchema.h"
 
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #include <vector>
 

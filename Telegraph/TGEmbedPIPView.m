@@ -1,14 +1,16 @@
 #import "TGEmbedPIPView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGImageUtils.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGEmbedPIPButton.h"
-#import "TGEmbedPIPScrubber.h"
-#import "TGEmbedPIPPullArrowView.h"
+#import <LegacyComponents/TGEmbedPIPButton.h>
+#import <LegacyComponents/TGEmbedPIPScrubber.h>
+#import <LegacyComponents/TGEmbedPIPPullArrowView.h>
 
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 const CGSize TGEmbedPIPViewDefaultSize = { 220, 300 };
 const CGSize TGEmbedPIPViewDefaultPadSize = { 300, 300 };
@@ -48,6 +50,9 @@ const CGFloat TGEmbedPIPSlipSize = 40.0f;
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        if (iosMajorVersion() >= 11)
+            self.accessibilityIgnoresInvertColors = true;
+        
         _shadowView = [[UIImageView alloc] initWithImage:[[UIImage imageNamed:@"PictureInPictureShadow"] resizableImageWithCapInsets:UIEdgeInsetsMake(22, 25, 26, 25) resizingMode:UIImageResizingModeStretch]];
         [self addSubview:_shadowView];
         

@@ -1,12 +1,8 @@
 #import "TGMeContactsCell.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
-
-#import "TGFont.h"
-
-#import "TGPhoneUtils.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGMeContactsCell () {
     TGLetteredAvatarView *_avatarView;

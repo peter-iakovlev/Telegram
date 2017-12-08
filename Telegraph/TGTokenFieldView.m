@@ -1,9 +1,9 @@
 #import "TGTokenFieldView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTokenView.h"
 #import "TGBackspaceTextField.h"
-#import "TGHacks.h"
-#import "TGImageUtils.h"
 
 #import <QuartzCore/QuartzCore.h>
 
@@ -77,6 +77,8 @@
     self.backgroundColor = UIColorRGB(0xf8f8f8);
     
     _scrollView = [[TGTokenFieldScrollView alloc] initWithFrame:self.bounds];
+    if (iosMajorVersion() >= 11)
+        _scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _scrollView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _scrollView.delaysContentTouches = true;
     _scrollView.canCancelContentTouches = true;
@@ -102,7 +104,7 @@
     
     _textField.customPlaceholderLabel.text = _placeholder;
     [_textField.customPlaceholderLabel sizeToFit];
-    _textField.customPlaceholderLabel.frame = CGRectOffset(_textField.customPlaceholderLabel.frame, 9 + 5, 9 + 4);
+    _textField.customPlaceholderLabel.frame = CGRectOffset(_textField.customPlaceholderLabel.bounds, 9 + 5, 9 + 4);
     [_scrollView addSubview:_textField.customPlaceholderLabel];
     
     _tokenList = [[NSMutableArray alloc] init];
@@ -242,20 +244,27 @@
     }
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    _textField.customPlaceholderLabel.frame = CGRectOffset(_textField.customPlaceholderLabel.bounds, 9 + 5 + safeAreaInset.left, 9 + 4);
+    [self doLayout:false];
+}
+
 - (void)doLayout:(bool)animated
 {
-    float width = (float)self.frame.size.width;
+    CGFloat width = (float)self.frame.size.width;
     
-    const float textFieldMinWidth = 60;
-    const float padding = 9;
-    const float textFieldPadding = 5;
-    const float spacing = 1;
+    const CGFloat textFieldMinWidth = 60;
+    const CGFloat padding = 9 + _safeAreaInset.left;
+    const CGFloat textFieldPadding = 5;
+    const CGFloat spacing = 1;
     
     int currentLine = 0;
-    float currentX = padding;
-    float currentY = _linePadding;
+    CGFloat currentX = padding;
+    CGFloat currentY = _linePadding;
     
-    float additionalPadding = 0;
+    CGFloat additionalPadding = 0;
     
     CGRect targetFrames[_tokenList.count];
     memset(targetFrames, 0, sizeof(CGRect) * _tokenList.count);

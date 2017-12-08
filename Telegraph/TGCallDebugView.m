@@ -1,6 +1,6 @@
 #import "TGCallDebugView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGCallSession.h"
 

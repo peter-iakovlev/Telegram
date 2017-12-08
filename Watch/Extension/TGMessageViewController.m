@@ -4,7 +4,7 @@
 #import "TGBridgeRemoteSignals.h"
 #import "TGBridgeAudioSignals.h"
 
-#import "TGPeerIdAdapter.h"
+#import "TGBridgePeerIdAdapter.h"
 
 #import "TGBridgeChat.h"
 #import "TGBridgeUser.h"

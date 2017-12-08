@@ -1,5 +1,7 @@
 #import "TGModernCheckButtonView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 @interface TGModernCheckButtonView ()
 {
     UIImageView *_checkView;
@@ -15,25 +17,9 @@
 + (UIImage *)buttonImage:(bool)checked
 {
     if (checked)
-    {
-        static UIImage *image = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            image = [UIImage imageNamed:@"ModernMessageSelectionChecked.png"];
-        });
-        return image;
-    }
+        return TGImageNamed(@"ModernMessageSelectionChecked.png");
     else
-    {
-        static UIImage *image = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            image = [UIImage imageNamed:@"ModernMessageSelectionUnchecked.png"];
-        });
-        return image;
-    }
+        return TGImageNamed(@"ModernMessageSelectionUnchecked.png");
 }
 
 - (id)initWithFrame:(CGRect)frame

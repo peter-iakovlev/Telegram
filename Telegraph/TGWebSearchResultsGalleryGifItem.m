@@ -1,9 +1,8 @@
 #import "TGWebSearchResultsGalleryGifItem.h"
 
-#import "TGGiphySearchResultItem+TGMediaItem.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import "TGGiphySearchResultItem+TGMediaItem.h"
 
 #import "TGWebSearchResultsGalleryGifItemView.h"
 

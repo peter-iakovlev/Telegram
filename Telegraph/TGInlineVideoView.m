@@ -68,6 +68,74 @@
     self.layer.cornerRadius = cornerRadius;
 }
 
+typedef enum {
+    TGInlineVideoPositionNone = 0,
+    TGInlineVideoPositionTop = 1 << 0,
+    TGInlineVideoPositionBottom = 1 << 1,
+    TGInlineVideoPositionLeft = 1 << 2,
+    TGInlineVideoPositionRight = 1 << 3,
+    TGInlineVideoPositionInside = 1 << 4
+} TGInlineVideoPosition;
+
+- (void)setPosition:(int)position {
+    _position = position;
+    
+    if (position != 0)
+    {
+        self.layer.cornerRadius = 0;
+        
+        const CGFloat smallRadius = 3;
+        const CGFloat bigRadius = _cornerRadius;
+        
+        CGFloat topLeftRadius = smallRadius;
+        CGFloat topRightRadius = smallRadius;
+        CGFloat bottomLeftRadius = smallRadius;
+        CGFloat bottomRightRadius = smallRadius;
+        
+        if (position == TGInlineVideoPositionNone)
+        {
+            self.layer.cornerRadius = bigRadius;
+            return;
+        }
+        else if (position == TGInlineVideoPositionInside)
+            topLeftRadius = topRightRadius = bottomLeftRadius = bottomRightRadius = smallRadius;
+        
+        if (position & TGInlineVideoPositionTop && position & TGInlineVideoPositionLeft)
+            topLeftRadius = bigRadius;
+        if (position & TGInlineVideoPositionTop && position & TGInlineVideoPositionRight)
+            topRightRadius = bigRadius;
+        if (position & TGInlineVideoPositionBottom && position & TGInlineVideoPositionLeft)
+            bottomLeftRadius = bigRadius;
+        if (position & TGInlineVideoPositionBottom && position & TGInlineVideoPositionRight)
+            bottomRightRadius = bigRadius;
+        
+        CGFloat minx = CGRectGetMinX(self.bounds);
+        CGFloat miny = CGRectGetMinY(self.bounds);
+        CGFloat maxx = CGRectGetMaxX(self.bounds);
+        CGFloat maxy = CGRectGetMaxY(self.bounds);
+        
+        UIBezierPath *path = [[UIBezierPath alloc] init];
+        [path moveToPoint:CGPointMake(minx + topLeftRadius, miny)];
+        [path addLineToPoint:CGPointMake(maxx - topRightRadius, miny)];
+        [path addArcWithCenter:CGPointMake(maxx - topRightRadius, miny + topRightRadius) radius: topRightRadius startAngle: 3 * M_PI_2 endAngle: 0 clockwise:true];
+        [path addLineToPoint:CGPointMake(maxx, maxy - bottomRightRadius)];
+        [path addArcWithCenter:CGPointMake(maxx - bottomRightRadius, maxy - bottomRightRadius) radius: bottomRightRadius startAngle: 0 endAngle: M_PI_2 clockwise:true];
+        [path addLineToPoint:CGPointMake(minx + bottomLeftRadius, maxy)];
+        [path addArcWithCenter:CGPointMake(minx + bottomLeftRadius, maxy - bottomLeftRadius) radius: bottomLeftRadius startAngle: M_PI_2 endAngle:M_PI clockwise:true];
+        [path addLineToPoint:CGPointMake(minx, miny + topLeftRadius)];
+        [path addArcWithCenter:CGPointMake(minx + topLeftRadius, miny + topLeftRadius) radius: topLeftRadius startAngle: M_PI endAngle:3 * M_PI_2 clockwise:true];
+        [path closePath];
+        
+        CAShapeLayer *maskLayer = [[CAShapeLayer alloc] init];
+        maskLayer.path = path.CGPath;
+        self.layer.mask = maskLayer;
+    }
+    else
+    {
+        self.layer.cornerRadius = _cornerRadius;
+    }
+}
+
 - (void)willBecomeRecycled {
 #if USE_VT
     [_player stop];

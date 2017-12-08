@@ -1,9 +1,6 @@
 #import "TGModernConversationRestrictedInputPanel.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGLocalization.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGModernConversationRestrictedInputPanel ()
 {
@@ -61,18 +58,18 @@
     [self setNeedsLayout];
 }
 
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
-- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
     dispatch_block_t block = ^
     {
         CGSize messageAreaSize = size;
         
-        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight], messageAreaSize.width, [self baseHeight]);
+        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight] - safeAreaInset.bottom, messageAreaSize.width, [self baseHeight] + safeAreaInset.bottom);
         [self layoutSubviews];
     };
     
@@ -82,9 +79,9 @@
         block();
 }
 
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
 - (void)layoutSubviews
@@ -93,8 +90,8 @@
     
     _stripeLayer.frame = CGRectMake(0.0f, -TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
     
-    CGSize labelSize = [_label sizeThatFits:CGSizeMake(self.bounds.size.width - 10.0f, self.frame.size.height - 8.0f)];
-    _label.frame = CGRectMake(CGFloor((self.bounds.size.width - labelSize.width) / 2.0f), CGFloor((self.bounds.size.height - labelSize.height) / 2.0f), labelSize.width, labelSize.height);
+    CGSize labelSize = [_label sizeThatFits:CGSizeMake(self.bounds.size.width - 10.0f, [self baseHeight] - 8.0f)];
+    _label.frame = CGRectMake(CGFloor((self.bounds.size.width - labelSize.width) / 2.0f), CGFloor(([self baseHeight] - labelSize.height) / 2.0f), labelSize.width, labelSize.height);
 }
 
 @end

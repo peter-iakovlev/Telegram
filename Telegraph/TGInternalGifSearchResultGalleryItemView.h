@@ -1,4 +1,4 @@
-#import "TGModernGalleryItemView.h"
+#import <LegacyComponents/TGModernGalleryItemView.h>
 
 @interface TGInternalGifSearchResultGalleryItemView : TGModernGalleryItemView
 

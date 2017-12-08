@@ -1,6 +1,7 @@
 #import "TGSetupChannelAfterCreationController.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGChannelManagementSignals.h"
 #import "TGDatabase.h"
 
@@ -15,7 +16,7 @@
 
 #import "TGSwitchCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
 #import "TGSelectContactController.h"
@@ -379,7 +380,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
                  break;
              case TGUsernameControllerUsernameStateTooManyUsernames:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidTooManyUsernames")];
+                 [_invalidUsernameItem setText:TGLocalized(@"Group.Username.RemoveExistingUsernamesInfo")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;

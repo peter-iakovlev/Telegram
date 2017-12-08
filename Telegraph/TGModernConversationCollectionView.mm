@@ -1,10 +1,6 @@
 #import "TGModernConversationCollectionView.h"
 
-#import "Freedom.h"
-
-#import "TGImageUtils.h"
-
-#import "TGHacks.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernCollectionCell.h"
 #import "TGModernConversationViewLayout.h"
@@ -16,7 +12,7 @@
 
 #import "TGAudioSliderButton.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 #import "TGModernConversationCollectionTouchBehaviour.h"
 #import "TGModernConversationCollectionViewInstantPreviewRecognizer.h"
 
@@ -26,13 +22,10 @@
 #import <set>
 #import <algorithm>
 
-static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL needsUpdate, BOOL withLayoutAttributes);
-
 @interface TGModernConversationCollectionView () <UIGestureRecognizerDelegate, TGModernConversationCollectionViewInstantPreviewRecognizerDelegate>
 {
     CGFloat _indicatorInset;
     
-    bool _delayVisibleItemsUpdate;
     CGFloat _lastRelativeBoundsReport;
     
     bool _disableDecorationViewUpdates;
@@ -42,6 +35,7 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     __weak id<TGModernConversationCollectionTouchBehaviour> _currentInstantPreviewTarget;
     
     NSTimeInterval _ignoreBackgroundTouchBeforeDate;
+    UIView *_dimView;
 }
 
 @property (nonatomic, copy) void (^touchCompletion)();
@@ -70,27 +64,6 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         self.exclusiveTouch = true;
     }
     return self;
-}
-
-+ (void)load
-{
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        freedomInit();
-        if (iosMajorVersion() < 7 || iosMajorVersion() >= 8)
-        {
-            FreedomDecoration instanceDecorations[] = {
-                { .name = 0xfe9aa61dU,
-                  .imp = (IMP)&TGModernConversationCollectionViewUpdate0,
-                  .newIdentifier = FreedomIdentifierEmpty,
-                  .newEncoding = FreedomIdentifierEmpty
-                }
-            };
-            
-            freedomClassAutoDecorate(0xdbbc992fU, NULL, 0, instanceDecorations, sizeof(instanceDecorations) / sizeof(instanceDecorations[0]));
-        }
-    });
 }
 
 - (BOOL)touchesShouldCancelInContentView:(UIView *)view
@@ -199,6 +172,9 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         return self;
     }
     
+    if (!self.userInteractionEnabled)
+        return nil;
+    
     return result;
 }
 
@@ -244,24 +220,6 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
     if (self.delegate != nil && [self.delegate respondsToSelector:@selector(tableTouchesCancelled)])
         [self.delegate performSelector:@selector(tableTouchesCancelled)];
 #pragma clang diagnostic pop
-}
-
-- (void)setDelayVisibleItemsUpdate:(bool)delay
-{
-    _delayVisibleItemsUpdate = delay;
-}
-
-static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL needsUpdate, BOOL withLayoutAttributes)
-{
-    static void (*nativeImpl)(id, SEL, BOOL, BOOL) = NULL;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        nativeImpl = (void (*)(id, SEL, BOOL, BOOL))freedomNativeImpl(object_getClass(self), _cmd);
-    });
-    
-    if (!((TGModernConversationCollectionView *)self)->_delayVisibleItemsUpdate && nativeImpl != NULL)
-        nativeImpl(((TGModernConversationCollectionView *)self), _cmd, needsUpdate, withLayoutAttributes);
 }
 
 - (void)updateVisibleItemsNow
@@ -356,7 +314,7 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
 
 - (void)updateVisibleDecorationViews
 {
-    if (_disableDecorationViewUpdates || _delayVisibleItemsUpdate)
+    if (_disableDecorationViewUpdates)
         return;
     
     std::set<NSInteger> currentIndices;
@@ -675,7 +633,77 @@ static void TGModernConversationCollectionViewUpdate0(id self, SEL _cmd, BOOL ne
         snapshotView = [super resizableSnapshotViewFromRect:rect afterScreenUpdates:afterUpdates withCapInsets:capInsets];
     
     snapshotView.transform = self.transform;
+    if (iosMajorVersion() >= 11)
+        snapshotView.tag = 0xbeef;
     return snapshotView;
+}
+
+- (void)addSubview:(UIView *)view
+{
+    if (iosMajorVersion() >= 11 && view.tag == 0xbeef)
+    {
+        view.frame = [self convertRect:view.frame toView:self.superview];
+        [self.superview addSubview:view];
+        return;
+    }
+    [super addSubview:view];
+}
+
+- (void)setDimmed:(bool)dimmed frontCells:(NSArray *)frontCells animated:(bool)animated
+{
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        self.userInteractionEnabled = !dimmed;
+    });
+    
+    if (_dimView == nil)
+    {
+        _dimView = [[UIView alloc] init];
+        _dimView.alpha = 0.0f;
+        _dimView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.4f];
+        [self addSubview:_dimView];
+    }
+    else
+    {
+        _dimView.hidden = false;
+        if (dimmed)
+        {
+            _dimView.alpha = 0.0f;
+            [self bringSubviewToFront:_dimView];
+        }
+    }
+    
+    _dimView.frame = CGRectInset(self.bounds, 0.0f, -self.bounds.size.height);
+    
+    if (frontCells.count > 0)
+    {
+        for (UICollectionViewCell *cell in frontCells)
+            [self bringSubviewToFront:cell];
+    }
+    
+    void (^changeBlock)(void) = ^
+    {
+        _dimView.alpha = dimmed ? 1.0f : 0.0f;
+    };
+    
+    void (^completionBlock)(BOOL) = ^(BOOL finished)
+    {
+        if (finished)
+        {
+            self.scrollEnabled = !dimmed;
+            _dimView.hidden = !dimmed;
+        }
+    };
+    
+    if (animated)
+    {
+        [UIView animateWithDuration:0.2f animations:changeBlock completion:completionBlock];
+    }
+    else
+    {
+        changeBlock();
+        completionBlock(true);
+    }
 }
 
 @end

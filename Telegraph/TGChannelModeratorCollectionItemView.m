@@ -1,11 +1,8 @@
 #import "TGChannelModeratorCollectionItemView.h"
 
-#import "TGLetteredAvatarView.h"
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGDateUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGChannelModeratorCollectionItemView () {
     TGLetteredAvatarView *_avatarView;
@@ -100,14 +97,16 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    CGFloat maxWidth = self.bounds.size.width - 92.0f - 18.0f;
+    _avatarView.frame = CGRectMake(15.0f + self.safeAreaInset.left, 10.0f, 66.0f, 66.0f);
+    
+    CGFloat maxWidth = self.bounds.size.width - 92.0f - 18.0f - self.safeAreaInset.left - self.safeAreaInset.right;
     CGSize nameSize = [_nameLabel sizeThatFits:CGSizeMake(maxWidth, CGFLOAT_MAX)];
     nameSize.width = MIN(maxWidth, nameSize.width);
     CGSize statusSize = [_statusLabel sizeThatFits:CGSizeMake(maxWidth, CGFLOAT_MAX)];
     statusSize.width = MIN(maxWidth, statusSize.width);
     
-    _nameLabel.frame = CGRectMake(92.0f, 21.0f, nameSize.width, nameSize.height);
-    _statusLabel.frame = CGRectMake(92.0f, 47.0f, statusSize.width, statusSize.height);
+    _nameLabel.frame = CGRectMake(92.0f + self.safeAreaInset.left, 21.0f, nameSize.width, nameSize.height);
+    _statusLabel.frame = CGRectMake(92.0f + self.safeAreaInset.left, 47.0f, statusSize.width, statusSize.height);
 }
 
 @end

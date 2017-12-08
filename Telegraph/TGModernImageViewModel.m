@@ -48,8 +48,18 @@
     if (!TGStringCompare(view.viewStateIdentifier, self.viewStateIdentifier))
         view.image = _image;
     
+    if (iosMajorVersion() >= 11)
+        view.accessibilityIgnoresInvertColors = _ignoresInvertColors;
+    
     view.extendedEdges = _extendedEdges;
     [view setAccountForTransform:_accountForTransform];
+}
+
+- (void)setIgnoresInvertColors:(bool)ignoresInvertColors
+{
+    _ignoresInvertColors = ignoresInvertColors;
+    if (iosMajorVersion() >= 11)
+        ((TGModernImageView *)self.boundView).accessibilityIgnoresInvertColors = _ignoresInvertColors;
 }
 
 - (void)drawInContext:(CGContextRef)context

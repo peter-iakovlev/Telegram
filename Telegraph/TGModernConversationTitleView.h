@@ -19,6 +19,7 @@ typedef enum {
 } TGModernConversationTitleViewActivity;
 
 @class TGModernConversationTitleView;
+@class TGPresentation;
 
 @protocol TGModernConversationTitleViewDelegate <NSObject>
 
@@ -37,6 +38,7 @@ typedef enum {
 @property (nonatomic) bool statusHasAccentColor;
 @property (nonatomic) TGModernConversationControllerTitleToggle toggleMode;
 @property (nonatomic, strong) NSString *typingStatus;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)setBackButtonTitle:(NSString *)backButtonTitle;
 - (void)setOrientation:(UIInterfaceOrientation)orientation;
@@ -54,6 +56,6 @@ typedef enum {
 - (void)suspendAnimations;
 - (void)resumeAnimations;
 
-- (void)setShowStatus:(bool)showStatus;
+- (void)setShowStatus:(bool)showStatus showArrow:(bool)showArrow;
 
 @end

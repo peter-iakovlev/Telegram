@@ -1,6 +1,6 @@
 #import "TGDownloadHistoryForNavigatingToMessageSignal.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGDownloadHistoryForNavigatingToMessageSignalHelper : NSObject <ASWatcher>
 

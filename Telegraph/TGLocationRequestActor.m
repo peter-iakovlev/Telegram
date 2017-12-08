@@ -1,7 +1,7 @@
 #import "TGLocationRequestActor.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import <CoreLocation/CoreLocation.h>
 

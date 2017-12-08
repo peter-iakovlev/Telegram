@@ -5,26 +5,28 @@
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
     "55011AEBD444630C0E9DF47BD2E18FDBBDCC285D" : 0,
-    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : 0,
     "4F84751366314673FAED5BDE91D377A6883A3535" : 0,
+    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : 0,
     "02F000CBBA65A9B2845BD9AC541781DC5D685DCA" : 0,
     "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : 0,
-    "E860E73EA92362394DE531098D73ED96B22811B3" : 0,
+    "E183A778EFCBD6659C5014DAD0587E160C1BE0EB" : 0,
     "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : 0,
     "F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3" : 0,
+    "E860E73EA92362394DE531098D73ED96B22811B3" : 0,
     "3C7D935ED3D2B073885C3B158B32F2294443E766" : 0,
     "BFBED2207520E4FA9338A9D65946449FDA011F3C" : 9223372036854775807
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "434B2FF1-4AD6-463C-8DD5-2C570944FB50",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
     "55011AEBD444630C0E9DF47BD2E18FDBBDCC285D" : "telegramprivate\/thirdparty\/sqlcipher\/",
-    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : "telegramprivate\/submodules\/MtProtoKit\/",
     "4F84751366314673FAED5BDE91D377A6883A3535" : "telegramprivate\/submodules\/elements\/",
+    "7EC1C8EA9643E5D9E5CFB7785E6B7386F88D4D5C" : "telegramprivate\/submodules\/MtProtoKit\/",
     "02F000CBBA65A9B2845BD9AC541781DC5D685DCA" : "..\/Documents\/Telegram-iOS",
     "4BAB8F3E22C4829A7272C753E8D316047BC55F8C" : "Telegraph\/Share\/submodules\/lmdb\/",
-    "E860E73EA92362394DE531098D73ED96B22811B3" : "..\/Documents\/Telegram-iOS\/submodules\/SSignalKit",
+    "E183A778EFCBD6659C5014DAD0587E160C1BE0EB" : "telegramprivate\/submodules\/LegacyComponents\/",
     "9BF0BD89A8A5B00CFBE8915EE64B25DABC828A4B" : "telegramprivate\/",
     "F2FE0AAE95F0B87896F2BEE0B176D4FC32D691A3" : "Telegraphthirdparty\/pop",
+    "E860E73EA92362394DE531098D73ED96B22811B3" : "telegramprivate\/thirdparty\/SSignalKit\/",
     "3C7D935ED3D2B073885C3B158B32F2294443E766" : "telegramprivate\/submodules\/libtgvoip\/",
     "BFBED2207520E4FA9338A9D65946449FDA011F3C" : "Telegraph\/submodules\/TelegramLegacyComponents\/"
   },
@@ -71,6 +73,11 @@
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "github.com:peter-iakovlev\/TelegramLegacyComponents.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "BFBED2207520E4FA9338A9D65946449FDA011F3C"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "bitbucket.org:iakovlevpeterp\/legacycomponents.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "E183A778EFCBD6659C5014DAD0587E160C1BE0EB"
     },
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/bitbucket.org\/iakovlevpeterp\/ssignalkit.git",

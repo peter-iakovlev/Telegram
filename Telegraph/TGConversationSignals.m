@@ -1,6 +1,6 @@
 #import "TGConversationSignals.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
 #import "TGTelegraph.h"

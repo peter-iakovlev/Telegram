@@ -1,8 +1,8 @@
 #import "TGResolveDomainActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGTelegramNetworking.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TL/TLMetaScheme.h"
 

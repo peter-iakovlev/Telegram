@@ -1,16 +1,17 @@
 #import "TGChangePhoneNumberCodeController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGHeaderCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGPhoneCodeCollectionItem.h"
 
-#import "TGPhoneUtils.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGSignInRequestBuilder.h"
 
 @interface TGChangePhoneNumberCodeController () <ASWatcher>

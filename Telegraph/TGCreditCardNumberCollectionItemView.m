@@ -26,7 +26,7 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    _cardField.frame = CGRectInset(self.bounds, -5.0f, 0.0f);
+    _cardField.frame = CGRectInset(self.bounds, -5.0f + self.safeAreaInset.left, 0.0f);
 }
 
 - (void)paymentCardTextFieldDidChange:(nonnull STPPaymentCardTextField *)textField {

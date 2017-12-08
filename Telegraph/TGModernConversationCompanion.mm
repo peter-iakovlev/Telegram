@@ -1,26 +1,16 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGModernConversationCompanion.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernConversationController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
 #import "TGAppDelegate.h"
 #import "TGInterfaceManager.h"
 
-#import "TGMessage.h"
 #import "TGMessageModernConversationItem.h"
-
-#import "TGImageUtils.h"
-#import "TGPhoneUtils.h"
 
 #import "TGModernConversationViewContext.h"
 #import "TGModernTemporaryView.h"
@@ -48,7 +38,7 @@
 
 #import "TGInstagramMediaIdSignal.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGGenericPeerPlaylistSignals.h"
 
@@ -58,12 +48,18 @@
 
 #import <libkern/OSAtomic.h>
 
-#import "TGPeerIdAdapter.h"
-
 #import "TGAlertView.h"
 
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
 #import "TGAdminLogConversationCompanion.h"
+
+#import <LegacyComponents/TGAlphacode.h>
+#import "TGEmojiSuggestions.h"
+
+#import "TGLegacyComponentsContext.h"
+#import "TGMessageViewedContentProperty.h"
+
+#import "TGLiveLocationSignals.h"
 
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= 60000 // iOS 6.0 or later
 #define NEEDS_DISPATCH_RETAIN_RELEASE 0
@@ -273,6 +269,14 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             
             [strongSelf.controller _updateItemForReplySwipeInteraction:mid ended:ended];
         };
+        viewContext.replySwipeGrouped = ^void (int32_t mid, int64_t groupedId, CGFloat offset, bool ended)
+        {
+            __strong TGModernConversationCompanion *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            [strongSelf.controller _updateGroupedItemsForReplySwipeInteraction:mid groupedId:groupedId offset:offset ended:ended];
+        };
         viewContext.canReplyToMessageId = ^bool(int32_t mid) {
             TGModernViewContext *strongViewContext = weakViewContext;
             if (strongViewContext != nil)
@@ -292,6 +296,18 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             }
             return false;
         };
+        
+        viewContext.liveLocationRemaining = ^SSignal *(int32_t mid)
+        {
+            TGModernViewContext *strongViewContext = weakViewContext;
+            if (strongViewContext != nil)
+            {
+                TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:mid peerId:strongViewContext.conversation.conversationId];
+                return [TGLiveLocationSignals remainingTimeForMessage:message];
+            }
+            return [SSignal fail:nil];
+        };
+        
         _viewContext = viewContext;
         _downloadingMessages = [[NSMutableDictionary alloc] init];
         _downloadingWebpages = [[NSMutableDictionary alloc] init];
@@ -351,15 +367,6 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 
 + (void)warmupResources
 {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
-    {
-        /*TGMessage *message = [[TGMessage alloc] init];
-        message.text = @"abcdefghijklmnopqrstuvwxyz1234567890";
-        TGMessageModernConversationItem *messageItem = [[TGMessageModernConversationItem alloc] initWithMessage:message context:nil];
-        [messageItem sizeForContainerSize:CGSizeMake(320.0f, 0.0f)];
-        
-        [[TGWallpaperManager instance] currentWallpaperImage];*/
-    });
 }
 
 + (bool)isMessageQueue
@@ -430,6 +437,8 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 - (void)bindController:(TGModernConversationController *)controller
 {
     self.controller = controller;
+    
+    _viewContext.presentation = self.controller.presentation;
     
     [self loadInitialState];
     
@@ -579,11 +588,6 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
-- (NSString *)_controllerInfoButtonText
-{
-    return nil;
-}
-
 - (void)updateControllerInputText:(NSString *)__unused inputText entities:(NSArray *)__unused entities messageEditingContext:(TGMessageEditingContext *)__unused messageEditingContext
 {
 }
@@ -600,11 +604,11 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 {
 }
 
-- (void)controllerWantsToSendTextMessage:(NSString *)__unused text entities:(NSArray *)__unused entities asReplyToMessageId:(int32_t)__unused replyMessageId withAttachedMessages:(NSArray *)__unused withAttachedMessages disableLinkPreviews:(bool)__unused disableLinkPreviews botContextResult:(TGBotContextResultAttachment *)__unused botContextResult botReplyMarkup:(id)__unused botReplyMarkup
+- (void)controllerWantsToSendTextMessage:(NSString *)__unused text entities:(NSArray *)__unused entities asReplyToMessageId:(int32_t)__unused replyMessageId withAttachedMessages:(NSArray *)__unused withAttachedMessages completeGroups:(NSSet *)__unused completeGroups disableLinkPreviews:(bool)__unused disableLinkPreviews botContextResult:(TGBotContextResultAttachment *)__unused botContextResult botReplyMarkup:(id)__unused botReplyMarkup
 {
 }
 
-- (void)controllerWantsToSendMapWithLatitude:(double)__unused latitude longitude:(double)__unused longitude venue:(TGVenueAttachment *)__unused venue asReplyToMessageId:(int32_t)__unused replyMessageId botContextResult:(TGBotContextResultAttachment *)__unused botContextResult botReplyMarkup:(TGBotReplyMarkup *)__unused botReplyMarkup
+- (void)controllerWantsToSendMapWithLatitude:(double)__unused latitude longitude:(double)__unused longitude venue:(TGVenueAttachment *)__unused venue period:(int32_t)__unused period asReplyToMessageId:(int32_t)__unused replyMessageId botContextResult:(TGBotContextResultAttachment *)__unused botContextResult botReplyMarkup:(TGBotReplyMarkup *)__unused botReplyMarkup
 {
 }
 
@@ -680,7 +684,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
-- (NSDictionary *)documentDescriptionFromRemoteDocument:(TGDocumentMediaAttachment *)__unused document {
+- (NSDictionary *)documentDescriptionFromRemoteDocument:(TGDocumentMediaAttachment *)__unused document caption:(NSString *)__unused caption {
     return nil;
 }
 
@@ -821,6 +825,26 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return false;
 }
 
+- (bool)shouldAutomaticallyDownloadVideos
+{
+    return false;
+}
+
+- (bool)shouldAutomaticallyDownloadVideoOfSize:(int32_t)size
+{
+    return size <= TGAppDelegateInstance.autoDownloadPreferences.maximumVideoSize * 1024 * 1024;
+}
+
+- (bool)shouldAutomaticallyDownloadDocuments
+{
+    return false;
+}
+
+- (bool)shouldAutomaticallyDownloadDocumentOfSize:(int32_t)__unused size
+{
+    return size <= TGAppDelegateInstance.autoDownloadPreferences.maximumDocumentSize * 1024 * 1024;
+}
+
 - (bool)allowMessageForwarding
 {
     return true;
@@ -866,6 +890,16 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 - (bool)allowSelfDescructingMedia
 {
     return false;
+}
+
+- (bool)allowLiveLocations
+{
+    return iosMajorVersion() >= 8;
+}
+
+- (bool)allowMediaGrouping
+{
+    return true;
 }
 
 - (bool)encryptUploads
@@ -959,6 +993,32 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 - (bool)_isMessageChecked:(int32_t)messageId
 {
     return _checkedMessages.find(messageId) != _checkedMessages.end();
+}
+
+- (bool)_isGroupChecked:(int64_t)groupedId
+{
+    NSMutableArray *mids = [[NSMutableArray alloc] init];
+    for (TGMessageModernConversationItem *item in [self.controller _currentItems])
+    {
+        if (item->_message.groupedId == groupedId)
+        {
+            [mids addObject:@(item->_message.mid)];
+            if (mids.count == 10)
+                break;
+        }
+    }
+    
+    bool allChecked = true;
+    for (NSNumber *mid in mids)
+    {
+        if (![self _isMessageChecked:[mid int32Value]])
+        {
+            allChecked = false;
+            break;
+        }
+    }
+    
+    return allChecked;
 }
 
 - (void)_setMessageFlags:(int32_t)messageId flags:(int)flags
@@ -1246,7 +1306,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         CGFloat contentHeight = 0.0f;
         
         std::vector<TGDecorationViewAttrubutes> visibleDecorationViewAttributes;
-        NSArray *visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil];
+        NSArray *visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil cachedGroupedLayouts:nil];
         
         CGFloat contentOffsetY = 0.0f;
         if (scrollItemIndex != -1)
@@ -1293,7 +1353,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             [self setUnreadMessageRange:TGMessageRangeEmpty()];
             
             visibleDecorationViewAttributes.clear();
-            visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil];
+            visibleItemsAttributes = [TGModernConversationViewLayout layoutAttributesForItems:[controller _currentItems] containerWidth:screenSize.width maxHeight:scrollItemIndex == -1 ? screenSize.height : FLT_MAX dateOffset:(int)[[TGTelegramNetworking instance] timeOffset] decorationViewAttributes:&visibleDecorationViewAttributes contentHeight:&contentHeight unreadMessageRange:_unreadMessageRange viewStorage:nil cachedGroupedLayouts:nil];
         }
         
         TG_TIMESTAMP_MEASURE(_createInitialSnapshot);
@@ -1458,6 +1518,8 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     bool automaticallyDownloadPhotos = [self shouldAutomaticallyDownloadPhotos];
     bool automaticallyDownloadAudios = [self shouldAutomaticallyDownloadAudios];
     bool automaticallyDownloadAnimations = [self shouldAutomaticallyDownloadAnimations];
+    bool automaticallyDownloadVideos = [self shouldAutomaticallyDownloadVideos];
+    bool automaticallyDownloadDocuments = [self shouldAutomaticallyDownloadDocuments];
     bool automaticallyDownloadVideoMessages = [self shouldAutomaticallyDownloadVideoMessages];
     
     if (_updateMediaStatusDataImpl != NULL)
@@ -1503,8 +1565,13 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                     }
                     case TGVideoMediaAttachmentType:
                     {
-                        if (((TGVideoMediaAttachment *)attachment).roundMessage && automaticallyDownloadVideoMessages) {
-                            downloadMessage = true;
+                        TGVideoMediaAttachment *video = (TGVideoMediaAttachment *)attachment;
+                        if (video.roundMessage) {
+                            downloadMessage = automaticallyDownloadVideoMessages;
+                        } else {
+                            int32_t fileSize = 0;
+                            [video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&fileSize];
+                            downloadMessage = automaticallyDownloadVideos && [self shouldAutomaticallyDownloadVideoOfSize:fileSize];
                         }
                         break;
                     }
@@ -1533,8 +1600,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                         }
                         
                         if (document != nil) {
+                            int32_t downloadSize = document.size;
                             bool isVoice = false;
                             bool isRoundVideo = false;
+                            bool isAnimated = ([[document.mimeType lowercaseString] isEqualToString:@"image/gif"] || [[document.mimeType lowercaseString] isEqualToString:@"video/mp4"]) && ([document isAnimated] || (TGPeerIdIsSecretChat([self requestPeerId]) && checkItem->_message.layer < 45));
                             for (id attribute in document.attributes) {
                                 if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
                                     isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
@@ -1549,11 +1618,8 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                                 downloadMessage = automaticallyDownloadAudios;
                             } else if (isRoundVideo) {
                                 downloadMessage = automaticallyDownloadVideoMessages;
-                            }else {
-                                int32_t downloadSize = document.size;
-                                
+                            } else if (isAnimated) {
                                 if ((automaticallyDownloadAnimations || attachment.type == TGGameAttachmentType) && downloadSize < 1 * 1024 * 1024) {
-                                    bool isAnimated = ([[document.mimeType lowercaseString] isEqualToString:@"image/gif"] || [[document.mimeType lowercaseString] isEqualToString:@"video/mp4"]) && ([document isAnimated] || (TGPeerIdIsSecretChat([self requestPeerId]) && checkItem->_message.layer < 45));
                                     bool hasSize = [document.thumbnailInfo imageUrlForLargestSize:NULL] != nil;
                                     for (id attribute in document.attributes) {
                                         if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
@@ -1565,13 +1631,15 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                                         }
                                     }
                                     
-                                    if (isAnimated && hasSize) {
+                                    if (hasSize) {
                                         downloadMessage = true;
                                     }
                                 }
+                            } else {
+                                downloadMessage = automaticallyDownloadDocuments && [self shouldAutomaticallyDownloadDocumentOfSize:downloadSize];
                             }
                         } else if (image != nil) {
-                            if (automaticallyDownloadPhotos  || attachment.type == TGGameAttachmentType) {
+                            if (automaticallyDownloadPhotos || attachment.type == TGGameAttachmentType) {
                                 downloadMessage = true;
                             }
                         }
@@ -1707,7 +1775,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     }
 }
 
-- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)__unused indexSet animated:(bool)__unused animated
+- (void)_updateProgressForItemsInIndexSet:(NSIndexSet *)__unused indexSet initial:(bool)__unused initial animated:(bool)__unused animated
 {
 }
 
@@ -1883,11 +1951,11 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                 int itemDate = (int)messageItem->_message.date;
                 int32_t itemMid = messageItem->_message.mid;
                 bool passes = false;
-                if (itemMid < 0 && mid < 0) {
-                    passes = itemMid > mid;
-                } else {
+//                if (itemMid < 0 && mid < 0) {
+//                    passes = itemMid > mid;
+//                } else {
                     passes = itemMid < mid;
-                }
+ //               }
                 if (itemDate < date || (itemDate == date && passes))
                 {
                     [insertArray insertObject:[[TGMessageModernConversationItem alloc] initWithMessage:message context:_viewContext] atIndex:index];
@@ -2221,6 +2289,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 - (NSString *)twitterPostIdFromText:(NSString *)text
 {
     bool isHttps = false;
+    text = [text stringByReplacingOccurrencesOfString:@"mobile.twitter." withString:@"twitter."];
     if ([text hasPrefix:@"http://twitter.com/"] || (isHttps = [text hasPrefix:@"https://twitter.com/"]))
     {
         NSString *path = [text substringFromIndex:(isHttps ? @"https://twitter.com/" : @"http://twitter.com/").length];
@@ -2246,7 +2315,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     if ([action isEqualToString:@"messageSelectionRequested"])
     {   
         TGModernConversationController *controller = _controller;
-        [controller highlightAndShowActionsMenuForMessage:[options[@"mid"] int32Value]];
+        [controller highlightAndShowActionsMenuForMessage:[options[@"mid"] int32Value] groupedId:[options[@"groupedId"] int64Value]];
     }
     else if ([action isEqualToString:@"messageSelectionChanged"])
     {
@@ -2257,6 +2326,41 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
                 _checkedMessages.insert(mid);
             else
                 _checkedMessages.erase(mid);
+            TGModernConversationController *controller = _controller;
+            [controller updateCheckedMessages];
+        }
+    }
+    else if ([action isEqualToString:@"messageGroupSelectionChanged"])
+    {
+        int64_t groupedId = [options[@"groupedId"] int64Value];
+        if (groupedId != 0)
+        {
+            NSMutableArray *mids = [[NSMutableArray alloc] init];
+            for (TGMessageModernConversationItem *item in [self.controller _currentItems])
+            {
+                if (item->_message.groupedId == groupedId)
+                {
+                    [mids addObject:@(item->_message.mid)];
+                    if (mids.count == 10)
+                        break;
+                }
+            }
+            
+            if ([options[@"selected"] boolValue])
+            {
+                for (NSNumber *mid in mids)
+                {
+                    _checkedMessages.insert(mid.int32Value);
+                }
+            }
+            else
+            {
+                for (NSNumber *mid in mids)
+                {
+                    _checkedMessages.erase(mid.int32Value);
+                }
+            }
+            
             TGModernConversationController *controller = _controller;
             [controller updateCheckedMessages];
         }
@@ -2280,7 +2384,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
             
             if (iosMajorVersion() < 10 || (iosMajorVersion() == 10 && iosMinorVersion() < 3))
             {
-                TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+                TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
                 controller.dismissesByOutsideTap = true;
                 controller.hasSwipeGesture = true;
                 
@@ -2438,11 +2542,11 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         {
             [self startVoiceCall];
         }
-        else
-        {
-            TGModernConversationController *controller = _controller;
-            [controller openCallMenuForMessageId:[options[@"mid"] intValue]];
-        }
+    }
+    else if ([action isEqualToString:@"locationPickerRequested"])
+    {
+        TGModernConversationController *controller = _controller;
+        [controller _displayLocationPicker];
     }
 }
 
@@ -2537,7 +2641,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 {
 }
 
-- (SSignal *)userListForMention:(NSString *)__unused mention canBeContextBot:(bool)__unused canBeContextBot
+- (SSignal *)userListForMention:(NSString *)__unused mention canBeContextBot:(bool)__unused canBeContextBot includeSelf:(bool)__unused includeSelf
 {
     return nil;
 }
@@ -2556,7 +2660,7 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return nil;
 }
 
-- (void)navigateToMessageId:(int32_t)__unused messageId scrollBackMessageId:(int32_t)__unused scrollBackMessageId animated:(bool)__unused animated
+- (void)navigateToMessageId:(int32_t)__unused messageId scrollBackMessageId:(int32_t)__unused scrollBackMessageId forceUnseenMention:(bool)__unused forceUnseenMention animated:(bool)__unused animated
 {
 }
 
@@ -2850,6 +2954,10 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
     return false;
 }
 
+- (bool)suppressesOutgoingUnreadContents {
+    return false;
+}
+
 - (void)_controllerDidUpdateVisibleHoles:(NSArray *)__unused holes
 {
 }
@@ -2875,6 +2983,57 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
         
         [_messageViewsRequestedBufferTimer invalidate];
         [_messageViewsRequestedBufferTimer start];
+    }];
+}
+
+- (void)_controllerDidUpdateVisibleUnseenMentionMessageIds:(NSArray *)unseenMentionMessageIds {
+    [TGModernConversationCompanion dispatchOnMessageQueue:^{
+        if (unseenMentionMessageIds.count != 0) {
+            NSSet *idsSet = [[NSSet alloc] initWithArray:unseenMentionMessageIds];
+            NSMutableArray *consumeIds = [[NSMutableArray alloc] init];
+            
+            int64_t peerId = ((TGGenericModernConversationCompanion *)self).conversationId;
+            
+            NSMutableArray *updateItemsAtIndices = [[NSMutableArray alloc] init];
+            NSMutableArray *updateItemsWithItems = [[NSMutableArray alloc] init];
+            
+            for (NSUInteger index = 0; index < _items.count; index++)
+            {
+                TGMessageModernConversationItem *item = _items[index];
+                
+                if ([idsSet containsObject:@(item->_message.mid)])
+                {
+                    bool found = item->_message.contentProperties[@"contentsRead"] != nil;
+                    if (item->_message.containsUnseenMention) {
+                        found = false;
+                    }
+                    
+                    if (!found)
+                    {
+                        NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:item->_message.contentProperties];
+                        contentProperties[@"contentsRead"] = [[TGMessageViewedContentProperty alloc] init];
+                        TGMessageModernConversationItem *updatedItem = [item deepCopy];
+                        updatedItem->_message.contentProperties = contentProperties;
+                        item->_message.containsUnseenMention = false;
+                        ((NSMutableArray *)_items)[index] = updatedItem;
+                        
+                        [updateItemsAtIndices addObject:@(index)];
+                        [updateItemsWithItems addObject:updatedItem];
+                        
+                        [consumeIds addObject:@(item->_message.mid)];
+                    }
+                }
+            }
+            
+            TGDispatchOnMainThread(^{
+                TGModernConversationController *controller = self.controller;
+                for (NSUInteger i = 0; i < updateItemsWithItems.count; i++) {
+                    [controller updateItemAtIndex:[updateItemsAtIndices[i] intValue] toItem:updateItemsWithItems[i] delayAvailability:false];
+                }
+            });
+            
+            [TGDatabaseInstance() transactionReadMessageContentsInteractive:@{@(peerId): consumeIds}];
+        }
     }];
 }
 
@@ -3066,6 +3225,25 @@ static void dispatchOnMessageQueue(dispatch_block_t block, bool synchronous)
 
 - (NSNumber *)stickerRestrictionTimeout {
     return nil;
+}
+
+- (bool)messageSearchByUserAvailable {
+    return false;
+}
+
+- (bool)messageSearchByDateAvailable {
+    return false;
+}
+
+- (SSignal *)alphacodeListForQuery:(NSString *)query {
+    return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        [subscriber putNext:[TGEmojiSuggestions suggestionsForQuery:query]];
+        
+        return nil;
+    }] startOn:[SQueue concurrentDefaultQueue]];
+}
+
+- (void)performBotAutostart:(NSString *)__unused param {
 }
 
 @end

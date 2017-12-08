@@ -1,8 +1,6 @@
 #import "TGActionTableView.h"
 
-#import "TGViewController.h"
-
-#import "TGHacks.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGActionTableView () <UIGestureRecognizerDelegate>
 {

@@ -1,6 +1,6 @@
 #import "TGInstantPageControllerView.h"
 
-#import "TGMenuView.h"
+#import <LegacyComponents/TGMenuView.h>
 
 #import "TGInstantPageScrollState.h"
 #import "TGInstantPageLayout.h"
@@ -74,9 +74,13 @@
         _navigationBar = [[TGInstantPageControllerNavigationBar alloc] init];
         
         _scrollView = [[TGInstantPageControllerViewScrollView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _scrollView.backgroundColor = [UIColor whiteColor];
         
         _scrollViewHeader = [[UIView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _scrollViewHeader.accessibilityIgnoresInvertColors = true;
         _scrollViewHeader.backgroundColor = [UIColor blackColor];
         [_scrollView addSubview:_scrollViewHeader];
         
@@ -117,7 +121,7 @@
         _navigationBar.scrollToTop = ^{
             __strong TGInstantPageControllerView *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf->_scrollView setContentOffset:CGPointMake(0.0f, -64.0f) animated:true];
+                [strongSelf->_scrollView setContentOffset:CGPointMake(0.0f, -strongSelf->_scrollView.contentInset.top) animated:true];
             }
         };
         
@@ -263,6 +267,20 @@
     [_actionHandle reset];
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    _navigationBar.safeAreaInset = safeAreaInset;
+    _scrollView.contentInset = UIEdgeInsetsMake(_scrollView.contentInset.top, 0.0f, _safeAreaInset.bottom, 0.0f);
+    _scrollView.scrollIndicatorInsets = UIEdgeInsetsMake(_navigationBar.bounds.size.height, 0.0f, _safeAreaInset.bottom, 0.0f);
+    
+    CGFloat topInset = _statusBarHeight > 20.0f ? _statusBarHeight - 14.0f : _statusBarHeight;
+    CGFloat expandedHeight = topInset + 44.0f;
+    if (_scrollView.contentOffset.y < FLT_EPSILON) {
+        _scrollView.contentOffset = CGPointMake(0.0f, -expandedHeight);
+    }
+}
+
 - (TGInstantPagePresentation *)presentation {
     if (_presentation)
         return _presentation;
@@ -317,7 +335,11 @@
 }
 
 - (void)updateLayout {
-    _currentLayout = [TGInstantPageLayout makeLayoutForWebPage:_webPage peerId:_peerId messageId:_messageId boundingWidth:self.bounds.size.width presentation:self.presentation];
+    UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+    if (self.frame.size.width > self.frame.size.height)
+        orientation = UIInterfaceOrientationLandscapeLeft;
+    UIEdgeInsets safeAreaInset = [TGViewController safeAreaInsetForOrientation:orientation];
+    _currentLayout = [TGInstantPageLayout makeLayoutForWebPage:_webPage peerId:_peerId messageId:_messageId boundingWidth:self.bounds.size.width safeAreaInset:safeAreaInset presentation:self.presentation];
     [_visibleTiles enumerateKeysAndObjectsUsingBlock:^(__unused NSNumber *key, TGInstantPageTileView *tileView, __unused BOOL *stop) {
         [tileView removeFromSuperview];
     }];
@@ -334,6 +356,12 @@
         }
     }];
     [_visibleLinkSelectionViews removeAllObjects];
+    
+    for (UIView<TGInstantPageDisplayView> *itemView in _visibleItemsWithViews.allValues) {
+        if ([itemView respondsToSelector:@selector(updateSafeAreaInset:)]) {
+            [itemView updateSafeAreaInset:safeAreaInset];
+        }
+    }
     
     _currentLayoutTiles = [TGInstantPageTile tilesWithLayout:_currentLayout boundingWidth:self.bounds.size.width];
     NSMutableArray *currentLayoutItemsWithViews = [[NSMutableArray alloc] init];
@@ -426,7 +454,7 @@
     
     CGRect bounds = self.bounds;
     
-    if (_settingsView) {
+    if (_settingsView != nil) {
         _settingsView.frame = self.bounds;
     }
     
@@ -436,9 +464,12 @@
         }
         _scrollView.frame = CGRectMake(0.0f, 0.0f, bounds.size.width, bounds.size.height);
         _scrollViewHeader.frame = CGRectMake(0.0f, -2000.0f, bounds.size.width, 2000.0f);
-        _scrollView.contentInset = UIEdgeInsetsMake(_statusBarHeight + 44.0f, 0.0f, 0.0f, 0.0f);
-        if (_visibleItemsWithViews.count == 0 && _visibleTiles.count == 0) {
-            _scrollView.contentOffset = CGPointMake(0.0f, -64.0f);
+        
+        CGFloat safeAreaInset = _statusBarHeight > 20.0f ? _statusBarHeight - 14.0f : _statusBarHeight;
+        CGFloat expandedHeight = safeAreaInset + 44.0f;
+        _scrollView.contentInset = UIEdgeInsetsMake(expandedHeight, 0.0f, _safeAreaInset.bottom, 0.0f);
+        if ((_visibleItemsWithViews.count == 0 && _visibleTiles.count == 0) || _scrollView.contentOffset.y < FLT_EPSILON) {
+            _scrollView.contentOffset = CGPointMake(0.0f, -expandedHeight);
         }
         if (_initialAnchor != nil) {
             NSString *anchor = _initialAnchor;
@@ -640,7 +671,11 @@
 
 - (void)setStatusBarHeight:(CGFloat)statusBarHeight {
     _statusBarHeight = statusBarHeight;
-    _scrollView.contentInset = UIEdgeInsetsMake(_statusBarHeight + 44.0f, 0.0f, 0.0f, 0.0f);
+    
+    CGFloat safeAreaInset = _statusBarHeight > 20.0f ? _statusBarHeight - 14.0f : _statusBarHeight;
+    CGFloat expandedHeight = safeAreaInset + 44.0f;
+    
+    _scrollView.contentInset = UIEdgeInsetsMake(expandedHeight, 0.0f, _safeAreaInset.bottom, 0.0f);
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)__unused scrollView {
@@ -686,20 +721,31 @@
     CGFloat delta = contentOffset.y - _previousContentOffset.y;
     _previousContentOffset = contentOffset;
     
+    CGFloat statusBarHeight = _statusBarHeight;
+    if (self.frame.size.height > self.frame.size.width && statusBarHeight < FLT_EPSILON)
+        statusBarHeight = 20.0f;
+    
+    CGFloat safeAreaInset = statusBarHeight > 20.0f ? statusBarHeight - 14.0f : statusBarHeight;
+    CGFloat collapsedHeight = MAX(20.0f, safeAreaInset > 20.0f ? safeAreaInset + 20.0f : safeAreaInset);
+    CGFloat expandedHeight = safeAreaInset + 44.0f;
+    
+    _navigationBar.collapsedHeight = collapsedHeight;
+    _navigationBar.expandedHeight = expandedHeight;
+    
     void (^block)(CGRect) = ^(CGRect navigationBarFrame) {
         _navigationBar.frame = navigationBarFrame;
         CGFloat navigationBarHeight = _navigationBar.bounds.size.height;
         if (navigationBarHeight < FLT_EPSILON)
-            navigationBarHeight = 64.0f;
+            navigationBarHeight = expandedHeight;
         
-        CGFloat statusBarOffset = -MAX(0.0f, MIN(_statusBarHeight, _statusBarHeight + 44.0f - navigationBarHeight));
+        CGFloat statusBarOffset = -MAX(0.0f, MIN(statusBarHeight, statusBarHeight + 44.0f - navigationBarHeight));
         if (ABS(_statusBarOffset - statusBarOffset) > FLT_EPSILON) {
             _statusBarOffset = statusBarOffset;
             if (_statusBarOffsetUpdated) {
                 _statusBarOffsetUpdated(statusBarOffset);
             }
             
-            _scrollView.scrollIndicatorInsets = UIEdgeInsetsMake(_navigationBar.bounds.size.height, 0.0f, 0.0f, 0.0f);
+            _scrollView.scrollIndicatorInsets = UIEdgeInsetsMake(_navigationBar.bounds.size.height, 0.0f, _safeAreaInset.bottom, 0.0f);
         };
     };
     
@@ -708,10 +754,10 @@
         [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 | UIViewAnimationOptionLayoutSubviews animations:^
         {
             CGRect frame = navigationBarFrame;
-            if (contentOffset.y <= -_scrollView.contentInset.top || frame.size.height > 32.0f)
-                frame.size.height = 64.0f;
+            if (contentOffset.y <= -_scrollView.contentInset.top || frame.size.height > collapsedHeight + (expandedHeight - collapsedHeight) / 2.0f)
+                frame.size.height = expandedHeight;
             else
-                frame.size.height = 20.0f;
+                frame.size.height = collapsedHeight;
              
             _navigationBar.frame = frame;
             block(frame);
@@ -719,10 +765,10 @@
 
     } else {
         if (contentOffset.y <= -_scrollView.contentInset.top)
-            navigationBarFrame.size.height = 64.0f;
+            navigationBarFrame.size.height = expandedHeight;
         else
             navigationBarFrame.size.height -= delta;
-        navigationBarFrame.size.height = MAX(20.0f, MIN(64.0f, navigationBarFrame.size.height));
+        navigationBarFrame.size.height = MAX(collapsedHeight, MIN(expandedHeight, navigationBarFrame.size.height));
         _navigationBar.frame = navigationBarFrame;
         block(navigationBarFrame);
     }
@@ -809,6 +855,12 @@
             strongSelf->_autoNightThemeChanged(enabled);
         }
     };
+    _settingsView.openInPressed = ^{
+        __strong TGInstantPageControllerView *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf->_openInPressed) {
+            strongSelf->_openInPressed();
+        }
+    };
     [self addSubview:_settingsView];
     [_settingsView transitionIn];
     
@@ -871,7 +923,12 @@
         id<TGInstantPageLayoutItem> item = _currentLayout.items[scrollState.blockId];
         
         CGPoint contentOffset = CGPointMake(0.0f, -_scrollView.contentInset.top + item.frame.origin.y + scrollState.blockOffset - 5.0f);
+        if (contentOffset.y < 0)
+            contentOffset.y = -_scrollView.contentInset.top;
+        
         [_scrollView setContentOffset:contentOffset animated:false];
+    } else {
+        [_scrollView setContentOffset:CGPointMake(0.0f, -_scrollView.contentInset.top) animated:false];
     }
 }
 
@@ -882,14 +939,24 @@
         
         CGPoint point = CGPointMake(_scrollView.frame.size.width / 2.0f, _scrollView.contentOffset.y + _scrollView.contentInset.top + 5.0f);
         
+        __block id<TGInstantPageLayoutItem> closestItem = nil;
+        __block CGFloat previousDistance = DBL_MAX;
         [_currentLayout.items enumerateObjectsUsingBlock:^(id<TGInstantPageLayoutItem> item, NSUInteger index, BOOL *stop) {
             if (CGRectContainsPoint(item.frame, point)) {
+                closestItem = item;
                 blockIndex = @(index);
                 *stop = true;
-                
-                offset = (int32_t)(point.y - item.frame.origin.y);
+            } else {
+                CGFloat distance = fabs(point.y - item.frame.origin.y);
+                if (distance < previousDistance) {
+                    closestItem = item;
+                    previousDistance = distance;
+                    blockIndex = @(index);
+                }
             }
         }];
+                    
+        offset = (int32_t)(point.y - closestItem.frame.origin.y);
         
         if (blockIndex) {
             return [[TGInstantPageScrollState alloc] initWithBlockId:blockIndex.int32Value blockOffest:offset];

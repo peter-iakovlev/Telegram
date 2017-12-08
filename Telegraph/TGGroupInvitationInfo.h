@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGGroupInvitationInfo : NSObject
 

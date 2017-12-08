@@ -111,6 +111,10 @@
         result.banned_until = [is readInt32];
     }
     
+    if (flags & (1 << 17)) {
+        result.participants_count = [is readInt32];
+    }
+    
     return result;
 }
 

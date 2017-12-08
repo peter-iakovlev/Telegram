@@ -1,22 +1,19 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import <UIKit/UIKit.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/ActionStage.h>
 
 extern NSString *authorNameYou;
 
 @class TGDialogListCompanion;
+@class TGModernConversationTitlePanel;
+
+@class TGPresentation;
 
 @interface TGDialogListController : TGViewController <ASWatcher>
+
+@property (nonatomic, copy) void (^debugReady)(void);
 
 @property (nonatomic, strong, readonly) ASHandle *actionHandle;
 
@@ -27,6 +24,8 @@ extern NSString *authorNameYou;
 @property (nonatomic) bool doNotHideSearchAutomatically;
 
 @property (nonatomic) bool isDisplayingSearch;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 + (void)setLastAppearedConversationId:(int64_t)conversationId;
 
@@ -42,6 +41,8 @@ extern NSString *authorNameYou;
 - (void)updateConversations:(NSDictionary *)dict;
 - (void)dialogListItemsChanged:(NSArray *)insertedIndices insertedItems:(NSArray *)insertedItems updatedIndices:(NSArray *)updatedIndices updatedItems:(NSArray *)updatedItems removedIndices:(NSArray *)removedIndices;
 
+- (void)requestSavedMessagesTooltip;
+
 - (void)selectConversationWithId:(int64_t)conversationId;
 
 - (void)searchResultsReloaded:(NSDictionary *)items searchString:(NSString *)searchString;
@@ -53,5 +54,9 @@ extern NSString *authorNameYou;
 - (void)updateDatabasePassword;
 
 - (void)updateSearchConversations:(NSArray *)conversations;
+
+- (void)setCurrentTitlePanel:(TGModernConversationTitlePanel *)titlePanel;
+
+- (void)setDimmed:(bool)dimmed animated:(bool)animated keyboardSnapshot:(UIView *)keyboardSnapshot restoringFocus:(bool)restoringFocus;
 
 @end

@@ -1,24 +1,15 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGTelegraphUserInfoController.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGHacks.h"
-#import "TGStringUtils.h"
-#import "TGPhoneUtils.h"
+#import "TGLegacyComponentsContext.h"
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGDatabase.h"
 #import "TGInterfaceManager.h"
 #import "TGTelegraph.h"
-#import "TGNavigationBar.h"
 
 #import "TGUserInfoCollectionItem.h"
 #import "TGUserInfoPhoneCollectionItem.h"
@@ -38,26 +29,25 @@
 #import "TGCreateContactController.h"
 #import "TGAddToExistingContactController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGActionSheet.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGOverlayControllerWindow.h"
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGUserAvatarGalleryModel.h"
 #import "TGUserAvatarGalleryItem.h"
 
 #import "TGSynchronizeContactsActor.h"
 
 #import "TGAlertView.h"
-#import "TGMenuView.h"
+#import <LegacyComponents/TGMenuView.h>
 
 #import "TGSharedMediaController.h"
 
 #import "TGTelegramNetworking.h"
 
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGDialogListCompanion.h"
 
@@ -67,8 +57,6 @@
 #import "TGUserInfoTextCollectionItem.h"
 #import "TGUserInfoEditingAboutCollectionItem.h"
 
-#import "TGHashtagSearchController.h"
-
 #import "TGGroupsInCommonController.h"
 
 #import "TGShareMenu.h"
@@ -76,7 +64,11 @@
 #import <Contacts/Contacts.h>
 #import <AddressBook/AddressBook.h>
 
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
+
+#import "TGLegacyComponentsContext.h"
+
+#import "TGAlertView.h"
 
 @interface TGTelegraphUserInfoController () <TGAlertSoundControllerDelegate, TGUserInfoEditingPhoneCollectionItemDelegate, TGPhoneLabelPickerControllerDelegate, TGCreateContactControllerDelegate, TGAddToExistingContactControllerDelegate>
 {
@@ -832,7 +824,7 @@ static UIView *_findBackArrow(UIView *view)
                 [_updateAboutDisposable setDisposable:[[[[TGAccountSignals updateAbout:text] deliverOn:[SQueue mainQueue]] onDispose:^{
                     [progressWindow dismiss:true];
                 }] startWithNext:nil error:^(__unused id error) {
-                    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.About.Error") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
                 } completed:nil]];
             }
         }
@@ -937,7 +929,7 @@ static UIView *_findBackArrow(UIView *view)
             }
         
             
-            TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+            TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
             controller.dismissesByOutsideTap = true;
             controller.hasSwipeGesture = true;
             
@@ -1523,12 +1515,20 @@ static UIView *_findBackArrow(UIView *view)
 
 - (void)blockUserPressed
 {
-    _isUserBlocked = !_isUserBlocked;
-    
-    static int actionId = 0;
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/changePeerBlockedStatus/(userInfo%d)", actionId++] options:@{@"peerId": @(_uid), @"block": @(_isUserBlocked)} watcher:TGTelegraphInstance];
-    
-    [self _updateUserBlocked];
+    __weak TGTelegraphUserInfoController *weakSelf = self;
+    [TGAlertView presentAlertWithTitle:nil message:[NSString stringWithFormat:self->_isUserBlocked ? TGLocalized(@"UserInfo.UnblockConfirmation") : TGLocalized(@"UserInfo.BlockConfirmation"), _user.displayFirstName] cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed) {
+        if (okButtonPressed) {
+            __strong TGTelegraphUserInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_isUserBlocked = !strongSelf->_isUserBlocked;
+                
+                static int actionId = 0;
+                [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/changePeerBlockedStatus/(userInfo%d)", actionId++] options:@{@"peerId": @(strongSelf->_uid), @"block": @(strongSelf->_isUserBlocked)} watcher:TGTelegraphInstance];
+                
+                [strongSelf _updateUserBlocked];
+            }
+        }
+    }];
 }
 
 - (void)_commitDeleteContact
@@ -1545,7 +1545,7 @@ static UIView *_findBackArrow(UIView *view)
             {
                 self.view.userInteractionEnabled = true;
                 
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.PhonebookAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             });
         }
         else
@@ -1574,7 +1574,7 @@ static UIView *_findBackArrow(UIView *view)
             {
                 self.view.userInteractionEnabled = true;
                 
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.PhonebookAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"OK") otherButtonTitles:nil] show];
             });
         }
         else
@@ -1597,7 +1597,7 @@ static UIView *_findBackArrow(UIView *view)
             {
                 self.view.userInteractionEnabled = true;
                 
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Profile.PhonebookAccessDisabled") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Contacts.AccessDeniedError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             });
         }
         else
@@ -1633,7 +1633,7 @@ static UIView *_findBackArrow(UIView *view)
         
         if (user != nil && user.photoUrlBig != nil && avatarView.currentImage != nil)
         {
-            TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] init];
+            TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
             modernGallery.previewMode = previewMode;
             if (previewMode)
                 modernGallery.showInterface = false;
@@ -1713,7 +1713,7 @@ static UIView *_findBackArrow(UIView *view)
             
             if (!previewMode)
             {
-                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:modernGallery];
+                TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:modernGallery];
                 controllerWindow.hidden = false;
             }
             else
@@ -1885,7 +1885,7 @@ static UIView *_findBackArrow(UIView *view)
             }
             else
             {
-                [[[TGAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Profile.CreateEncryptedChatOutdatedError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [[[TGAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Login.UnknownError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
             }
         });
     }
@@ -1969,19 +1969,7 @@ static UIView *_findBackArrow(UIView *view)
     else if ([link hasPrefix:@"hashtag://"])
     {
         NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
-        
-        TGHashtagSearchController *hashtagController = [[TGHashtagSearchController alloc] initWithQuery:[@"#" stringByAppendingString:hashtag] peerId:0 accessHash:0];
-        //__weak TGChannelInfoController *weakSelf = self;
-        /*hashtagController.customResultBlock = ^(int32_t messageId) {
-         __strong TGChannelInfoController *strongSelf = weakSelf;
-         if (strongSelf != nil) {
-         [strongSelf navigateToMessageId:messageId scrollBackMessageId:0 animated:true];
-         TGModernConversationController *controller = strongSelf.controller;
-         [controller.navigationController popToViewController:controller animated:true];
-         }
-         };*/
-        
-        [self.navigationController pushViewController:hashtagController animated:true];
+        [[TGInterfaceManager instance] displayHashtagOverview:[@"#" stringByAppendingString:hashtag] conversationId:_uid];
     } else {
         @try {
             NSURL *url = [NSURL URLWithString:link];
@@ -2051,7 +2039,7 @@ static UIView *_findBackArrow(UIView *view)
         TGModernGalleryController *controller = (TGModernGalleryController *)viewControllerToCommit;
         controller.previewMode = false;
         
-        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+        TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
         controllerWindow.hidden = false;
     }
 }

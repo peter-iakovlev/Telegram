@@ -1,13 +1,9 @@
 #import "TGSharedMediaVideoItemView.h"
 
-#import "TGVideoMediaAttachment.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGSharedMediaImageViewQueue.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
 
 #import "TGAppDelegate.h"
 

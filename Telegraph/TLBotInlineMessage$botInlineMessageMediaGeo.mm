@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//botInlineMessageMediaGeo flags:# geo:GeoPoint reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
+//botInlineMessageMediaGeo flags:# geo:GeoPoint period:int reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
 
 @implementation TLBotInlineMessage$botInlineMessageMediaGeo
 
@@ -25,6 +25,8 @@
             return nil;
         }
     }
+    
+    result.period = [is readInt32];
     
     if (flags & (1 << 2))
     {

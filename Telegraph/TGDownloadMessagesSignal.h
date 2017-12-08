@@ -17,4 +17,7 @@
 + (SSignal *)downloadMessages:(NSArray *)messages;
 + (SSignal *)mediaStickerpacks:(TGMediaAttachment *)attachment;
 
++ (SSignal *)earliestUnseenMentionMessageId:(int64_t)peerId accessHash:(int64_t)accessHash;
++ (SSignal *)clearUnseenMentions:(int64_t)peerId;
+
 @end

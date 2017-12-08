@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "PSCoding.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 typedef enum {
     TGCachedPeerReportSpamUnknown = 0,

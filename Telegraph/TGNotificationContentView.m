@@ -1,12 +1,8 @@
 #import "TGNotificationContentView.h"
 
-#import "TGFont.h"
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGPeerIdAdapter.h"
-#import "TGUser.h"
-#import "TGMessage.h"
-#import "TGConversation.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGNotificationTextPreviewView.h"
 #import "TGNotificationMediaPreviewView.h"

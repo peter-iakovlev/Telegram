@@ -1,33 +1,38 @@
 #import "TGPasscodeSettingsController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGButtonCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
 #import "TGVariantCollectionItem.h"
+#import "TGPasswordPlaceholderItem.h"
 
 #import "TGDatabase.h"
-#import "TGImageUtils.h"
 #import "TGAppDelegate.h"
 
 #import <LocalAuthentication/LocalAuthentication.h>
 
-#import "TGNavigationController.h"
-#import "TGPasscodeEntryController.h"
+#import <LegacyComponents/TGPasscodeEntryController.h>
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGActionSheet.h"
 
 #import "TGTelegramNetworking.h"
 
+#import "TGLegacyComponentsContext.h"
+
 @interface TGPasscodeSettingsController ()
 {
     TGCollectionMenuSection *_buttonsSection;
+    TGPasswordPlaceholderItem *_placeholderItem;
     TGButtonCollectionItem *_turnPasscodeOnItem;
     TGButtonCollectionItem *_turnPasscodeOffItem;
     TGButtonCollectionItem *_changePasscodeItem;
     
     TGCollectionMenuSection *_infoSection;
     TGCommentCollectionItem *_infoItem;
+    TGCommentCollectionItem *_bottomInfoItem;
     
     TGCollectionMenuSection *_timeoutSection;
     TGVariantCollectionItem *_timeoutIntervalItem;
@@ -58,10 +63,12 @@
         _buttonsSection = [[TGCollectionMenuSection alloc] init];
         _buttonsSection.insets = UIEdgeInsetsMake(37.0f, 0.0f, 0.0f, 0.0f);
         
+        _placeholderItem = [[TGPasswordPlaceholderItem alloc] initWithIcon:TGImageNamed(@"PasscodePlaceholderIcon") title:TGLocalized(@"PasscodeSettings.Title") text:TGLocalized(@"PasscodeSettings.HelpTop")];
+        
         _turnPasscodeOnItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.TurnPasscodeOn") action:@selector(turnPasscodeOnPressed)];
         _turnPasscodeOnItem.deselectAutomatically = true;
         _turnPasscodeOnItem.titleColor = TGAccentColor();
-        _turnPasscodeOnItem.alignment = NSTextAlignmentLeft;
+        _turnPasscodeOnItem.alignment = NSTextAlignmentCenter;
         
         _turnPasscodeOffItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.TurnPasscodeOff") action:@selector(turnPasscodeOffPressed)];
         _turnPasscodeOffItem.deselectAutomatically = true;
@@ -82,6 +89,9 @@
         _infoSection.insets = UIEdgeInsetsMake(4.0f, 0.0f, 0.0f, 0.0f);
         
         _infoItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"PasscodeSettings.Help")];
+        _bottomInfoItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"PasscodeSettings.HelpBottom") paragraphSpacing:0.0f clearFormatting:false alignment:NSTextAlignmentCenter];
+        if ([TGViewController hasLargeScreen])
+            _bottomInfoItem.topInset = 18.0f;
         
         _optionsSection = [[TGCollectionMenuSection alloc] init];
         _optionsSection.insets = UIEdgeInsetsMake(26.0f, 0.0f, 44.0f, 0.0f);
@@ -122,19 +132,63 @@
     return self;
 }
 
-+ (bool)supportsTouchId
++ (bool)supportsBiometrics:(bool *)isFaceId
 {
     if (iosMajorVersion() >= 8) {
         __autoreleasing NSError *error = nil;
-        if ([[[LAContext alloc] init] canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
+        LAContext *context = [[LAContext alloc] init];
+        
+        if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
+            if ([context respondsToSelector:@selector(biometryType)])
+            {
+                if (context.biometryType == LABiometryTypeFaceID && isFaceId != NULL)
+                    *isFaceId = true;
+            }
             return true;
         }
         if (error.code != kLAErrorTouchIDNotAvailable) {
+            if ([context respondsToSelector:@selector(biometryType)])
+            {
+                if (context.biometryType == LABiometryTypeFaceID && isFaceId != NULL)
+                    *isFaceId = true;
+            }
             return true;
         }
     }
     
     return false;
+}
+
+- (void)viewDidLoad
+{
+    bool hasPassword = [self hasPasscode];
+    
+    _infoItem.hidden = !hasPassword && self.view.frame.size.width < self.view.frame.size.height;
+    _bottomInfoItem.hidden = self.view.frame.size.width > self.view.frame.size.height;
+    
+    [_infoItem setAlpha:!_infoItem.hidden ? 1.0f : 0.0f];
+    [_bottomInfoItem setAlpha:!_bottomInfoItem.hidden ? 1.0f : 0.0f];
+    
+    [self.collectionView reloadData];
+}
+
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration
+{
+    [super layoutControllerForSize:size duration:duration];
+    
+    bool hasPassword = [self hasPasscode];
+    
+    _infoItem.hidden = !hasPassword && size.width < size.height;
+    _bottomInfoItem.hidden = size.width > size.height;
+    
+    [UIView animateWithDuration:duration animations:^
+    {
+        [_infoItem setAlpha:!_infoItem.hidden ? 1.0f : 0.0f];
+        [_bottomInfoItem setAlpha:!_bottomInfoItem.hidden ? 1.0f : 0.0f];
+    }];
+    
+    if (![self hasPasscode])
+        [self.collectionView reloadData];
 }
 
 - (bool)hasPasscode
@@ -239,26 +293,45 @@
     }
     else
     {
+        [self.menuSections addItemToSection:buttonsSectionIndex item:_placeholderItem];
         [self.menuSections addItemToSection:buttonsSectionIndex item:_turnPasscodeOnItem];
     }
     
     [self.menuSections addSection:_infoSection];
     infoSectionIndex = [self indexForSection:_infoSection];
+    if (!hasPasscode)
+        [self.menuSections addItemToSection:buttonsSectionIndex item:_bottomInfoItem];
     [self.menuSections addItemToSection:infoSectionIndex item:_infoItem];
-
+    
+    
     if (hasPasscode)
     {
+        _infoItem.hidden = false;
+        _infoItem.alpha = 1.0f;
+        
         [self.menuSections addSection:_optionsSection];
         optionsSectionIndex = [self indexForSection:_optionsSection];
         
         [self.menuSections addItemToSection:optionsSectionIndex item:_timeoutIntervalItem];
-        if ([TGPasscodeSettingsController supportsTouchId])
+        bool hasFaceId = false;
+        if ([TGPasscodeSettingsController supportsBiometrics:&hasFaceId])
+        {
+            _touchIdItem.title = hasFaceId ? TGLocalized(@"PasscodeSettings.UnlockWithFaceId") : TGLocalized(@"PasscodeSettings.UnlockWithTouchId");
             [self.menuSections addItemToSection:optionsSectionIndex item:_touchIdItem];
+        }
         [self.menuSections addItemToSection:optionsSectionIndex item:_simplePasscodeItem];
         [self.menuSections addItemToSection:optionsSectionIndex item:_optionsInfoItem];
         
         if (!passcodeIsSimple)
             [self.menuSections addSection:_encryptDataSection];
+    }
+    else
+    {
+        _bottomInfoItem.hidden = self.view.frame.size.width > self.view.frame.size.height;
+        _infoItem.hidden = !_bottomInfoItem.hidden;
+        
+        [_infoItem setAlpha:!_infoItem.hidden ? 1.0f : 0.0f];
+        [_bottomInfoItem setAlpha:!_bottomInfoItem.hidden ? 1.0f : 0.0f];
     }
     
     [self.collectionView reloadData];
@@ -267,7 +340,11 @@
 - (void)turnPasscodeOnPressed
 {
     __weak TGPasscodeSettingsController *weakSelf = self;
-    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithStyle:TGPasscodeEntryControllerStyleDefault mode:TGPasscodeEntryControllerModeSetupSimple cancelEnabled:true allowTouchId:false completion:^(NSString *password)
+    
+    NSInteger initWithNumberOfInvalidAttempts = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttempts"] integerValue];
+    NSTimeInterval invalidAttemptDate = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttemptDate"] doubleValue];
+    
+    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithContext:[TGLegacyComponentsContext shared] style:TGPasscodeEntryControllerStyleDefault mode:TGPasscodeEntryControllerModeSetupSimple cancelEnabled:true allowTouchId:false attemptData:[[TGPasscodeEntryAttemptData alloc] initWithNumberOfInvalidAttempts:initWithNumberOfInvalidAttempts dateOfLastInvalidAttempt:invalidAttemptDate] completion:^(NSString *password)
     {
         __strong TGPasscodeSettingsController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -295,6 +372,10 @@
                 [strongSelf dismissViewControllerAnimated:true completion:nil];
         }
     }];
+    controller.updateAttemptData = ^(TGPasscodeEntryAttemptData *attemptData) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.numberOfInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.dateOfLastInvalidAttempt) forKey:@"Passcode_invalidAttemptDate"];
+    };
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
@@ -310,7 +391,10 @@
 - (void)turnPasscodeOffPressed
 {
     __weak TGPasscodeSettingsController *weakSelf = self;
-    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithStyle:TGPasscodeEntryControllerStyleDefault mode:[self passcodeIsSimple] ? TGPasscodeEntryControllerModeVerifySimple : TGPasscodeEntryControllerModeVerifyComplex cancelEnabled:true  allowTouchId:false completion:^(NSString *password)
+    NSInteger initWithNumberOfInvalidAttempts = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttempts"] integerValue];
+    NSTimeInterval invalidAttemptDate = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttemptDate"] doubleValue];
+    
+    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithContext:[TGLegacyComponentsContext shared] style:TGPasscodeEntryControllerStyleDefault mode:[self passcodeIsSimple] ? TGPasscodeEntryControllerModeVerifySimple : TGPasscodeEntryControllerModeVerifyComplex cancelEnabled:true  allowTouchId:false attemptData:[[TGPasscodeEntryAttemptData alloc] initWithNumberOfInvalidAttempts:initWithNumberOfInvalidAttempts dateOfLastInvalidAttempt:invalidAttemptDate] completion:^(NSString *password)
     {
         __strong TGPasscodeSettingsController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -341,6 +425,10 @@
                 [strongSelf dismissViewControllerAnimated:true completion:nil];
         }
     }];
+    controller.updateAttemptData = ^(TGPasscodeEntryAttemptData *attemptData) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.numberOfInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.dateOfLastInvalidAttempt) forKey:@"Passcode_invalidAttemptDate"];
+    };
     
     controller.checkCurrentPasscode = ^bool (NSString *passcode)
     {
@@ -361,7 +449,10 @@
 - (void)changePasscodePressed
 {
     __weak TGPasscodeSettingsController *weakSelf = self;
-    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithStyle:TGPasscodeEntryControllerStyleDefault mode:[self passcodeIsSimple] ? TGPasscodeEntryControllerModeChangeSimpleToSimple : TGPasscodeEntryControllerModeChangeComplexToComplex cancelEnabled:true allowTouchId:false completion:^(NSString *password)
+    NSInteger initWithNumberOfInvalidAttempts = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttempts"] integerValue];
+    NSTimeInterval invalidAttemptDate = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttemptDate"] doubleValue];
+    
+    TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithContext:[TGLegacyComponentsContext shared] style:TGPasscodeEntryControllerStyleDefault mode:[self passcodeIsSimple] ? TGPasscodeEntryControllerModeChangeSimpleToSimple : TGPasscodeEntryControllerModeChangeComplexToComplex cancelEnabled:true allowTouchId:false attemptData:[[TGPasscodeEntryAttemptData alloc] initWithNumberOfInvalidAttempts:initWithNumberOfInvalidAttempts dateOfLastInvalidAttempt:invalidAttemptDate] completion:^(NSString *password)
     {
         __strong TGPasscodeSettingsController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -392,6 +483,10 @@
             }
         }
     }];
+    controller.updateAttemptData = ^(TGPasscodeEntryAttemptData *attemptData) {
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.numberOfInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+        [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.dateOfLastInvalidAttempt) forKey:@"Passcode_invalidAttemptDate"];
+    };
     
     controller.checkCurrentPasscode = ^bool (NSString *passcode)
     {
@@ -466,7 +561,10 @@
             mode = TGPasscodeEntryControllerModeChangeSimpleToSimple;
         
         __weak TGPasscodeSettingsController *weakSelf = self;
-        TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithStyle:TGPasscodeEntryControllerStyleDefault mode:mode cancelEnabled:true allowTouchId:false completion:^(NSString *password)
+        NSInteger initWithNumberOfInvalidAttempts = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttempts"] integerValue];
+        NSTimeInterval invalidAttemptDate = [[[NSUserDefaults standardUserDefaults] objectForKey:@"Passcode_invalidAttemptDate"] doubleValue];
+        
+        TGPasscodeEntryController *controller = [[TGPasscodeEntryController alloc] initWithContext:[TGLegacyComponentsContext shared] style:TGPasscodeEntryControllerStyleDefault mode:mode cancelEnabled:true allowTouchId:false attemptData:[[TGPasscodeEntryAttemptData alloc] initWithNumberOfInvalidAttempts:initWithNumberOfInvalidAttempts dateOfLastInvalidAttempt:invalidAttemptDate] completion:^(NSString *password)
         {
             __strong TGPasscodeSettingsController *strongSelf = weakSelf;
             if (strongSelf != nil)
@@ -495,6 +593,10 @@
                 }
             }
         }];
+        controller.updateAttemptData = ^(TGPasscodeEntryAttemptData *attemptData) {
+            [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.numberOfInvalidAttempts) forKey:@"Passcode_invalidAttempts"];
+            [[NSUserDefaults standardUserDefaults] setObject:@(attemptData.dateOfLastInvalidAttempt) forKey:@"Passcode_invalidAttemptDate"];
+        };
         
         controller.checkCurrentPasscode = ^bool (NSString *passcode)
         {

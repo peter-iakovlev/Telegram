@@ -1,5 +1,7 @@
 #import "TGExternalGifSearchResult.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 @implementation TGExternalGifSearchResult
 
 - (instancetype)initWithUrl:(NSString *)url originalUrl:(NSString *)originalUrl thumbnailUrl:(NSString *)thumbnailUrl size:(CGSize)size {

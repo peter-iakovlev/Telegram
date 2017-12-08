@@ -1,14 +1,13 @@
 #import "TGDocumentWithThumbnailContentModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDocumentMediaAttachment+Telegraph.h"
 
 #import "TGModernLabelViewModel.h"
 #import "TGMessageImageViewModel.h"
-#import "TGStringUtils.h"
 
 #import "TGModernFlatteningViewModel.h"
-
-#import "TGFont.h"
 
 @interface TGDocumentWithThumbnailContentModel () {
     TGDocumentMediaAttachment *_document;

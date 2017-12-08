@@ -1,8 +1,8 @@
 #import <Foundation/Foundation.h>
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 #import <SSignalKit/SSignalKit.h>
-#import "TGModernCache.h"
+#import <LegacyComponents/TGModernCache.h>
 #import "EMInMemoryImageCache.h"
 
 @interface TGSharedMediaUtils : NSObject

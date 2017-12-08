@@ -1,14 +1,15 @@
 #import "TGInstantPageEmbedView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <WebKit/WebKit.h>
 
-#import "TGImageUtils.h"
 #import "TGSharedMediaUtils.h"
 #import "TGSharedPhotoSignals.h"
 
-#import "TGEmbedPlayerView.h"
-#import "TGEmbedPlayerState.h"
-#import "TGEmbedYoutubePlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
+#import <LegacyComponents/TGEmbedPlayerState.h>
+#import <LegacyComponents/TGEmbedYoutubePlayerView.h>
 #import "TGEmbedPlayerController.h"
 #import "TGEmbedPIPController.h"
 #import "TGEmbedPIPPlaceholderView.h"

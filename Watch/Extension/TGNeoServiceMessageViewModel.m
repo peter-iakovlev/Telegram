@@ -6,7 +6,7 @@
 #import "TGBridgeUser.h"
 #import "TGChatInfo.h"
 
-#import "TGPeerIdAdapter.h"
+#import "TGBridgePeerIdAdapter.h"
 
 const UIEdgeInsets TGNeoServiceMessageInsets = { 2, 0, 6, 0 };
 const UIEdgeInsets TGNeoChatInfoInsets = { 12, 0, 12, 0 };
@@ -189,7 +189,7 @@ const UIEdgeInsets TGNeoChatInfoInsets = { 12, 0, 12, 0 };
                         
                     case TGBridgeMessageActionGroupMigratedTo:
                     {
-                        actionText = TGLocalized(@"Notification.GroupMigratedToChannel");
+                        actionText = TGLocalized(@"Notification.ChannelMigratedFrom");
                     }
                         break;
                         

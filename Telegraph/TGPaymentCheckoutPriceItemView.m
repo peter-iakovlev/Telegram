@@ -1,7 +1,6 @@
 #import "TGPaymentCheckoutPriceItemView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPaymentCheckoutPriceItemView () {
     UILabel *_titleLabel;
@@ -57,37 +56,37 @@
     
     CGRect bounds = self.bounds;
     
-    CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width, CGFLOAT_MAX)];
-    CGSize variantSize = [_valueLabel sizeThatFits:CGSizeMake(bounds.size.width, CGFLOAT_MAX)];
+    CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width - self.safeAreaInset.left - self.safeAreaInset.right, CGFLOAT_MAX)];
+    CGSize variantSize = [_valueLabel sizeThatFits:CGSizeMake(bounds.size.width - self.safeAreaInset.left - self.safeAreaInset.right, CGFLOAT_MAX)];
     
     CGFloat disclosureWidth = 0.0f;
     
     CGFloat startingX = 15.0f;
     CGFloat indicatorSpacing = 0.0f;
     CGFloat labelSpacing = 8.0f;
-    CGFloat availableWidth = bounds.size.width - disclosureWidth - 15.0f - startingX - indicatorSpacing;
+    CGFloat availableWidth = bounds.size.width - disclosureWidth - 15.0f - startingX - indicatorSpacing - self.safeAreaInset.left - self.safeAreaInset.right;
     
     CGFloat titleY =  CGFloor((bounds.size.height - titleSize.height) / 2.0f) + TGScreenPixel;
     CGFloat variantY =  CGFloor((bounds.size.height - variantSize.height) / 2.0f) + TGScreenPixel;
     
     if (titleSize.width + labelSpacing + variantSize.width <= availableWidth)
     {
-        _titleLabel.frame = CGRectMake(startingX, titleY, titleSize.width, titleSize.height);
-        _valueLabel.frame = CGRectMake(startingX + availableWidth - variantSize.width, variantY, variantSize.width, variantSize.height);
+        _titleLabel.frame = CGRectMake(startingX + self.safeAreaInset.left, titleY, titleSize.width, titleSize.height);
+        _valueLabel.frame = CGRectMake(startingX + self.safeAreaInset.left + availableWidth - variantSize.width, variantY, variantSize.width, variantSize.height);
     }
     else if (titleSize.width > variantSize.width)
     {
         CGFloat titleWidth = CGFloor(availableWidth * 2.0f / 3.0f) - labelSpacing;
-        _titleLabel.frame = CGRectMake(startingX, titleY, titleWidth, titleSize.height);
+        _titleLabel.frame = CGRectMake(startingX + self.safeAreaInset.left, titleY, titleWidth, titleSize.height);
         CGFloat variantWidth = MIN(variantSize.width, availableWidth - titleWidth - labelSpacing);
-        _valueLabel.frame = CGRectMake(startingX + availableWidth - variantWidth, variantY, variantWidth, variantSize.height);
+        _valueLabel.frame = CGRectMake(startingX + self.safeAreaInset.left + availableWidth - variantWidth, variantY, variantWidth, variantSize.height);
     }
     else
     {
         CGFloat variantWidth = CGFloor(availableWidth / 2.0f) - labelSpacing;
-        _valueLabel.frame = CGRectMake(startingX + availableWidth - variantWidth, variantY, variantWidth, variantSize.height);
+        _valueLabel.frame = CGRectMake(startingX + self.safeAreaInset.left + availableWidth - variantWidth, variantY, variantWidth, variantSize.height);
         CGFloat titleWidth = MIN(titleSize.width, availableWidth - variantWidth - labelSpacing);
-        _titleLabel.frame = CGRectMake(startingX, titleY, titleWidth, titleSize.height);
+        _titleLabel.frame = CGRectMake(startingX + self.safeAreaInset.left, titleY, titleWidth, titleSize.height);
     }
 }
 

@@ -1,19 +1,30 @@
 #import "TGItemCollectionGalleryModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGItemCollectionGalleryItem.h"
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
 
-#import "TGImageMediaAttachment.h"
-#import "TGVideoMediaAttachment.h"
+#import "TGGenericPeerGalleryGroupItem.h"
 
-#import "TGMediaAssetsUtils.h"
+#import <LegacyComponents/TGMediaAssetsUtils.h>
 
 #import "MediaBox.h"
 #import "TGTelegraph.h"
 #import "PhotoResources.h"
+
+#import "TGLegacyComponentsContext.h"
+
+@interface TGItemCollectionGalleryModel ()
+{
+    NSMutableDictionary *_groupedItems;
+    
+    TGGenericPeerMediaGalleryDefaultFooterView *_footerView;
+}
+@end
 
 @implementation TGItemCollectionGalleryModel
 
@@ -22,13 +33,34 @@
     if (self != nil) {
         NSMutableArray *items = [[NSMutableArray alloc] init];
         id<TGModernGalleryItem> centralItem = nil;
+        int32_t index = 1;
+        NSMutableDictionary *groups = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *groupedItems = [[NSMutableDictionary alloc] init];
         for (TGInstantPageMedia *media in medias) {
-            TGItemCollectionGalleryItem *item = [[TGItemCollectionGalleryItem alloc] initWithMedia:media];
+            TGItemCollectionGalleryItem *item = [[TGItemCollectionGalleryItem alloc] initWithIndex:index media:media];
             if ([media isEqual:centralMedia]) {
                 centralItem = item;
             }
             [items addObject:item];
+            index++;
+            
+            if (media.groupedId != 0)
+            {
+                NSMutableArray *groupItems = groups[@(media.groupedId)];
+                if (groupItems == nil)
+                {
+                    groupItems = [[NSMutableArray alloc] init];
+                    groups[@(media.groupedId)] = groupItems;
+                }
+                
+                [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithItemCollectionItem:item]];
+                item.groupItems = groupItems;
+                item.groupedId = media.groupedId;
+                
+                groupedItems[@(item.index)] = item;
+            }
         }
+        _groupedItems = groupedItems;
         if (centralItem == nil) {
             centralItem = items.firstObject;
         }
@@ -39,7 +71,23 @@
 
 - (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
 {
-    return [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    __weak TGItemCollectionGalleryModel *weakSelf = self;
+    _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
+    {
+        __strong TGItemCollectionGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        id<TGGenericPeerGalleryItem> galleryItem = strongSelf->_groupedItems[@(item.keyId)];
+        [strongSelf _focusOnItem:(id<TGModernGalleryItem>)galleryItem synchronously:synchronously];
+    };
+    return _footerView;
+}
+
+- (void)_interItemTransitionProgressChanged:(CGFloat)progress
+{
+    [_footerView setInterItemTransitionProgress:progress];
 }
 
 - (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView
@@ -98,7 +146,7 @@
         
         __strong TGGenericPeerMediaGalleryActionsAccessoryView *strongAccessoryView = weakAccessoryView;
         
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] init];
+        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
         controller.dismissesByOutsideTap = true;
         controller.hasSwipeGesture = true;
         controller.narrowInLandscape = true;
@@ -115,7 +163,7 @@
                 if ([galleryItem.media.media isKindOfClass:[TGImageMediaAttachment class]]) {
                     [[[[TGTelegraphInstance.mediaBox resourceData:imageFullSizeResource(galleryItem.media.media, nil) pathExtension:nil] take:1] deliverOn:[SQueue mainQueue]] startWithNext:^(ResourceData *data) {
                         if (data.complete) {
-                            [TGMediaAssetsSaveToCameraRoll saveImageWithData:[NSData dataWithContentsOfFile:data.path]];
+                            [TGMediaAssetsSaveToCameraRoll saveImageWithData:[NSData dataWithContentsOfFile:data.path] silentlyFail:false completionBlock:nil];
                         }
                     }];
                 } else if ([galleryItem.media.media isKindOfClass:[TGVideoMediaAttachment class]]) {

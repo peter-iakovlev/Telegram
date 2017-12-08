@@ -1,6 +1,6 @@
 #import "TGDateLabel.h"
 
-#import "TGDateUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 typedef enum {
     TGDateLabelFormatModeNone = 0,

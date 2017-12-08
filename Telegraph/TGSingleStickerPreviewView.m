@@ -1,13 +1,10 @@
 #import "TGSingleStickerPreviewView.h"
 
-#import "TGDocumentMediaAttachment.h"
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGMessageImageView.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
 
 static const CGFloat TGStickersTopMargin = 100.0f;
 

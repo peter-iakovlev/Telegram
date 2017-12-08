@@ -1,10 +1,10 @@
 #import <Foundation/Foundation.h>
 
-#import "PSCoding.h"
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @class TGChannelAdminRights;
 @class TGChannelBannedRights;
+@class TGStickerPackIdReference;
 
 @interface TGCachedConversationMember : NSObject <PSCoding>
 
@@ -52,8 +52,14 @@
 
 @property (nonatomic, strong, readonly) NSDictionary *botInfos;
 
+@property (nonatomic, strong, readonly) TGStickerPackIdReference *stickerPack;
+@property (nonatomic, readonly) bool canSetStickerPack;
+
+@property (nonatomic, readonly) int32_t minAvailableMessageId;
+@property (nonatomic, readonly) bool preHistory;
+
 - (instancetype)init;
-- (instancetype)initWithManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount bannedCount:(int32_t)bannedCount memberCount:(int32_t)memberCount managementMembers:(NSArray *)managementMembers blacklistMembers:(NSArray *)blacklistMembers bannedMembers:(NSArray *)bannedMembers generalMembers:(NSArray *)generalMembers privateLink:(NSString *)privateLink migrationData:(TGConversationMigrationData *)migrationData botInfos:(NSDictionary *)botInfos;
+- (instancetype)initWithManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount bannedCount:(int32_t)bannedCount memberCount:(int32_t)memberCount managementMembers:(NSArray *)managementMembers blacklistMembers:(NSArray *)blacklistMembers bannedMembers:(NSArray *)bannedMembers generalMembers:(NSArray *)generalMembers privateLink:(NSString *)privateLink migrationData:(TGConversationMigrationData *)migrationData botInfos:(NSDictionary *)botInfos stickerPack:(TGStickerPackIdReference *)stickerPack canSetStickerPack:(bool)canSetStickerPack minAvailableMessageId:(int32_t)minAvailableMessageId preHistory:(bool)preHistory;
 
 - (TGCachedConversationData *)updateManagementCount:(int32_t)managementCount blacklistCount:(int32_t)blacklistCount bannedCount:(int32_t)bannedCount memberCount:(int32_t)memberCount;
 
@@ -70,5 +76,10 @@
 
 - (TGCachedConversationData *)updateMigrationData:(TGConversationMigrationData *)migrationData;
 - (TGCachedConversationData *)updateBotInfos:(NSDictionary *)botInfos;
+
+- (TGCachedConversationData *)updateStickerPack:(TGStickerPackIdReference *)stickerPack canSetStickerPack:(bool)canSetStickerPack;
+
+- (TGCachedConversationData *)updateMinAvailableMessageId:(int32_t)minAvailableMessageId;
+- (TGCachedConversationData *)updatePreHistory:(bool)preHistory;
 
 @end

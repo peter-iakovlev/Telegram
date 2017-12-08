@@ -1,8 +1,8 @@
 #import "TGChannelIntroController.h"
-#import "TGFont.h"
-#import "TGModernButton.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGCreateGroupController.h"
 
@@ -28,7 +28,7 @@
     static UIImage *arrowImage = nil;
     dispatch_once(&onceToken, ^
     {
-        UIImage *image = [UIImage imageNamed:@"NavigationBackArrow"];
+        UIImage *image = TGImageNamed(@"NavigationBackArrow");
         UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);
         CGContextRef context = UIGraphicsGetCurrentContext();
         [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
@@ -52,7 +52,7 @@
     arrowView.image = arrowImage;
     [_backButton addSubview:arrowView];
     
-    _phoneImageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelIntro"]];
+    _phoneImageView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ChannelIntro")];
     _phoneImageView.frame = CGRectMake(0, 0, 154, 220);
     [self.view addSubview:_phoneImageView];
     
@@ -112,8 +112,12 @@
 {
     UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
     
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    if (UIEdgeInsetsEqualToEdgeInsets(safeAreaInset, UIEdgeInsetsZero) && (iosMajorVersion() < 11 || TGIsPad() || UIInterfaceOrientationIsPortrait(self.interfaceOrientation)))
+        safeAreaInset.top = 20.0f;
+    
     [_backButton sizeToFit];
-    _backButton.frame = CGRectMake(27, 25.5f, ceil(_backButton.frame.size.width), ceil(_backButton.frame.size.height));
+    _backButton.frame = CGRectMake(27 + safeAreaInset.left, 5.0f + TGScreenPixel + safeAreaInset.top, ceil(_backButton.frame.size.width), ceil(_backButton.frame.size.height));
     
     [_titleLabel sizeToFit];
     [_descriptionLabel sizeToFit];
@@ -129,6 +133,13 @@
     {
         switch (screenSize)
         {
+            case 812:
+                titleY = 445 + 44;
+                imageY = 141 + 44;
+                descY = 490 + 44;
+                buttonY = 610 + 44;
+                break;
+                
             case 736:
                 titleY = 445;
                 imageY = 141;
@@ -171,6 +182,14 @@
         
         switch (screenSize)
         {
+            case 812:
+                leftX = 190 + 44;
+                rightX = 448 + 44;
+                titleY = 103;
+                descY = 148;
+                buttonY = 237;
+                break;
+                
             case 736:
                 leftX = 209;
                 rightX = 504;

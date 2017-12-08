@@ -1,11 +1,11 @@
 #import "TGSharedFileSignals.h"
 
-#import "TGImageInfo+Telegraph.h"
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMemoryImageCache.h"
-#import "TGImageUtils.h"
-#import "TGImageBlur.h"
+#import "TGImageInfo+Telegraph.h"
+
+#import <LegacyComponents/TGMemoryImageCache.h>
+#import <LegacyComponents/TGImageBlur.h>
 
 #import "TGListThumbnailSignals.h"
 #import "TGSharedMediaSignals.h"
@@ -14,11 +14,9 @@
 
 #import <AVFoundation/AVFoundation.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGPreparedLocalDocumentMessage.h"
-
-#import "TGVideoMediaAttachment.h"
 
 @interface TGDownloadDocumentHelper : NSObject <ASWatcher> {
     void (^_completion)(id);
@@ -321,6 +319,11 @@
 
 + (SSignal *)squareFileThumbnail:(TGDocumentMediaAttachment *)documentAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock
 {
+    return [self squareFileThumbnail:documentAttachment ofSize:size threadPool:threadPool memoryCache:memoryCache inhibitBlur:false pixelProcessingBlock:pixelProcessingBlock];
+}
+
++ (SSignal *)squareFileThumbnail:(TGDocumentMediaAttachment *)documentAttachment ofSize:(CGSize)size threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache inhibitBlur:(bool)inhibitBlur pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock
+{
     CGSize imageSize = CGSizeZero;
     NSString *thumbnailUrl = [documentAttachment.thumbnailInfo imageUrlForLargestSize:&imageSize];
     
@@ -431,7 +434,7 @@
         CGSize optimizedSize = size;
         if (lowQuality && pixelProcessingBlock == nil)
             optimizedSize = TGFitSize(size, CGSizeMake(25.0f, 25.0f));
-        return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:lowQuality && !alreadyBlurred pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:!averageColorCalculated] filter:^bool(id next)
+        return [[TGListThumbnailSignals signalForListThumbnail:optimizedSize image:image blurImage:lowQuality && !alreadyBlurred && !inhibitBlur pixelProcessingBlock:pixelProcessingBlock calculateAverageColor:!averageColorCalculated] filter:^bool(id next)
         {
             if ([next isKindOfClass:[UIImage class]])
                 return true;

@@ -23,6 +23,8 @@
 @property (nonatomic) bool showActivity;
 @property (nonatomic) bool delayActivity;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 - (void)setShowsCancelButton:(bool)showsCancelButton animated:(bool)animated;
 
 - (void)updateClipping:(CGFloat)clippedHeight;

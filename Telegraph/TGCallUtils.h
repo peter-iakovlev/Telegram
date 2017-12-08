@@ -15,19 +15,8 @@ void TGCallLoggingFunction(const char *msg);
 
 UIImage *TGCallIdenticonImage(NSData *data, NSData *additionalData, CGSize size);
 
-typedef enum {
-    TGCallNetworkTypeUnknown,
-    TGCallNetworkTypeNone,
-    TGCallNetworkTypeGPRS,
-    TGCallNetworkTypeEdge,
-    TGCallNetworkType3G,
-    TGCallNetworkTypeLTE,
-    TGCallNetworkTypeWiFi,
-} TGCallNetworkType;
-
 @interface TGCallUtils : NSObject
 
 + (bool)isOnPhoneCall;
-+ (SSignal *)networkTypeSignal;
 
 @end

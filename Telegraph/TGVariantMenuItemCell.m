@@ -1,8 +1,8 @@
 #import "TGVariantMenuItemCell.h"
 
-#import "TGInterfaceAssets.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+#import "TGInterfaceAssets.h"
 
 @interface TGVariantMenuItemCell ()
 

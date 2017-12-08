@@ -1,15 +1,18 @@
 #import "TGConversation+Telegraph.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGImageInfo+Telegraph.h"
 
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 
-#import "TGPeerIdAdapter.h"
-
 #import "TLChat$channel.h"
 #import "TLChat$chat.h"
 #import "TLChat$channelForbidden.h"
+
+#import "TGChannelAdminRights+Telegraph.h"
+#import "TGChannelBannedRights+Telegraph.h"
 
 @implementation TGConversationParticipantsData (Telegraph)
 

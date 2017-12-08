@@ -1,4 +1,4 @@
-#import "TGWebPageMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TL/TLMetaScheme.h"
 

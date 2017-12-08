@@ -1,20 +1,13 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGModernConversationEditingPanel.h"
 
-#import "TGImageUtils.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGModernConversationEditingPanel ()
 {
+    UIEdgeInsets _safeAreaInset;
+    
     UIButton *_deleteButton;
     UIButton *_forwardButton;
     UIButton *_shareButton;
@@ -49,13 +42,13 @@
         _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;
         [self.layer addSublayer:_stripeLayer];
         
-        UIImage *deleteImage = [UIImage imageNamed:@"ModernConversationActionDelete.png"];
-        UIImage *deleteDisabledImage = [UIImage imageNamed:@"ModernConversationActionDelete_Disabled.png"];
-        UIImage *forwardImage = [UIImage imageNamed:@"ModernConversationActionForward.png"];
-        UIImage *forwardDisabledImage = [UIImage imageNamed:@"ModernConversationActionForward_Disabled.png"];
+        UIImage *deleteImage = TGImageNamed(@"ModernConversationActionDelete.png");
+        UIImage *deleteDisabledImage = TGImageNamed(@"ModernConversationActionDelete_Disabled.png");
+        UIImage *forwardImage = TGImageNamed(@"ModernConversationActionForward.png");
+        UIImage *forwardDisabledImage = TGImageNamed(@"ModernConversationActionForward_Disabled.png");
         
-        UIImage *shareImage = TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], TGAccentColor());
-        UIImage *shareDisabledImage = TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], UIColorRGB(0xd0d0d0));
+        UIImage *shareImage = TGTintedImage(TGImageNamed(@"ActionsWhiteIcon"), TGAccentColor());
+        UIImage *shareDisabledImage = TGTintedImage(TGImageNamed(@"ActionsWhiteIcon"), UIColorRGB(0xd0d0d0));
         
         _deleteButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 52.0f, [self baseHeight])];
         [_deleteButton setImage:deleteImage forState:UIControlStateNormal];
@@ -105,18 +98,20 @@
     _shareButton.enabled = actionsEnabled;
 }
 
-- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
-- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight
+- (void)_adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)__unused contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
+    _safeAreaInset = safeAreaInset;
+    
     dispatch_block_t block = ^
     {
         CGSize messageAreaSize = size;
         
-        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight], messageAreaSize.width, [self baseHeight]);
+        self.frame = CGRectMake(0, messageAreaSize.height - keyboardHeight - [self baseHeight] - safeAreaInset.bottom, messageAreaSize.width, [self baseHeight] + safeAreaInset.bottom);
         [self layoutSubviews];
     };
     
@@ -126,9 +121,9 @@
         block();
 }
 
-- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight
+- (void)changeToSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
-    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight];
+    [self _adjustForSize:size keyboardHeight:keyboardHeight duration:duration animationCurve:0 contentAreaHeight:contentAreaHeight safeAreaInset:safeAreaInset];
 }
 
 - (void)layoutSubviews
@@ -137,8 +132,9 @@
     
     _stripeLayer.frame = CGRectMake(0.0f, -TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
     
+    _deleteButton.frame = CGRectMake(_safeAreaInset.left, 0.0f, 52.0f, [self baseHeight]);
     _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, [self baseHeight]);
-    _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f, 0.0f, 56.0f, [self baseHeight]);
+    _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f - _safeAreaInset.right, 0.0f, 56.0f, [self baseHeight]);
 }
 
 #pragma mark -

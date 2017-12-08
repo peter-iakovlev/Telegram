@@ -1,12 +1,14 @@
 #import <UIKit/UIKit.h>
 
-@class TGCircularProgressView;
+@interface TGSecretPeerMediaProgressView : UIView
+
+@property (nonatomic, assign) CGFloat progress;
+
+@end
 
 @interface TGSecretPeerMediaTimerView : UIView
 
 @property (nonatomic, strong, readonly) UIImageView *infoBackgroundView;
-@property (nonatomic, strong, readonly) UIImageView *timerFrameView;
-@property (nonatomic, strong, readonly) TGCircularProgressView *progressView;
-@property (nonatomic, strong, readonly) UILabel *progressLabel;
+@property (nonatomic, strong, readonly) TGSecretPeerMediaProgressView *progressView;
 
 @end

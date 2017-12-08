@@ -1,12 +1,9 @@
 #import "TGRaiseToListenActivator.h"
 
-#import <CoreMotion/CoreMotion.h>
-#import <GLKit/GLKit.h>
+#import "TGTimer.h"
 
 #import "TGAppDelegate.h"
-#import "TGObserverProxy.h"
-
-#import "TGAudioRecorder.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGMusicPlayer.h"
 

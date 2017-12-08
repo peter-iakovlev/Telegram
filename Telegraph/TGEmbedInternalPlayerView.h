@@ -1,4 +1,4 @@
-#import "TGEmbedPlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
 
 @interface TGEmbedInternalPlayerView : TGEmbedPlayerView
 

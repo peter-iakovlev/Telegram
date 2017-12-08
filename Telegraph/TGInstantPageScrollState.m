@@ -1,6 +1,6 @@
 #import "TGInstantPageScrollState.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGInstantPageScrollState
 
@@ -18,8 +18,8 @@
 }
 
 - (void)encodeWithKeyValueCoder:(PSKeyValueCoder *)coder {
-    [coder encodeInt32:_blockId forCKey:"messageId"];
-    [coder encodeInt32:_blockOffset forCKey:"messageOffset"];
+    [coder encodeInt32:_blockId forCKey:"blockId"];
+    [coder encodeInt32:_blockOffset forCKey:"blockOffset"];
 }
 
 - (BOOL)isEqual:(id)object {

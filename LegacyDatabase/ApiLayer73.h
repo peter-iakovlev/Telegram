@@ -1,0 +1,7988 @@
+#import <Foundation/Foundation.h>
+
+/*
+ * Layer 73
+ */
+
+@class Api73_messages_StickerSet;
+@class Api73_messages_StickerSet_messages_stickerSet;
+
+@class Api73_InputGeoPlaceName;
+@class Api73_InputGeoPlaceName_inputGeoPlaceName;
+
+@class Api73_InputGeoPoint;
+@class Api73_InputGeoPoint_inputGeoPointEmpty;
+@class Api73_InputGeoPoint_inputGeoPoint;
+
+@class Api73_messages_Chat;
+@class Api73_messages_Chat_messages_chat;
+
+@class Api73_payments_ValidatedRequestedInfo;
+@class Api73_payments_ValidatedRequestedInfo_payments_validatedRequestedInfo;
+
+@class Api73_ChatFull;
+@class Api73_ChatFull_chatFull;
+@class Api73_ChatFull_channelFull;
+
+@class Api73_ChatParticipant;
+@class Api73_ChatParticipant_chatParticipant;
+@class Api73_ChatParticipant_chatParticipantCreator;
+@class Api73_ChatParticipant_chatParticipantAdmin;
+
+@class Api73_updates_Difference;
+@class Api73_updates_Difference_updates_differenceEmpty;
+@class Api73_updates_Difference_updates_difference;
+@class Api73_updates_Difference_updates_differenceSlice;
+@class Api73_updates_Difference_updates_differenceTooLong;
+
+@class Api73_SchemeMethod;
+@class Api73_SchemeMethod_schemeMethod;
+
+@class Api73_CdnConfig;
+@class Api73_CdnConfig_cdnConfig;
+
+@class Api73_InputPhotoCrop;
+@class Api73_InputPhotoCrop_inputPhotoCrop;
+
+@class Api73_PageBlock;
+@class Api73_PageBlock_pageBlockUnsupported;
+@class Api73_PageBlock_pageBlockTitle;
+@class Api73_PageBlock_pageBlockSubtitle;
+@class Api73_PageBlock_pageBlockHeader;
+@class Api73_PageBlock_pageBlockSubheader;
+@class Api73_PageBlock_pageBlockParagraph;
+@class Api73_PageBlock_pageBlockPreformatted;
+@class Api73_PageBlock_pageBlockFooter;
+@class Api73_PageBlock_pageBlockDivider;
+@class Api73_PageBlock_pageBlockAnchor;
+@class Api73_PageBlock_pageBlockList;
+@class Api73_PageBlock_pageBlockBlockquote;
+@class Api73_PageBlock_pageBlockPullquote;
+@class Api73_PageBlock_pageBlockPhoto;
+@class Api73_PageBlock_pageBlockVideo;
+@class Api73_PageBlock_pageBlockCover;
+@class Api73_PageBlock_pageBlockEmbedPost;
+@class Api73_PageBlock_pageBlockCollage;
+@class Api73_PageBlock_pageBlockSlideshow;
+@class Api73_PageBlock_pageBlockAuthorDate;
+@class Api73_PageBlock_pageBlockEmbed;
+@class Api73_PageBlock_pageBlockAudio;
+
+@class Api73_account_TmpPassword;
+@class Api73_account_TmpPassword_account_tmpPassword;
+
+@class Api73_Photo;
+@class Api73_Photo_photoEmpty;
+@class Api73_Photo_wallPhoto;
+@class Api73_Photo_photo;
+
+@class Api73_Chat;
+@class Api73_Chat_chatEmpty;
+@class Api73_Chat_chatForbidden;
+@class Api73_Chat_chat;
+@class Api73_Chat_channelForbidden;
+@class Api73_Chat_channel;
+
+@class Api73_ChatInvite;
+@class Api73_ChatInvite_chatInviteAlready;
+@class Api73_ChatInvite_chatInvite;
+
+@class Api73_StickerSetCovered;
+@class Api73_StickerSetCovered_stickerSetCovered;
+@class Api73_StickerSetCovered_stickerSetMultiCovered;
+
+@class Api73_contacts_Requests;
+@class Api73_contacts_Requests_contacts_requests;
+@class Api73_contacts_Requests_contacts_requestsSlice;
+
+@class Api73_RecentMeUrl;
+@class Api73_RecentMeUrl_recentMeUrlUnknown;
+@class Api73_RecentMeUrl_recentMeUrlUser;
+@class Api73_RecentMeUrl_recentMeUrlChat;
+@class Api73_RecentMeUrl_recentMeUrlChatInvite;
+@class Api73_RecentMeUrl_recentMeUrlStickerSet;
+
+@class Api73_channels_ChannelParticipants;
+@class Api73_channels_ChannelParticipants_channels_channelParticipants;
+@class Api73_channels_ChannelParticipants_channels_channelParticipantsNotModified;
+
+@class Api73_GeoPlaceName;
+@class Api73_GeoPlaceName_geoPlaceName;
+
+@class Api73_RichText;
+@class Api73_RichText_textEmpty;
+@class Api73_RichText_textPlain;
+@class Api73_RichText_textBold;
+@class Api73_RichText_textItalic;
+@class Api73_RichText_textUnderline;
+@class Api73_RichText_textStrike;
+@class Api73_RichText_textFixed;
+@class Api73_RichText_textUrl;
+@class Api73_RichText_textEmail;
+@class Api73_RichText_textConcat;
+
+@class Api73_UserFull;
+@class Api73_UserFull_userFull;
+
+@class Api73_InputPeerNotifyEvents;
+@class Api73_InputPeerNotifyEvents_inputPeerNotifyEventsEmpty;
+@class Api73_InputPeerNotifyEvents_inputPeerNotifyEventsAll;
+
+@class Api73_InputChannel;
+@class Api73_InputChannel_inputChannelEmpty;
+@class Api73_InputChannel_inputChannel;
+
+@class Api73_DcOption;
+@class Api73_DcOption_dcOption;
+
+@class Api73_MessageGroup;
+@class Api73_MessageGroup_messageGroup;
+
+@class Api73_account_PasswordSettings;
+@class Api73_account_PasswordSettings_account_passwordSettings;
+
+@class Api73_LangPackLanguage;
+@class Api73_LangPackLanguage_langPackLanguage;
+
+@class Api73_help_AppUpdate;
+@class Api73_help_AppUpdate_help_appUpdate;
+@class Api73_help_AppUpdate_help_noAppUpdate;
+@class Api73_help_AppUpdate_help_getAppUpdate;
+
+@class Api73_LangPackDifference;
+@class Api73_LangPackDifference_langPackDifference;
+
+@class Api73_channels_ChannelParticipant;
+@class Api73_channels_ChannelParticipant_channels_channelParticipant;
+
+@class Api73_contacts_SentLink;
+@class Api73_contacts_SentLink_contacts_sentLink;
+
+@class Api73_storage_FileType;
+@class Api73_storage_FileType_storage_fileUnknown;
+@class Api73_storage_FileType_storage_fileJpeg;
+@class Api73_storage_FileType_storage_fileGif;
+@class Api73_storage_FileType_storage_filePng;
+@class Api73_storage_FileType_storage_filePdf;
+@class Api73_storage_FileType_storage_fileMp3;
+@class Api73_storage_FileType_storage_fileMov;
+@class Api73_storage_FileType_storage_filePartial;
+@class Api73_storage_FileType_storage_fileMp4;
+@class Api73_storage_FileType_storage_fileWebp;
+
+@class Api73_messages_ArchivedStickers;
+@class Api73_messages_ArchivedStickers_messages_archivedStickers;
+@class Api73_messages_ArchivedStickers_messages_getArchivedStickers;
+
+@class Api73_InputEncryptedFile;
+@class Api73_InputEncryptedFile_inputEncryptedFileEmpty;
+@class Api73_InputEncryptedFile_inputEncryptedFileUploaded;
+@class Api73_InputEncryptedFile_inputEncryptedFile;
+@class Api73_InputEncryptedFile_inputEncryptedFileBigUploaded;
+
+@class Api73_messages_SentEncryptedMessage;
+@class Api73_messages_SentEncryptedMessage_messages_sentEncryptedMessage;
+@class Api73_messages_SentEncryptedMessage_messages_sentEncryptedFile;
+
+@class Api73_ExportedMessageLink;
+@class Api73_ExportedMessageLink_exportedMessageLink;
+
+@class Api73_auth_Authorization;
+@class Api73_auth_Authorization_auth_authorization;
+
+@class Api73_InputFile;
+@class Api73_InputFile_inputFile;
+@class Api73_InputFile_inputFileBig;
+
+@class Api73_Peer;
+@class Api73_Peer_peerUser;
+@class Api73_Peer_peerChat;
+@class Api73_Peer_peerChannel;
+
+@class Api73_PaymentRequestedInfo;
+@class Api73_PaymentRequestedInfo_paymentRequestedInfo;
+
+@class Api73_UserStatus;
+@class Api73_UserStatus_userStatusEmpty;
+@class Api73_UserStatus_userStatusOnline;
+@class Api73_UserStatus_userStatusOffline;
+@class Api73_UserStatus_userStatusRecently;
+@class Api73_UserStatus_userStatusLastWeek;
+@class Api73_UserStatus_userStatusLastMonth;
+
+@class Api73_Dialog;
+@class Api73_Dialog_dialog;
+
+@class Api73_help_AppChangelog;
+@class Api73_help_AppChangelog_help_getAppChangelog;
+
+@class Api73_SendMessageAction;
+@class Api73_SendMessageAction_sendMessageTypingAction;
+@class Api73_SendMessageAction_sendMessageCancelAction;
+@class Api73_SendMessageAction_sendMessageRecordVideoAction;
+@class Api73_SendMessageAction_sendMessageRecordAudioAction;
+@class Api73_SendMessageAction_sendMessageGeoLocationAction;
+@class Api73_SendMessageAction_sendMessageChooseContactAction;
+@class Api73_SendMessageAction_sendMessageUploadVideoAction;
+@class Api73_SendMessageAction_sendMessageUploadAudioAction;
+@class Api73_SendMessageAction_sendMessageUploadDocumentAction;
+@class Api73_SendMessageAction_sendMessageUploadPhotoAction;
+@class Api73_SendMessageAction_sendMessageGamePlayAction;
+@class Api73_SendMessageAction_sendMessageGameStopAction;
+
+@class Api73_PrivacyKey;
+@class Api73_PrivacyKey_privacyKeyStatusTimestamp;
+@class Api73_PrivacyKey_privacyKeyChatInvite;
+
+@class Api73_Update;
+@class Api73_Update_updateMessageID;
+@class Api73_Update_updateRestoreMessages;
+@class Api73_Update_updateChatParticipants;
+@class Api73_Update_updateUserStatus;
+@class Api73_Update_updateContactRegistered;
+@class Api73_Update_updateContactLocated;
+@class Api73_Update_updateActivation;
+@class Api73_Update_updateNewAuthorization;
+@class Api73_Update_updatePhoneCallRequested;
+@class Api73_Update_updatePhoneCallConfirmed;
+@class Api73_Update_updatePhoneCallDeclined;
+@class Api73_Update_updateUserPhoto;
+@class Api73_Update_updateNewEncryptedMessage;
+@class Api73_Update_updateEncryptedChatTyping;
+@class Api73_Update_updateEncryption;
+@class Api73_Update_updateEncryptedMessagesRead;
+@class Api73_Update_updateChatParticipantDelete;
+@class Api73_Update_updateDcOptions;
+@class Api73_Update_updateUserBlocked;
+@class Api73_Update_updateNotifySettings;
+@class Api73_Update_updateUserTyping;
+@class Api73_Update_updateChatUserTyping;
+@class Api73_Update_updateUserName;
+@class Api73_Update_updateServiceNotification;
+@class Api73_Update_updatePrivacy;
+@class Api73_Update_updateUserPhone;
+@class Api73_Update_updateNewMessage;
+@class Api73_Update_updateReadMessages;
+@class Api73_Update_updateDeleteMessages;
+@class Api73_Update_updateReadHistoryInbox;
+@class Api73_Update_updateReadHistoryOutbox;
+@class Api73_Update_updateContactLink;
+@class Api73_Update_updateReadMessagesContents;
+@class Api73_Update_updateChatParticipantAdd;
+@class Api73_Update_updateWebPage;
+@class Api73_Update_updateChannel;
+@class Api73_Update_updateChannelGroup;
+@class Api73_Update_updateNewChannelMessage;
+@class Api73_Update_updateReadChannelInbox;
+@class Api73_Update_updateDeleteChannelMessages;
+@class Api73_Update_updateChannelMessageViews;
+@class Api73_Update_updateChatAdmins;
+@class Api73_Update_updateChatParticipantAdmin;
+@class Api73_Update_updateNewStickerSet;
+@class Api73_Update_updateStickerSets;
+@class Api73_Update_updateSavedGifs;
+@class Api73_Update_updateEditChannelMessage;
+@class Api73_Update_updateChannelPinnedMessage;
+@class Api73_Update_updateChannelTooLong;
+@class Api73_Update_updateEditMessage;
+@class Api73_Update_updateBotInlineQuery;
+@class Api73_Update_updateBotInlineSend;
+@class Api73_Update_updateReadChannelOutbox;
+@class Api73_Update_updateDraftMessage;
+@class Api73_Update_updateReadFeaturedStickers;
+@class Api73_Update_updateRecentStickers;
+@class Api73_Update_updateConfig;
+@class Api73_Update_updatePtsChanged;
+@class Api73_Update_updateStickerSetsOrder;
+@class Api73_Update_updateBotCallbackQuery;
+@class Api73_Update_updateInlineBotCallbackQuery;
+@class Api73_Update_updateChannelWebPage;
+@class Api73_Update_updateDialogPinned;
+@class Api73_Update_updatePinnedDialogs;
+@class Api73_Update_updateBotWebhookJSON;
+@class Api73_Update_updateBotWebhookJSONQuery;
+@class Api73_Update_updateBotShippingQuery;
+@class Api73_Update_updateBotPrecheckoutQuery;
+@class Api73_Update_updatePhoneCall;
+@class Api73_Update_updateLangPackTooLong;
+@class Api73_Update_updateLangPack;
+@class Api73_Update_updateFavedStickers;
+@class Api73_Update_updateChannelReadMessagesContents;
+@class Api73_Update_updateContactsReset;
+@class Api73_Update_updateChannelAvailableMessages;
+
+@class Api73_PopularContact;
+@class Api73_PopularContact_popularContact;
+
+@class Api73_ChannelParticipant;
+@class Api73_ChannelParticipant_channelParticipant;
+@class Api73_ChannelParticipant_channelParticipantSelf;
+@class Api73_ChannelParticipant_channelParticipantCreator;
+@class Api73_ChannelParticipant_channelParticipantAdmin;
+@class Api73_ChannelParticipant_channelParticipantBanned;
+
+@class Api73_contacts_Blocked;
+@class Api73_contacts_Blocked_contacts_blocked;
+@class Api73_contacts_Blocked_contacts_blockedSlice;
+
+@class Api73_Error;
+@class Api73_Error_error;
+@class Api73_Error_richError;
+
+@class Api73_ContactLocated;
+@class Api73_ContactLocated_contactLocated;
+@class Api73_ContactLocated_contactLocatedPreview;
+
+@class Api73_KeyboardButton;
+@class Api73_KeyboardButton_keyboardButton;
+@class Api73_KeyboardButton_keyboardButtonUrl;
+@class Api73_KeyboardButton_keyboardButtonCallback;
+@class Api73_KeyboardButton_keyboardButtonRequestPhone;
+@class Api73_KeyboardButton_keyboardButtonRequestGeoLocation;
+@class Api73_KeyboardButton_keyboardButtonSwitchInline;
+@class Api73_KeyboardButton_keyboardButtonGame;
+@class Api73_KeyboardButton_keyboardButtonBuy;
+
+@class Api73_ContactStatus;
+@class Api73_ContactStatus_contactStatus;
+
+@class Api73_PhotoSize;
+@class Api73_PhotoSize_photoSizeEmpty;
+@class Api73_PhotoSize_photoSize;
+@class Api73_PhotoSize_photoCachedSize;
+
+@class Api73_messages_Stickers;
+@class Api73_messages_Stickers_messages_stickersNotModified;
+@class Api73_messages_Stickers_messages_stickers;
+
+@class Api73_GlobalPrivacySettings;
+@class Api73_GlobalPrivacySettings_globalPrivacySettings;
+
+@class Api73_InlineBotSwitchPM;
+@class Api73_InlineBotSwitchPM_inlineBotSwitchPM;
+
+@class Api73_messages_FoundGifs;
+@class Api73_messages_FoundGifs_messages_foundGifs;
+
+@class Api73_FileLocation;
+@class Api73_FileLocation_fileLocationUnavailable;
+@class Api73_FileLocation_fileLocation;
+
+@class Api73_InputNotifyPeer;
+@class Api73_InputNotifyPeer_inputNotifyPeer;
+@class Api73_InputNotifyPeer_inputNotifyUsers;
+@class Api73_InputNotifyPeer_inputNotifyChats;
+@class Api73_InputNotifyPeer_inputNotifyAll;
+
+@class Api73_EncryptedMessage;
+@class Api73_EncryptedMessage_encryptedMessage;
+@class Api73_EncryptedMessage_encryptedMessageService;
+
+@class Api73_ChannelParticipantsFilter;
+@class Api73_ChannelParticipantsFilter_channelParticipantsRecent;
+@class Api73_ChannelParticipantsFilter_channelParticipantsAdmins;
+@class Api73_ChannelParticipantsFilter_channelParticipantsBots;
+@class Api73_ChannelParticipantsFilter_channelParticipantsBanned;
+@class Api73_ChannelParticipantsFilter_channelParticipantsSearch;
+@class Api73_ChannelParticipantsFilter_channelParticipantsKicked;
+
+@class Api73_WebPage;
+@class Api73_WebPage_webPageEmpty;
+@class Api73_WebPage_webPagePending;
+@class Api73_WebPage_webPageNotModified;
+@class Api73_WebPage_webPage;
+
+@class Api73_InputBotInlineMessage;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageMediaAuto;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageText;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageMediaGeo;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageMediaVenue;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageMediaContact;
+@class Api73_InputBotInlineMessage_inputBotInlineMessageGame;
+
+@class Api73_KeyboardButtonRow;
+@class Api73_KeyboardButtonRow_keyboardButtonRow;
+
+@class Api73_StickerSet;
+@class Api73_StickerSet_stickerSet;
+
+@class Api73_photos_Photo;
+@class Api73_photos_Photo_photos_photo;
+@class Api73_photos_Photo_photos_uploadProfilePhoto;
+
+@class Api73_InputContact;
+@class Api73_InputContact_inputPhoneContact;
+
+@class Api73_TopPeerCategory;
+@class Api73_TopPeerCategory_topPeerCategoryBotsPM;
+@class Api73_TopPeerCategory_topPeerCategoryBotsInline;
+@class Api73_TopPeerCategory_topPeerCategoryCorrespondents;
+@class Api73_TopPeerCategory_topPeerCategoryGroups;
+@class Api73_TopPeerCategory_topPeerCategoryChannels;
+@class Api73_TopPeerCategory_topPeerCategoryPhoneCalls;
+
+@class Api73_contacts_Contacts;
+@class Api73_contacts_Contacts_contacts_contactsNotModified;
+@class Api73_contacts_Contacts_contacts_contacts;
+
+@class Api73_ChannelMessagesFilter;
+@class Api73_ChannelMessagesFilter_channelMessagesFilterEmpty;
+@class Api73_ChannelMessagesFilter_channelMessagesFilterCollapsed;
+@class Api73_ChannelMessagesFilter_channelMessagesFilter;
+
+@class Api73_auth_PasswordRecovery;
+@class Api73_auth_PasswordRecovery_auth_passwordRecovery;
+
+@class Api73_messages_BotResults;
+@class Api73_messages_BotResults_messages_botResults;
+
+@class Api73_InputDocument;
+@class Api73_InputDocument_inputDocumentEmpty;
+@class Api73_InputDocument_inputDocument;
+
+@class Api73_contacts_ResolvedPeer;
+@class Api73_contacts_ResolvedPeer_contacts_resolvedPeer;
+
+@class Api73_InputMedia;
+@class Api73_InputMedia_inputMediaEmpty;
+@class Api73_InputMedia_inputMediaGeoPoint;
+@class Api73_InputMedia_inputMediaContact;
+@class Api73_InputMedia_inputMediaPhoto;
+@class Api73_InputMedia_inputMediaGifExternal;
+@class Api73_InputMedia_inputMediaDocument;
+@class Api73_InputMedia_inputMediaPhotoExternal;
+@class Api73_InputMedia_inputMediaDocumentExternal;
+@class Api73_InputMedia_inputMediaGame;
+@class Api73_InputMedia_inputMediaInvoice;
+@class Api73_InputMedia_inputMediaUploadedPhoto;
+@class Api73_InputMedia_inputMediaUploadedDocument;
+@class Api73_InputMedia_inputMediaGeoLive;
+@class Api73_InputMedia_inputMediaVenue;
+
+@class Api73_InputPeer;
+@class Api73_InputPeer_inputPeerEmpty;
+@class Api73_InputPeer_inputPeerSelf;
+@class Api73_InputPeer_inputPeerChat;
+@class Api73_InputPeer_inputPeerUser;
+@class Api73_InputPeer_inputPeerChannel;
+
+@class Api73_upload_WebFile;
+@class Api73_upload_WebFile_upload_webFile;
+
+@class Api73_Contact;
+@class Api73_Contact_contact;
+
+@class Api73_BotInlineResult;
+@class Api73_BotInlineResult_botInlineResult;
+@class Api73_BotInlineResult_botInlineMediaResult;
+
+@class Api73_messages_BotCallbackAnswer;
+@class Api73_messages_BotCallbackAnswer_messages_getBotCallbackAnswer;
+@class Api73_messages_BotCallbackAnswer_messages_botCallbackAnswer;
+
+@class Api73_payments_PaymentResult;
+@class Api73_payments_PaymentResult_payments_paymentResult;
+@class Api73_payments_PaymentResult_payments_paymentVerficationNeeded;
+
+@class Api73_messages_Chats;
+@class Api73_messages_Chats_messages_chats;
+@class Api73_messages_Chats_messages_chatsSlice;
+
+@class Api73_contacts_MyLink;
+@class Api73_contacts_MyLink_contacts_myLinkEmpty;
+@class Api73_contacts_MyLink_contacts_myLinkRequested;
+@class Api73_contacts_MyLink_contacts_myLinkContact;
+
+@class Api73_InputPrivacyRule;
+@class Api73_InputPrivacyRule_inputPrivacyValueAllowContacts;
+@class Api73_InputPrivacyRule_inputPrivacyValueAllowAll;
+@class Api73_InputPrivacyRule_inputPrivacyValueAllowUsers;
+@class Api73_InputPrivacyRule_inputPrivacyValueDisallowContacts;
+@class Api73_InputPrivacyRule_inputPrivacyValueDisallowAll;
+@class Api73_InputPrivacyRule_inputPrivacyValueDisallowUsers;
+
+@class Api73_messages_DhConfig;
+@class Api73_messages_DhConfig_messages_dhConfigNotModified;
+@class Api73_messages_DhConfig_messages_dhConfig;
+
+@class Api73_ChannelAdminLogEventAction;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeTitle;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeAbout;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeUsername;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangePhoto;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleInvites;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleSignatures;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionUpdatePinned;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionEditMessage;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionDeleteMessage;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantJoin;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantLeave;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantInvite;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleBan;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleAdmin;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeStickerSet;
+@class Api73_ChannelAdminLogEventAction_channelAdminLogEventActionTogglePreHistoryHidden;
+
+@class Api73_auth_ExportedAuthorization;
+@class Api73_auth_ExportedAuthorization_auth_exportedAuthorization;
+
+@class Api73_ContactRequest;
+@class Api73_ContactRequest_contactRequest;
+
+@class Api73_messages_AffectedHistory;
+@class Api73_messages_AffectedHistory_messages_affectedHistory;
+
+@class Api73_account_PasswordInputSettings;
+@class Api73_account_PasswordInputSettings_account_passwordInputSettings;
+
+@class Api73_messages_MessageEditData;
+@class Api73_messages_MessageEditData_messages_messageEditData;
+@class Api73_messages_MessageEditData_messages_getMessageEditData;
+
+@class Api73_LabeledPrice;
+@class Api73_LabeledPrice_labeledPrice;
+
+@class Api73_messages_ChatFull;
+@class Api73_messages_ChatFull_messages_chatFull;
+
+@class Api73_contacts_ForeignLink;
+@class Api73_contacts_ForeignLink_contacts_foreignLinkUnknown;
+@class Api73_contacts_ForeignLink_contacts_foreignLinkRequested;
+@class Api73_contacts_ForeignLink_contacts_foreignLinkMutual;
+
+@class Api73_help_TermsOfService;
+@class Api73_help_TermsOfService_help_termsOfService;
+@class Api73_help_TermsOfService_help_getTermsOfService;
+
+@class Api73_InputEncryptedChat;
+@class Api73_InputEncryptedChat_inputEncryptedChat;
+
+@class Api73_DraftMessage;
+@class Api73_DraftMessage_draftMessageEmpty;
+@class Api73_DraftMessage_draftMessage;
+
+@class Api73_ChannelAdminRights;
+@class Api73_ChannelAdminRights_channelAdminRights;
+
+@class Api73_DisabledFeature;
+@class Api73_DisabledFeature_disabledFeature;
+
+@class Api73_EncryptedFile;
+@class Api73_EncryptedFile_encryptedFileEmpty;
+@class Api73_EncryptedFile_encryptedFile;
+
+@class Api73_ChannelBannedRights;
+@class Api73_ChannelBannedRights_channelBannedRights;
+
+@class Api73_NotifyPeer;
+@class Api73_NotifyPeer_notifyPeer;
+@class Api73_NotifyPeer_notifyUsers;
+@class Api73_NotifyPeer_notifyChats;
+@class Api73_NotifyPeer_notifyAll;
+
+@class Api73_InputPrivacyKey;
+@class Api73_InputPrivacyKey_inputPrivacyKeyStatusTimestamp;
+@class Api73_InputPrivacyKey_inputPrivacyKeyChatInvite;
+
+@class Api73_help_RecentMeUrls;
+@class Api73_help_RecentMeUrls_help_recentMeUrls;
+
+@class Api73_ReplyMarkup;
+@class Api73_ReplyMarkup_replyKeyboardHide;
+@class Api73_ReplyMarkup_replyKeyboardForceReply;
+@class Api73_ReplyMarkup_replyKeyboardMarkup;
+@class Api73_ReplyMarkup_replyInlineMarkup;
+
+@class Api73_HighScore;
+@class Api73_HighScore_highScore;
+
+@class Api73_TopPeer;
+@class Api73_TopPeer_topPeer;
+
+@class Api73_CdnFileHash;
+@class Api73_CdnFileHash_cdnFileHash;
+
+@class Api73_contacts_Link;
+@class Api73_contacts_Link_contacts_link;
+
+@class Api73_ContactBlocked;
+@class Api73_ContactBlocked_contactBlocked;
+
+@class Api73_auth_CheckedPhone;
+@class Api73_auth_CheckedPhone_auth_checkedPhone;
+
+@class Api73_InputUser;
+@class Api73_InputUser_inputUserEmpty;
+@class Api73_InputUser_inputUserSelf;
+@class Api73_InputUser_inputUser;
+
+@class Api73_SchemeType;
+@class Api73_SchemeType_schemeType;
+
+@class Api73_Page;
+@class Api73_Page_pagePart;
+@class Api73_Page_pageFull;
+
+@class Api73_upload_File;
+@class Api73_upload_File_upload_file;
+@class Api73_upload_File_upload_fileCdnRedirect;
+
+@class Api73_MessageRange;
+@class Api73_MessageRange_messageRange;
+
+@class Api73_messages_StickerSetInstallResult;
+@class Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultSuccess;
+@class Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultArchive;
+
+@class Api73_Config;
+@class Api73_Config_config;
+
+@class Api73_TopPeerCategoryPeers;
+@class Api73_TopPeerCategoryPeers_topPeerCategoryPeers;
+
+@class Api73_Game;
+@class Api73_Game_game;
+
+@class Api73_BotCommand;
+@class Api73_BotCommand_botCommand;
+
+@class Api73_contacts_Located;
+@class Api73_contacts_Located_contacts_located;
+
+@class Api73_messages_AffectedMessages;
+@class Api73_messages_AffectedMessages_messages_affectedMessages;
+
+@class Api73_messages_SavedGifs;
+@class Api73_messages_SavedGifs_messages_savedGifsNotModified;
+@class Api73_messages_SavedGifs_messages_savedGifs;
+
+@class Api73_CdnPublicKey;
+@class Api73_CdnPublicKey_cdnPublicKey;
+
+@class Api73_InputGame;
+@class Api73_InputGame_inputGameID;
+@class Api73_InputGame_inputGameShortName;
+
+@class Api73_PhoneCallProtocol;
+@class Api73_PhoneCallProtocol_phoneCallProtocol;
+
+@class Api73_ResponseIndirect;
+@class Api73_ResponseIndirect_responseIndirect;
+
+@class Api73_WallPaper;
+@class Api73_WallPaper_wallPaper;
+@class Api73_WallPaper_wallPaperSolid;
+
+@class Api73_messages_Messages;
+@class Api73_messages_Messages_messages_messages;
+@class Api73_messages_Messages_messages_messagesSlice;
+@class Api73_messages_Messages_messages_channelMessages;
+
+@class Api73_Invoice;
+@class Api73_Invoice_invoice;
+
+@class Api73_auth_SentCode;
+@class Api73_auth_SentCode_auth_sentCodePreview;
+@class Api73_auth_SentCode_auth_sentPassPhrase;
+@class Api73_auth_SentCode_auth_sentCode;
+@class Api73_auth_SentCode_auth_sendCode;
+
+@class Api73_phone_DhConfig;
+@class Api73_phone_DhConfig_phone_dhConfig;
+
+@class Api73_InputChatPhoto;
+@class Api73_InputChatPhoto_inputChatPhotoEmpty;
+@class Api73_InputChatPhoto_inputChatUploadedPhoto;
+@class Api73_InputChatPhoto_inputChatPhoto;
+
+@class Api73_PaymentCharge;
+@class Api73_PaymentCharge_paymentCharge;
+
+@class Api73_Updates;
+@class Api73_Updates_updatesTooLong;
+@class Api73_Updates_updateShort;
+@class Api73_Updates_updatesCombined;
+@class Api73_Updates_updates;
+@class Api73_Updates_messages_editMessage;
+@class Api73_Updates_updateShortMessage;
+@class Api73_Updates_updateShortChatMessage;
+@class Api73_Updates_updateShortSentMessage;
+
+@class Api73_InitConnection;
+@class Api73_InitConnection_pinitConnection;
+
+@class Api73_MessageMedia;
+@class Api73_MessageMedia_messageMediaEmpty;
+@class Api73_MessageMedia_messageMediaGeo;
+@class Api73_MessageMedia_messageMediaContact;
+@class Api73_MessageMedia_messageMediaUnsupported;
+@class Api73_MessageMedia_messageMediaWebPage;
+@class Api73_MessageMedia_messageMediaGame;
+@class Api73_MessageMedia_messageMediaInvoice;
+@class Api73_MessageMedia_messageMediaPhoto;
+@class Api73_MessageMedia_messageMediaDocument;
+@class Api73_MessageMedia_messageMediaGeoLive;
+@class Api73_MessageMedia_messageMediaVenue;
+
+@class Api73_PaymentSavedCredentials;
+@class Api73_PaymentSavedCredentials_paymentSavedCredentialsCard;
+
+@class Api73_Null;
+@class Api73_Null_null;
+
+@class Api73_auth_CodeType;
+@class Api73_auth_CodeType_auth_codeTypeSms;
+@class Api73_auth_CodeType_auth_codeTypeCall;
+@class Api73_auth_CodeType_auth_codeTypeFlashCall;
+
+@class Api73_DocumentAttribute;
+@class Api73_DocumentAttribute_documentAttributeImageSize;
+@class Api73_DocumentAttribute_documentAttributeAnimated;
+@class Api73_DocumentAttribute_documentAttributeFilename;
+@class Api73_DocumentAttribute_documentAttributeAudio;
+@class Api73_DocumentAttribute_documentAttributeSticker;
+@class Api73_DocumentAttribute_documentAttributeHasStickers;
+@class Api73_DocumentAttribute_documentAttributeVideo;
+
+@class Api73_account_Authorizations;
+@class Api73_account_Authorizations_account_authorizations;
+
+@class Api73_ChatPhoto;
+@class Api73_ChatPhoto_chatPhotoEmpty;
+@class Api73_ChatPhoto_chatPhoto;
+
+@class Api73_payments_PaymentForm;
+@class Api73_payments_PaymentForm_payments_paymentForm;
+
+@class Api73_payments_PaymentReceipt;
+@class Api73_payments_PaymentReceipt_payments_paymentReceipt;
+
+@class Api73_messages_PeerDialogs;
+@class Api73_messages_PeerDialogs_messages_peerDialogs;
+
+@class Api73_InputStickerSet;
+@class Api73_InputStickerSet_inputStickerSetEmpty;
+@class Api73_InputStickerSet_inputStickerSetID;
+@class Api73_InputStickerSet_inputStickerSetShortName;
+
+@class Api73_BotInfo;
+@class Api73_BotInfo_botInfo;
+
+@class Api73_contacts_Suggested;
+@class Api73_contacts_Suggested_contacts_suggested;
+
+@class Api73_updates_State;
+@class Api73_updates_State_updates_state;
+
+@class Api73_FoundGif;
+@class Api73_FoundGif_foundGif;
+@class Api73_FoundGif_foundGifCached;
+
+@class Api73_User;
+@class Api73_User_userEmpty;
+@class Api73_User_user;
+
+@class Api73_Message;
+@class Api73_Message_messageEmpty;
+@class Api73_Message_messageService;
+@class Api73_Message_message;
+
+@class Api73_messages_RecentStickers;
+@class Api73_messages_RecentStickers_messages_recentStickersNotModified;
+@class Api73_messages_RecentStickers_messages_recentStickers;
+@class Api73_messages_RecentStickers_messages_getRecentStickers;
+
+@class Api73_InputFileLocation;
+@class Api73_InputFileLocation_inputFileLocation;
+@class Api73_InputFileLocation_inputEncryptedFileLocation;
+@class Api73_InputFileLocation_inputDocumentFileLocation;
+
+@class Api73_GeoPoint;
+@class Api73_GeoPoint_geoPointEmpty;
+@class Api73_GeoPoint_geoPoint;
+@class Api73_GeoPoint_geoPlace;
+
+@class Api73_InputPhoneCall;
+@class Api73_InputPhoneCall_inputPhoneCall;
+
+@class Api73_ReceivedNotifyMessage;
+@class Api73_ReceivedNotifyMessage_receivedNotifyMessage;
+
+@class Api73_ChatParticipants;
+@class Api73_ChatParticipants_chatParticipantsForbidden;
+@class Api73_ChatParticipants_chatParticipants;
+
+@class Api73_InputPaymentCredentials;
+@class Api73_InputPaymentCredentials_inputPaymentCredentialsSaved;
+@class Api73_InputPaymentCredentials_inputPaymentCredentials;
+@class Api73_InputPaymentCredentials_inputPaymentCredentialsApplePay;
+@class Api73_InputPaymentCredentials_inputPaymentCredentialsAndroidPay;
+
+@class Api73_ShippingOption;
+@class Api73_ShippingOption_shippingOption;
+
+@class Api73_PostAddress;
+@class Api73_PostAddress_postAddress;
+
+@class Api73_DataJSON;
+@class Api73_DataJSON_dataJSON;
+
+@class Api73_InputStickeredMedia;
+@class Api73_InputStickeredMedia_inputStickeredMediaPhoto;
+@class Api73_InputStickeredMedia_inputStickeredMediaDocument;
+
+@class Api73_messages_FeaturedStickers;
+@class Api73_messages_FeaturedStickers_messages_featuredStickersNotModified;
+@class Api73_messages_FeaturedStickers_messages_featuredStickers;
+
+@class Api73_PhoneCallDiscardReason;
+@class Api73_PhoneCallDiscardReason_phoneCallDiscardReasonMissed;
+@class Api73_PhoneCallDiscardReason_phoneCallDiscardReasonDisconnect;
+@class Api73_PhoneCallDiscardReason_phoneCallDiscardReasonHangup;
+@class Api73_PhoneCallDiscardReason_phoneCallDiscardReasonBusy;
+
+@class Api73_NearestDc;
+@class Api73_NearestDc_nearestDc;
+
+@class Api73_photos_Photos;
+@class Api73_photos_Photos_photos_photos;
+@class Api73_photos_Photos_photos_photosSlice;
+
+@class Api73_contacts_ImportedContacts;
+@class Api73_contacts_ImportedContacts_contacts_importedContacts;
+
+@class Api73_InputWebDocument;
+@class Api73_InputWebDocument_inputWebDocument;
+
+@class Api73_phone_PhoneCall;
+@class Api73_phone_PhoneCall_phone_phoneCall;
+
+@class Api73_ChannelAdminLogEvent;
+@class Api73_ChannelAdminLogEvent_channelAdminLogEvent;
+
+@class Api73_Bool;
+@class Api73_Bool_boolFalse;
+@class Api73_Bool_boolTrue;
+@class Api73_Bool_messages_editInlineBotMessage;
+@class Api73_Bool_messages_setBotCallbackAnswer;
+@class Api73_Bool_messages_setInlineBotResults;
+@class Api73_Bool_account_registerDevice;
+@class Api73_Bool_messages_readFeaturedStickers;
+@class Api73_Bool_messages_reorderStickerSets;
+@class Api73_Bool_auth_dropTempAuthKeys;
+@class Api73_Bool_messages_saveRecentSticker;
+@class Api73_Bool_messages_clearRecentStickers;
+
+@class Api73_LangPackString;
+@class Api73_LangPackString_langPackString;
+@class Api73_LangPackString_langPackStringPluralized;
+
+@class Api73_InputWebFileLocation;
+@class Api73_InputWebFileLocation_inputWebFileLocation;
+
+@class Api73_MessageFwdHeader;
+@class Api73_MessageFwdHeader_messageFwdHeader;
+
+@class Api73_help_Support;
+@class Api73_help_Support_help_support;
+
+@class Api73_ChatLocated;
+@class Api73_ChatLocated_chatLocated;
+
+@class Api73_MessagesFilter;
+@class Api73_MessagesFilter_inputMessagesFilterEmpty;
+@class Api73_MessagesFilter_inputMessagesFilterPhotos;
+@class Api73_MessagesFilter_inputMessagesFilterVideo;
+@class Api73_MessagesFilter_inputMessagesFilterPhotoVideo;
+@class Api73_MessagesFilter_inputMessagesFilterDocument;
+@class Api73_MessagesFilter_inputMessagesFilterPhotoVideoDocuments;
+@class Api73_MessagesFilter_inputMessagesFilterVoice;
+@class Api73_MessagesFilter_inputMessagesFilterMusic;
+@class Api73_MessagesFilter_inputMessagesFilterChatPhotos;
+@class Api73_MessagesFilter_inputMessagesFilterPhoneCalls;
+@class Api73_MessagesFilter_inputMessagesFilterRoundVoice;
+@class Api73_MessagesFilter_inputMessagesFilterRoundVideo;
+@class Api73_MessagesFilter_inputMessagesFilterMyMentions;
+@class Api73_MessagesFilter_inputMessagesFilterMyMentionsUnread;
+@class Api73_MessagesFilter_inputMessagesFilterGeo;
+@class Api73_MessagesFilter_inputMessagesFilterContacts;
+
+@class Api73_messages_Dialogs;
+@class Api73_messages_Dialogs_messages_dialogs;
+@class Api73_messages_Dialogs_messages_dialogsSlice;
+
+@class Api73_upload_CdnFile;
+@class Api73_upload_CdnFile_upload_cdnFileReuploadNeeded;
+@class Api73_upload_CdnFile_upload_cdnFile;
+
+@class Api73_help_InviteText;
+@class Api73_help_InviteText_help_inviteText;
+@class Api73_help_InviteText_help_getInviteText;
+
+@class Api73_ContactSuggested;
+@class Api73_ContactSuggested_contactSuggested;
+
+@class Api73_BotInlineMessage;
+@class Api73_BotInlineMessage_botInlineMessageMediaAuto;
+@class Api73_BotInlineMessage_botInlineMessageText;
+@class Api73_BotInlineMessage_botInlineMessageMediaGeo;
+@class Api73_BotInlineMessage_botInlineMessageMediaVenue;
+@class Api73_BotInlineMessage_botInlineMessageMediaContact;
+
+@class Api73_InputPeerNotifySettings;
+@class Api73_InputPeerNotifySettings_inputPeerNotifySettings;
+
+@class Api73_messages_FavedStickers;
+@class Api73_messages_FavedStickers_messages_favedStickersNotModified;
+@class Api73_messages_FavedStickers_messages_favedStickers;
+
+@class Api73_ExportedChatInvite;
+@class Api73_ExportedChatInvite_chatInviteEmpty;
+@class Api73_ExportedChatInvite_chatInviteExported;
+
+@class Api73_DcNetworkStats;
+@class Api73_DcNetworkStats_dcPingStats;
+
+@class Api73_Authorization;
+@class Api73_Authorization_authorization;
+
+@class Api73_MaskCoords;
+@class Api73_MaskCoords_maskCoords;
+
+@class Api73_messages_AllStickers;
+@class Api73_messages_AllStickers_messages_allStickersNotModified;
+@class Api73_messages_AllStickers_messages_allStickers;
+@class Api73_messages_AllStickers_messages_getAllStickers;
+@class Api73_messages_AllStickers_messages_getMaskStickers;
+
+@class Api73_PhoneConnection;
+@class Api73_PhoneConnection_phoneConnectionNotReady;
+@class Api73_PhoneConnection_phoneConnection;
+
+@class Api73_AccountDaysTTL;
+@class Api73_AccountDaysTTL_accountDaysTTL;
+
+@class Api73_Scheme;
+@class Api73_Scheme_scheme;
+@class Api73_Scheme_schemeNotModified;
+
+@class Api73_account_Password;
+@class Api73_account_Password_account_noPassword;
+@class Api73_account_Password_account_password;
+
+@class Api73_InputBotInlineResult;
+@class Api73_InputBotInlineResult_inputBotInlineResult;
+@class Api73_InputBotInlineResult_inputBotInlineResultPhoto;
+@class Api73_InputBotInlineResult_inputBotInlineResultDocument;
+@class Api73_InputBotInlineResult_inputBotInlineResultGame;
+
+@class Api73_account_PrivacyRules;
+@class Api73_account_PrivacyRules_account_privacyRules;
+
+@class Api73_messages_Message;
+@class Api73_messages_Message_messages_messageEmpty;
+@class Api73_messages_Message_messages_message;
+
+@class Api73_PrivacyRule;
+@class Api73_PrivacyRule_privacyValueAllowContacts;
+@class Api73_PrivacyRule_privacyValueAllowAll;
+@class Api73_PrivacyRule_privacyValueAllowUsers;
+@class Api73_PrivacyRule_privacyValueDisallowContacts;
+@class Api73_PrivacyRule_privacyValueDisallowAll;
+@class Api73_PrivacyRule_privacyValueDisallowUsers;
+
+@class Api73_MessageAction;
+@class Api73_MessageAction_messageActionEmpty;
+@class Api73_MessageAction_messageActionChatCreate;
+@class Api73_MessageAction_messageActionChatEditTitle;
+@class Api73_MessageAction_messageActionChatEditPhoto;
+@class Api73_MessageAction_messageActionChatDeletePhoto;
+@class Api73_MessageAction_messageActionChatDeleteUser;
+@class Api73_MessageAction_messageActionSentRequest;
+@class Api73_MessageAction_messageActionAcceptRequest;
+@class Api73_MessageAction_messageActionChatJoinedByLink;
+@class Api73_MessageAction_messageActionChannelCreate;
+@class Api73_MessageAction_messageActionChatMigrateTo;
+@class Api73_MessageAction_messageActionChannelMigrateFrom;
+@class Api73_MessageAction_messageActionChatAddUser;
+@class Api73_MessageAction_messageActionPinMessage;
+@class Api73_MessageAction_messageActionHistoryClear;
+@class Api73_MessageAction_messageActionGameScore;
+@class Api73_MessageAction_messageActionPhoneCall;
+@class Api73_MessageAction_messageActionPaymentSentMe;
+@class Api73_MessageAction_messageActionPaymentSent;
+@class Api73_MessageAction_messageActionScreenshotTaken;
+@class Api73_MessageAction_messageActionCustomAction;
+
+@class Api73_PhoneCall;
+@class Api73_PhoneCall_phoneCallEmpty;
+@class Api73_PhoneCall_phoneCallWaiting;
+@class Api73_PhoneCall_phoneCallRequested;
+@class Api73_PhoneCall_phoneCall;
+@class Api73_PhoneCall_phoneCallDiscarded;
+
+@class Api73_PeerNotifyEvents;
+@class Api73_PeerNotifyEvents_peerNotifyEventsEmpty;
+@class Api73_PeerNotifyEvents_peerNotifyEventsAll;
+
+@class Api73_ContactLink;
+@class Api73_ContactLink_contactLinkUnknown;
+@class Api73_ContactLink_contactLinkNone;
+@class Api73_ContactLink_contactLinkHasPhone;
+@class Api73_ContactLink_contactLinkContact;
+
+@class Api73_WebDocument;
+@class Api73_WebDocument_webDocument;
+
+@class Api73_help_AppPrefs;
+@class Api73_help_AppPrefs_help_appPrefs;
+
+@class Api73_contacts_Found;
+@class Api73_contacts_Found_contacts_found;
+
+@class Api73_ChannelAdminLogEventsFilter;
+@class Api73_ChannelAdminLogEventsFilter_channelAdminLogEventsFilter;
+
+@class Api73_PeerNotifySettings;
+@class Api73_PeerNotifySettings_peerNotifySettingsEmpty;
+@class Api73_PeerNotifySettings_peerNotifySettings;
+
+@class Api73_InputBotInlineMessageID;
+@class Api73_InputBotInlineMessageID_inputBotInlineMessageID;
+
+@class Api73_SchemeParam;
+@class Api73_SchemeParam_schemeParam;
+
+@class Api73_StickerPack;
+@class Api73_StickerPack_stickerPack;
+
+@class Api73_UserProfilePhoto;
+@class Api73_UserProfilePhoto_userProfilePhotoEmpty;
+@class Api73_UserProfilePhoto_userProfilePhoto;
+@class Api73_UserProfilePhoto_photos_updateProfilePhoto;
+
+@class Api73_payments_SavedInfo;
+@class Api73_payments_SavedInfo_payments_savedInfo;
+
+@class Api73_updates_ChannelDifference;
+@class Api73_updates_ChannelDifference_updates_channelDifferenceEmpty;
+@class Api73_updates_ChannelDifference_updates_channelDifference;
+@class Api73_updates_ChannelDifference_updates_channelDifferenceTooLong;
+
+@class Api73_channels_AdminLogResults;
+@class Api73_channels_AdminLogResults_channels_adminLogResults;
+
+@class Api73_MessageEntity;
+@class Api73_MessageEntity_messageEntityUnknown;
+@class Api73_MessageEntity_messageEntityMention;
+@class Api73_MessageEntity_messageEntityHashtag;
+@class Api73_MessageEntity_messageEntityBotCommand;
+@class Api73_MessageEntity_messageEntityUrl;
+@class Api73_MessageEntity_messageEntityEmail;
+@class Api73_MessageEntity_messageEntityBold;
+@class Api73_MessageEntity_messageEntityItalic;
+@class Api73_MessageEntity_messageEntityCode;
+@class Api73_MessageEntity_messageEntityPre;
+@class Api73_MessageEntity_messageEntityTextUrl;
+@class Api73_MessageEntity_messageEntityMentionName;
+@class Api73_MessageEntity_inputMessageEntityMentionName;
+
+@class Api73_InputPhoto;
+@class Api73_InputPhoto_inputPhotoEmpty;
+@class Api73_InputPhoto_inputPhoto;
+
+@class Api73_contacts_TopPeers;
+@class Api73_contacts_TopPeers_contacts_topPeersNotModified;
+@class Api73_contacts_TopPeers_contacts_topPeers;
+
+@class Api73_auth_SentCodeType;
+@class Api73_auth_SentCodeType_auth_sentCodeTypeApp;
+@class Api73_auth_SentCodeType_auth_sentCodeTypeSms;
+@class Api73_auth_SentCodeType_auth_sentCodeTypeCall;
+@class Api73_auth_SentCodeType_auth_sentCodeTypeFlashCall;
+
+@class Api73_EncryptedChat;
+@class Api73_EncryptedChat_encryptedChatEmpty;
+@class Api73_EncryptedChat_encryptedChatWaiting;
+@class Api73_EncryptedChat_encryptedChatDiscarded;
+@class Api73_EncryptedChat_encryptedChatRequested;
+@class Api73_EncryptedChat_encryptedChat;
+
+@class Api73_Document;
+@class Api73_Document_documentEmpty;
+@class Api73_Document_document;
+
+@class Api73_messages_HighScores;
+@class Api73_messages_HighScores_messages_highScores;
+
+@class Api73_ImportedContact;
+@class Api73_ImportedContact_importedContact;
+
+
+@interface Api73__Environment : NSObject
+
++ (NSData *)serializeObject:(id)object;
++ (id)parseObject:(NSData *)data;
+
+@end
+
+@interface Api73_FunctionContext : NSObject
+
+@property (nonatomic, strong, readonly) NSData *payload;
+@property (nonatomic, copy, readonly) id (^responseParser)(NSData *);
+@property (nonatomic, strong, readonly) id metadata;
+
+- (instancetype)initWithPayload:(NSData *)payload responseParser:(id (^)(NSData *))responseParser metadata:(id)metadata;
+
+@end
+
+/*
+ * Types 73
+ */
+
+@interface Api73_messages_StickerSet : NSObject
+
+@property (nonatomic, strong, readonly) Api73_StickerSet * set;
+@property (nonatomic, strong, readonly) NSArray * packs;
+@property (nonatomic, strong, readonly) NSArray * documents;
+
++ (Api73_messages_StickerSet_messages_stickerSet *)messages_stickerSetWithSet:(Api73_StickerSet *)set packs:(NSArray *)packs documents:(NSArray *)documents;
+
+@end
+
+@interface Api73_messages_StickerSet_messages_stickerSet : Api73_messages_StickerSet
+
+@end
+
+
+@interface Api73_InputGeoPlaceName : NSObject
+
+@property (nonatomic, strong, readonly) NSString * country;
+@property (nonatomic, strong, readonly) NSString * state;
+@property (nonatomic, strong, readonly) NSString * city;
+@property (nonatomic, strong, readonly) NSString * district;
+@property (nonatomic, strong, readonly) NSString * street;
+
++ (Api73_InputGeoPlaceName_inputGeoPlaceName *)inputGeoPlaceNameWithCountry:(NSString *)country state:(NSString *)state city:(NSString *)city district:(NSString *)district street:(NSString *)street;
+
+@end
+
+@interface Api73_InputGeoPlaceName_inputGeoPlaceName : Api73_InputGeoPlaceName
+
+@end
+
+
+@interface Api73_InputGeoPoint : NSObject
+
++ (Api73_InputGeoPoint_inputGeoPointEmpty *)inputGeoPointEmpty;
++ (Api73_InputGeoPoint_inputGeoPoint *)inputGeoPointWithLat:(NSNumber *)lat plong:(NSNumber *)plong;
+
+@end
+
+@interface Api73_InputGeoPoint_inputGeoPointEmpty : Api73_InputGeoPoint
+
+@end
+
+@interface Api73_InputGeoPoint_inputGeoPoint : Api73_InputGeoPoint
+
+@property (nonatomic, strong, readonly) NSNumber * lat;
+@property (nonatomic, strong, readonly) NSNumber * plong;
+
+@end
+
+
+@interface Api73_messages_Chat : NSObject
+
+@property (nonatomic, strong, readonly) Api73_Chat * chat;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_Chat_messages_chat *)messages_chatWithChat:(Api73_Chat *)chat users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_Chat_messages_chat : Api73_messages_Chat
+
+@end
+
+
+@interface Api73_payments_ValidatedRequestedInfo : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSArray * shippingOptions;
+
++ (Api73_payments_ValidatedRequestedInfo_payments_validatedRequestedInfo *)payments_validatedRequestedInfoWithFlags:(NSNumber *)flags pid:(NSString *)pid shippingOptions:(NSArray *)shippingOptions;
+
+@end
+
+@interface Api73_payments_ValidatedRequestedInfo_payments_validatedRequestedInfo : Api73_payments_ValidatedRequestedInfo
+
+@end
+
+
+@interface Api73_ChatFull : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) Api73_Photo * chatPhoto;
+@property (nonatomic, strong, readonly) Api73_PeerNotifySettings * notifySettings;
+@property (nonatomic, strong, readonly) Api73_ExportedChatInvite * exportedInvite;
+@property (nonatomic, strong, readonly) NSArray * botInfo;
+
++ (Api73_ChatFull_chatFull *)chatFullWithPid:(NSNumber *)pid participants:(Api73_ChatParticipants *)participants chatPhoto:(Api73_Photo *)chatPhoto notifySettings:(Api73_PeerNotifySettings *)notifySettings exportedInvite:(Api73_ExportedChatInvite *)exportedInvite botInfo:(NSArray *)botInfo;
++ (Api73_ChatFull_channelFull *)channelFullWithFlags:(NSNumber *)flags pid:(NSNumber *)pid about:(NSString *)about participantsCount:(NSNumber *)participantsCount adminsCount:(NSNumber *)adminsCount kickedCount:(NSNumber *)kickedCount bannedCount:(NSNumber *)bannedCount readInboxMaxId:(NSNumber *)readInboxMaxId readOutboxMaxId:(NSNumber *)readOutboxMaxId unreadCount:(NSNumber *)unreadCount chatPhoto:(Api73_Photo *)chatPhoto notifySettings:(Api73_PeerNotifySettings *)notifySettings exportedInvite:(Api73_ExportedChatInvite *)exportedInvite botInfo:(NSArray *)botInfo migratedFromChatId:(NSNumber *)migratedFromChatId migratedFromMaxId:(NSNumber *)migratedFromMaxId pinnedMsgId:(NSNumber *)pinnedMsgId stickerset:(Api73_StickerSet *)stickerset availableMinId:(NSNumber *)availableMinId;
+
+@end
+
+@interface Api73_ChatFull_chatFull : Api73_ChatFull
+
+@property (nonatomic, strong, readonly) Api73_ChatParticipants * participants;
+
+@end
+
+@interface Api73_ChatFull_channelFull : Api73_ChatFull
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * about;
+@property (nonatomic, strong, readonly) NSNumber * participantsCount;
+@property (nonatomic, strong, readonly) NSNumber * adminsCount;
+@property (nonatomic, strong, readonly) NSNumber * kickedCount;
+@property (nonatomic, strong, readonly) NSNumber * bannedCount;
+@property (nonatomic, strong, readonly) NSNumber * readInboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * readOutboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * unreadCount;
+@property (nonatomic, strong, readonly) NSNumber * migratedFromChatId;
+@property (nonatomic, strong, readonly) NSNumber * migratedFromMaxId;
+@property (nonatomic, strong, readonly) NSNumber * pinnedMsgId;
+@property (nonatomic, strong, readonly) Api73_StickerSet * stickerset;
+@property (nonatomic, strong, readonly) NSNumber * availableMinId;
+
+@end
+
+
+@interface Api73_ChatParticipant : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
++ (Api73_ChatParticipant_chatParticipant *)chatParticipantWithUserId:(NSNumber *)userId inviterId:(NSNumber *)inviterId date:(NSNumber *)date;
++ (Api73_ChatParticipant_chatParticipantCreator *)chatParticipantCreatorWithUserId:(NSNumber *)userId;
++ (Api73_ChatParticipant_chatParticipantAdmin *)chatParticipantAdminWithUserId:(NSNumber *)userId inviterId:(NSNumber *)inviterId date:(NSNumber *)date;
+
+@end
+
+@interface Api73_ChatParticipant_chatParticipant : Api73_ChatParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_ChatParticipant_chatParticipantCreator : Api73_ChatParticipant
+
+@end
+
+@interface Api73_ChatParticipant_chatParticipantAdmin : Api73_ChatParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+
+@interface Api73_updates_Difference : NSObject
+
++ (Api73_updates_Difference_updates_differenceEmpty *)updates_differenceEmptyWithDate:(NSNumber *)date seq:(NSNumber *)seq;
++ (Api73_updates_Difference_updates_difference *)updates_differenceWithPnewMessages:(NSArray *)pnewMessages pnewEncryptedMessages:(NSArray *)pnewEncryptedMessages otherUpdates:(NSArray *)otherUpdates chats:(NSArray *)chats users:(NSArray *)users state:(Api73_updates_State *)state;
++ (Api73_updates_Difference_updates_differenceSlice *)updates_differenceSliceWithPnewMessages:(NSArray *)pnewMessages pnewEncryptedMessages:(NSArray *)pnewEncryptedMessages otherUpdates:(NSArray *)otherUpdates chats:(NSArray *)chats users:(NSArray *)users intermediateState:(Api73_updates_State *)intermediateState;
++ (Api73_updates_Difference_updates_differenceTooLong *)updates_differenceTooLongWithPts:(NSNumber *)pts;
+
+@end
+
+@interface Api73_updates_Difference_updates_differenceEmpty : Api73_updates_Difference
+
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * seq;
+
+@end
+
+@interface Api73_updates_Difference_updates_difference : Api73_updates_Difference
+
+@property (nonatomic, strong, readonly) NSArray * pnewMessages;
+@property (nonatomic, strong, readonly) NSArray * pnewEncryptedMessages;
+@property (nonatomic, strong, readonly) NSArray * otherUpdates;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+@property (nonatomic, strong, readonly) Api73_updates_State * state;
+
+@end
+
+@interface Api73_updates_Difference_updates_differenceSlice : Api73_updates_Difference
+
+@property (nonatomic, strong, readonly) NSArray * pnewMessages;
+@property (nonatomic, strong, readonly) NSArray * pnewEncryptedMessages;
+@property (nonatomic, strong, readonly) NSArray * otherUpdates;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+@property (nonatomic, strong, readonly) Api73_updates_State * intermediateState;
+
+@end
+
+@interface Api73_updates_Difference_updates_differenceTooLong : Api73_updates_Difference
+
+@property (nonatomic, strong, readonly) NSNumber * pts;
+
+@end
+
+
+@interface Api73_SchemeMethod : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * method;
+@property (nonatomic, strong, readonly) NSArray * params;
+@property (nonatomic, strong, readonly) NSString * type;
+
++ (Api73_SchemeMethod_schemeMethod *)schemeMethodWithPid:(NSNumber *)pid method:(NSString *)method params:(NSArray *)params type:(NSString *)type;
+
+@end
+
+@interface Api73_SchemeMethod_schemeMethod : Api73_SchemeMethod
+
+@end
+
+
+@interface Api73_CdnConfig : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * publicKeys;
+
++ (Api73_CdnConfig_cdnConfig *)cdnConfigWithPublicKeys:(NSArray *)publicKeys;
+
+@end
+
+@interface Api73_CdnConfig_cdnConfig : Api73_CdnConfig
+
+@end
+
+
+@interface Api73_InputPhotoCrop : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * cropLeft;
+@property (nonatomic, strong, readonly) NSNumber * cropTop;
+@property (nonatomic, strong, readonly) NSNumber * cropWidth;
+
++ (Api73_InputPhotoCrop_inputPhotoCrop *)inputPhotoCropWithCropLeft:(NSNumber *)cropLeft cropTop:(NSNumber *)cropTop cropWidth:(NSNumber *)cropWidth;
+
+@end
+
+@interface Api73_InputPhotoCrop_inputPhotoCrop : Api73_InputPhotoCrop
+
+@end
+
+
+@interface Api73_PageBlock : NSObject
+
++ (Api73_PageBlock_pageBlockUnsupported *)pageBlockUnsupported;
++ (Api73_PageBlock_pageBlockTitle *)pageBlockTitleWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockSubtitle *)pageBlockSubtitleWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockHeader *)pageBlockHeaderWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockSubheader *)pageBlockSubheaderWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockParagraph *)pageBlockParagraphWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockPreformatted *)pageBlockPreformattedWithText:(Api73_RichText *)text language:(NSString *)language;
++ (Api73_PageBlock_pageBlockFooter *)pageBlockFooterWithText:(Api73_RichText *)text;
++ (Api73_PageBlock_pageBlockDivider *)pageBlockDivider;
++ (Api73_PageBlock_pageBlockAnchor *)pageBlockAnchorWithName:(NSString *)name;
++ (Api73_PageBlock_pageBlockList *)pageBlockListWithOrdered:(Api73_Bool *)ordered items:(NSArray *)items;
++ (Api73_PageBlock_pageBlockBlockquote *)pageBlockBlockquoteWithText:(Api73_RichText *)text caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockPullquote *)pageBlockPullquoteWithText:(Api73_RichText *)text caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockPhoto *)pageBlockPhotoWithPhotoId:(NSNumber *)photoId caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockVideo *)pageBlockVideoWithFlags:(NSNumber *)flags videoId:(NSNumber *)videoId caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockCover *)pageBlockCoverWithCover:(Api73_PageBlock *)cover;
++ (Api73_PageBlock_pageBlockEmbedPost *)pageBlockEmbedPostWithUrl:(NSString *)url webpageId:(NSNumber *)webpageId authorPhotoId:(NSNumber *)authorPhotoId author:(NSString *)author date:(NSNumber *)date blocks:(NSArray *)blocks caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockCollage *)pageBlockCollageWithItems:(NSArray *)items caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockSlideshow *)pageBlockSlideshowWithItems:(NSArray *)items caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockAuthorDate *)pageBlockAuthorDateWithAuthor:(Api73_RichText *)author publishedDate:(NSNumber *)publishedDate;
++ (Api73_PageBlock_pageBlockEmbed *)pageBlockEmbedWithFlags:(NSNumber *)flags url:(NSString *)url html:(NSString *)html posterPhotoId:(NSNumber *)posterPhotoId w:(NSNumber *)w h:(NSNumber *)h caption:(Api73_RichText *)caption;
++ (Api73_PageBlock_pageBlockAudio *)pageBlockAudioWithAudioId:(NSNumber *)audioId caption:(Api73_RichText *)caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockUnsupported : Api73_PageBlock
+
+@end
+
+@interface Api73_PageBlock_pageBlockTitle : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockSubtitle : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockHeader : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockSubheader : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockParagraph : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockPreformatted : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+@property (nonatomic, strong, readonly) NSString * language;
+
+@end
+
+@interface Api73_PageBlock_pageBlockFooter : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_PageBlock_pageBlockDivider : Api73_PageBlock
+
+@end
+
+@interface Api73_PageBlock_pageBlockAnchor : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSString * name;
+
+@end
+
+@interface Api73_PageBlock_pageBlockList : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_Bool * ordered;
+@property (nonatomic, strong, readonly) NSArray * items;
+
+@end
+
+@interface Api73_PageBlock_pageBlockBlockquote : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockPullquote : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockPhoto : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSNumber * photoId;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockVideo : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * videoId;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockCover : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_PageBlock * cover;
+
+@end
+
+@interface Api73_PageBlock_pageBlockEmbedPost : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * webpageId;
+@property (nonatomic, strong, readonly) NSNumber * authorPhotoId;
+@property (nonatomic, strong, readonly) NSString * author;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSArray * blocks;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockCollage : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSArray * items;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockSlideshow : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSArray * items;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockAuthorDate : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) Api73_RichText * author;
+@property (nonatomic, strong, readonly) NSNumber * publishedDate;
+
+@end
+
+@interface Api73_PageBlock_pageBlockEmbed : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * html;
+@property (nonatomic, strong, readonly) NSNumber * posterPhotoId;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+@interface Api73_PageBlock_pageBlockAudio : Api73_PageBlock
+
+@property (nonatomic, strong, readonly) NSNumber * audioId;
+@property (nonatomic, strong, readonly) Api73_RichText * caption;
+
+@end
+
+
+@interface Api73_account_TmpPassword : NSObject
+
+@property (nonatomic, strong, readonly) NSData * tmpPassword;
+@property (nonatomic, strong, readonly) NSNumber * validUntil;
+
++ (Api73_account_TmpPassword_account_tmpPassword *)account_tmpPasswordWithTmpPassword:(NSData *)tmpPassword validUntil:(NSNumber *)validUntil;
+
+@end
+
+@interface Api73_account_TmpPassword_account_tmpPassword : Api73_account_TmpPassword
+
+@end
+
+
+@interface Api73_Photo : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_Photo_photoEmpty *)photoEmptyWithPid:(NSNumber *)pid;
++ (Api73_Photo_wallPhoto *)wallPhotoWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash userId:(NSNumber *)userId date:(NSNumber *)date caption:(NSString *)caption geo:(Api73_GeoPoint *)geo unread:(Api73_Bool *)unread sizes:(NSArray *)sizes;
++ (Api73_Photo_photo *)photoWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date sizes:(NSArray *)sizes;
+
+@end
+
+@interface Api73_Photo_photoEmpty : Api73_Photo
+
+@end
+
+@interface Api73_Photo_wallPhoto : Api73_Photo
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSString * caption;
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) Api73_Bool * unread;
+@property (nonatomic, strong, readonly) NSArray * sizes;
+
+@end
+
+@interface Api73_Photo_photo : Api73_Photo
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSArray * sizes;
+
+@end
+
+
+@interface Api73_Chat : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_Chat_chatEmpty *)chatEmptyWithPid:(NSNumber *)pid;
++ (Api73_Chat_chatForbidden *)chatForbiddenWithPid:(NSNumber *)pid title:(NSString *)title;
++ (Api73_Chat_chat *)chatWithFlags:(NSNumber *)flags pid:(NSNumber *)pid title:(NSString *)title photo:(Api73_ChatPhoto *)photo participantsCount:(NSNumber *)participantsCount date:(NSNumber *)date version:(NSNumber *)version migratedTo:(Api73_InputChannel *)migratedTo;
++ (Api73_Chat_channelForbidden *)channelForbiddenWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash title:(NSString *)title untilDate:(NSNumber *)untilDate;
++ (Api73_Chat_channel *)channelWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash title:(NSString *)title username:(NSString *)username photo:(Api73_ChatPhoto *)photo date:(NSNumber *)date version:(NSNumber *)version restrictionReason:(NSString *)restrictionReason adminRights:(Api73_ChannelAdminRights *)adminRights bannedRights:(Api73_ChannelBannedRights *)bannedRights participantsCount:(NSNumber *)participantsCount;
+
+@end
+
+@interface Api73_Chat_chatEmpty : Api73_Chat
+
+@end
+
+@interface Api73_Chat_chatForbidden : Api73_Chat
+
+@property (nonatomic, strong, readonly) NSString * title;
+
+@end
+
+@interface Api73_Chat_chat : Api73_Chat
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) Api73_ChatPhoto * photo;
+@property (nonatomic, strong, readonly) NSNumber * participantsCount;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * version;
+@property (nonatomic, strong, readonly) Api73_InputChannel * migratedTo;
+
+@end
+
+@interface Api73_Chat_channelForbidden : Api73_Chat
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSNumber * untilDate;
+
+@end
+
+@interface Api73_Chat_channel : Api73_Chat
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * username;
+@property (nonatomic, strong, readonly) Api73_ChatPhoto * photo;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * version;
+@property (nonatomic, strong, readonly) NSString * restrictionReason;
+@property (nonatomic, strong, readonly) Api73_ChannelAdminRights * adminRights;
+@property (nonatomic, strong, readonly) Api73_ChannelBannedRights * bannedRights;
+@property (nonatomic, strong, readonly) NSNumber * participantsCount;
+
+@end
+
+
+@interface Api73_ChatInvite : NSObject
+
++ (Api73_ChatInvite_chatInviteAlready *)chatInviteAlreadyWithChat:(Api73_Chat *)chat;
++ (Api73_ChatInvite_chatInvite *)chatInviteWithFlags:(NSNumber *)flags title:(NSString *)title photo:(Api73_ChatPhoto *)photo participantsCount:(NSNumber *)participantsCount participants:(NSArray *)participants;
+
+@end
+
+@interface Api73_ChatInvite_chatInviteAlready : Api73_ChatInvite
+
+@property (nonatomic, strong, readonly) Api73_Chat * chat;
+
+@end
+
+@interface Api73_ChatInvite_chatInvite : Api73_ChatInvite
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) Api73_ChatPhoto * photo;
+@property (nonatomic, strong, readonly) NSNumber * participantsCount;
+@property (nonatomic, strong, readonly) NSArray * participants;
+
+@end
+
+
+@interface Api73_StickerSetCovered : NSObject
+
+@property (nonatomic, strong, readonly) Api73_StickerSet * set;
+
++ (Api73_StickerSetCovered_stickerSetCovered *)stickerSetCoveredWithSet:(Api73_StickerSet *)set cover:(Api73_Document *)cover;
++ (Api73_StickerSetCovered_stickerSetMultiCovered *)stickerSetMultiCoveredWithSet:(Api73_StickerSet *)set covers:(NSArray *)covers;
+
+@end
+
+@interface Api73_StickerSetCovered_stickerSetCovered : Api73_StickerSetCovered
+
+@property (nonatomic, strong, readonly) Api73_Document * cover;
+
+@end
+
+@interface Api73_StickerSetCovered_stickerSetMultiCovered : Api73_StickerSetCovered
+
+@property (nonatomic, strong, readonly) NSArray * covers;
+
+@end
+
+
+@interface Api73_contacts_Requests : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * requests;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_Requests_contacts_requests *)contacts_requestsWithRequests:(NSArray *)requests users:(NSArray *)users;
++ (Api73_contacts_Requests_contacts_requestsSlice *)contacts_requestsSliceWithCount:(NSNumber *)count requests:(NSArray *)requests users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Requests_contacts_requests : Api73_contacts_Requests
+
+@end
+
+@interface Api73_contacts_Requests_contacts_requestsSlice : Api73_contacts_Requests
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_RecentMeUrl : NSObject
+
+@property (nonatomic, strong, readonly) NSString * url;
+
++ (Api73_RecentMeUrl_recentMeUrlUnknown *)recentMeUrlUnknownWithUrl:(NSString *)url;
++ (Api73_RecentMeUrl_recentMeUrlUser *)recentMeUrlUserWithUrl:(NSString *)url userId:(NSNumber *)userId;
++ (Api73_RecentMeUrl_recentMeUrlChat *)recentMeUrlChatWithUrl:(NSString *)url chatId:(NSNumber *)chatId;
++ (Api73_RecentMeUrl_recentMeUrlChatInvite *)recentMeUrlChatInviteWithUrl:(NSString *)url chatInvite:(Api73_ChatInvite *)chatInvite;
++ (Api73_RecentMeUrl_recentMeUrlStickerSet *)recentMeUrlStickerSetWithUrl:(NSString *)url set:(Api73_StickerSetCovered *)set;
+
+@end
+
+@interface Api73_RecentMeUrl_recentMeUrlUnknown : Api73_RecentMeUrl
+
+@end
+
+@interface Api73_RecentMeUrl_recentMeUrlUser : Api73_RecentMeUrl
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_RecentMeUrl_recentMeUrlChat : Api73_RecentMeUrl
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
+@end
+
+@interface Api73_RecentMeUrl_recentMeUrlChatInvite : Api73_RecentMeUrl
+
+@property (nonatomic, strong, readonly) Api73_ChatInvite * chatInvite;
+
+@end
+
+@interface Api73_RecentMeUrl_recentMeUrlStickerSet : Api73_RecentMeUrl
+
+@property (nonatomic, strong, readonly) Api73_StickerSetCovered * set;
+
+@end
+
+
+@interface Api73_channels_ChannelParticipants : NSObject
+
++ (Api73_channels_ChannelParticipants_channels_channelParticipants *)channels_channelParticipantsWithCount:(NSNumber *)count participants:(NSArray *)participants users:(NSArray *)users;
++ (Api73_channels_ChannelParticipants_channels_channelParticipantsNotModified *)channels_channelParticipantsNotModified;
+
+@end
+
+@interface Api73_channels_ChannelParticipants_channels_channelParticipants : Api73_channels_ChannelParticipants
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+@property (nonatomic, strong, readonly) NSArray * participants;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_channels_ChannelParticipants_channels_channelParticipantsNotModified : Api73_channels_ChannelParticipants
+
+@end
+
+
+@interface Api73_GeoPlaceName : NSObject
+
+@property (nonatomic, strong, readonly) NSString * country;
+@property (nonatomic, strong, readonly) NSString * state;
+@property (nonatomic, strong, readonly) NSString * city;
+@property (nonatomic, strong, readonly) NSString * district;
+@property (nonatomic, strong, readonly) NSString * street;
+
++ (Api73_GeoPlaceName_geoPlaceName *)geoPlaceNameWithCountry:(NSString *)country state:(NSString *)state city:(NSString *)city district:(NSString *)district street:(NSString *)street;
+
+@end
+
+@interface Api73_GeoPlaceName_geoPlaceName : Api73_GeoPlaceName
+
+@end
+
+
+@interface Api73_RichText : NSObject
+
++ (Api73_RichText_textEmpty *)textEmpty;
++ (Api73_RichText_textPlain *)textPlainWithText:(NSString *)text;
++ (Api73_RichText_textBold *)textBoldWithText:(Api73_RichText *)text;
++ (Api73_RichText_textItalic *)textItalicWithText:(Api73_RichText *)text;
++ (Api73_RichText_textUnderline *)textUnderlineWithText:(Api73_RichText *)text;
++ (Api73_RichText_textStrike *)textStrikeWithText:(Api73_RichText *)text;
++ (Api73_RichText_textFixed *)textFixedWithText:(Api73_RichText *)text;
++ (Api73_RichText_textUrl *)textUrlWithText:(Api73_RichText *)text url:(NSString *)url webpageId:(NSNumber *)webpageId;
++ (Api73_RichText_textEmail *)textEmailWithText:(Api73_RichText *)text email:(NSString *)email;
++ (Api73_RichText_textConcat *)textConcatWithTexts:(NSArray *)texts;
+
+@end
+
+@interface Api73_RichText_textEmpty : Api73_RichText
+
+@end
+
+@interface Api73_RichText_textPlain : Api73_RichText
+
+@property (nonatomic, strong, readonly) NSString * text;
+
+@end
+
+@interface Api73_RichText_textBold : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_RichText_textItalic : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_RichText_textUnderline : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_RichText_textStrike : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_RichText_textFixed : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+
+@end
+
+@interface Api73_RichText_textUrl : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * webpageId;
+
+@end
+
+@interface Api73_RichText_textEmail : Api73_RichText
+
+@property (nonatomic, strong, readonly) Api73_RichText * text;
+@property (nonatomic, strong, readonly) NSString * email;
+
+@end
+
+@interface Api73_RichText_textConcat : Api73_RichText
+
+@property (nonatomic, strong, readonly) NSArray * texts;
+
+@end
+
+
+@interface Api73_UserFull : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_User * user;
+@property (nonatomic, strong, readonly) NSString * about;
+@property (nonatomic, strong, readonly) Api73_contacts_Link * link;
+@property (nonatomic, strong, readonly) Api73_Photo * profilePhoto;
+@property (nonatomic, strong, readonly) Api73_PeerNotifySettings * notifySettings;
+@property (nonatomic, strong, readonly) Api73_BotInfo * botInfo;
+@property (nonatomic, strong, readonly) NSNumber * commonChatsCount;
+
++ (Api73_UserFull_userFull *)userFullWithFlags:(NSNumber *)flags user:(Api73_User *)user about:(NSString *)about link:(Api73_contacts_Link *)link profilePhoto:(Api73_Photo *)profilePhoto notifySettings:(Api73_PeerNotifySettings *)notifySettings botInfo:(Api73_BotInfo *)botInfo commonChatsCount:(NSNumber *)commonChatsCount;
+
+@end
+
+@interface Api73_UserFull_userFull : Api73_UserFull
+
+@end
+
+
+@interface Api73_InputPeerNotifyEvents : NSObject
+
++ (Api73_InputPeerNotifyEvents_inputPeerNotifyEventsEmpty *)inputPeerNotifyEventsEmpty;
++ (Api73_InputPeerNotifyEvents_inputPeerNotifyEventsAll *)inputPeerNotifyEventsAll;
+
+@end
+
+@interface Api73_InputPeerNotifyEvents_inputPeerNotifyEventsEmpty : Api73_InputPeerNotifyEvents
+
+@end
+
+@interface Api73_InputPeerNotifyEvents_inputPeerNotifyEventsAll : Api73_InputPeerNotifyEvents
+
+@end
+
+
+@interface Api73_InputChannel : NSObject
+
++ (Api73_InputChannel_inputChannelEmpty *)inputChannelEmpty;
++ (Api73_InputChannel_inputChannel *)inputChannelWithChannelId:(NSNumber *)channelId accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputChannel_inputChannelEmpty : Api73_InputChannel
+
+@end
+
+@interface Api73_InputChannel_inputChannel : Api73_InputChannel
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+
+@interface Api73_DcOption : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * ipAddress;
+@property (nonatomic, strong, readonly) NSNumber * port;
+
++ (Api73_DcOption_dcOption *)dcOptionWithFlags:(NSNumber *)flags pid:(NSNumber *)pid ipAddress:(NSString *)ipAddress port:(NSNumber *)port;
+
+@end
+
+@interface Api73_DcOption_dcOption : Api73_DcOption
+
+@end
+
+
+@interface Api73_MessageGroup : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * minId;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+@property (nonatomic, strong, readonly) NSNumber * count;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
++ (Api73_MessageGroup_messageGroup *)messageGroupWithMinId:(NSNumber *)minId maxId:(NSNumber *)maxId count:(NSNumber *)count date:(NSNumber *)date;
+
+@end
+
+@interface Api73_MessageGroup_messageGroup : Api73_MessageGroup
+
+@end
+
+
+@interface Api73_account_PasswordSettings : NSObject
+
+@property (nonatomic, strong, readonly) NSString * email;
+
++ (Api73_account_PasswordSettings_account_passwordSettings *)account_passwordSettingsWithEmail:(NSString *)email;
+
+@end
+
+@interface Api73_account_PasswordSettings_account_passwordSettings : Api73_account_PasswordSettings
+
+@end
+
+
+@interface Api73_LangPackLanguage : NSObject
+
+@property (nonatomic, strong, readonly) NSString * name;
+@property (nonatomic, strong, readonly) NSString * nativeName;
+@property (nonatomic, strong, readonly) NSString * langCode;
+
++ (Api73_LangPackLanguage_langPackLanguage *)langPackLanguageWithName:(NSString *)name nativeName:(NSString *)nativeName langCode:(NSString *)langCode;
+
+@end
+
+@interface Api73_LangPackLanguage_langPackLanguage : Api73_LangPackLanguage
+
+@end
+
+
+@interface Api73_help_AppUpdate : NSObject
+
++ (Api73_help_AppUpdate_help_appUpdate *)help_appUpdateWithPid:(NSNumber *)pid critical:(Api73_Bool *)critical url:(NSString *)url text:(NSString *)text;
++ (Api73_help_AppUpdate_help_noAppUpdate *)help_noAppUpdate;
++ (Api73_help_AppUpdate_help_getAppUpdate *)help_getAppUpdate;
+
+@end
+
+@interface Api73_help_AppUpdate_help_appUpdate : Api73_help_AppUpdate
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) Api73_Bool * critical;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * text;
+
+@end
+
+@interface Api73_help_AppUpdate_help_noAppUpdate : Api73_help_AppUpdate
+
+@end
+
+@interface Api73_help_AppUpdate_help_getAppUpdate : Api73_help_AppUpdate
+
+@end
+
+
+@interface Api73_LangPackDifference : NSObject
+
+@property (nonatomic, strong, readonly) NSString * langCode;
+@property (nonatomic, strong, readonly) NSNumber * fromVersion;
+@property (nonatomic, strong, readonly) NSNumber * version;
+@property (nonatomic, strong, readonly) NSArray * strings;
+
++ (Api73_LangPackDifference_langPackDifference *)langPackDifferenceWithLangCode:(NSString *)langCode fromVersion:(NSNumber *)fromVersion version:(NSNumber *)version strings:(NSArray *)strings;
+
+@end
+
+@interface Api73_LangPackDifference_langPackDifference : Api73_LangPackDifference
+
+@end
+
+
+@interface Api73_channels_ChannelParticipant : NSObject
+
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * participant;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_channels_ChannelParticipant_channels_channelParticipant *)channels_channelParticipantWithParticipant:(Api73_ChannelParticipant *)participant users:(NSArray *)users;
+
+@end
+
+@interface Api73_channels_ChannelParticipant_channels_channelParticipant : Api73_channels_ChannelParticipant
+
+@end
+
+
+@interface Api73_contacts_SentLink : NSObject
+
+@property (nonatomic, strong, readonly) Api73_messages_Message * message;
+@property (nonatomic, strong, readonly) Api73_contacts_Link * link;
+
++ (Api73_contacts_SentLink_contacts_sentLink *)contacts_sentLinkWithMessage:(Api73_messages_Message *)message link:(Api73_contacts_Link *)link;
+
+@end
+
+@interface Api73_contacts_SentLink_contacts_sentLink : Api73_contacts_SentLink
+
+@end
+
+
+@interface Api73_storage_FileType : NSObject
+
++ (Api73_storage_FileType_storage_fileUnknown *)storage_fileUnknown;
++ (Api73_storage_FileType_storage_fileJpeg *)storage_fileJpeg;
++ (Api73_storage_FileType_storage_fileGif *)storage_fileGif;
++ (Api73_storage_FileType_storage_filePng *)storage_filePng;
++ (Api73_storage_FileType_storage_filePdf *)storage_filePdf;
++ (Api73_storage_FileType_storage_fileMp3 *)storage_fileMp3;
++ (Api73_storage_FileType_storage_fileMov *)storage_fileMov;
++ (Api73_storage_FileType_storage_filePartial *)storage_filePartial;
++ (Api73_storage_FileType_storage_fileMp4 *)storage_fileMp4;
++ (Api73_storage_FileType_storage_fileWebp *)storage_fileWebp;
+
+@end
+
+@interface Api73_storage_FileType_storage_fileUnknown : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileJpeg : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileGif : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_filePng : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_filePdf : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileMp3 : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileMov : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_filePartial : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileMp4 : Api73_storage_FileType
+
+@end
+
+@interface Api73_storage_FileType_storage_fileWebp : Api73_storage_FileType
+
+@end
+
+
+@interface Api73_messages_ArchivedStickers : NSObject
+
++ (Api73_messages_ArchivedStickers_messages_archivedStickers *)messages_archivedStickersWithCount:(NSNumber *)count sets:(NSArray *)sets;
++ (Api73_messages_ArchivedStickers_messages_getArchivedStickers *)messages_getArchivedStickersWithFlags:(NSNumber *)flags offsetId:(NSNumber *)offsetId limit:(NSNumber *)limit;
+
+@end
+
+@interface Api73_messages_ArchivedStickers_messages_archivedStickers : Api73_messages_ArchivedStickers
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+@property (nonatomic, strong, readonly) NSArray * sets;
+
+@end
+
+@interface Api73_messages_ArchivedStickers_messages_getArchivedStickers : Api73_messages_ArchivedStickers
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * offsetId;
+@property (nonatomic, strong, readonly) NSNumber * limit;
+
+@end
+
+
+@interface Api73_InputEncryptedFile : NSObject
+
++ (Api73_InputEncryptedFile_inputEncryptedFileEmpty *)inputEncryptedFileEmpty;
++ (Api73_InputEncryptedFile_inputEncryptedFileUploaded *)inputEncryptedFileUploadedWithPid:(NSNumber *)pid parts:(NSNumber *)parts md5Checksum:(NSString *)md5Checksum keyFingerprint:(NSNumber *)keyFingerprint;
++ (Api73_InputEncryptedFile_inputEncryptedFile *)inputEncryptedFileWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
++ (Api73_InputEncryptedFile_inputEncryptedFileBigUploaded *)inputEncryptedFileBigUploadedWithPid:(NSNumber *)pid parts:(NSNumber *)parts keyFingerprint:(NSNumber *)keyFingerprint;
+
+@end
+
+@interface Api73_InputEncryptedFile_inputEncryptedFileEmpty : Api73_InputEncryptedFile
+
+@end
+
+@interface Api73_InputEncryptedFile_inputEncryptedFileUploaded : Api73_InputEncryptedFile
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * parts;
+@property (nonatomic, strong, readonly) NSString * md5Checksum;
+@property (nonatomic, strong, readonly) NSNumber * keyFingerprint;
+
+@end
+
+@interface Api73_InputEncryptedFile_inputEncryptedFile : Api73_InputEncryptedFile
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+@interface Api73_InputEncryptedFile_inputEncryptedFileBigUploaded : Api73_InputEncryptedFile
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * parts;
+@property (nonatomic, strong, readonly) NSNumber * keyFingerprint;
+
+@end
+
+
+@interface Api73_messages_SentEncryptedMessage : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * date;
+
++ (Api73_messages_SentEncryptedMessage_messages_sentEncryptedMessage *)messages_sentEncryptedMessageWithDate:(NSNumber *)date;
++ (Api73_messages_SentEncryptedMessage_messages_sentEncryptedFile *)messages_sentEncryptedFileWithDate:(NSNumber *)date file:(Api73_EncryptedFile *)file;
+
+@end
+
+@interface Api73_messages_SentEncryptedMessage_messages_sentEncryptedMessage : Api73_messages_SentEncryptedMessage
+
+@end
+
+@interface Api73_messages_SentEncryptedMessage_messages_sentEncryptedFile : Api73_messages_SentEncryptedMessage
+
+@property (nonatomic, strong, readonly) Api73_EncryptedFile * file;
+
+@end
+
+
+@interface Api73_ExportedMessageLink : NSObject
+
+@property (nonatomic, strong, readonly) NSString * link;
+
++ (Api73_ExportedMessageLink_exportedMessageLink *)exportedMessageLinkWithLink:(NSString *)link;
+
+@end
+
+@interface Api73_ExportedMessageLink_exportedMessageLink : Api73_ExportedMessageLink
+
+@end
+
+
+@interface Api73_auth_Authorization : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * tmpSessions;
+@property (nonatomic, strong, readonly) Api73_User * user;
+
++ (Api73_auth_Authorization_auth_authorization *)auth_authorizationWithFlags:(NSNumber *)flags tmpSessions:(NSNumber *)tmpSessions user:(Api73_User *)user;
+
+@end
+
+@interface Api73_auth_Authorization_auth_authorization : Api73_auth_Authorization
+
+@end
+
+
+@interface Api73_InputFile : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * parts;
+@property (nonatomic, strong, readonly) NSString * name;
+
++ (Api73_InputFile_inputFile *)inputFileWithPid:(NSNumber *)pid parts:(NSNumber *)parts name:(NSString *)name md5Checksum:(NSString *)md5Checksum;
++ (Api73_InputFile_inputFileBig *)inputFileBigWithPid:(NSNumber *)pid parts:(NSNumber *)parts name:(NSString *)name;
+
+@end
+
+@interface Api73_InputFile_inputFile : Api73_InputFile
+
+@property (nonatomic, strong, readonly) NSString * md5Checksum;
+
+@end
+
+@interface Api73_InputFile_inputFileBig : Api73_InputFile
+
+@end
+
+
+@interface Api73_Peer : NSObject
+
++ (Api73_Peer_peerUser *)peerUserWithUserId:(NSNumber *)userId;
++ (Api73_Peer_peerChat *)peerChatWithChatId:(NSNumber *)chatId;
++ (Api73_Peer_peerChannel *)peerChannelWithChannelId:(NSNumber *)channelId;
+
+@end
+
+@interface Api73_Peer_peerUser : Api73_Peer
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_Peer_peerChat : Api73_Peer
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
+@end
+
+@interface Api73_Peer_peerChannel : Api73_Peer
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+
+@end
+
+
+@interface Api73_PaymentRequestedInfo : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * name;
+@property (nonatomic, strong, readonly) NSString * phone;
+@property (nonatomic, strong, readonly) NSString * email;
+@property (nonatomic, strong, readonly) Api73_PostAddress * shippingAddress;
+
++ (Api73_PaymentRequestedInfo_paymentRequestedInfo *)paymentRequestedInfoWithFlags:(NSNumber *)flags name:(NSString *)name phone:(NSString *)phone email:(NSString *)email shippingAddress:(Api73_PostAddress *)shippingAddress;
+
+@end
+
+@interface Api73_PaymentRequestedInfo_paymentRequestedInfo : Api73_PaymentRequestedInfo
+
+@end
+
+
+@interface Api73_UserStatus : NSObject
+
++ (Api73_UserStatus_userStatusEmpty *)userStatusEmpty;
++ (Api73_UserStatus_userStatusOnline *)userStatusOnlineWithExpires:(NSNumber *)expires;
++ (Api73_UserStatus_userStatusOffline *)userStatusOfflineWithWasOnline:(NSNumber *)wasOnline;
++ (Api73_UserStatus_userStatusRecently *)userStatusRecently;
++ (Api73_UserStatus_userStatusLastWeek *)userStatusLastWeek;
++ (Api73_UserStatus_userStatusLastMonth *)userStatusLastMonth;
+
+@end
+
+@interface Api73_UserStatus_userStatusEmpty : Api73_UserStatus
+
+@end
+
+@interface Api73_UserStatus_userStatusOnline : Api73_UserStatus
+
+@property (nonatomic, strong, readonly) NSNumber * expires;
+
+@end
+
+@interface Api73_UserStatus_userStatusOffline : Api73_UserStatus
+
+@property (nonatomic, strong, readonly) NSNumber * wasOnline;
+
+@end
+
+@interface Api73_UserStatus_userStatusRecently : Api73_UserStatus
+
+@end
+
+@interface Api73_UserStatus_userStatusLastWeek : Api73_UserStatus
+
+@end
+
+@interface Api73_UserStatus_userStatusLastMonth : Api73_UserStatus
+
+@end
+
+
+@interface Api73_Dialog : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSNumber * topMessage;
+@property (nonatomic, strong, readonly) NSNumber * readInboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * readOutboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * unreadCount;
+@property (nonatomic, strong, readonly) NSNumber * unreadMentionsCount;
+@property (nonatomic, strong, readonly) Api73_PeerNotifySettings * notifySettings;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) Api73_DraftMessage * draft;
+
++ (Api73_Dialog_dialog *)dialogWithFlags:(NSNumber *)flags peer:(Api73_Peer *)peer topMessage:(NSNumber *)topMessage readInboxMaxId:(NSNumber *)readInboxMaxId readOutboxMaxId:(NSNumber *)readOutboxMaxId unreadCount:(NSNumber *)unreadCount unreadMentionsCount:(NSNumber *)unreadMentionsCount notifySettings:(Api73_PeerNotifySettings *)notifySettings pts:(NSNumber *)pts draft:(Api73_DraftMessage *)draft;
+
+@end
+
+@interface Api73_Dialog_dialog : Api73_Dialog
+
+@end
+
+
+@interface Api73_help_AppChangelog : NSObject
+
++ (Api73_help_AppChangelog_help_getAppChangelog *)help_getAppChangelog;
+
+@end
+
+@interface Api73_help_AppChangelog_help_getAppChangelog : Api73_help_AppChangelog
+
+@end
+
+
+@interface Api73_SendMessageAction : NSObject
+
++ (Api73_SendMessageAction_sendMessageTypingAction *)sendMessageTypingAction;
++ (Api73_SendMessageAction_sendMessageCancelAction *)sendMessageCancelAction;
++ (Api73_SendMessageAction_sendMessageRecordVideoAction *)sendMessageRecordVideoAction;
++ (Api73_SendMessageAction_sendMessageRecordAudioAction *)sendMessageRecordAudioAction;
++ (Api73_SendMessageAction_sendMessageGeoLocationAction *)sendMessageGeoLocationAction;
++ (Api73_SendMessageAction_sendMessageChooseContactAction *)sendMessageChooseContactAction;
++ (Api73_SendMessageAction_sendMessageUploadVideoAction *)sendMessageUploadVideoActionWithProgress:(NSNumber *)progress;
++ (Api73_SendMessageAction_sendMessageUploadAudioAction *)sendMessageUploadAudioActionWithProgress:(NSNumber *)progress;
++ (Api73_SendMessageAction_sendMessageUploadDocumentAction *)sendMessageUploadDocumentActionWithProgress:(NSNumber *)progress;
++ (Api73_SendMessageAction_sendMessageUploadPhotoAction *)sendMessageUploadPhotoActionWithProgress:(NSNumber *)progress;
++ (Api73_SendMessageAction_sendMessageGamePlayAction *)sendMessageGamePlayAction;
++ (Api73_SendMessageAction_sendMessageGameStopAction *)sendMessageGameStopAction;
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageTypingAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageCancelAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageRecordVideoAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageRecordAudioAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageGeoLocationAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageChooseContactAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageUploadVideoAction : Api73_SendMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * progress;
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageUploadAudioAction : Api73_SendMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * progress;
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageUploadDocumentAction : Api73_SendMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * progress;
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageUploadPhotoAction : Api73_SendMessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * progress;
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageGamePlayAction : Api73_SendMessageAction
+
+@end
+
+@interface Api73_SendMessageAction_sendMessageGameStopAction : Api73_SendMessageAction
+
+@end
+
+
+@interface Api73_PrivacyKey : NSObject
+
++ (Api73_PrivacyKey_privacyKeyStatusTimestamp *)privacyKeyStatusTimestamp;
++ (Api73_PrivacyKey_privacyKeyChatInvite *)privacyKeyChatInvite;
+
+@end
+
+@interface Api73_PrivacyKey_privacyKeyStatusTimestamp : Api73_PrivacyKey
+
+@end
+
+@interface Api73_PrivacyKey_privacyKeyChatInvite : Api73_PrivacyKey
+
+@end
+
+
+@interface Api73_Update : NSObject
+
++ (Api73_Update_updateMessageID *)updateMessageIDWithPid:(NSNumber *)pid randomId:(NSNumber *)randomId;
++ (Api73_Update_updateRestoreMessages *)updateRestoreMessagesWithMessages:(NSArray *)messages pts:(NSNumber *)pts;
++ (Api73_Update_updateChatParticipants *)updateChatParticipantsWithParticipants:(Api73_ChatParticipants *)participants;
++ (Api73_Update_updateUserStatus *)updateUserStatusWithUserId:(NSNumber *)userId status:(Api73_UserStatus *)status;
++ (Api73_Update_updateContactRegistered *)updateContactRegisteredWithUserId:(NSNumber *)userId date:(NSNumber *)date;
++ (Api73_Update_updateContactLocated *)updateContactLocatedWithContacts:(NSArray *)contacts;
++ (Api73_Update_updateActivation *)updateActivationWithUserId:(NSNumber *)userId;
++ (Api73_Update_updateNewAuthorization *)updateNewAuthorizationWithAuthKeyId:(NSNumber *)authKeyId date:(NSNumber *)date device:(NSString *)device location:(NSString *)location;
++ (Api73_Update_updatePhoneCallRequested *)updatePhoneCallRequestedWithPhoneCall:(Api73_PhoneCall *)phoneCall;
++ (Api73_Update_updatePhoneCallConfirmed *)updatePhoneCallConfirmedWithPid:(NSNumber *)pid aOrB:(NSData *)aOrB connection:(Api73_PhoneConnection *)connection;
++ (Api73_Update_updatePhoneCallDeclined *)updatePhoneCallDeclinedWithPid:(NSNumber *)pid;
++ (Api73_Update_updateUserPhoto *)updateUserPhotoWithUserId:(NSNumber *)userId date:(NSNumber *)date photo:(Api73_UserProfilePhoto *)photo previous:(Api73_Bool *)previous;
++ (Api73_Update_updateNewEncryptedMessage *)updateNewEncryptedMessageWithMessage:(Api73_EncryptedMessage *)message qts:(NSNumber *)qts;
++ (Api73_Update_updateEncryptedChatTyping *)updateEncryptedChatTypingWithChatId:(NSNumber *)chatId;
++ (Api73_Update_updateEncryption *)updateEncryptionWithChat:(Api73_EncryptedChat *)chat date:(NSNumber *)date;
++ (Api73_Update_updateEncryptedMessagesRead *)updateEncryptedMessagesReadWithChatId:(NSNumber *)chatId maxDate:(NSNumber *)maxDate date:(NSNumber *)date;
++ (Api73_Update_updateChatParticipantDelete *)updateChatParticipantDeleteWithChatId:(NSNumber *)chatId userId:(NSNumber *)userId version:(NSNumber *)version;
++ (Api73_Update_updateDcOptions *)updateDcOptionsWithDcOptions:(NSArray *)dcOptions;
++ (Api73_Update_updateUserBlocked *)updateUserBlockedWithUserId:(NSNumber *)userId blocked:(Api73_Bool *)blocked;
++ (Api73_Update_updateNotifySettings *)updateNotifySettingsWithPeer:(Api73_NotifyPeer *)peer notifySettings:(Api73_PeerNotifySettings *)notifySettings;
++ (Api73_Update_updateUserTyping *)updateUserTypingWithUserId:(NSNumber *)userId action:(Api73_SendMessageAction *)action;
++ (Api73_Update_updateChatUserTyping *)updateChatUserTypingWithChatId:(NSNumber *)chatId userId:(NSNumber *)userId action:(Api73_SendMessageAction *)action;
++ (Api73_Update_updateUserName *)updateUserNameWithUserId:(NSNumber *)userId firstName:(NSString *)firstName lastName:(NSString *)lastName username:(NSString *)username;
++ (Api73_Update_updateServiceNotification *)updateServiceNotificationWithType:(NSString *)type message:(NSString *)message media:(Api73_MessageMedia *)media popup:(Api73_Bool *)popup;
++ (Api73_Update_updatePrivacy *)updatePrivacyWithKey:(Api73_PrivacyKey *)key rules:(NSArray *)rules;
++ (Api73_Update_updateUserPhone *)updateUserPhoneWithUserId:(NSNumber *)userId phone:(NSString *)phone;
++ (Api73_Update_updateNewMessage *)updateNewMessageWithMessage:(Api73_Message *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateReadMessages *)updateReadMessagesWithMessages:(NSArray *)messages pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateDeleteMessages *)updateDeleteMessagesWithMessages:(NSArray *)messages pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateReadHistoryInbox *)updateReadHistoryInboxWithPeer:(Api73_Peer *)peer maxId:(NSNumber *)maxId pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateReadHistoryOutbox *)updateReadHistoryOutboxWithPeer:(Api73_Peer *)peer maxId:(NSNumber *)maxId pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateContactLink *)updateContactLinkWithUserId:(NSNumber *)userId myLink:(Api73_ContactLink *)myLink foreignLink:(Api73_ContactLink *)foreignLink;
++ (Api73_Update_updateReadMessagesContents *)updateReadMessagesContentsWithMessages:(NSArray *)messages pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateChatParticipantAdd *)updateChatParticipantAddWithChatId:(NSNumber *)chatId userId:(NSNumber *)userId inviterId:(NSNumber *)inviterId date:(NSNumber *)date version:(NSNumber *)version;
++ (Api73_Update_updateWebPage *)updateWebPageWithWebpage:(Api73_WebPage *)webpage pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateChannel *)updateChannelWithChannelId:(NSNumber *)channelId;
++ (Api73_Update_updateChannelGroup *)updateChannelGroupWithChannelId:(NSNumber *)channelId group:(Api73_MessageGroup *)group;
++ (Api73_Update_updateNewChannelMessage *)updateNewChannelMessageWithMessage:(Api73_Message *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateReadChannelInbox *)updateReadChannelInboxWithChannelId:(NSNumber *)channelId maxId:(NSNumber *)maxId;
++ (Api73_Update_updateDeleteChannelMessages *)updateDeleteChannelMessagesWithChannelId:(NSNumber *)channelId messages:(NSArray *)messages pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateChannelMessageViews *)updateChannelMessageViewsWithChannelId:(NSNumber *)channelId pid:(NSNumber *)pid views:(NSNumber *)views;
++ (Api73_Update_updateChatAdmins *)updateChatAdminsWithChatId:(NSNumber *)chatId enabled:(Api73_Bool *)enabled version:(NSNumber *)version;
++ (Api73_Update_updateChatParticipantAdmin *)updateChatParticipantAdminWithChatId:(NSNumber *)chatId userId:(NSNumber *)userId isAdmin:(Api73_Bool *)isAdmin version:(NSNumber *)version;
++ (Api73_Update_updateNewStickerSet *)updateNewStickerSetWithStickerset:(Api73_messages_StickerSet *)stickerset;
++ (Api73_Update_updateStickerSets *)updateStickerSets;
++ (Api73_Update_updateSavedGifs *)updateSavedGifs;
++ (Api73_Update_updateEditChannelMessage *)updateEditChannelMessageWithMessage:(Api73_Message *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateChannelPinnedMessage *)updateChannelPinnedMessageWithChannelId:(NSNumber *)channelId pid:(NSNumber *)pid;
++ (Api73_Update_updateChannelTooLong *)updateChannelTooLongWithFlags:(NSNumber *)flags channelId:(NSNumber *)channelId pts:(NSNumber *)pts;
++ (Api73_Update_updateEditMessage *)updateEditMessageWithMessage:(Api73_Message *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateBotInlineQuery *)updateBotInlineQueryWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId userId:(NSNumber *)userId query:(NSString *)query geo:(Api73_GeoPoint *)geo offset:(NSString *)offset;
++ (Api73_Update_updateBotInlineSend *)updateBotInlineSendWithFlags:(NSNumber *)flags userId:(NSNumber *)userId query:(NSString *)query geo:(Api73_GeoPoint *)geo pid:(NSString *)pid msgId:(Api73_InputBotInlineMessageID *)msgId;
++ (Api73_Update_updateReadChannelOutbox *)updateReadChannelOutboxWithChannelId:(NSNumber *)channelId maxId:(NSNumber *)maxId;
++ (Api73_Update_updateDraftMessage *)updateDraftMessageWithPeer:(Api73_Peer *)peer draft:(Api73_DraftMessage *)draft;
++ (Api73_Update_updateReadFeaturedStickers *)updateReadFeaturedStickers;
++ (Api73_Update_updateRecentStickers *)updateRecentStickers;
++ (Api73_Update_updateConfig *)updateConfig;
++ (Api73_Update_updatePtsChanged *)updatePtsChanged;
++ (Api73_Update_updateStickerSetsOrder *)updateStickerSetsOrderWithFlags:(NSNumber *)flags order:(NSArray *)order;
++ (Api73_Update_updateBotCallbackQuery *)updateBotCallbackQueryWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId userId:(NSNumber *)userId peer:(Api73_Peer *)peer msgId:(NSNumber *)msgId chatInstance:(NSNumber *)chatInstance data:(NSData *)data gameShortName:(NSString *)gameShortName;
++ (Api73_Update_updateInlineBotCallbackQuery *)updateInlineBotCallbackQueryWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId userId:(NSNumber *)userId msgId:(Api73_InputBotInlineMessageID *)msgId chatInstance:(NSNumber *)chatInstance data:(NSData *)data gameShortName:(NSString *)gameShortName;
++ (Api73_Update_updateChannelWebPage *)updateChannelWebPageWithChannelId:(NSNumber *)channelId webpage:(Api73_WebPage *)webpage pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
++ (Api73_Update_updateDialogPinned *)updateDialogPinnedWithFlags:(NSNumber *)flags peer:(Api73_Peer *)peer;
++ (Api73_Update_updatePinnedDialogs *)updatePinnedDialogsWithFlags:(NSNumber *)flags order:(NSArray *)order;
++ (Api73_Update_updateBotWebhookJSON *)updateBotWebhookJSONWithData:(Api73_DataJSON *)data;
++ (Api73_Update_updateBotWebhookJSONQuery *)updateBotWebhookJSONQueryWithQueryId:(NSNumber *)queryId data:(Api73_DataJSON *)data timeout:(NSNumber *)timeout;
++ (Api73_Update_updateBotShippingQuery *)updateBotShippingQueryWithQueryId:(NSNumber *)queryId userId:(NSNumber *)userId payload:(NSData *)payload shippingAddress:(Api73_PostAddress *)shippingAddress;
++ (Api73_Update_updateBotPrecheckoutQuery *)updateBotPrecheckoutQueryWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId userId:(NSNumber *)userId payload:(NSData *)payload info:(Api73_PaymentRequestedInfo *)info shippingOptionId:(NSString *)shippingOptionId currency:(NSString *)currency totalAmount:(NSNumber *)totalAmount;
++ (Api73_Update_updatePhoneCall *)updatePhoneCallWithPhoneCall:(Api73_PhoneCall *)phoneCall;
++ (Api73_Update_updateLangPackTooLong *)updateLangPackTooLong;
++ (Api73_Update_updateLangPack *)updateLangPackWithDifference:(Api73_LangPackDifference *)difference;
++ (Api73_Update_updateFavedStickers *)updateFavedStickers;
++ (Api73_Update_updateChannelReadMessagesContents *)updateChannelReadMessagesContentsWithChannelId:(NSNumber *)channelId messages:(NSArray *)messages;
++ (Api73_Update_updateContactsReset *)updateContactsReset;
++ (Api73_Update_updateChannelAvailableMessages *)updateChannelAvailableMessagesWithChannelId:(NSNumber *)channelId availableMinId:(NSNumber *)availableMinId;
+
+@end
+
+@interface Api73_Update_updateMessageID : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * randomId;
+
+@end
+
+@interface Api73_Update_updateRestoreMessages : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+
+@end
+
+@interface Api73_Update_updateChatParticipants : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_ChatParticipants * participants;
+
+@end
+
+@interface Api73_Update_updateUserStatus : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_UserStatus * status;
+
+@end
+
+@interface Api73_Update_updateContactRegistered : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_Update_updateContactLocated : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * contacts;
+
+@end
+
+@interface Api73_Update_updateActivation : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_Update_updateNewAuthorization : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * authKeyId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSString * device;
+@property (nonatomic, strong, readonly) NSString * location;
+
+@end
+
+@interface Api73_Update_updatePhoneCallRequested : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_PhoneCall * phoneCall;
+
+@end
+
+@interface Api73_Update_updatePhoneCallConfirmed : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSData * aOrB;
+@property (nonatomic, strong, readonly) Api73_PhoneConnection * connection;
+
+@end
+
+@interface Api73_Update_updatePhoneCallDeclined : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
+@end
+
+@interface Api73_Update_updateUserPhoto : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_UserProfilePhoto * photo;
+@property (nonatomic, strong, readonly) Api73_Bool * previous;
+
+@end
+
+@interface Api73_Update_updateNewEncryptedMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_EncryptedMessage * message;
+@property (nonatomic, strong, readonly) NSNumber * qts;
+
+@end
+
+@interface Api73_Update_updateEncryptedChatTyping : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
+@end
+
+@interface Api73_Update_updateEncryption : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_EncryptedChat * chat;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_Update_updateEncryptedMessagesRead : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * maxDate;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_Update_updateChatParticipantDelete : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+@interface Api73_Update_updateDcOptions : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * dcOptions;
+
+@end
+
+@interface Api73_Update_updateUserBlocked : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_Bool * blocked;
+
+@end
+
+@interface Api73_Update_updateNotifySettings : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_NotifyPeer * peer;
+@property (nonatomic, strong, readonly) Api73_PeerNotifySettings * notifySettings;
+
+@end
+
+@interface Api73_Update_updateUserTyping : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_SendMessageAction * action;
+
+@end
+
+@interface Api73_Update_updateChatUserTyping : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_SendMessageAction * action;
+
+@end
+
+@interface Api73_Update_updateUserName : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+@property (nonatomic, strong, readonly) NSString * username;
+
+@end
+
+@interface Api73_Update_updateServiceNotification : Api73_Update
+
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) Api73_MessageMedia * media;
+@property (nonatomic, strong, readonly) Api73_Bool * popup;
+
+@end
+
+@interface Api73_Update_updatePrivacy : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_PrivacyKey * key;
+@property (nonatomic, strong, readonly) NSArray * rules;
+
+@end
+
+@interface Api73_Update_updateUserPhone : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * phone;
+
+@end
+
+@interface Api73_Update_updateNewMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateReadMessages : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateDeleteMessages : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateReadHistoryInbox : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateReadHistoryOutbox : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateContactLink : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_ContactLink * myLink;
+@property (nonatomic, strong, readonly) Api73_ContactLink * foreignLink;
+
+@end
+
+@interface Api73_Update_updateReadMessagesContents : Api73_Update
+
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateChatParticipantAdd : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+@interface Api73_Update_updateWebPage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_WebPage * webpage;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateChannel : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+
+@end
+
+@interface Api73_Update_updateChannelGroup : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) Api73_MessageGroup * group;
+
+@end
+
+@interface Api73_Update_updateNewChannelMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateReadChannelInbox : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+
+@end
+
+@interface Api73_Update_updateDeleteChannelMessages : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateChannelMessageViews : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * views;
+
+@end
+
+@interface Api73_Update_updateChatAdmins : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) Api73_Bool * enabled;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+@interface Api73_Update_updateChatParticipantAdmin : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_Bool * isAdmin;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+@interface Api73_Update_updateNewStickerSet : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_messages_StickerSet * stickerset;
+
+@end
+
+@interface Api73_Update_updateStickerSets : Api73_Update
+
+@end
+
+@interface Api73_Update_updateSavedGifs : Api73_Update
+
+@end
+
+@interface Api73_Update_updateEditChannelMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateChannelPinnedMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
+@end
+
+@interface Api73_Update_updateChannelTooLong : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+
+@end
+
+@interface Api73_Update_updateEditMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateBotInlineQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * query;
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) NSString * offset;
+
+@end
+
+@interface Api73_Update_updateBotInlineSend : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * query;
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) Api73_InputBotInlineMessageID * msgId;
+
+@end
+
+@interface Api73_Update_updateReadChannelOutbox : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+
+@end
+
+@interface Api73_Update_updateDraftMessage : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) Api73_DraftMessage * draft;
+
+@end
+
+@interface Api73_Update_updateReadFeaturedStickers : Api73_Update
+
+@end
+
+@interface Api73_Update_updateRecentStickers : Api73_Update
+
+@end
+
+@interface Api73_Update_updateConfig : Api73_Update
+
+@end
+
+@interface Api73_Update_updatePtsChanged : Api73_Update
+
+@end
+
+@interface Api73_Update_updateStickerSetsOrder : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSArray * order;
+
+@end
+
+@interface Api73_Update_updateBotCallbackQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSNumber * msgId;
+@property (nonatomic, strong, readonly) NSNumber * chatInstance;
+@property (nonatomic, strong, readonly) NSData * data;
+@property (nonatomic, strong, readonly) NSString * gameShortName;
+
+@end
+
+@interface Api73_Update_updateInlineBotCallbackQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_InputBotInlineMessageID * msgId;
+@property (nonatomic, strong, readonly) NSNumber * chatInstance;
+@property (nonatomic, strong, readonly) NSData * data;
+@property (nonatomic, strong, readonly) NSString * gameShortName;
+
+@end
+
+@interface Api73_Update_updateChannelWebPage : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) Api73_WebPage * webpage;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
+@end
+
+@interface Api73_Update_updateDialogPinned : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+
+@end
+
+@interface Api73_Update_updatePinnedDialogs : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSArray * order;
+
+@end
+
+@interface Api73_Update_updateBotWebhookJSON : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_DataJSON * data;
+
+@end
+
+@interface Api73_Update_updateBotWebhookJSONQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) Api73_DataJSON * data;
+@property (nonatomic, strong, readonly) NSNumber * timeout;
+
+@end
+
+@interface Api73_Update_updateBotShippingQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSData * payload;
+@property (nonatomic, strong, readonly) Api73_PostAddress * shippingAddress;
+
+@end
+
+@interface Api73_Update_updateBotPrecheckoutQuery : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSData * payload;
+@property (nonatomic, strong, readonly) Api73_PaymentRequestedInfo * info;
+@property (nonatomic, strong, readonly) NSString * shippingOptionId;
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSNumber * totalAmount;
+
+@end
+
+@interface Api73_Update_updatePhoneCall : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_PhoneCall * phoneCall;
+
+@end
+
+@interface Api73_Update_updateLangPackTooLong : Api73_Update
+
+@end
+
+@interface Api73_Update_updateLangPack : Api73_Update
+
+@property (nonatomic, strong, readonly) Api73_LangPackDifference * difference;
+
+@end
+
+@interface Api73_Update_updateFavedStickers : Api73_Update
+
+@end
+
+@interface Api73_Update_updateChannelReadMessagesContents : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSArray * messages;
+
+@end
+
+@interface Api73_Update_updateContactsReset : Api73_Update
+
+@end
+
+@interface Api73_Update_updateChannelAvailableMessages : Api73_Update
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * availableMinId;
+
+@end
+
+
+@interface Api73_PopularContact : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * clientId;
+@property (nonatomic, strong, readonly) NSNumber * importers;
+
++ (Api73_PopularContact_popularContact *)popularContactWithClientId:(NSNumber *)clientId importers:(NSNumber *)importers;
+
+@end
+
+@interface Api73_PopularContact_popularContact : Api73_PopularContact
+
+@end
+
+
+@interface Api73_ChannelParticipant : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
++ (Api73_ChannelParticipant_channelParticipant *)channelParticipantWithUserId:(NSNumber *)userId date:(NSNumber *)date;
++ (Api73_ChannelParticipant_channelParticipantSelf *)channelParticipantSelfWithUserId:(NSNumber *)userId inviterId:(NSNumber *)inviterId date:(NSNumber *)date;
++ (Api73_ChannelParticipant_channelParticipantCreator *)channelParticipantCreatorWithUserId:(NSNumber *)userId;
++ (Api73_ChannelParticipant_channelParticipantAdmin *)channelParticipantAdminWithFlags:(NSNumber *)flags userId:(NSNumber *)userId inviterId:(NSNumber *)inviterId promotedBy:(NSNumber *)promotedBy date:(NSNumber *)date adminRights:(Api73_ChannelAdminRights *)adminRights;
++ (Api73_ChannelParticipant_channelParticipantBanned *)channelParticipantBannedWithFlags:(NSNumber *)flags userId:(NSNumber *)userId kickedBy:(NSNumber *)kickedBy date:(NSNumber *)date bannedRights:(Api73_ChannelBannedRights *)bannedRights;
+
+@end
+
+@interface Api73_ChannelParticipant_channelParticipant : Api73_ChannelParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_ChannelParticipant_channelParticipantSelf : Api73_ChannelParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_ChannelParticipant_channelParticipantCreator : Api73_ChannelParticipant
+
+@end
+
+@interface Api73_ChannelParticipant_channelParticipantAdmin : Api73_ChannelParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+@property (nonatomic, strong, readonly) NSNumber * promotedBy;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_ChannelAdminRights * adminRights;
+
+@end
+
+@interface Api73_ChannelParticipant_channelParticipantBanned : Api73_ChannelParticipant
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * kickedBy;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_ChannelBannedRights * bannedRights;
+
+@end
+
+
+@interface Api73_contacts_Blocked : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * blocked;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_Blocked_contacts_blocked *)contacts_blockedWithBlocked:(NSArray *)blocked users:(NSArray *)users;
++ (Api73_contacts_Blocked_contacts_blockedSlice *)contacts_blockedSliceWithCount:(NSNumber *)count blocked:(NSArray *)blocked users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Blocked_contacts_blocked : Api73_contacts_Blocked
+
+@end
+
+@interface Api73_contacts_Blocked_contacts_blockedSlice : Api73_contacts_Blocked
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_Error : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * code;
+
++ (Api73_Error_error *)errorWithCode:(NSNumber *)code text:(NSString *)text;
++ (Api73_Error_richError *)richErrorWithCode:(NSNumber *)code type:(NSString *)type nDescription:(NSString *)nDescription debug:(NSString *)debug requestParams:(NSString *)requestParams;
+
+@end
+
+@interface Api73_Error_error : Api73_Error
+
+@property (nonatomic, strong, readonly) NSString * text;
+
+@end
+
+@interface Api73_Error_richError : Api73_Error
+
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * nDescription;
+@property (nonatomic, strong, readonly) NSString * debug;
+@property (nonatomic, strong, readonly) NSString * requestParams;
+
+@end
+
+
+@interface Api73_ContactLocated : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * distance;
+
++ (Api73_ContactLocated_contactLocated *)contactLocatedWithUserId:(NSNumber *)userId location:(Api73_GeoPoint *)location date:(NSNumber *)date distance:(NSNumber *)distance;
++ (Api73_ContactLocated_contactLocatedPreview *)contactLocatedPreviewWithPhash:(NSString *)phash hidden:(Api73_Bool *)hidden date:(NSNumber *)date distance:(NSNumber *)distance;
+
+@end
+
+@interface Api73_ContactLocated_contactLocated : Api73_ContactLocated
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_GeoPoint * location;
+
+@end
+
+@interface Api73_ContactLocated_contactLocatedPreview : Api73_ContactLocated
+
+@property (nonatomic, strong, readonly) NSString * phash;
+@property (nonatomic, strong, readonly) Api73_Bool * hidden;
+
+@end
+
+
+@interface Api73_KeyboardButton : NSObject
+
+@property (nonatomic, strong, readonly) NSString * text;
+
++ (Api73_KeyboardButton_keyboardButton *)keyboardButtonWithText:(NSString *)text;
++ (Api73_KeyboardButton_keyboardButtonUrl *)keyboardButtonUrlWithText:(NSString *)text url:(NSString *)url;
++ (Api73_KeyboardButton_keyboardButtonCallback *)keyboardButtonCallbackWithText:(NSString *)text data:(NSData *)data;
++ (Api73_KeyboardButton_keyboardButtonRequestPhone *)keyboardButtonRequestPhoneWithText:(NSString *)text;
++ (Api73_KeyboardButton_keyboardButtonRequestGeoLocation *)keyboardButtonRequestGeoLocationWithText:(NSString *)text;
++ (Api73_KeyboardButton_keyboardButtonSwitchInline *)keyboardButtonSwitchInlineWithFlags:(NSNumber *)flags text:(NSString *)text query:(NSString *)query;
++ (Api73_KeyboardButton_keyboardButtonGame *)keyboardButtonGameWithText:(NSString *)text;
++ (Api73_KeyboardButton_keyboardButtonBuy *)keyboardButtonBuyWithText:(NSString *)text;
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButton : Api73_KeyboardButton
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonUrl : Api73_KeyboardButton
+
+@property (nonatomic, strong, readonly) NSString * url;
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonCallback : Api73_KeyboardButton
+
+@property (nonatomic, strong, readonly) NSData * data;
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonRequestPhone : Api73_KeyboardButton
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonRequestGeoLocation : Api73_KeyboardButton
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonSwitchInline : Api73_KeyboardButton
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * query;
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonGame : Api73_KeyboardButton
+
+@end
+
+@interface Api73_KeyboardButton_keyboardButtonBuy : Api73_KeyboardButton
+
+@end
+
+
+@interface Api73_ContactStatus : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_UserStatus * status;
+
++ (Api73_ContactStatus_contactStatus *)contactStatusWithUserId:(NSNumber *)userId status:(Api73_UserStatus *)status;
+
+@end
+
+@interface Api73_ContactStatus_contactStatus : Api73_ContactStatus
+
+@end
+
+
+@interface Api73_PhotoSize : NSObject
+
+@property (nonatomic, strong, readonly) NSString * type;
+
++ (Api73_PhotoSize_photoSizeEmpty *)photoSizeEmptyWithType:(NSString *)type;
++ (Api73_PhotoSize_photoSize *)photoSizeWithType:(NSString *)type location:(Api73_FileLocation *)location w:(NSNumber *)w h:(NSNumber *)h size:(NSNumber *)size;
++ (Api73_PhotoSize_photoCachedSize *)photoCachedSizeWithType:(NSString *)type location:(Api73_FileLocation *)location w:(NSNumber *)w h:(NSNumber *)h bytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_PhotoSize_photoSizeEmpty : Api73_PhotoSize
+
+@end
+
+@interface Api73_PhotoSize_photoSize : Api73_PhotoSize
+
+@property (nonatomic, strong, readonly) Api73_FileLocation * location;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+@property (nonatomic, strong, readonly) NSNumber * size;
+
+@end
+
+@interface Api73_PhotoSize_photoCachedSize : Api73_PhotoSize
+
+@property (nonatomic, strong, readonly) Api73_FileLocation * location;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+@property (nonatomic, strong, readonly) NSData * bytes;
+
+@end
+
+
+@interface Api73_messages_Stickers : NSObject
+
++ (Api73_messages_Stickers_messages_stickersNotModified *)messages_stickersNotModified;
++ (Api73_messages_Stickers_messages_stickers *)messages_stickersWithPhash:(NSString *)phash stickers:(NSArray *)stickers;
+
+@end
+
+@interface Api73_messages_Stickers_messages_stickersNotModified : Api73_messages_Stickers
+
+@end
+
+@interface Api73_messages_Stickers_messages_stickers : Api73_messages_Stickers
+
+@property (nonatomic, strong, readonly) NSString * phash;
+@property (nonatomic, strong, readonly) NSArray * stickers;
+
+@end
+
+
+@interface Api73_GlobalPrivacySettings : NSObject
+
+@property (nonatomic, strong, readonly) Api73_Bool * noSuggestions;
+@property (nonatomic, strong, readonly) Api73_Bool * hideContacts;
+@property (nonatomic, strong, readonly) Api73_Bool * hideLocated;
+@property (nonatomic, strong, readonly) Api73_Bool * hideLastVisit;
+
++ (Api73_GlobalPrivacySettings_globalPrivacySettings *)globalPrivacySettingsWithNoSuggestions:(Api73_Bool *)noSuggestions hideContacts:(Api73_Bool *)hideContacts hideLocated:(Api73_Bool *)hideLocated hideLastVisit:(Api73_Bool *)hideLastVisit;
+
+@end
+
+@interface Api73_GlobalPrivacySettings_globalPrivacySettings : Api73_GlobalPrivacySettings
+
+@end
+
+
+@interface Api73_InlineBotSwitchPM : NSObject
+
+@property (nonatomic, strong, readonly) NSString * text;
+@property (nonatomic, strong, readonly) NSString * startParam;
+
++ (Api73_InlineBotSwitchPM_inlineBotSwitchPM *)inlineBotSwitchPMWithText:(NSString *)text startParam:(NSString *)startParam;
+
+@end
+
+@interface Api73_InlineBotSwitchPM_inlineBotSwitchPM : Api73_InlineBotSwitchPM
+
+@end
+
+
+@interface Api73_messages_FoundGifs : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * nextOffset;
+@property (nonatomic, strong, readonly) NSArray * results;
+
++ (Api73_messages_FoundGifs_messages_foundGifs *)messages_foundGifsWithNextOffset:(NSNumber *)nextOffset results:(NSArray *)results;
+
+@end
+
+@interface Api73_messages_FoundGifs_messages_foundGifs : Api73_messages_FoundGifs
+
+@end
+
+
+@interface Api73_FileLocation : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * volumeId;
+@property (nonatomic, strong, readonly) NSNumber * localId;
+@property (nonatomic, strong, readonly) NSNumber * secret;
+
++ (Api73_FileLocation_fileLocationUnavailable *)fileLocationUnavailableWithVolumeId:(NSNumber *)volumeId localId:(NSNumber *)localId secret:(NSNumber *)secret;
++ (Api73_FileLocation_fileLocation *)fileLocationWithDcId:(NSNumber *)dcId volumeId:(NSNumber *)volumeId localId:(NSNumber *)localId secret:(NSNumber *)secret;
+
+@end
+
+@interface Api73_FileLocation_fileLocationUnavailable : Api73_FileLocation
+
+@end
+
+@interface Api73_FileLocation_fileLocation : Api73_FileLocation
+
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+
+@end
+
+
+@interface Api73_InputNotifyPeer : NSObject
+
++ (Api73_InputNotifyPeer_inputNotifyPeer *)inputNotifyPeerWithPeer:(Api73_InputPeer *)peer;
++ (Api73_InputNotifyPeer_inputNotifyUsers *)inputNotifyUsers;
++ (Api73_InputNotifyPeer_inputNotifyChats *)inputNotifyChats;
++ (Api73_InputNotifyPeer_inputNotifyAll *)inputNotifyAll;
+
+@end
+
+@interface Api73_InputNotifyPeer_inputNotifyPeer : Api73_InputNotifyPeer
+
+@property (nonatomic, strong, readonly) Api73_InputPeer * peer;
+
+@end
+
+@interface Api73_InputNotifyPeer_inputNotifyUsers : Api73_InputNotifyPeer
+
+@end
+
+@interface Api73_InputNotifyPeer_inputNotifyChats : Api73_InputNotifyPeer
+
+@end
+
+@interface Api73_InputNotifyPeer_inputNotifyAll : Api73_InputNotifyPeer
+
+@end
+
+
+@interface Api73_EncryptedMessage : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * randomId;
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSData * bytes;
+
++ (Api73_EncryptedMessage_encryptedMessage *)encryptedMessageWithRandomId:(NSNumber *)randomId chatId:(NSNumber *)chatId date:(NSNumber *)date bytes:(NSData *)bytes file:(Api73_EncryptedFile *)file;
++ (Api73_EncryptedMessage_encryptedMessageService *)encryptedMessageServiceWithRandomId:(NSNumber *)randomId chatId:(NSNumber *)chatId date:(NSNumber *)date bytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_EncryptedMessage_encryptedMessage : Api73_EncryptedMessage
+
+@property (nonatomic, strong, readonly) Api73_EncryptedFile * file;
+
+@end
+
+@interface Api73_EncryptedMessage_encryptedMessageService : Api73_EncryptedMessage
+
+@end
+
+
+@interface Api73_ChannelParticipantsFilter : NSObject
+
++ (Api73_ChannelParticipantsFilter_channelParticipantsRecent *)channelParticipantsRecent;
++ (Api73_ChannelParticipantsFilter_channelParticipantsAdmins *)channelParticipantsAdmins;
++ (Api73_ChannelParticipantsFilter_channelParticipantsBots *)channelParticipantsBots;
++ (Api73_ChannelParticipantsFilter_channelParticipantsBanned *)channelParticipantsBannedWithQ:(NSString *)q;
++ (Api73_ChannelParticipantsFilter_channelParticipantsSearch *)channelParticipantsSearchWithQ:(NSString *)q;
++ (Api73_ChannelParticipantsFilter_channelParticipantsKicked *)channelParticipantsKickedWithQ:(NSString *)q;
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsRecent : Api73_ChannelParticipantsFilter
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsAdmins : Api73_ChannelParticipantsFilter
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsBots : Api73_ChannelParticipantsFilter
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsBanned : Api73_ChannelParticipantsFilter
+
+@property (nonatomic, strong, readonly) NSString * q;
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsSearch : Api73_ChannelParticipantsFilter
+
+@property (nonatomic, strong, readonly) NSString * q;
+
+@end
+
+@interface Api73_ChannelParticipantsFilter_channelParticipantsKicked : Api73_ChannelParticipantsFilter
+
+@property (nonatomic, strong, readonly) NSString * q;
+
+@end
+
+
+@interface Api73_WebPage : NSObject
+
++ (Api73_WebPage_webPageEmpty *)webPageEmptyWithPid:(NSNumber *)pid;
++ (Api73_WebPage_webPagePending *)webPagePendingWithPid:(NSNumber *)pid date:(NSNumber *)date;
++ (Api73_WebPage_webPageNotModified *)webPageNotModified;
++ (Api73_WebPage_webPage *)webPageWithFlags:(NSNumber *)flags pid:(NSNumber *)pid url:(NSString *)url displayUrl:(NSString *)displayUrl phash:(NSNumber *)phash type:(NSString *)type siteName:(NSString *)siteName title:(NSString *)title pdescription:(NSString *)pdescription photo:(Api73_Photo *)photo embedUrl:(NSString *)embedUrl embedType:(NSString *)embedType embedWidth:(NSNumber *)embedWidth embedHeight:(NSNumber *)embedHeight duration:(NSNumber *)duration author:(NSString *)author document:(Api73_Document *)document cachedPage:(Api73_Page *)cachedPage;
+
+@end
+
+@interface Api73_WebPage_webPageEmpty : Api73_WebPage
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
+@end
+
+@interface Api73_WebPage_webPagePending : Api73_WebPage
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_WebPage_webPageNotModified : Api73_WebPage
+
+@end
+
+@interface Api73_WebPage_webPage : Api73_WebPage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * displayUrl;
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * siteName;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) NSString * embedUrl;
+@property (nonatomic, strong, readonly) NSString * embedType;
+@property (nonatomic, strong, readonly) NSNumber * embedWidth;
+@property (nonatomic, strong, readonly) NSNumber * embedHeight;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+@property (nonatomic, strong, readonly) NSString * author;
+@property (nonatomic, strong, readonly) Api73_Document * document;
+@property (nonatomic, strong, readonly) Api73_Page * cachedPage;
+
+@end
+
+
+@interface Api73_InputBotInlineMessage : NSObject
+
+@property (nonatomic, strong, readonly) Api73_ReplyMarkup * replyMarkup;
+
++ (Api73_InputBotInlineMessage_inputBotInlineMessageMediaAuto *)inputBotInlineMessageMediaAutoWithFlags:(NSNumber *)flags caption:(NSString *)caption replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_InputBotInlineMessage_inputBotInlineMessageText *)inputBotInlineMessageTextWithFlags:(NSNumber *)flags message:(NSString *)message entities:(NSArray *)entities replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_InputBotInlineMessage_inputBotInlineMessageMediaGeo *)inputBotInlineMessageMediaGeoWithFlags:(NSNumber *)flags geoPoint:(Api73_InputGeoPoint *)geoPoint replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_InputBotInlineMessage_inputBotInlineMessageMediaVenue *)inputBotInlineMessageMediaVenueWithFlags:(NSNumber *)flags geoPoint:(Api73_InputGeoPoint *)geoPoint title:(NSString *)title address:(NSString *)address provider:(NSString *)provider venueId:(NSString *)venueId replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_InputBotInlineMessage_inputBotInlineMessageMediaContact *)inputBotInlineMessageMediaContactWithFlags:(NSNumber *)flags phoneNumber:(NSString *)phoneNumber firstName:(NSString *)firstName lastName:(NSString *)lastName replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_InputBotInlineMessage_inputBotInlineMessageGame *)inputBotInlineMessageGameWithReplyMarkup:(Api73_ReplyMarkup *)replyMarkup;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageMediaAuto : Api73_InputBotInlineMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageText : Api73_InputBotInlineMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageMediaGeo : Api73_InputBotInlineMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputGeoPoint * geoPoint;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageMediaVenue : Api73_InputBotInlineMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputGeoPoint * geoPoint;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * address;
+@property (nonatomic, strong, readonly) NSString * provider;
+@property (nonatomic, strong, readonly) NSString * venueId;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageMediaContact : Api73_InputBotInlineMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+
+@end
+
+@interface Api73_InputBotInlineMessage_inputBotInlineMessageGame : Api73_InputBotInlineMessage
+
+@end
+
+
+@interface Api73_KeyboardButtonRow : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * buttons;
+
++ (Api73_KeyboardButtonRow_keyboardButtonRow *)keyboardButtonRowWithButtons:(NSArray *)buttons;
+
+@end
+
+@interface Api73_KeyboardButtonRow_keyboardButtonRow : Api73_KeyboardButtonRow
+
+@end
+
+
+@interface Api73_StickerSet : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * shortName;
+@property (nonatomic, strong, readonly) NSNumber * count;
+@property (nonatomic, strong, readonly) NSNumber * phash;
+
++ (Api73_StickerSet_stickerSet *)stickerSetWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash title:(NSString *)title shortName:(NSString *)shortName count:(NSNumber *)count phash:(NSNumber *)phash;
+
+@end
+
+@interface Api73_StickerSet_stickerSet : Api73_StickerSet
+
+@end
+
+
+@interface Api73_photos_Photo : NSObject
+
++ (Api73_photos_Photo_photos_photo *)photos_photoWithPhoto:(Api73_Photo *)photo users:(NSArray *)users;
++ (Api73_photos_Photo_photos_uploadProfilePhoto *)photos_uploadProfilePhotoWithFile:(Api73_InputFile *)file;
+
+@end
+
+@interface Api73_photos_Photo_photos_photo : Api73_photos_Photo
+
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_photos_Photo_photos_uploadProfilePhoto : Api73_photos_Photo
+
+@property (nonatomic, strong, readonly) Api73_InputFile * file;
+
+@end
+
+
+@interface Api73_InputContact : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * clientId;
+@property (nonatomic, strong, readonly) NSString * phone;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+
++ (Api73_InputContact_inputPhoneContact *)inputPhoneContactWithClientId:(NSNumber *)clientId phone:(NSString *)phone firstName:(NSString *)firstName lastName:(NSString *)lastName;
+
+@end
+
+@interface Api73_InputContact_inputPhoneContact : Api73_InputContact
+
+@end
+
+
+@interface Api73_TopPeerCategory : NSObject
+
++ (Api73_TopPeerCategory_topPeerCategoryBotsPM *)topPeerCategoryBotsPM;
++ (Api73_TopPeerCategory_topPeerCategoryBotsInline *)topPeerCategoryBotsInline;
++ (Api73_TopPeerCategory_topPeerCategoryCorrespondents *)topPeerCategoryCorrespondents;
++ (Api73_TopPeerCategory_topPeerCategoryGroups *)topPeerCategoryGroups;
++ (Api73_TopPeerCategory_topPeerCategoryChannels *)topPeerCategoryChannels;
++ (Api73_TopPeerCategory_topPeerCategoryPhoneCalls *)topPeerCategoryPhoneCalls;
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryBotsPM : Api73_TopPeerCategory
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryBotsInline : Api73_TopPeerCategory
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryCorrespondents : Api73_TopPeerCategory
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryGroups : Api73_TopPeerCategory
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryChannels : Api73_TopPeerCategory
+
+@end
+
+@interface Api73_TopPeerCategory_topPeerCategoryPhoneCalls : Api73_TopPeerCategory
+
+@end
+
+
+@interface Api73_contacts_Contacts : NSObject
+
++ (Api73_contacts_Contacts_contacts_contactsNotModified *)contacts_contactsNotModified;
++ (Api73_contacts_Contacts_contacts_contacts *)contacts_contactsWithContacts:(NSArray *)contacts savedCount:(NSNumber *)savedCount users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Contacts_contacts_contactsNotModified : Api73_contacts_Contacts
+
+@end
+
+@interface Api73_contacts_Contacts_contacts_contacts : Api73_contacts_Contacts
+
+@property (nonatomic, strong, readonly) NSArray * contacts;
+@property (nonatomic, strong, readonly) NSNumber * savedCount;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_ChannelMessagesFilter : NSObject
+
++ (Api73_ChannelMessagesFilter_channelMessagesFilterEmpty *)channelMessagesFilterEmpty;
++ (Api73_ChannelMessagesFilter_channelMessagesFilterCollapsed *)channelMessagesFilterCollapsed;
++ (Api73_ChannelMessagesFilter_channelMessagesFilter *)channelMessagesFilterWithFlags:(NSNumber *)flags ranges:(NSArray *)ranges;
+
+@end
+
+@interface Api73_ChannelMessagesFilter_channelMessagesFilterEmpty : Api73_ChannelMessagesFilter
+
+@end
+
+@interface Api73_ChannelMessagesFilter_channelMessagesFilterCollapsed : Api73_ChannelMessagesFilter
+
+@end
+
+@interface Api73_ChannelMessagesFilter_channelMessagesFilter : Api73_ChannelMessagesFilter
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSArray * ranges;
+
+@end
+
+
+@interface Api73_auth_PasswordRecovery : NSObject
+
+@property (nonatomic, strong, readonly) NSString * emailPattern;
+
++ (Api73_auth_PasswordRecovery_auth_passwordRecovery *)auth_passwordRecoveryWithEmailPattern:(NSString *)emailPattern;
+
+@end
+
+@interface Api73_auth_PasswordRecovery_auth_passwordRecovery : Api73_auth_PasswordRecovery
+
+@end
+
+
+@interface Api73_messages_BotResults : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSString * nextOffset;
+@property (nonatomic, strong, readonly) Api73_InlineBotSwitchPM * switchPm;
+@property (nonatomic, strong, readonly) NSArray * results;
+@property (nonatomic, strong, readonly) NSNumber * cacheTime;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_BotResults_messages_botResults *)messages_botResultsWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId nextOffset:(NSString *)nextOffset switchPm:(Api73_InlineBotSwitchPM *)switchPm results:(NSArray *)results cacheTime:(NSNumber *)cacheTime users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_BotResults_messages_botResults : Api73_messages_BotResults
+
+@end
+
+
+@interface Api73_InputDocument : NSObject
+
++ (Api73_InputDocument_inputDocumentEmpty *)inputDocumentEmpty;
++ (Api73_InputDocument_inputDocument *)inputDocumentWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputDocument_inputDocumentEmpty : Api73_InputDocument
+
+@end
+
+@interface Api73_InputDocument_inputDocument : Api73_InputDocument
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+
+@interface Api73_contacts_ResolvedPeer : NSObject
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_ResolvedPeer_contacts_resolvedPeer *)contacts_resolvedPeerWithPeer:(Api73_Peer *)peer chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_ResolvedPeer_contacts_resolvedPeer : Api73_contacts_ResolvedPeer
+
+@end
+
+
+@interface Api73_InputMedia : NSObject
+
++ (Api73_InputMedia_inputMediaEmpty *)inputMediaEmpty;
++ (Api73_InputMedia_inputMediaGeoPoint *)inputMediaGeoPointWithGeoPoint:(Api73_InputGeoPoint *)geoPoint;
++ (Api73_InputMedia_inputMediaContact *)inputMediaContactWithPhoneNumber:(NSString *)phoneNumber firstName:(NSString *)firstName lastName:(NSString *)lastName;
++ (Api73_InputMedia_inputMediaPhoto *)inputMediaPhotoWithPid:(Api73_InputPhoto *)pid caption:(NSString *)caption;
++ (Api73_InputMedia_inputMediaGifExternal *)inputMediaGifExternalWithUrl:(NSString *)url q:(NSString *)q;
++ (Api73_InputMedia_inputMediaDocument *)inputMediaDocumentWithPid:(Api73_InputDocument *)pid caption:(NSString *)caption;
++ (Api73_InputMedia_inputMediaPhotoExternal *)inputMediaPhotoExternalWithUrl:(NSString *)url caption:(NSString *)caption;
++ (Api73_InputMedia_inputMediaDocumentExternal *)inputMediaDocumentExternalWithUrl:(NSString *)url caption:(NSString *)caption;
++ (Api73_InputMedia_inputMediaGame *)inputMediaGameWithPid:(Api73_InputGame *)pid;
++ (Api73_InputMedia_inputMediaInvoice *)inputMediaInvoiceWithFlags:(NSNumber *)flags title:(NSString *)title pdescription:(NSString *)pdescription photo:(Api73_InputWebDocument *)photo invoice:(Api73_Invoice *)invoice payload:(NSData *)payload provider:(NSString *)provider startParam:(NSString *)startParam;
++ (Api73_InputMedia_inputMediaUploadedPhoto *)inputMediaUploadedPhotoWithFlags:(NSNumber *)flags file:(Api73_InputFile *)file caption:(NSString *)caption stickers:(NSArray *)stickers ttlSeconds:(NSNumber *)ttlSeconds;
++ (Api73_InputMedia_inputMediaUploadedDocument *)inputMediaUploadedDocumentWithFlags:(NSNumber *)flags file:(Api73_InputFile *)file thumb:(Api73_InputFile *)thumb mimeType:(NSString *)mimeType attributes:(NSArray *)attributes caption:(NSString *)caption stickers:(NSArray *)stickers ttlSeconds:(NSNumber *)ttlSeconds;
++ (Api73_InputMedia_inputMediaGeoLive *)inputMediaGeoLiveWithGeoPoint:(Api73_InputGeoPoint *)geoPoint period:(NSNumber *)period;
++ (Api73_InputMedia_inputMediaVenue *)inputMediaVenueWithGeoPoint:(Api73_InputGeoPoint *)geoPoint title:(NSString *)title address:(NSString *)address provider:(NSString *)provider venueId:(NSString *)venueId venueType:(NSString *)venueType;
+
+@end
+
+@interface Api73_InputMedia_inputMediaEmpty : Api73_InputMedia
+
+@end
+
+@interface Api73_InputMedia_inputMediaGeoPoint : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputGeoPoint * geoPoint;
+
+@end
+
+@interface Api73_InputMedia_inputMediaContact : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+
+@end
+
+@interface Api73_InputMedia_inputMediaPhoto : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputPhoto * pid;
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_InputMedia_inputMediaGifExternal : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * q;
+
+@end
+
+@interface Api73_InputMedia_inputMediaDocument : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputDocument * pid;
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_InputMedia_inputMediaPhotoExternal : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_InputMedia_inputMediaDocumentExternal : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_InputMedia_inputMediaGame : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputGame * pid;
+
+@end
+
+@interface Api73_InputMedia_inputMediaInvoice : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_InputWebDocument * photo;
+@property (nonatomic, strong, readonly) Api73_Invoice * invoice;
+@property (nonatomic, strong, readonly) NSData * payload;
+@property (nonatomic, strong, readonly) NSString * provider;
+@property (nonatomic, strong, readonly) NSString * startParam;
+
+@end
+
+@interface Api73_InputMedia_inputMediaUploadedPhoto : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputFile * file;
+@property (nonatomic, strong, readonly) NSString * caption;
+@property (nonatomic, strong, readonly) NSArray * stickers;
+@property (nonatomic, strong, readonly) NSNumber * ttlSeconds;
+
+@end
+
+@interface Api73_InputMedia_inputMediaUploadedDocument : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputFile * file;
+@property (nonatomic, strong, readonly) Api73_InputFile * thumb;
+@property (nonatomic, strong, readonly) NSString * mimeType;
+@property (nonatomic, strong, readonly) NSArray * attributes;
+@property (nonatomic, strong, readonly) NSString * caption;
+@property (nonatomic, strong, readonly) NSArray * stickers;
+@property (nonatomic, strong, readonly) NSNumber * ttlSeconds;
+
+@end
+
+@interface Api73_InputMedia_inputMediaGeoLive : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputGeoPoint * geoPoint;
+@property (nonatomic, strong, readonly) NSNumber * period;
+
+@end
+
+@interface Api73_InputMedia_inputMediaVenue : Api73_InputMedia
+
+@property (nonatomic, strong, readonly) Api73_InputGeoPoint * geoPoint;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * address;
+@property (nonatomic, strong, readonly) NSString * provider;
+@property (nonatomic, strong, readonly) NSString * venueId;
+@property (nonatomic, strong, readonly) NSString * venueType;
+
+@end
+
+
+@interface Api73_InputPeer : NSObject
+
++ (Api73_InputPeer_inputPeerEmpty *)inputPeerEmpty;
++ (Api73_InputPeer_inputPeerSelf *)inputPeerSelf;
++ (Api73_InputPeer_inputPeerChat *)inputPeerChatWithChatId:(NSNumber *)chatId;
++ (Api73_InputPeer_inputPeerUser *)inputPeerUserWithUserId:(NSNumber *)userId accessHash:(NSNumber *)accessHash;
++ (Api73_InputPeer_inputPeerChannel *)inputPeerChannelWithChannelId:(NSNumber *)channelId accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputPeer_inputPeerEmpty : Api73_InputPeer
+
+@end
+
+@interface Api73_InputPeer_inputPeerSelf : Api73_InputPeer
+
+@end
+
+@interface Api73_InputPeer_inputPeerChat : Api73_InputPeer
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
+@end
+
+@interface Api73_InputPeer_inputPeerUser : Api73_InputPeer
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+@interface Api73_InputPeer_inputPeerChannel : Api73_InputPeer
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+
+@interface Api73_upload_WebFile : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * size;
+@property (nonatomic, strong, readonly) NSString * mimeType;
+@property (nonatomic, strong, readonly) Api73_storage_FileType * fileType;
+@property (nonatomic, strong, readonly) NSNumber * mtime;
+@property (nonatomic, strong, readonly) NSData * bytes;
+
++ (Api73_upload_WebFile_upload_webFile *)upload_webFileWithSize:(NSNumber *)size mimeType:(NSString *)mimeType fileType:(Api73_storage_FileType *)fileType mtime:(NSNumber *)mtime bytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_upload_WebFile_upload_webFile : Api73_upload_WebFile
+
+@end
+
+
+@interface Api73_Contact : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_Bool * mutual;
+
++ (Api73_Contact_contact *)contactWithUserId:(NSNumber *)userId mutual:(Api73_Bool *)mutual;
+
+@end
+
+@interface Api73_Contact_contact : Api73_Contact
+
+@end
+
+
+@interface Api73_BotInlineResult : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_BotInlineMessage * sendMessage;
+
++ (Api73_BotInlineResult_botInlineResult *)botInlineResultWithFlags:(NSNumber *)flags pid:(NSString *)pid type:(NSString *)type title:(NSString *)title pdescription:(NSString *)pdescription url:(NSString *)url thumbUrl:(NSString *)thumbUrl contentUrl:(NSString *)contentUrl contentType:(NSString *)contentType w:(NSNumber *)w h:(NSNumber *)h duration:(NSNumber *)duration sendMessage:(Api73_BotInlineMessage *)sendMessage;
++ (Api73_BotInlineResult_botInlineMediaResult *)botInlineMediaResultWithFlags:(NSNumber *)flags pid:(NSString *)pid type:(NSString *)type photo:(Api73_Photo *)photo document:(Api73_Document *)document title:(NSString *)title pdescription:(NSString *)pdescription sendMessage:(Api73_BotInlineMessage *)sendMessage;
+
+@end
+
+@interface Api73_BotInlineResult_botInlineResult : Api73_BotInlineResult
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * thumbUrl;
+@property (nonatomic, strong, readonly) NSString * contentUrl;
+@property (nonatomic, strong, readonly) NSString * contentType;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+
+@end
+
+@interface Api73_BotInlineResult_botInlineMediaResult : Api73_BotInlineResult
+
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) Api73_Document * document;
+
+@end
+
+
+@interface Api73_messages_BotCallbackAnswer : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
++ (Api73_messages_BotCallbackAnswer_messages_getBotCallbackAnswer *)messages_getBotCallbackAnswerWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer msgId:(NSNumber *)msgId data:(NSData *)data gameId:(NSNumber *)gameId;
++ (Api73_messages_BotCallbackAnswer_messages_botCallbackAnswer *)messages_botCallbackAnswerWithFlags:(NSNumber *)flags message:(NSString *)message url:(NSString *)url cacheTime:(NSNumber *)cacheTime;
+
+@end
+
+@interface Api73_messages_BotCallbackAnswer_messages_getBotCallbackAnswer : Api73_messages_BotCallbackAnswer
+
+@property (nonatomic, strong, readonly) Api73_InputPeer * peer;
+@property (nonatomic, strong, readonly) NSNumber * msgId;
+@property (nonatomic, strong, readonly) NSData * data;
+@property (nonatomic, strong, readonly) NSNumber * gameId;
+
+@end
+
+@interface Api73_messages_BotCallbackAnswer_messages_botCallbackAnswer : Api73_messages_BotCallbackAnswer
+
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * cacheTime;
+
+@end
+
+
+@interface Api73_payments_PaymentResult : NSObject
+
++ (Api73_payments_PaymentResult_payments_paymentResult *)payments_paymentResultWithUpdates:(Api73_Updates *)updates;
++ (Api73_payments_PaymentResult_payments_paymentVerficationNeeded *)payments_paymentVerficationNeededWithUrl:(NSString *)url;
+
+@end
+
+@interface Api73_payments_PaymentResult_payments_paymentResult : Api73_payments_PaymentResult
+
+@property (nonatomic, strong, readonly) Api73_Updates * updates;
+
+@end
+
+@interface Api73_payments_PaymentResult_payments_paymentVerficationNeeded : Api73_payments_PaymentResult
+
+@property (nonatomic, strong, readonly) NSString * url;
+
+@end
+
+
+@interface Api73_messages_Chats : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * chats;
+
++ (Api73_messages_Chats_messages_chats *)messages_chatsWithChats:(NSArray *)chats;
++ (Api73_messages_Chats_messages_chatsSlice *)messages_chatsSliceWithCount:(NSNumber *)count chats:(NSArray *)chats;
+
+@end
+
+@interface Api73_messages_Chats_messages_chats : Api73_messages_Chats
+
+@end
+
+@interface Api73_messages_Chats_messages_chatsSlice : Api73_messages_Chats
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_contacts_MyLink : NSObject
+
++ (Api73_contacts_MyLink_contacts_myLinkEmpty *)contacts_myLinkEmpty;
++ (Api73_contacts_MyLink_contacts_myLinkRequested *)contacts_myLinkRequestedWithContact:(Api73_Bool *)contact;
++ (Api73_contacts_MyLink_contacts_myLinkContact *)contacts_myLinkContact;
+
+@end
+
+@interface Api73_contacts_MyLink_contacts_myLinkEmpty : Api73_contacts_MyLink
+
+@end
+
+@interface Api73_contacts_MyLink_contacts_myLinkRequested : Api73_contacts_MyLink
+
+@property (nonatomic, strong, readonly) Api73_Bool * contact;
+
+@end
+
+@interface Api73_contacts_MyLink_contacts_myLinkContact : Api73_contacts_MyLink
+
+@end
+
+
+@interface Api73_InputPrivacyRule : NSObject
+
++ (Api73_InputPrivacyRule_inputPrivacyValueAllowContacts *)inputPrivacyValueAllowContacts;
++ (Api73_InputPrivacyRule_inputPrivacyValueAllowAll *)inputPrivacyValueAllowAll;
++ (Api73_InputPrivacyRule_inputPrivacyValueAllowUsers *)inputPrivacyValueAllowUsersWithUsers:(NSArray *)users;
++ (Api73_InputPrivacyRule_inputPrivacyValueDisallowContacts *)inputPrivacyValueDisallowContacts;
++ (Api73_InputPrivacyRule_inputPrivacyValueDisallowAll *)inputPrivacyValueDisallowAll;
++ (Api73_InputPrivacyRule_inputPrivacyValueDisallowUsers *)inputPrivacyValueDisallowUsersWithUsers:(NSArray *)users;
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueAllowContacts : Api73_InputPrivacyRule
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueAllowAll : Api73_InputPrivacyRule
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueAllowUsers : Api73_InputPrivacyRule
+
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueDisallowContacts : Api73_InputPrivacyRule
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueDisallowAll : Api73_InputPrivacyRule
+
+@end
+
+@interface Api73_InputPrivacyRule_inputPrivacyValueDisallowUsers : Api73_InputPrivacyRule
+
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_messages_DhConfig : NSObject
+
+@property (nonatomic, strong, readonly) NSData * random;
+
++ (Api73_messages_DhConfig_messages_dhConfigNotModified *)messages_dhConfigNotModifiedWithRandom:(NSData *)random;
++ (Api73_messages_DhConfig_messages_dhConfig *)messages_dhConfigWithG:(NSNumber *)g p:(NSData *)p version:(NSNumber *)version random:(NSData *)random;
+
+@end
+
+@interface Api73_messages_DhConfig_messages_dhConfigNotModified : Api73_messages_DhConfig
+
+@end
+
+@interface Api73_messages_DhConfig_messages_dhConfig : Api73_messages_DhConfig
+
+@property (nonatomic, strong, readonly) NSNumber * g;
+@property (nonatomic, strong, readonly) NSData * p;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+
+@interface Api73_ChannelAdminLogEventAction : NSObject
+
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeTitle *)channelAdminLogEventActionChangeTitleWithPrevValue:(NSString *)prevValue pnewValue:(NSString *)pnewValue;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeAbout *)channelAdminLogEventActionChangeAboutWithPrevValue:(NSString *)prevValue pnewValue:(NSString *)pnewValue;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeUsername *)channelAdminLogEventActionChangeUsernameWithPrevValue:(NSString *)prevValue pnewValue:(NSString *)pnewValue;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangePhoto *)channelAdminLogEventActionChangePhotoWithPrevPhoto:(Api73_ChatPhoto *)prevPhoto pnewPhoto:(Api73_ChatPhoto *)pnewPhoto;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleInvites *)channelAdminLogEventActionToggleInvitesWithPnewValue:(Api73_Bool *)pnewValue;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleSignatures *)channelAdminLogEventActionToggleSignaturesWithPnewValue:(Api73_Bool *)pnewValue;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionUpdatePinned *)channelAdminLogEventActionUpdatePinnedWithMessage:(Api73_Message *)message;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionEditMessage *)channelAdminLogEventActionEditMessageWithPrevMessage:(Api73_Message *)prevMessage pnewMessage:(Api73_Message *)pnewMessage;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionDeleteMessage *)channelAdminLogEventActionDeleteMessageWithMessage:(Api73_Message *)message;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantJoin *)channelAdminLogEventActionParticipantJoin;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantLeave *)channelAdminLogEventActionParticipantLeave;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantInvite *)channelAdminLogEventActionParticipantInviteWithParticipant:(Api73_ChannelParticipant *)participant;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleBan *)channelAdminLogEventActionParticipantToggleBanWithPrevParticipant:(Api73_ChannelParticipant *)prevParticipant pnewParticipant:(Api73_ChannelParticipant *)pnewParticipant;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleAdmin *)channelAdminLogEventActionParticipantToggleAdminWithPrevParticipant:(Api73_ChannelParticipant *)prevParticipant pnewParticipant:(Api73_ChannelParticipant *)pnewParticipant;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeStickerSet *)channelAdminLogEventActionChangeStickerSetWithPrevStickerset:(Api73_InputStickerSet *)prevStickerset pnewStickerset:(Api73_InputStickerSet *)pnewStickerset;
++ (Api73_ChannelAdminLogEventAction_channelAdminLogEventActionTogglePreHistoryHidden *)channelAdminLogEventActionTogglePreHistoryHiddenWithPnewValue:(Api73_Bool *)pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeTitle : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) NSString * prevValue;
+@property (nonatomic, strong, readonly) NSString * pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeAbout : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) NSString * prevValue;
+@property (nonatomic, strong, readonly) NSString * pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeUsername : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) NSString * prevValue;
+@property (nonatomic, strong, readonly) NSString * pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangePhoto : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_ChatPhoto * prevPhoto;
+@property (nonatomic, strong, readonly) Api73_ChatPhoto * pnewPhoto;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleInvites : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Bool * pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionToggleSignatures : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Bool * pnewValue;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionUpdatePinned : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionEditMessage : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Message * prevMessage;
+@property (nonatomic, strong, readonly) Api73_Message * pnewMessage;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionDeleteMessage : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantJoin : Api73_ChannelAdminLogEventAction
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantLeave : Api73_ChannelAdminLogEventAction
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantInvite : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * participant;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleBan : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * prevParticipant;
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * pnewParticipant;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionParticipantToggleAdmin : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * prevParticipant;
+@property (nonatomic, strong, readonly) Api73_ChannelParticipant * pnewParticipant;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionChangeStickerSet : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_InputStickerSet * prevStickerset;
+@property (nonatomic, strong, readonly) Api73_InputStickerSet * pnewStickerset;
+
+@end
+
+@interface Api73_ChannelAdminLogEventAction_channelAdminLogEventActionTogglePreHistoryHidden : Api73_ChannelAdminLogEventAction
+
+@property (nonatomic, strong, readonly) Api73_Bool * pnewValue;
+
+@end
+
+
+@interface Api73_auth_ExportedAuthorization : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSData * bytes;
+
++ (Api73_auth_ExportedAuthorization_auth_exportedAuthorization *)auth_exportedAuthorizationWithPid:(NSNumber *)pid bytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_auth_ExportedAuthorization_auth_exportedAuthorization : Api73_auth_ExportedAuthorization
+
+@end
+
+
+@interface Api73_ContactRequest : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
++ (Api73_ContactRequest_contactRequest *)contactRequestWithUserId:(NSNumber *)userId date:(NSNumber *)date;
+
+@end
+
+@interface Api73_ContactRequest_contactRequest : Api73_ContactRequest
+
+@end
+
+
+@interface Api73_messages_AffectedHistory : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+@property (nonatomic, strong, readonly) NSNumber * offset;
+
++ (Api73_messages_AffectedHistory_messages_affectedHistory *)messages_affectedHistoryWithPts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount offset:(NSNumber *)offset;
+
+@end
+
+@interface Api73_messages_AffectedHistory_messages_affectedHistory : Api73_messages_AffectedHistory
+
+@end
+
+
+@interface Api73_account_PasswordInputSettings : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSData * pnewSalt;
+@property (nonatomic, strong, readonly) NSData * pnewPasswordHash;
+@property (nonatomic, strong, readonly) NSString * hint;
+@property (nonatomic, strong, readonly) NSString * email;
+
++ (Api73_account_PasswordInputSettings_account_passwordInputSettings *)account_passwordInputSettingsWithFlags:(NSNumber *)flags pnewSalt:(NSData *)pnewSalt pnewPasswordHash:(NSData *)pnewPasswordHash hint:(NSString *)hint email:(NSString *)email;
+
+@end
+
+@interface Api73_account_PasswordInputSettings_account_passwordInputSettings : Api73_account_PasswordInputSettings
+
+@end
+
+
+@interface Api73_messages_MessageEditData : NSObject
+
++ (Api73_messages_MessageEditData_messages_messageEditData *)messages_messageEditDataWithFlags:(NSNumber *)flags;
++ (Api73_messages_MessageEditData_messages_getMessageEditData *)messages_getMessageEditDataWithPeer:(Api73_InputPeer *)peer pid:(NSNumber *)pid;
+
+@end
+
+@interface Api73_messages_MessageEditData_messages_messageEditData : Api73_messages_MessageEditData
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
+@end
+
+@interface Api73_messages_MessageEditData_messages_getMessageEditData : Api73_messages_MessageEditData
+
+@property (nonatomic, strong, readonly) Api73_InputPeer * peer;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
+@end
+
+
+@interface Api73_LabeledPrice : NSObject
+
+@property (nonatomic, strong, readonly) NSString * label;
+@property (nonatomic, strong, readonly) NSNumber * amount;
+
++ (Api73_LabeledPrice_labeledPrice *)labeledPriceWithLabel:(NSString *)label amount:(NSNumber *)amount;
+
+@end
+
+@interface Api73_LabeledPrice_labeledPrice : Api73_LabeledPrice
+
+@end
+
+
+@interface Api73_messages_ChatFull : NSObject
+
+@property (nonatomic, strong, readonly) Api73_ChatFull * fullChat;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_ChatFull_messages_chatFull *)messages_chatFullWithFullChat:(Api73_ChatFull *)fullChat chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_ChatFull_messages_chatFull : Api73_messages_ChatFull
+
+@end
+
+
+@interface Api73_contacts_ForeignLink : NSObject
+
++ (Api73_contacts_ForeignLink_contacts_foreignLinkUnknown *)contacts_foreignLinkUnknown;
++ (Api73_contacts_ForeignLink_contacts_foreignLinkRequested *)contacts_foreignLinkRequestedWithHasPhone:(Api73_Bool *)hasPhone;
++ (Api73_contacts_ForeignLink_contacts_foreignLinkMutual *)contacts_foreignLinkMutual;
+
+@end
+
+@interface Api73_contacts_ForeignLink_contacts_foreignLinkUnknown : Api73_contacts_ForeignLink
+
+@end
+
+@interface Api73_contacts_ForeignLink_contacts_foreignLinkRequested : Api73_contacts_ForeignLink
+
+@property (nonatomic, strong, readonly) Api73_Bool * hasPhone;
+
+@end
+
+@interface Api73_contacts_ForeignLink_contacts_foreignLinkMutual : Api73_contacts_ForeignLink
+
+@end
+
+
+@interface Api73_help_TermsOfService : NSObject
+
++ (Api73_help_TermsOfService_help_termsOfService *)help_termsOfServiceWithText:(NSString *)text;
++ (Api73_help_TermsOfService_help_getTermsOfService *)help_getTermsOfService;
+
+@end
+
+@interface Api73_help_TermsOfService_help_termsOfService : Api73_help_TermsOfService
+
+@property (nonatomic, strong, readonly) NSString * text;
+
+@end
+
+@interface Api73_help_TermsOfService_help_getTermsOfService : Api73_help_TermsOfService
+
+@end
+
+
+@interface Api73_InputEncryptedChat : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
++ (Api73_InputEncryptedChat_inputEncryptedChat *)inputEncryptedChatWithChatId:(NSNumber *)chatId accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputEncryptedChat_inputEncryptedChat : Api73_InputEncryptedChat
+
+@end
+
+
+@interface Api73_DraftMessage : NSObject
+
++ (Api73_DraftMessage_draftMessageEmpty *)draftMessageEmpty;
++ (Api73_DraftMessage_draftMessage *)draftMessageWithFlags:(NSNumber *)flags replyToMsgId:(NSNumber *)replyToMsgId message:(NSString *)message entities:(NSArray *)entities date:(NSNumber *)date;
+
+@end
+
+@interface Api73_DraftMessage_draftMessageEmpty : Api73_DraftMessage
+
+@end
+
+@interface Api73_DraftMessage_draftMessage : Api73_DraftMessage
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * replyToMsgId;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSArray * entities;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+
+@interface Api73_ChannelAdminRights : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
++ (Api73_ChannelAdminRights_channelAdminRights *)channelAdminRightsWithFlags:(NSNumber *)flags;
+
+@end
+
+@interface Api73_ChannelAdminRights_channelAdminRights : Api73_ChannelAdminRights
+
+@end
+
+
+@interface Api73_DisabledFeature : NSObject
+
+@property (nonatomic, strong, readonly) NSString * feature;
+@property (nonatomic, strong, readonly) NSString * nDescription;
+
++ (Api73_DisabledFeature_disabledFeature *)disabledFeatureWithFeature:(NSString *)feature nDescription:(NSString *)nDescription;
+
+@end
+
+@interface Api73_DisabledFeature_disabledFeature : Api73_DisabledFeature
+
+@end
+
+
+@interface Api73_EncryptedFile : NSObject
+
++ (Api73_EncryptedFile_encryptedFileEmpty *)encryptedFileEmpty;
++ (Api73_EncryptedFile_encryptedFile *)encryptedFileWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash size:(NSNumber *)size dcId:(NSNumber *)dcId keyFingerprint:(NSNumber *)keyFingerprint;
+
+@end
+
+@interface Api73_EncryptedFile_encryptedFileEmpty : Api73_EncryptedFile
+
+@end
+
+@interface Api73_EncryptedFile_encryptedFile : Api73_EncryptedFile
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * size;
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSNumber * keyFingerprint;
+
+@end
+
+
+@interface Api73_ChannelBannedRights : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * untilDate;
+
++ (Api73_ChannelBannedRights_channelBannedRights *)channelBannedRightsWithFlags:(NSNumber *)flags untilDate:(NSNumber *)untilDate;
+
+@end
+
+@interface Api73_ChannelBannedRights_channelBannedRights : Api73_ChannelBannedRights
+
+@end
+
+
+@interface Api73_NotifyPeer : NSObject
+
++ (Api73_NotifyPeer_notifyPeer *)notifyPeerWithPeer:(Api73_Peer *)peer;
++ (Api73_NotifyPeer_notifyUsers *)notifyUsers;
++ (Api73_NotifyPeer_notifyChats *)notifyChats;
++ (Api73_NotifyPeer_notifyAll *)notifyAll;
+
+@end
+
+@interface Api73_NotifyPeer_notifyPeer : Api73_NotifyPeer
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+
+@end
+
+@interface Api73_NotifyPeer_notifyUsers : Api73_NotifyPeer
+
+@end
+
+@interface Api73_NotifyPeer_notifyChats : Api73_NotifyPeer
+
+@end
+
+@interface Api73_NotifyPeer_notifyAll : Api73_NotifyPeer
+
+@end
+
+
+@interface Api73_InputPrivacyKey : NSObject
+
++ (Api73_InputPrivacyKey_inputPrivacyKeyStatusTimestamp *)inputPrivacyKeyStatusTimestamp;
++ (Api73_InputPrivacyKey_inputPrivacyKeyChatInvite *)inputPrivacyKeyChatInvite;
+
+@end
+
+@interface Api73_InputPrivacyKey_inputPrivacyKeyStatusTimestamp : Api73_InputPrivacyKey
+
+@end
+
+@interface Api73_InputPrivacyKey_inputPrivacyKeyChatInvite : Api73_InputPrivacyKey
+
+@end
+
+
+@interface Api73_help_RecentMeUrls : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * urls;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_help_RecentMeUrls_help_recentMeUrls *)help_recentMeUrlsWithUrls:(NSArray *)urls chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_help_RecentMeUrls_help_recentMeUrls : Api73_help_RecentMeUrls
+
+@end
+
+
+@interface Api73_ReplyMarkup : NSObject
+
++ (Api73_ReplyMarkup_replyKeyboardHide *)replyKeyboardHideWithFlags:(NSNumber *)flags;
++ (Api73_ReplyMarkup_replyKeyboardForceReply *)replyKeyboardForceReplyWithFlags:(NSNumber *)flags;
++ (Api73_ReplyMarkup_replyKeyboardMarkup *)replyKeyboardMarkupWithFlags:(NSNumber *)flags rows:(NSArray *)rows;
++ (Api73_ReplyMarkup_replyInlineMarkup *)replyInlineMarkupWithRows:(NSArray *)rows;
+
+@end
+
+@interface Api73_ReplyMarkup_replyKeyboardHide : Api73_ReplyMarkup
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
+@end
+
+@interface Api73_ReplyMarkup_replyKeyboardForceReply : Api73_ReplyMarkup
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
+@end
+
+@interface Api73_ReplyMarkup_replyKeyboardMarkup : Api73_ReplyMarkup
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSArray * rows;
+
+@end
+
+@interface Api73_ReplyMarkup_replyInlineMarkup : Api73_ReplyMarkup
+
+@property (nonatomic, strong, readonly) NSArray * rows;
+
+@end
+
+
+@interface Api73_HighScore : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pos;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * score;
+
++ (Api73_HighScore_highScore *)highScoreWithPos:(NSNumber *)pos userId:(NSNumber *)userId score:(NSNumber *)score;
+
+@end
+
+@interface Api73_HighScore_highScore : Api73_HighScore
+
+@end
+
+
+@interface Api73_TopPeer : NSObject
+
+@property (nonatomic, strong, readonly) Api73_Peer * peer;
+@property (nonatomic, strong, readonly) NSNumber * rating;
+
++ (Api73_TopPeer_topPeer *)topPeerWithPeer:(Api73_Peer *)peer rating:(NSNumber *)rating;
+
+@end
+
+@interface Api73_TopPeer_topPeer : Api73_TopPeer
+
+@end
+
+
+@interface Api73_CdnFileHash : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * offset;
+@property (nonatomic, strong, readonly) NSNumber * limit;
+@property (nonatomic, strong, readonly) NSData * phash;
+
++ (Api73_CdnFileHash_cdnFileHash *)cdnFileHashWithOffset:(NSNumber *)offset limit:(NSNumber *)limit phash:(NSData *)phash;
+
+@end
+
+@interface Api73_CdnFileHash_cdnFileHash : Api73_CdnFileHash
+
+@end
+
+
+@interface Api73_contacts_Link : NSObject
+
+@property (nonatomic, strong, readonly) Api73_ContactLink * myLink;
+@property (nonatomic, strong, readonly) Api73_ContactLink * foreignLink;
+@property (nonatomic, strong, readonly) Api73_User * user;
+
++ (Api73_contacts_Link_contacts_link *)contacts_linkWithMyLink:(Api73_ContactLink *)myLink foreignLink:(Api73_ContactLink *)foreignLink user:(Api73_User *)user;
+
+@end
+
+@interface Api73_contacts_Link_contacts_link : Api73_contacts_Link
+
+@end
+
+
+@interface Api73_ContactBlocked : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
++ (Api73_ContactBlocked_contactBlocked *)contactBlockedWithUserId:(NSNumber *)userId date:(NSNumber *)date;
+
+@end
+
+@interface Api73_ContactBlocked_contactBlocked : Api73_ContactBlocked
+
+@end
+
+
+@interface Api73_auth_CheckedPhone : NSObject
+
+@property (nonatomic, strong, readonly) Api73_Bool * phoneRegistered;
+
++ (Api73_auth_CheckedPhone_auth_checkedPhone *)auth_checkedPhoneWithPhoneRegistered:(Api73_Bool *)phoneRegistered;
+
+@end
+
+@interface Api73_auth_CheckedPhone_auth_checkedPhone : Api73_auth_CheckedPhone
+
+@end
+
+
+@interface Api73_InputUser : NSObject
+
++ (Api73_InputUser_inputUserEmpty *)inputUserEmpty;
++ (Api73_InputUser_inputUserSelf *)inputUserSelf;
++ (Api73_InputUser_inputUser *)inputUserWithUserId:(NSNumber *)userId accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputUser_inputUserEmpty : Api73_InputUser
+
+@end
+
+@interface Api73_InputUser_inputUserSelf : Api73_InputUser
+
+@end
+
+@interface Api73_InputUser_inputUser : Api73_InputUser
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+
+@interface Api73_SchemeType : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * predicate;
+@property (nonatomic, strong, readonly) NSArray * params;
+@property (nonatomic, strong, readonly) NSString * type;
+
++ (Api73_SchemeType_schemeType *)schemeTypeWithPid:(NSNumber *)pid predicate:(NSString *)predicate params:(NSArray *)params type:(NSString *)type;
+
+@end
+
+@interface Api73_SchemeType_schemeType : Api73_SchemeType
+
+@end
+
+
+@interface Api73_Page : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * blocks;
+@property (nonatomic, strong, readonly) NSArray * photos;
+@property (nonatomic, strong, readonly) NSArray * documents;
+
++ (Api73_Page_pagePart *)pagePartWithBlocks:(NSArray *)blocks photos:(NSArray *)photos documents:(NSArray *)documents;
++ (Api73_Page_pageFull *)pageFullWithBlocks:(NSArray *)blocks photos:(NSArray *)photos documents:(NSArray *)documents;
+
+@end
+
+@interface Api73_Page_pagePart : Api73_Page
+
+@end
+
+@interface Api73_Page_pageFull : Api73_Page
+
+@end
+
+
+@interface Api73_upload_File : NSObject
+
++ (Api73_upload_File_upload_file *)upload_fileWithType:(Api73_storage_FileType *)type mtime:(NSNumber *)mtime bytes:(NSData *)bytes;
++ (Api73_upload_File_upload_fileCdnRedirect *)upload_fileCdnRedirectWithDcId:(NSNumber *)dcId fileToken:(NSData *)fileToken encryptionKey:(NSData *)encryptionKey encryptionIv:(NSData *)encryptionIv cdnFileHashes:(NSArray *)cdnFileHashes;
+
+@end
+
+@interface Api73_upload_File_upload_file : Api73_upload_File
+
+@property (nonatomic, strong, readonly) Api73_storage_FileType * type;
+@property (nonatomic, strong, readonly) NSNumber * mtime;
+@property (nonatomic, strong, readonly) NSData * bytes;
+
+@end
+
+@interface Api73_upload_File_upload_fileCdnRedirect : Api73_upload_File
+
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSData * fileToken;
+@property (nonatomic, strong, readonly) NSData * encryptionKey;
+@property (nonatomic, strong, readonly) NSData * encryptionIv;
+@property (nonatomic, strong, readonly) NSArray * cdnFileHashes;
+
+@end
+
+
+@interface Api73_MessageRange : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * minId;
+@property (nonatomic, strong, readonly) NSNumber * maxId;
+
++ (Api73_MessageRange_messageRange *)messageRangeWithMinId:(NSNumber *)minId maxId:(NSNumber *)maxId;
+
+@end
+
+@interface Api73_MessageRange_messageRange : Api73_MessageRange
+
+@end
+
+
+@interface Api73_messages_StickerSetInstallResult : NSObject
+
++ (Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultSuccess *)messages_stickerSetInstallResultSuccess;
++ (Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultArchive *)messages_stickerSetInstallResultArchiveWithSets:(NSArray *)sets;
+
+@end
+
+@interface Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultSuccess : Api73_messages_StickerSetInstallResult
+
+@end
+
+@interface Api73_messages_StickerSetInstallResult_messages_stickerSetInstallResultArchive : Api73_messages_StickerSetInstallResult
+
+@property (nonatomic, strong, readonly) NSArray * sets;
+
+@end
+
+
+@interface Api73_Config : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * expires;
+@property (nonatomic, strong, readonly) Api73_Bool * testMode;
+@property (nonatomic, strong, readonly) NSNumber * thisDc;
+@property (nonatomic, strong, readonly) NSArray * dcOptions;
+@property (nonatomic, strong, readonly) NSNumber * chatSizeMax;
+@property (nonatomic, strong, readonly) NSNumber * megagroupSizeMax;
+@property (nonatomic, strong, readonly) NSNumber * forwardedCountMax;
+@property (nonatomic, strong, readonly) NSNumber * onlineUpdatePeriodMs;
+@property (nonatomic, strong, readonly) NSNumber * offlineBlurTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * offlineIdleTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * onlineCloudTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * notifyCloudDelayMs;
+@property (nonatomic, strong, readonly) NSNumber * notifyDefaultDelayMs;
+@property (nonatomic, strong, readonly) NSNumber * chatBigSize;
+@property (nonatomic, strong, readonly) NSNumber * pushChatPeriodMs;
+@property (nonatomic, strong, readonly) NSNumber * pushChatLimit;
+@property (nonatomic, strong, readonly) NSNumber * savedGifsLimit;
+@property (nonatomic, strong, readonly) NSNumber * editTimeLimit;
+@property (nonatomic, strong, readonly) NSNumber * ratingEDecay;
+@property (nonatomic, strong, readonly) NSNumber * stickersRecentLimit;
+@property (nonatomic, strong, readonly) NSNumber * stickersFavedLimit;
+@property (nonatomic, strong, readonly) NSNumber * channelsReadMediaPeriod;
+@property (nonatomic, strong, readonly) NSNumber * tmpSessions;
+@property (nonatomic, strong, readonly) NSNumber * pinnedDialogsCountMax;
+@property (nonatomic, strong, readonly) NSNumber * callReceiveTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * callRingTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * callConnectTimeoutMs;
+@property (nonatomic, strong, readonly) NSNumber * callPacketTimeoutMs;
+@property (nonatomic, strong, readonly) NSString * meUrlPrefix;
+@property (nonatomic, strong, readonly) NSString * suggestedLangCode;
+@property (nonatomic, strong, readonly) NSNumber * langPackVersion;
+@property (nonatomic, strong, readonly) NSArray * disabledFeatures;
+
++ (Api73_Config_config *)configWithFlags:(NSNumber *)flags date:(NSNumber *)date expires:(NSNumber *)expires testMode:(Api73_Bool *)testMode thisDc:(NSNumber *)thisDc dcOptions:(NSArray *)dcOptions chatSizeMax:(NSNumber *)chatSizeMax megagroupSizeMax:(NSNumber *)megagroupSizeMax forwardedCountMax:(NSNumber *)forwardedCountMax onlineUpdatePeriodMs:(NSNumber *)onlineUpdatePeriodMs offlineBlurTimeoutMs:(NSNumber *)offlineBlurTimeoutMs offlineIdleTimeoutMs:(NSNumber *)offlineIdleTimeoutMs onlineCloudTimeoutMs:(NSNumber *)onlineCloudTimeoutMs notifyCloudDelayMs:(NSNumber *)notifyCloudDelayMs notifyDefaultDelayMs:(NSNumber *)notifyDefaultDelayMs chatBigSize:(NSNumber *)chatBigSize pushChatPeriodMs:(NSNumber *)pushChatPeriodMs pushChatLimit:(NSNumber *)pushChatLimit savedGifsLimit:(NSNumber *)savedGifsLimit editTimeLimit:(NSNumber *)editTimeLimit ratingEDecay:(NSNumber *)ratingEDecay stickersRecentLimit:(NSNumber *)stickersRecentLimit stickersFavedLimit:(NSNumber *)stickersFavedLimit channelsReadMediaPeriod:(NSNumber *)channelsReadMediaPeriod tmpSessions:(NSNumber *)tmpSessions pinnedDialogsCountMax:(NSNumber *)pinnedDialogsCountMax callReceiveTimeoutMs:(NSNumber *)callReceiveTimeoutMs callRingTimeoutMs:(NSNumber *)callRingTimeoutMs callConnectTimeoutMs:(NSNumber *)callConnectTimeoutMs callPacketTimeoutMs:(NSNumber *)callPacketTimeoutMs meUrlPrefix:(NSString *)meUrlPrefix suggestedLangCode:(NSString *)suggestedLangCode langPackVersion:(NSNumber *)langPackVersion disabledFeatures:(NSArray *)disabledFeatures;
+
+@end
+
+@interface Api73_Config_config : Api73_Config
+
+@end
+
+
+@interface Api73_TopPeerCategoryPeers : NSObject
+
+@property (nonatomic, strong, readonly) Api73_TopPeerCategory * category;
+@property (nonatomic, strong, readonly) NSNumber * count;
+@property (nonatomic, strong, readonly) NSArray * peers;
+
++ (Api73_TopPeerCategoryPeers_topPeerCategoryPeers *)topPeerCategoryPeersWithCategory:(Api73_TopPeerCategory *)category count:(NSNumber *)count peers:(NSArray *)peers;
+
+@end
+
+@interface Api73_TopPeerCategoryPeers_topPeerCategoryPeers : Api73_TopPeerCategoryPeers
+
+@end
+
+
+@interface Api73_Game : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSString * shortName;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) Api73_Document * document;
+
++ (Api73_Game_game *)gameWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash shortName:(NSString *)shortName title:(NSString *)title pdescription:(NSString *)pdescription photo:(Api73_Photo *)photo document:(Api73_Document *)document;
+
+@end
+
+@interface Api73_Game_game : Api73_Game
+
+@end
+
+
+@interface Api73_BotCommand : NSObject
+
+@property (nonatomic, strong, readonly) NSString * command;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+
++ (Api73_BotCommand_botCommand *)botCommandWithCommand:(NSString *)command pdescription:(NSString *)pdescription;
+
+@end
+
+@interface Api73_BotCommand_botCommand : Api73_BotCommand
+
+@end
+
+
+@interface Api73_contacts_Located : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * results;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_Located_contacts_located *)contacts_locatedWithResults:(NSArray *)results users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Located_contacts_located : Api73_contacts_Located
+
+@end
+
+
+@interface Api73_messages_AffectedMessages : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+
++ (Api73_messages_AffectedMessages_messages_affectedMessages *)messages_affectedMessagesWithPts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount;
+
+@end
+
+@interface Api73_messages_AffectedMessages_messages_affectedMessages : Api73_messages_AffectedMessages
+
+@end
+
+
+@interface Api73_messages_SavedGifs : NSObject
+
++ (Api73_messages_SavedGifs_messages_savedGifsNotModified *)messages_savedGifsNotModified;
++ (Api73_messages_SavedGifs_messages_savedGifs *)messages_savedGifsWithPhash:(NSNumber *)phash gifs:(NSArray *)gifs;
+
+@end
+
+@interface Api73_messages_SavedGifs_messages_savedGifsNotModified : Api73_messages_SavedGifs
+
+@end
+
+@interface Api73_messages_SavedGifs_messages_savedGifs : Api73_messages_SavedGifs
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSArray * gifs;
+
+@end
+
+
+@interface Api73_CdnPublicKey : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSString * publicKey;
+
++ (Api73_CdnPublicKey_cdnPublicKey *)cdnPublicKeyWithDcId:(NSNumber *)dcId publicKey:(NSString *)publicKey;
+
+@end
+
+@interface Api73_CdnPublicKey_cdnPublicKey : Api73_CdnPublicKey
+
+@end
+
+
+@interface Api73_InputGame : NSObject
+
++ (Api73_InputGame_inputGameID *)inputGameIDWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
++ (Api73_InputGame_inputGameShortName *)inputGameShortNameWithBotId:(Api73_InputUser *)botId shortName:(NSString *)shortName;
+
+@end
+
+@interface Api73_InputGame_inputGameID : Api73_InputGame
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+@interface Api73_InputGame_inputGameShortName : Api73_InputGame
+
+@property (nonatomic, strong, readonly) Api73_InputUser * botId;
+@property (nonatomic, strong, readonly) NSString * shortName;
+
+@end
+
+
+@interface Api73_PhoneCallProtocol : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * minLayer;
+@property (nonatomic, strong, readonly) NSNumber * maxLayer;
+
++ (Api73_PhoneCallProtocol_phoneCallProtocol *)phoneCallProtocolWithFlags:(NSNumber *)flags minLayer:(NSNumber *)minLayer maxLayer:(NSNumber *)maxLayer;
+
+@end
+
+@interface Api73_PhoneCallProtocol_phoneCallProtocol : Api73_PhoneCallProtocol
+
+@end
+
+
+@interface Api73_ResponseIndirect : NSObject
+
++ (Api73_ResponseIndirect_responseIndirect *)responseIndirect;
+
+@end
+
+@interface Api73_ResponseIndirect_responseIndirect : Api73_ResponseIndirect
+
+@end
+
+
+@interface Api73_WallPaper : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSNumber * color;
+
++ (Api73_WallPaper_wallPaper *)wallPaperWithPid:(NSNumber *)pid title:(NSString *)title sizes:(NSArray *)sizes color:(NSNumber *)color;
++ (Api73_WallPaper_wallPaperSolid *)wallPaperSolidWithPid:(NSNumber *)pid title:(NSString *)title bgColor:(NSNumber *)bgColor color:(NSNumber *)color;
+
+@end
+
+@interface Api73_WallPaper_wallPaper : Api73_WallPaper
+
+@property (nonatomic, strong, readonly) NSArray * sizes;
+
+@end
+
+@interface Api73_WallPaper_wallPaperSolid : Api73_WallPaper
+
+@property (nonatomic, strong, readonly) NSNumber * bgColor;
+
+@end
+
+
+@interface Api73_messages_Messages : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_Messages_messages_messages *)messages_messagesWithMessages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
++ (Api73_messages_Messages_messages_messagesSlice *)messages_messagesSliceWithCount:(NSNumber *)count messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
++ (Api73_messages_Messages_messages_channelMessages *)messages_channelMessagesWithFlags:(NSNumber *)flags pts:(NSNumber *)pts count:(NSNumber *)count messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_Messages_messages_messages : Api73_messages_Messages
+
+@end
+
+@interface Api73_messages_Messages_messages_messagesSlice : Api73_messages_Messages
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+@interface Api73_messages_Messages_messages_channelMessages : Api73_messages_Messages
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_Invoice : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSArray * prices;
+
++ (Api73_Invoice_invoice *)invoiceWithFlags:(NSNumber *)flags currency:(NSString *)currency prices:(NSArray *)prices;
+
+@end
+
+@interface Api73_Invoice_invoice : Api73_Invoice
+
+@end
+
+
+@interface Api73_auth_SentCode : NSObject
+
++ (Api73_auth_SentCode_auth_sentCodePreview *)auth_sentCodePreviewWithPhoneRegistered:(Api73_Bool *)phoneRegistered phoneCodeHash:(NSString *)phoneCodeHash phoneCodeTest:(NSString *)phoneCodeTest;
++ (Api73_auth_SentCode_auth_sentPassPhrase *)auth_sentPassPhraseWithPhoneRegistered:(Api73_Bool *)phoneRegistered;
++ (Api73_auth_SentCode_auth_sentCode *)auth_sentCodeWithFlags:(NSNumber *)flags type:(Api73_auth_SentCodeType *)type phoneCodeHash:(NSString *)phoneCodeHash nextType:(Api73_auth_CodeType *)nextType timeout:(NSNumber *)timeout;
++ (Api73_auth_SentCode_auth_sendCode *)auth_sendCodeWithFlags:(NSNumber *)flags phoneNumber:(NSString *)phoneNumber currentNumber:(Api73_Bool *)currentNumber apiId:(NSNumber *)apiId apiHash:(NSString *)apiHash;
+
+@end
+
+@interface Api73_auth_SentCode_auth_sentCodePreview : Api73_auth_SentCode
+
+@property (nonatomic, strong, readonly) Api73_Bool * phoneRegistered;
+@property (nonatomic, strong, readonly) NSString * phoneCodeHash;
+@property (nonatomic, strong, readonly) NSString * phoneCodeTest;
+
+@end
+
+@interface Api73_auth_SentCode_auth_sentPassPhrase : Api73_auth_SentCode
+
+@property (nonatomic, strong, readonly) Api73_Bool * phoneRegistered;
+
+@end
+
+@interface Api73_auth_SentCode_auth_sentCode : Api73_auth_SentCode
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_auth_SentCodeType * type;
+@property (nonatomic, strong, readonly) NSString * phoneCodeHash;
+@property (nonatomic, strong, readonly) Api73_auth_CodeType * nextType;
+@property (nonatomic, strong, readonly) NSNumber * timeout;
+
+@end
+
+@interface Api73_auth_SentCode_auth_sendCode : Api73_auth_SentCode
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) Api73_Bool * currentNumber;
+@property (nonatomic, strong, readonly) NSNumber * apiId;
+@property (nonatomic, strong, readonly) NSString * apiHash;
+
+@end
+
+
+@interface Api73_phone_DhConfig : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * g;
+@property (nonatomic, strong, readonly) NSString * p;
+@property (nonatomic, strong, readonly) NSNumber * ringTimeout;
+@property (nonatomic, strong, readonly) NSNumber * expires;
+
++ (Api73_phone_DhConfig_phone_dhConfig *)phone_dhConfigWithG:(NSNumber *)g p:(NSString *)p ringTimeout:(NSNumber *)ringTimeout expires:(NSNumber *)expires;
+
+@end
+
+@interface Api73_phone_DhConfig_phone_dhConfig : Api73_phone_DhConfig
+
+@end
+
+
+@interface Api73_InputChatPhoto : NSObject
+
++ (Api73_InputChatPhoto_inputChatPhotoEmpty *)inputChatPhotoEmpty;
++ (Api73_InputChatPhoto_inputChatUploadedPhoto *)inputChatUploadedPhotoWithFile:(Api73_InputFile *)file;
++ (Api73_InputChatPhoto_inputChatPhoto *)inputChatPhotoWithPid:(Api73_InputPhoto *)pid;
+
+@end
+
+@interface Api73_InputChatPhoto_inputChatPhotoEmpty : Api73_InputChatPhoto
+
+@end
+
+@interface Api73_InputChatPhoto_inputChatUploadedPhoto : Api73_InputChatPhoto
+
+@property (nonatomic, strong, readonly) Api73_InputFile * file;
+
+@end
+
+@interface Api73_InputChatPhoto_inputChatPhoto : Api73_InputChatPhoto
+
+@property (nonatomic, strong, readonly) Api73_InputPhoto * pid;
+
+@end
+
+
+@interface Api73_PaymentCharge : NSObject
+
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSString * providerChargeId;
+
++ (Api73_PaymentCharge_paymentCharge *)paymentChargeWithPid:(NSString *)pid providerChargeId:(NSString *)providerChargeId;
+
+@end
+
+@interface Api73_PaymentCharge_paymentCharge : Api73_PaymentCharge
+
+@end
+
+
+@interface Api73_Updates : NSObject
+
++ (Api73_Updates_updatesTooLong *)updatesTooLong;
++ (Api73_Updates_updateShort *)updateShortWithUpdate:(Api73_Update *)update date:(NSNumber *)date;
++ (Api73_Updates_updatesCombined *)updatesCombinedWithUpdates:(NSArray *)updates users:(NSArray *)users chats:(NSArray *)chats date:(NSNumber *)date seqStart:(NSNumber *)seqStart seq:(NSNumber *)seq;
++ (Api73_Updates_updates *)updatesWithUpdates:(NSArray *)updates users:(NSArray *)users chats:(NSArray *)chats date:(NSNumber *)date seq:(NSNumber *)seq;
++ (Api73_Updates_messages_editMessage *)messages_editMessageWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer pid:(NSNumber *)pid message:(NSString *)message replyMarkup:(Api73_ReplyMarkup *)replyMarkup entities:(NSArray *)entities;
++ (Api73_Updates_updateShortMessage *)updateShortMessageWithFlags:(NSNumber *)flags pid:(NSNumber *)pid userId:(NSNumber *)userId message:(NSString *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount date:(NSNumber *)date fwdFrom:(Api73_MessageFwdHeader *)fwdFrom viaBotId:(NSNumber *)viaBotId replyToMsgId:(NSNumber *)replyToMsgId entities:(NSArray *)entities;
++ (Api73_Updates_updateShortChatMessage *)updateShortChatMessageWithFlags:(NSNumber *)flags pid:(NSNumber *)pid fromId:(NSNumber *)fromId chatId:(NSNumber *)chatId message:(NSString *)message pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount date:(NSNumber *)date fwdFrom:(Api73_MessageFwdHeader *)fwdFrom viaBotId:(NSNumber *)viaBotId replyToMsgId:(NSNumber *)replyToMsgId entities:(NSArray *)entities;
++ (Api73_Updates_updateShortSentMessage *)updateShortSentMessageWithFlags:(NSNumber *)flags pid:(NSNumber *)pid pts:(NSNumber *)pts ptsCount:(NSNumber *)ptsCount date:(NSNumber *)date media:(Api73_MessageMedia *)media entities:(NSArray *)entities;
+
+@end
+
+@interface Api73_Updates_updatesTooLong : Api73_Updates
+
+@end
+
+@interface Api73_Updates_updateShort : Api73_Updates
+
+@property (nonatomic, strong, readonly) Api73_Update * update;
+@property (nonatomic, strong, readonly) NSNumber * date;
+
+@end
+
+@interface Api73_Updates_updatesCombined : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSArray * updates;
+@property (nonatomic, strong, readonly) NSArray * users;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * seqStart;
+@property (nonatomic, strong, readonly) NSNumber * seq;
+
+@end
+
+@interface Api73_Updates_updates : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSArray * updates;
+@property (nonatomic, strong, readonly) NSArray * users;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * seq;
+
+@end
+
+@interface Api73_Updates_messages_editMessage : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputPeer * peer;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) Api73_ReplyMarkup * replyMarkup;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_Updates_updateShortMessage : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_MessageFwdHeader * fwdFrom;
+@property (nonatomic, strong, readonly) NSNumber * viaBotId;
+@property (nonatomic, strong, readonly) NSNumber * replyToMsgId;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_Updates_updateShortChatMessage : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * fromId;
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_MessageFwdHeader * fwdFrom;
+@property (nonatomic, strong, readonly) NSNumber * viaBotId;
+@property (nonatomic, strong, readonly) NSNumber * replyToMsgId;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_Updates_updateShortSentMessage : Api73_Updates
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * ptsCount;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_MessageMedia * media;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+
+@interface Api73_InitConnection : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * apiId;
+@property (nonatomic, strong, readonly) NSString * deviceModel;
+@property (nonatomic, strong, readonly) NSString * systemVersion;
+@property (nonatomic, strong, readonly) NSString * appVersion;
+@property (nonatomic, strong, readonly) NSString * langCode;
+@property (nonatomic, strong, readonly) NSObject * query;
+
++ (Api73_InitConnection_pinitConnection *)pinitConnectionWithApiId:(NSNumber *)apiId deviceModel:(NSString *)deviceModel systemVersion:(NSString *)systemVersion appVersion:(NSString *)appVersion langCode:(NSString *)langCode query:(NSObject *)query;
+
+@end
+
+@interface Api73_InitConnection_pinitConnection : Api73_InitConnection
+
+@end
+
+
+@interface Api73_MessageMedia : NSObject
+
++ (Api73_MessageMedia_messageMediaEmpty *)messageMediaEmpty;
++ (Api73_MessageMedia_messageMediaGeo *)messageMediaGeoWithGeo:(Api73_GeoPoint *)geo;
++ (Api73_MessageMedia_messageMediaContact *)messageMediaContactWithPhoneNumber:(NSString *)phoneNumber firstName:(NSString *)firstName lastName:(NSString *)lastName userId:(NSNumber *)userId;
++ (Api73_MessageMedia_messageMediaUnsupported *)messageMediaUnsupported;
++ (Api73_MessageMedia_messageMediaWebPage *)messageMediaWebPageWithWebpage:(Api73_WebPage *)webpage;
++ (Api73_MessageMedia_messageMediaGame *)messageMediaGameWithGame:(Api73_Game *)game;
++ (Api73_MessageMedia_messageMediaInvoice *)messageMediaInvoiceWithFlags:(NSNumber *)flags title:(NSString *)title pdescription:(NSString *)pdescription photo:(Api73_WebDocument *)photo receiptMsgId:(NSNumber *)receiptMsgId currency:(NSString *)currency totalAmount:(NSNumber *)totalAmount startParam:(NSString *)startParam;
++ (Api73_MessageMedia_messageMediaPhoto *)messageMediaPhotoWithFlags:(NSNumber *)flags photo:(Api73_Photo *)photo caption:(NSString *)caption ttlSeconds:(NSNumber *)ttlSeconds;
++ (Api73_MessageMedia_messageMediaDocument *)messageMediaDocumentWithFlags:(NSNumber *)flags document:(Api73_Document *)document caption:(NSString *)caption ttlSeconds:(NSNumber *)ttlSeconds;
++ (Api73_MessageMedia_messageMediaGeoLive *)messageMediaGeoLiveWithGeo:(Api73_GeoPoint *)geo period:(NSNumber *)period;
++ (Api73_MessageMedia_messageMediaVenue *)messageMediaVenueWithGeo:(Api73_GeoPoint *)geo title:(NSString *)title address:(NSString *)address provider:(NSString *)provider venueId:(NSString *)venueId venueType:(NSString *)venueType;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaEmpty : Api73_MessageMedia
+
+@end
+
+@interface Api73_MessageMedia_messageMediaGeo : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaContact : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaUnsupported : Api73_MessageMedia
+
+@end
+
+@interface Api73_MessageMedia_messageMediaWebPage : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) Api73_WebPage * webpage;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaGame : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) Api73_Game * game;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaInvoice : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_WebDocument * photo;
+@property (nonatomic, strong, readonly) NSNumber * receiptMsgId;
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSNumber * totalAmount;
+@property (nonatomic, strong, readonly) NSString * startParam;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaPhoto : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) NSString * caption;
+@property (nonatomic, strong, readonly) NSNumber * ttlSeconds;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaDocument : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_Document * document;
+@property (nonatomic, strong, readonly) NSString * caption;
+@property (nonatomic, strong, readonly) NSNumber * ttlSeconds;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaGeoLive : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) NSNumber * period;
+
+@end
+
+@interface Api73_MessageMedia_messageMediaVenue : Api73_MessageMedia
+
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * address;
+@property (nonatomic, strong, readonly) NSString * provider;
+@property (nonatomic, strong, readonly) NSString * venueId;
+@property (nonatomic, strong, readonly) NSString * venueType;
+
+@end
+
+
+@interface Api73_PaymentSavedCredentials : NSObject
+
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSString * title;
+
++ (Api73_PaymentSavedCredentials_paymentSavedCredentialsCard *)paymentSavedCredentialsCardWithPid:(NSString *)pid title:(NSString *)title;
+
+@end
+
+@interface Api73_PaymentSavedCredentials_paymentSavedCredentialsCard : Api73_PaymentSavedCredentials
+
+@end
+
+
+@interface Api73_Null : NSObject
+
++ (Api73_Null_null *)null;
+
+@end
+
+@interface Api73_Null_null : Api73_Null
+
+@end
+
+
+@interface Api73_auth_CodeType : NSObject
+
++ (Api73_auth_CodeType_auth_codeTypeSms *)auth_codeTypeSms;
++ (Api73_auth_CodeType_auth_codeTypeCall *)auth_codeTypeCall;
++ (Api73_auth_CodeType_auth_codeTypeFlashCall *)auth_codeTypeFlashCall;
+
+@end
+
+@interface Api73_auth_CodeType_auth_codeTypeSms : Api73_auth_CodeType
+
+@end
+
+@interface Api73_auth_CodeType_auth_codeTypeCall : Api73_auth_CodeType
+
+@end
+
+@interface Api73_auth_CodeType_auth_codeTypeFlashCall : Api73_auth_CodeType
+
+@end
+
+
+@interface Api73_DocumentAttribute : NSObject
+
++ (Api73_DocumentAttribute_documentAttributeImageSize *)documentAttributeImageSizeWithW:(NSNumber *)w h:(NSNumber *)h;
++ (Api73_DocumentAttribute_documentAttributeAnimated *)documentAttributeAnimated;
++ (Api73_DocumentAttribute_documentAttributeFilename *)documentAttributeFilenameWithFileName:(NSString *)fileName;
++ (Api73_DocumentAttribute_documentAttributeAudio *)documentAttributeAudioWithFlags:(NSNumber *)flags duration:(NSNumber *)duration title:(NSString *)title performer:(NSString *)performer waveform:(NSData *)waveform;
++ (Api73_DocumentAttribute_documentAttributeSticker *)documentAttributeStickerWithFlags:(NSNumber *)flags alt:(NSString *)alt stickerset:(Api73_InputStickerSet *)stickerset maskCoords:(Api73_MaskCoords *)maskCoords;
++ (Api73_DocumentAttribute_documentAttributeHasStickers *)documentAttributeHasStickers;
++ (Api73_DocumentAttribute_documentAttributeVideo *)documentAttributeVideoWithFlags:(NSNumber *)flags duration:(NSNumber *)duration w:(NSNumber *)w h:(NSNumber *)h;
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeImageSize : Api73_DocumentAttribute
+
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeAnimated : Api73_DocumentAttribute
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeFilename : Api73_DocumentAttribute
+
+@property (nonatomic, strong, readonly) NSString * fileName;
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeAudio : Api73_DocumentAttribute
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * performer;
+@property (nonatomic, strong, readonly) NSData * waveform;
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeSticker : Api73_DocumentAttribute
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * alt;
+@property (nonatomic, strong, readonly) Api73_InputStickerSet * stickerset;
+@property (nonatomic, strong, readonly) Api73_MaskCoords * maskCoords;
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeHasStickers : Api73_DocumentAttribute
+
+@end
+
+@interface Api73_DocumentAttribute_documentAttributeVideo : Api73_DocumentAttribute
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+
+@end
+
+
+@interface Api73_account_Authorizations : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * authorizations;
+
++ (Api73_account_Authorizations_account_authorizations *)account_authorizationsWithAuthorizations:(NSArray *)authorizations;
+
+@end
+
+@interface Api73_account_Authorizations_account_authorizations : Api73_account_Authorizations
+
+@end
+
+
+@interface Api73_ChatPhoto : NSObject
+
++ (Api73_ChatPhoto_chatPhotoEmpty *)chatPhotoEmpty;
++ (Api73_ChatPhoto_chatPhoto *)chatPhotoWithPhotoSmall:(Api73_FileLocation *)photoSmall photoBig:(Api73_FileLocation *)photoBig;
+
+@end
+
+@interface Api73_ChatPhoto_chatPhotoEmpty : Api73_ChatPhoto
+
+@end
+
+@interface Api73_ChatPhoto_chatPhoto : Api73_ChatPhoto
+
+@property (nonatomic, strong, readonly) Api73_FileLocation * photoSmall;
+@property (nonatomic, strong, readonly) Api73_FileLocation * photoBig;
+
+@end
+
+
+@interface Api73_payments_PaymentForm : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * botId;
+@property (nonatomic, strong, readonly) Api73_Invoice * invoice;
+@property (nonatomic, strong, readonly) NSNumber * providerId;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * nativeProvider;
+@property (nonatomic, strong, readonly) Api73_DataJSON * nativeParams;
+@property (nonatomic, strong, readonly) Api73_PaymentRequestedInfo * savedInfo;
+@property (nonatomic, strong, readonly) Api73_PaymentSavedCredentials * savedCredentials;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_payments_PaymentForm_payments_paymentForm *)payments_paymentFormWithFlags:(NSNumber *)flags botId:(NSNumber *)botId invoice:(Api73_Invoice *)invoice providerId:(NSNumber *)providerId url:(NSString *)url nativeProvider:(NSString *)nativeProvider nativeParams:(Api73_DataJSON *)nativeParams savedInfo:(Api73_PaymentRequestedInfo *)savedInfo savedCredentials:(Api73_PaymentSavedCredentials *)savedCredentials users:(NSArray *)users;
+
+@end
+
+@interface Api73_payments_PaymentForm_payments_paymentForm : Api73_payments_PaymentForm
+
+@end
+
+
+@interface Api73_payments_PaymentReceipt : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * botId;
+@property (nonatomic, strong, readonly) Api73_Invoice * invoice;
+@property (nonatomic, strong, readonly) NSNumber * providerId;
+@property (nonatomic, strong, readonly) Api73_PaymentRequestedInfo * info;
+@property (nonatomic, strong, readonly) Api73_ShippingOption * shipping;
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSNumber * totalAmount;
+@property (nonatomic, strong, readonly) NSString * credentialsTitle;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_payments_PaymentReceipt_payments_paymentReceipt *)payments_paymentReceiptWithFlags:(NSNumber *)flags date:(NSNumber *)date botId:(NSNumber *)botId invoice:(Api73_Invoice *)invoice providerId:(NSNumber *)providerId info:(Api73_PaymentRequestedInfo *)info shipping:(Api73_ShippingOption *)shipping currency:(NSString *)currency totalAmount:(NSNumber *)totalAmount credentialsTitle:(NSString *)credentialsTitle users:(NSArray *)users;
+
+@end
+
+@interface Api73_payments_PaymentReceipt_payments_paymentReceipt : Api73_payments_PaymentReceipt
+
+@end
+
+
+@interface Api73_messages_PeerDialogs : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * dialogs;
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+@property (nonatomic, strong, readonly) Api73_updates_State * state;
+
++ (Api73_messages_PeerDialogs_messages_peerDialogs *)messages_peerDialogsWithDialogs:(NSArray *)dialogs messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users state:(Api73_updates_State *)state;
+
+@end
+
+@interface Api73_messages_PeerDialogs_messages_peerDialogs : Api73_messages_PeerDialogs
+
+@end
+
+
+@interface Api73_InputStickerSet : NSObject
+
++ (Api73_InputStickerSet_inputStickerSetEmpty *)inputStickerSetEmpty;
++ (Api73_InputStickerSet_inputStickerSetID *)inputStickerSetIDWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
++ (Api73_InputStickerSet_inputStickerSetShortName *)inputStickerSetShortNameWithShortName:(NSString *)shortName;
+
+@end
+
+@interface Api73_InputStickerSet_inputStickerSetEmpty : Api73_InputStickerSet
+
+@end
+
+@interface Api73_InputStickerSet_inputStickerSetID : Api73_InputStickerSet
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+@interface Api73_InputStickerSet_inputStickerSetShortName : Api73_InputStickerSet
+
+@property (nonatomic, strong, readonly) NSString * shortName;
+
+@end
+
+
+@interface Api73_BotInfo : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) NSArray * commands;
+
++ (Api73_BotInfo_botInfo *)botInfoWithUserId:(NSNumber *)userId pdescription:(NSString *)pdescription commands:(NSArray *)commands;
+
+@end
+
+@interface Api73_BotInfo_botInfo : Api73_BotInfo
+
+@end
+
+
+@interface Api73_contacts_Suggested : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * results;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_Suggested_contacts_suggested *)contacts_suggestedWithResults:(NSArray *)results users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Suggested_contacts_suggested : Api73_contacts_Suggested
+
+@end
+
+
+@interface Api73_updates_State : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * qts;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * seq;
+@property (nonatomic, strong, readonly) NSNumber * unreadCount;
+
++ (Api73_updates_State_updates_state *)updates_stateWithPts:(NSNumber *)pts qts:(NSNumber *)qts date:(NSNumber *)date seq:(NSNumber *)seq unreadCount:(NSNumber *)unreadCount;
+
+@end
+
+@interface Api73_updates_State_updates_state : Api73_updates_State
+
+@end
+
+
+@interface Api73_FoundGif : NSObject
+
+@property (nonatomic, strong, readonly) NSString * url;
+
++ (Api73_FoundGif_foundGif *)foundGifWithUrl:(NSString *)url thumbUrl:(NSString *)thumbUrl contentUrl:(NSString *)contentUrl contentType:(NSString *)contentType w:(NSNumber *)w h:(NSNumber *)h;
++ (Api73_FoundGif_foundGifCached *)foundGifCachedWithUrl:(NSString *)url photo:(Api73_Photo *)photo document:(Api73_Document *)document;
+
+@end
+
+@interface Api73_FoundGif_foundGif : Api73_FoundGif
+
+@property (nonatomic, strong, readonly) NSString * thumbUrl;
+@property (nonatomic, strong, readonly) NSString * contentUrl;
+@property (nonatomic, strong, readonly) NSString * contentType;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+
+@end
+
+@interface Api73_FoundGif_foundGifCached : Api73_FoundGif
+
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+@property (nonatomic, strong, readonly) Api73_Document * document;
+
+@end
+
+
+@interface Api73_User : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_User_userEmpty *)userEmptyWithPid:(NSNumber *)pid;
++ (Api73_User_user *)userWithFlags:(NSNumber *)flags pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash firstName:(NSString *)firstName lastName:(NSString *)lastName username:(NSString *)username phone:(NSString *)phone photo:(Api73_UserProfilePhoto *)photo status:(Api73_UserStatus *)status botInfoVersion:(NSNumber *)botInfoVersion restrictionReason:(NSString *)restrictionReason botInlinePlaceholder:(NSString *)botInlinePlaceholder langCode:(NSString *)langCode;
+
+@end
+
+@interface Api73_User_userEmpty : Api73_User
+
+@end
+
+@interface Api73_User_user : Api73_User
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+@property (nonatomic, strong, readonly) NSString * username;
+@property (nonatomic, strong, readonly) NSString * phone;
+@property (nonatomic, strong, readonly) Api73_UserProfilePhoto * photo;
+@property (nonatomic, strong, readonly) Api73_UserStatus * status;
+@property (nonatomic, strong, readonly) NSNumber * botInfoVersion;
+@property (nonatomic, strong, readonly) NSString * restrictionReason;
+@property (nonatomic, strong, readonly) NSString * botInlinePlaceholder;
+@property (nonatomic, strong, readonly) NSString * langCode;
+
+@end
+
+
+@interface Api73_Message : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_Message_messageEmpty *)messageEmptyWithPid:(NSNumber *)pid;
++ (Api73_Message_messageService *)messageServiceWithFlags:(NSNumber *)flags pid:(NSNumber *)pid fromId:(NSNumber *)fromId toId:(Api73_Peer *)toId replyToMsgId:(NSNumber *)replyToMsgId date:(NSNumber *)date action:(Api73_MessageAction *)action;
++ (Api73_Message_message *)messageWithFlags:(NSNumber *)flags pid:(NSNumber *)pid fromId:(NSNumber *)fromId toId:(Api73_Peer *)toId fwdFrom:(Api73_MessageFwdHeader *)fwdFrom viaBotId:(NSNumber *)viaBotId replyToMsgId:(NSNumber *)replyToMsgId date:(NSNumber *)date message:(NSString *)message media:(Api73_MessageMedia *)media replyMarkup:(Api73_ReplyMarkup *)replyMarkup entities:(NSArray *)entities views:(NSNumber *)views editDate:(NSNumber *)editDate postAuthor:(NSString *)postAuthor groupedId:(NSNumber *)groupedId;
+
+@end
+
+@interface Api73_Message_messageEmpty : Api73_Message
+
+@end
+
+@interface Api73_Message_messageService : Api73_Message
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * fromId;
+@property (nonatomic, strong, readonly) Api73_Peer * toId;
+@property (nonatomic, strong, readonly) NSNumber * replyToMsgId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) Api73_MessageAction * action;
+
+@end
+
+@interface Api73_Message_message : Api73_Message
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * fromId;
+@property (nonatomic, strong, readonly) Api73_Peer * toId;
+@property (nonatomic, strong, readonly) Api73_MessageFwdHeader * fwdFrom;
+@property (nonatomic, strong, readonly) NSNumber * viaBotId;
+@property (nonatomic, strong, readonly) NSNumber * replyToMsgId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) Api73_MessageMedia * media;
+@property (nonatomic, strong, readonly) Api73_ReplyMarkup * replyMarkup;
+@property (nonatomic, strong, readonly) NSArray * entities;
+@property (nonatomic, strong, readonly) NSNumber * views;
+@property (nonatomic, strong, readonly) NSNumber * editDate;
+@property (nonatomic, strong, readonly) NSString * postAuthor;
+@property (nonatomic, strong, readonly) NSNumber * groupedId;
+
+@end
+
+
+@interface Api73_messages_RecentStickers : NSObject
+
++ (Api73_messages_RecentStickers_messages_recentStickersNotModified *)messages_recentStickersNotModified;
++ (Api73_messages_RecentStickers_messages_recentStickers *)messages_recentStickersWithPhash:(NSNumber *)phash stickers:(NSArray *)stickers;
++ (Api73_messages_RecentStickers_messages_getRecentStickers *)messages_getRecentStickersWithFlags:(NSNumber *)flags phash:(NSNumber *)phash;
+
+@end
+
+@interface Api73_messages_RecentStickers_messages_recentStickersNotModified : Api73_messages_RecentStickers
+
+@end
+
+@interface Api73_messages_RecentStickers_messages_recentStickers : Api73_messages_RecentStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSArray * stickers;
+
+@end
+
+@interface Api73_messages_RecentStickers_messages_getRecentStickers : Api73_messages_RecentStickers
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * phash;
+
+@end
+
+
+@interface Api73_InputFileLocation : NSObject
+
++ (Api73_InputFileLocation_inputFileLocation *)inputFileLocationWithVolumeId:(NSNumber *)volumeId localId:(NSNumber *)localId secret:(NSNumber *)secret;
++ (Api73_InputFileLocation_inputEncryptedFileLocation *)inputEncryptedFileLocationWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
++ (Api73_InputFileLocation_inputDocumentFileLocation *)inputDocumentFileLocationWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash version:(NSNumber *)version;
+
+@end
+
+@interface Api73_InputFileLocation_inputFileLocation : Api73_InputFileLocation
+
+@property (nonatomic, strong, readonly) NSNumber * volumeId;
+@property (nonatomic, strong, readonly) NSNumber * localId;
+@property (nonatomic, strong, readonly) NSNumber * secret;
+
+@end
+
+@interface Api73_InputFileLocation_inputEncryptedFileLocation : Api73_InputFileLocation
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+@interface Api73_InputFileLocation_inputDocumentFileLocation : Api73_InputFileLocation
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+
+@interface Api73_GeoPoint : NSObject
+
++ (Api73_GeoPoint_geoPointEmpty *)geoPointEmpty;
++ (Api73_GeoPoint_geoPoint *)geoPointWithPlong:(NSNumber *)plong lat:(NSNumber *)lat;
++ (Api73_GeoPoint_geoPlace *)geoPlaceWithPlong:(NSNumber *)plong lat:(NSNumber *)lat name:(Api73_GeoPlaceName *)name;
+
+@end
+
+@interface Api73_GeoPoint_geoPointEmpty : Api73_GeoPoint
+
+@end
+
+@interface Api73_GeoPoint_geoPoint : Api73_GeoPoint
+
+@property (nonatomic, strong, readonly) NSNumber * plong;
+@property (nonatomic, strong, readonly) NSNumber * lat;
+
+@end
+
+@interface Api73_GeoPoint_geoPlace : Api73_GeoPoint
+
+@property (nonatomic, strong, readonly) NSNumber * plong;
+@property (nonatomic, strong, readonly) NSNumber * lat;
+@property (nonatomic, strong, readonly) Api73_GeoPlaceName * name;
+
+@end
+
+
+@interface Api73_InputPhoneCall : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
++ (Api73_InputPhoneCall_inputPhoneCall *)inputPhoneCallWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputPhoneCall_inputPhoneCall : Api73_InputPhoneCall
+
+@end
+
+
+@interface Api73_ReceivedNotifyMessage : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
++ (Api73_ReceivedNotifyMessage_receivedNotifyMessage *)receivedNotifyMessageWithPid:(NSNumber *)pid flags:(NSNumber *)flags;
+
+@end
+
+@interface Api73_ReceivedNotifyMessage_receivedNotifyMessage : Api73_ReceivedNotifyMessage
+
+@end
+
+
+@interface Api73_ChatParticipants : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
++ (Api73_ChatParticipants_chatParticipantsForbidden *)chatParticipantsForbiddenWithFlags:(NSNumber *)flags chatId:(NSNumber *)chatId selfParticipant:(Api73_ChatParticipant *)selfParticipant;
++ (Api73_ChatParticipants_chatParticipants *)chatParticipantsWithChatId:(NSNumber *)chatId participants:(NSArray *)participants version:(NSNumber *)version;
+
+@end
+
+@interface Api73_ChatParticipants_chatParticipantsForbidden : Api73_ChatParticipants
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_ChatParticipant * selfParticipant;
+
+@end
+
+@interface Api73_ChatParticipants_chatParticipants : Api73_ChatParticipants
+
+@property (nonatomic, strong, readonly) NSArray * participants;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+
+@interface Api73_InputPaymentCredentials : NSObject
+
++ (Api73_InputPaymentCredentials_inputPaymentCredentialsSaved *)inputPaymentCredentialsSavedWithPid:(NSString *)pid tmpPassword:(NSData *)tmpPassword;
++ (Api73_InputPaymentCredentials_inputPaymentCredentials *)inputPaymentCredentialsWithFlags:(NSNumber *)flags data:(Api73_DataJSON *)data;
++ (Api73_InputPaymentCredentials_inputPaymentCredentialsApplePay *)inputPaymentCredentialsApplePayWithPaymentData:(Api73_DataJSON *)paymentData;
++ (Api73_InputPaymentCredentials_inputPaymentCredentialsAndroidPay *)inputPaymentCredentialsAndroidPayWithPaymentToken:(Api73_DataJSON *)paymentToken;
+
+@end
+
+@interface Api73_InputPaymentCredentials_inputPaymentCredentialsSaved : Api73_InputPaymentCredentials
+
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSData * tmpPassword;
+
+@end
+
+@interface Api73_InputPaymentCredentials_inputPaymentCredentials : Api73_InputPaymentCredentials
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_DataJSON * data;
+
+@end
+
+@interface Api73_InputPaymentCredentials_inputPaymentCredentialsApplePay : Api73_InputPaymentCredentials
+
+@property (nonatomic, strong, readonly) Api73_DataJSON * paymentData;
+
+@end
+
+@interface Api73_InputPaymentCredentials_inputPaymentCredentialsAndroidPay : Api73_InputPaymentCredentials
+
+@property (nonatomic, strong, readonly) Api73_DataJSON * paymentToken;
+
+@end
+
+
+@interface Api73_ShippingOption : NSObject
+
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSArray * prices;
+
++ (Api73_ShippingOption_shippingOption *)shippingOptionWithPid:(NSString *)pid title:(NSString *)title prices:(NSArray *)prices;
+
+@end
+
+@interface Api73_ShippingOption_shippingOption : Api73_ShippingOption
+
+@end
+
+
+@interface Api73_PostAddress : NSObject
+
+@property (nonatomic, strong, readonly) NSString * streetLine1;
+@property (nonatomic, strong, readonly) NSString * streetLine2;
+@property (nonatomic, strong, readonly) NSString * city;
+@property (nonatomic, strong, readonly) NSString * state;
+@property (nonatomic, strong, readonly) NSString * countryIso2;
+@property (nonatomic, strong, readonly) NSString * postCode;
+
++ (Api73_PostAddress_postAddress *)postAddressWithStreetLine1:(NSString *)streetLine1 streetLine2:(NSString *)streetLine2 city:(NSString *)city state:(NSString *)state countryIso2:(NSString *)countryIso2 postCode:(NSString *)postCode;
+
+@end
+
+@interface Api73_PostAddress_postAddress : Api73_PostAddress
+
+@end
+
+
+@interface Api73_DataJSON : NSObject
+
+@property (nonatomic, strong, readonly) NSString * data;
+
++ (Api73_DataJSON_dataJSON *)dataJSONWithData:(NSString *)data;
+
+@end
+
+@interface Api73_DataJSON_dataJSON : Api73_DataJSON
+
+@end
+
+
+@interface Api73_InputStickeredMedia : NSObject
+
++ (Api73_InputStickeredMedia_inputStickeredMediaPhoto *)inputStickeredMediaPhotoWithPid:(Api73_InputPhoto *)pid;
++ (Api73_InputStickeredMedia_inputStickeredMediaDocument *)inputStickeredMediaDocumentWithPid:(Api73_InputDocument *)pid;
+
+@end
+
+@interface Api73_InputStickeredMedia_inputStickeredMediaPhoto : Api73_InputStickeredMedia
+
+@property (nonatomic, strong, readonly) Api73_InputPhoto * pid;
+
+@end
+
+@interface Api73_InputStickeredMedia_inputStickeredMediaDocument : Api73_InputStickeredMedia
+
+@property (nonatomic, strong, readonly) Api73_InputDocument * pid;
+
+@end
+
+
+@interface Api73_messages_FeaturedStickers : NSObject
+
++ (Api73_messages_FeaturedStickers_messages_featuredStickersNotModified *)messages_featuredStickersNotModified;
++ (Api73_messages_FeaturedStickers_messages_featuredStickers *)messages_featuredStickersWithPhash:(NSNumber *)phash sets:(NSArray *)sets unread:(NSArray *)unread;
+
+@end
+
+@interface Api73_messages_FeaturedStickers_messages_featuredStickersNotModified : Api73_messages_FeaturedStickers
+
+@end
+
+@interface Api73_messages_FeaturedStickers_messages_featuredStickers : Api73_messages_FeaturedStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSArray * sets;
+@property (nonatomic, strong, readonly) NSArray * unread;
+
+@end
+
+
+@interface Api73_PhoneCallDiscardReason : NSObject
+
++ (Api73_PhoneCallDiscardReason_phoneCallDiscardReasonMissed *)phoneCallDiscardReasonMissed;
++ (Api73_PhoneCallDiscardReason_phoneCallDiscardReasonDisconnect *)phoneCallDiscardReasonDisconnect;
++ (Api73_PhoneCallDiscardReason_phoneCallDiscardReasonHangup *)phoneCallDiscardReasonHangup;
++ (Api73_PhoneCallDiscardReason_phoneCallDiscardReasonBusy *)phoneCallDiscardReasonBusy;
+
+@end
+
+@interface Api73_PhoneCallDiscardReason_phoneCallDiscardReasonMissed : Api73_PhoneCallDiscardReason
+
+@end
+
+@interface Api73_PhoneCallDiscardReason_phoneCallDiscardReasonDisconnect : Api73_PhoneCallDiscardReason
+
+@end
+
+@interface Api73_PhoneCallDiscardReason_phoneCallDiscardReasonHangup : Api73_PhoneCallDiscardReason
+
+@end
+
+@interface Api73_PhoneCallDiscardReason_phoneCallDiscardReasonBusy : Api73_PhoneCallDiscardReason
+
+@end
+
+
+@interface Api73_NearestDc : NSObject
+
+@property (nonatomic, strong, readonly) NSString * country;
+@property (nonatomic, strong, readonly) NSNumber * thisDc;
+@property (nonatomic, strong, readonly) NSNumber * nearestDc;
+
++ (Api73_NearestDc_nearestDc *)nearestDcWithCountry:(NSString *)country thisDc:(NSNumber *)thisDc nearestDc:(NSNumber *)nearestDc;
+
+@end
+
+@interface Api73_NearestDc_nearestDc : Api73_NearestDc
+
+@end
+
+
+@interface Api73_photos_Photos : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * photos;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_photos_Photos_photos_photos *)photos_photosWithPhotos:(NSArray *)photos users:(NSArray *)users;
++ (Api73_photos_Photos_photos_photosSlice *)photos_photosSliceWithCount:(NSNumber *)count photos:(NSArray *)photos users:(NSArray *)users;
+
+@end
+
+@interface Api73_photos_Photos_photos_photos : Api73_photos_Photos
+
+@end
+
+@interface Api73_photos_Photos_photos_photosSlice : Api73_photos_Photos
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_contacts_ImportedContacts : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * imported;
+@property (nonatomic, strong, readonly) NSArray * popularInvites;
+@property (nonatomic, strong, readonly) NSArray * retryContacts;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_ImportedContacts_contacts_importedContacts *)contacts_importedContactsWithImported:(NSArray *)imported popularInvites:(NSArray *)popularInvites retryContacts:(NSArray *)retryContacts users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_ImportedContacts_contacts_importedContacts : Api73_contacts_ImportedContacts
+
+@end
+
+
+@interface Api73_InputWebDocument : NSObject
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * size;
+@property (nonatomic, strong, readonly) NSString * mimeType;
+@property (nonatomic, strong, readonly) NSArray * attributes;
+
++ (Api73_InputWebDocument_inputWebDocument *)inputWebDocumentWithUrl:(NSString *)url size:(NSNumber *)size mimeType:(NSString *)mimeType attributes:(NSArray *)attributes;
+
+@end
+
+@interface Api73_InputWebDocument_inputWebDocument : Api73_InputWebDocument
+
+@end
+
+
+@interface Api73_phone_PhoneCall : NSObject
+
+@property (nonatomic, strong, readonly) Api73_PhoneCall * phoneCall;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_phone_PhoneCall_phone_phoneCall *)phone_phoneCallWithPhoneCall:(Api73_PhoneCall *)phoneCall users:(NSArray *)users;
+
+@end
+
+@interface Api73_phone_PhoneCall_phone_phoneCall : Api73_phone_PhoneCall
+
+@end
+
+
+@interface Api73_ChannelAdminLogEvent : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) Api73_ChannelAdminLogEventAction * action;
+
++ (Api73_ChannelAdminLogEvent_channelAdminLogEvent *)channelAdminLogEventWithPid:(NSNumber *)pid date:(NSNumber *)date userId:(NSNumber *)userId action:(Api73_ChannelAdminLogEventAction *)action;
+
+@end
+
+@interface Api73_ChannelAdminLogEvent_channelAdminLogEvent : Api73_ChannelAdminLogEvent
+
+@end
+
+
+@interface Api73_Bool : NSObject
+
++ (Api73_Bool_boolFalse *)boolFalse;
++ (Api73_Bool_boolTrue *)boolTrue;
++ (Api73_Bool_messages_editInlineBotMessage *)messages_editInlineBotMessageWithFlags:(NSNumber *)flags pid:(Api73_InputBotInlineMessageID *)pid message:(NSString *)message replyMarkup:(Api73_ReplyMarkup *)replyMarkup entities:(NSArray *)entities;
++ (Api73_Bool_messages_setBotCallbackAnswer *)messages_setBotCallbackAnswerWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId message:(NSString *)message;
++ (Api73_Bool_messages_setInlineBotResults *)messages_setInlineBotResultsWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId results:(NSArray *)results cacheTime:(NSNumber *)cacheTime nextOffset:(NSString *)nextOffset switchPm:(Api73_InlineBotSwitchPM *)switchPm;
++ (Api73_Bool_account_registerDevice *)account_registerDeviceWithTokenType:(NSNumber *)tokenType token:(NSString *)token;
++ (Api73_Bool_messages_readFeaturedStickers *)messages_readFeaturedStickersWithPid:(NSArray *)pid;
++ (Api73_Bool_messages_reorderStickerSets *)messages_reorderStickerSetsWithFlags:(NSNumber *)flags order:(NSArray *)order;
++ (Api73_Bool_auth_dropTempAuthKeys *)auth_dropTempAuthKeysWithExceptAuthKeys:(NSArray *)exceptAuthKeys;
++ (Api73_Bool_messages_saveRecentSticker *)messages_saveRecentStickerWithFlags:(NSNumber *)flags pid:(Api73_InputDocument *)pid unsave:(Api73_Bool *)unsave;
++ (Api73_Bool_messages_clearRecentStickers *)messages_clearRecentStickersWithFlags:(NSNumber *)flags;
+
+@end
+
+@interface Api73_Bool_boolFalse : Api73_Bool
+
+@end
+
+@interface Api73_Bool_boolTrue : Api73_Bool
+
+@end
+
+@interface Api73_Bool_messages_editInlineBotMessage : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputBotInlineMessageID * pid;
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) Api73_ReplyMarkup * replyMarkup;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_Bool_messages_setBotCallbackAnswer : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSString * message;
+
+@end
+
+@interface Api73_Bool_messages_setInlineBotResults : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * queryId;
+@property (nonatomic, strong, readonly) NSArray * results;
+@property (nonatomic, strong, readonly) NSNumber * cacheTime;
+@property (nonatomic, strong, readonly) NSString * nextOffset;
+@property (nonatomic, strong, readonly) Api73_InlineBotSwitchPM * switchPm;
+
+@end
+
+@interface Api73_Bool_account_registerDevice : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * tokenType;
+@property (nonatomic, strong, readonly) NSString * token;
+
+@end
+
+@interface Api73_Bool_messages_readFeaturedStickers : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSArray * pid;
+
+@end
+
+@interface Api73_Bool_messages_reorderStickerSets : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSArray * order;
+
+@end
+
+@interface Api73_Bool_auth_dropTempAuthKeys : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSArray * exceptAuthKeys;
+
+@end
+
+@interface Api73_Bool_messages_saveRecentSticker : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_InputDocument * pid;
+@property (nonatomic, strong, readonly) Api73_Bool * unsave;
+
+@end
+
+@interface Api73_Bool_messages_clearRecentStickers : Api73_Bool
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
+@end
+
+
+@interface Api73_LangPackString : NSObject
+
+@property (nonatomic, strong, readonly) NSString * key;
+
++ (Api73_LangPackString_langPackString *)langPackStringWithKey:(NSString *)key value:(NSString *)value;
++ (Api73_LangPackString_langPackStringPluralized *)langPackStringPluralizedWithFlags:(NSNumber *)flags key:(NSString *)key zeroValue:(NSString *)zeroValue oneValue:(NSString *)oneValue twoValue:(NSString *)twoValue fewValue:(NSString *)fewValue manyValue:(NSString *)manyValue otherValue:(NSString *)otherValue;
+
+@end
+
+@interface Api73_LangPackString_langPackString : Api73_LangPackString
+
+@property (nonatomic, strong, readonly) NSString * value;
+
+@end
+
+@interface Api73_LangPackString_langPackStringPluralized : Api73_LangPackString
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * zeroValue;
+@property (nonatomic, strong, readonly) NSString * oneValue;
+@property (nonatomic, strong, readonly) NSString * twoValue;
+@property (nonatomic, strong, readonly) NSString * fewValue;
+@property (nonatomic, strong, readonly) NSString * manyValue;
+@property (nonatomic, strong, readonly) NSString * otherValue;
+
+@end
+
+
+@interface Api73_InputWebFileLocation : NSObject
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
++ (Api73_InputWebFileLocation_inputWebFileLocation *)inputWebFileLocationWithUrl:(NSString *)url accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputWebFileLocation_inputWebFileLocation : Api73_InputWebFileLocation
+
+@end
+
+
+@interface Api73_MessageFwdHeader : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * fromId;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+@property (nonatomic, strong, readonly) NSNumber * channelPost;
+@property (nonatomic, strong, readonly) NSString * postAuthor;
+@property (nonatomic, strong, readonly) Api73_Peer * savedFromPeer;
+@property (nonatomic, strong, readonly) NSNumber * savedFromMsgId;
+
++ (Api73_MessageFwdHeader_messageFwdHeader *)messageFwdHeaderWithFlags:(NSNumber *)flags fromId:(NSNumber *)fromId date:(NSNumber *)date channelId:(NSNumber *)channelId channelPost:(NSNumber *)channelPost postAuthor:(NSString *)postAuthor savedFromPeer:(Api73_Peer *)savedFromPeer savedFromMsgId:(NSNumber *)savedFromMsgId;
+
+@end
+
+@interface Api73_MessageFwdHeader_messageFwdHeader : Api73_MessageFwdHeader
+
+@end
+
+
+@interface Api73_help_Support : NSObject
+
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) Api73_User * user;
+
++ (Api73_help_Support_help_support *)help_supportWithPhoneNumber:(NSString *)phoneNumber user:(Api73_User *)user;
+
+@end
+
+@interface Api73_help_Support_help_support : Api73_help_Support
+
+@end
+
+
+@interface Api73_ChatLocated : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+@property (nonatomic, strong, readonly) NSNumber * distance;
+
++ (Api73_ChatLocated_chatLocated *)chatLocatedWithChatId:(NSNumber *)chatId distance:(NSNumber *)distance;
+
+@end
+
+@interface Api73_ChatLocated_chatLocated : Api73_ChatLocated
+
+@end
+
+
+@interface Api73_MessagesFilter : NSObject
+
++ (Api73_MessagesFilter_inputMessagesFilterEmpty *)inputMessagesFilterEmpty;
++ (Api73_MessagesFilter_inputMessagesFilterPhotos *)inputMessagesFilterPhotos;
++ (Api73_MessagesFilter_inputMessagesFilterVideo *)inputMessagesFilterVideo;
++ (Api73_MessagesFilter_inputMessagesFilterPhotoVideo *)inputMessagesFilterPhotoVideo;
++ (Api73_MessagesFilter_inputMessagesFilterDocument *)inputMessagesFilterDocument;
++ (Api73_MessagesFilter_inputMessagesFilterPhotoVideoDocuments *)inputMessagesFilterPhotoVideoDocuments;
++ (Api73_MessagesFilter_inputMessagesFilterVoice *)inputMessagesFilterVoice;
++ (Api73_MessagesFilter_inputMessagesFilterMusic *)inputMessagesFilterMusic;
++ (Api73_MessagesFilter_inputMessagesFilterChatPhotos *)inputMessagesFilterChatPhotos;
++ (Api73_MessagesFilter_inputMessagesFilterPhoneCalls *)inputMessagesFilterPhoneCallsWithFlags:(NSNumber *)flags;
++ (Api73_MessagesFilter_inputMessagesFilterRoundVoice *)inputMessagesFilterRoundVoice;
++ (Api73_MessagesFilter_inputMessagesFilterRoundVideo *)inputMessagesFilterRoundVideo;
++ (Api73_MessagesFilter_inputMessagesFilterMyMentions *)inputMessagesFilterMyMentions;
++ (Api73_MessagesFilter_inputMessagesFilterMyMentionsUnread *)inputMessagesFilterMyMentionsUnread;
++ (Api73_MessagesFilter_inputMessagesFilterGeo *)inputMessagesFilterGeo;
++ (Api73_MessagesFilter_inputMessagesFilterContacts *)inputMessagesFilterContacts;
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterEmpty : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterPhotos : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterVideo : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterPhotoVideo : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterDocument : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterPhotoVideoDocuments : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterVoice : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterMusic : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterChatPhotos : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterPhoneCalls : Api73_MessagesFilter
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterRoundVoice : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterRoundVideo : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterMyMentions : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterMyMentionsUnread : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterGeo : Api73_MessagesFilter
+
+@end
+
+@interface Api73_MessagesFilter_inputMessagesFilterContacts : Api73_MessagesFilter
+
+@end
+
+
+@interface Api73_messages_Dialogs : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * dialogs;
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_Dialogs_messages_dialogs *)messages_dialogsWithDialogs:(NSArray *)dialogs messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
++ (Api73_messages_Dialogs_messages_dialogsSlice *)messages_dialogsSliceWithCount:(NSNumber *)count dialogs:(NSArray *)dialogs messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_Dialogs_messages_dialogs : Api73_messages_Dialogs
+
+@end
+
+@interface Api73_messages_Dialogs_messages_dialogsSlice : Api73_messages_Dialogs
+
+@property (nonatomic, strong, readonly) NSNumber * count;
+
+@end
+
+
+@interface Api73_upload_CdnFile : NSObject
+
++ (Api73_upload_CdnFile_upload_cdnFileReuploadNeeded *)upload_cdnFileReuploadNeededWithRequestToken:(NSData *)requestToken;
++ (Api73_upload_CdnFile_upload_cdnFile *)upload_cdnFileWithBytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_upload_CdnFile_upload_cdnFileReuploadNeeded : Api73_upload_CdnFile
+
+@property (nonatomic, strong, readonly) NSData * requestToken;
+
+@end
+
+@interface Api73_upload_CdnFile_upload_cdnFile : Api73_upload_CdnFile
+
+@property (nonatomic, strong, readonly) NSData * bytes;
+
+@end
+
+
+@interface Api73_help_InviteText : NSObject
+
++ (Api73_help_InviteText_help_inviteText *)help_inviteTextWithMessage:(NSString *)message;
++ (Api73_help_InviteText_help_getInviteText *)help_getInviteText;
+
+@end
+
+@interface Api73_help_InviteText_help_inviteText : Api73_help_InviteText
+
+@property (nonatomic, strong, readonly) NSString * message;
+
+@end
+
+@interface Api73_help_InviteText_help_getInviteText : Api73_help_InviteText
+
+@end
+
+
+@interface Api73_ContactSuggested : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * mutualContacts;
+
++ (Api73_ContactSuggested_contactSuggested *)contactSuggestedWithUserId:(NSNumber *)userId mutualContacts:(NSNumber *)mutualContacts;
+
+@end
+
+@interface Api73_ContactSuggested_contactSuggested : Api73_ContactSuggested
+
+@end
+
+
+@interface Api73_BotInlineMessage : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_ReplyMarkup * replyMarkup;
+
++ (Api73_BotInlineMessage_botInlineMessageMediaAuto *)botInlineMessageMediaAutoWithFlags:(NSNumber *)flags caption:(NSString *)caption replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_BotInlineMessage_botInlineMessageText *)botInlineMessageTextWithFlags:(NSNumber *)flags message:(NSString *)message entities:(NSArray *)entities replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_BotInlineMessage_botInlineMessageMediaGeo *)botInlineMessageMediaGeoWithFlags:(NSNumber *)flags geo:(Api73_GeoPoint *)geo replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_BotInlineMessage_botInlineMessageMediaVenue *)botInlineMessageMediaVenueWithFlags:(NSNumber *)flags geo:(Api73_GeoPoint *)geo title:(NSString *)title address:(NSString *)address provider:(NSString *)provider venueId:(NSString *)venueId replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_BotInlineMessage_botInlineMessageMediaContact *)botInlineMessageMediaContactWithFlags:(NSNumber *)flags phoneNumber:(NSString *)phoneNumber firstName:(NSString *)firstName lastName:(NSString *)lastName replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
+
+@end
+
+@interface Api73_BotInlineMessage_botInlineMessageMediaAuto : Api73_BotInlineMessage
+
+@property (nonatomic, strong, readonly) NSString * caption;
+
+@end
+
+@interface Api73_BotInlineMessage_botInlineMessageText : Api73_BotInlineMessage
+
+@property (nonatomic, strong, readonly) NSString * message;
+@property (nonatomic, strong, readonly) NSArray * entities;
+
+@end
+
+@interface Api73_BotInlineMessage_botInlineMessageMediaGeo : Api73_BotInlineMessage
+
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+
+@end
+
+@interface Api73_BotInlineMessage_botInlineMessageMediaVenue : Api73_BotInlineMessage
+
+@property (nonatomic, strong, readonly) Api73_GeoPoint * geo;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * address;
+@property (nonatomic, strong, readonly) NSString * provider;
+@property (nonatomic, strong, readonly) NSString * venueId;
+
+@end
+
+@interface Api73_BotInlineMessage_botInlineMessageMediaContact : Api73_BotInlineMessage
+
+@property (nonatomic, strong, readonly) NSString * phoneNumber;
+@property (nonatomic, strong, readonly) NSString * firstName;
+@property (nonatomic, strong, readonly) NSString * lastName;
+
+@end
+
+
+@interface Api73_InputPeerNotifySettings : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * muteUntil;
+@property (nonatomic, strong, readonly) NSString * sound;
+
++ (Api73_InputPeerNotifySettings_inputPeerNotifySettings *)inputPeerNotifySettingsWithFlags:(NSNumber *)flags muteUntil:(NSNumber *)muteUntil sound:(NSString *)sound;
+
+@end
+
+@interface Api73_InputPeerNotifySettings_inputPeerNotifySettings : Api73_InputPeerNotifySettings
+
+@end
+
+
+@interface Api73_messages_FavedStickers : NSObject
+
++ (Api73_messages_FavedStickers_messages_favedStickersNotModified *)messages_favedStickersNotModified;
++ (Api73_messages_FavedStickers_messages_favedStickers *)messages_favedStickersWithPhash:(NSNumber *)phash packs:(NSArray *)packs stickers:(NSArray *)stickers;
+
+@end
+
+@interface Api73_messages_FavedStickers_messages_favedStickersNotModified : Api73_messages_FavedStickers
+
+@end
+
+@interface Api73_messages_FavedStickers_messages_favedStickers : Api73_messages_FavedStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSArray * packs;
+@property (nonatomic, strong, readonly) NSArray * stickers;
+
+@end
+
+
+@interface Api73_ExportedChatInvite : NSObject
+
++ (Api73_ExportedChatInvite_chatInviteEmpty *)chatInviteEmpty;
++ (Api73_ExportedChatInvite_chatInviteExported *)chatInviteExportedWithLink:(NSString *)link;
+
+@end
+
+@interface Api73_ExportedChatInvite_chatInviteEmpty : Api73_ExportedChatInvite
+
+@end
+
+@interface Api73_ExportedChatInvite_chatInviteExported : Api73_ExportedChatInvite
+
+@property (nonatomic, strong, readonly) NSString * link;
+
+@end
+
+
+@interface Api73_DcNetworkStats : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSString * ipAddress;
+@property (nonatomic, strong, readonly) NSArray * pings;
+
++ (Api73_DcNetworkStats_dcPingStats *)dcPingStatsWithDcId:(NSNumber *)dcId ipAddress:(NSString *)ipAddress pings:(NSArray *)pings;
+
+@end
+
+@interface Api73_DcNetworkStats_dcPingStats : Api73_DcNetworkStats
+
+@end
+
+
+@interface Api73_Authorization : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * deviceModel;
+@property (nonatomic, strong, readonly) NSString * platform;
+@property (nonatomic, strong, readonly) NSString * systemVersion;
+@property (nonatomic, strong, readonly) NSNumber * apiId;
+@property (nonatomic, strong, readonly) NSString * appName;
+@property (nonatomic, strong, readonly) NSString * appVersion;
+@property (nonatomic, strong, readonly) NSNumber * dateCreated;
+@property (nonatomic, strong, readonly) NSNumber * dateActive;
+@property (nonatomic, strong, readonly) NSString * ip;
+@property (nonatomic, strong, readonly) NSString * country;
+@property (nonatomic, strong, readonly) NSString * region;
+
++ (Api73_Authorization_authorization *)authorizationWithPhash:(NSNumber *)phash flags:(NSNumber *)flags deviceModel:(NSString *)deviceModel platform:(NSString *)platform systemVersion:(NSString *)systemVersion apiId:(NSNumber *)apiId appName:(NSString *)appName appVersion:(NSString *)appVersion dateCreated:(NSNumber *)dateCreated dateActive:(NSNumber *)dateActive ip:(NSString *)ip country:(NSString *)country region:(NSString *)region;
+
+@end
+
+@interface Api73_Authorization_authorization : Api73_Authorization
+
+@end
+
+
+@interface Api73_MaskCoords : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * n;
+@property (nonatomic, strong, readonly) NSNumber * x;
+@property (nonatomic, strong, readonly) NSNumber * y;
+@property (nonatomic, strong, readonly) NSNumber * zoom;
+
++ (Api73_MaskCoords_maskCoords *)maskCoordsWithN:(NSNumber *)n x:(NSNumber *)x y:(NSNumber *)y zoom:(NSNumber *)zoom;
+
+@end
+
+@interface Api73_MaskCoords_maskCoords : Api73_MaskCoords
+
+@end
+
+
+@interface Api73_messages_AllStickers : NSObject
+
++ (Api73_messages_AllStickers_messages_allStickersNotModified *)messages_allStickersNotModified;
++ (Api73_messages_AllStickers_messages_allStickers *)messages_allStickersWithPhash:(NSNumber *)phash sets:(NSArray *)sets;
++ (Api73_messages_AllStickers_messages_getAllStickers *)messages_getAllStickersWithPhash:(NSNumber *)phash;
++ (Api73_messages_AllStickers_messages_getMaskStickers *)messages_getMaskStickersWithPhash:(NSNumber *)phash;
+
+@end
+
+@interface Api73_messages_AllStickers_messages_allStickersNotModified : Api73_messages_AllStickers
+
+@end
+
+@interface Api73_messages_AllStickers_messages_allStickers : Api73_messages_AllStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+@property (nonatomic, strong, readonly) NSArray * sets;
+
+@end
+
+@interface Api73_messages_AllStickers_messages_getAllStickers : Api73_messages_AllStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+
+@end
+
+@interface Api73_messages_AllStickers_messages_getMaskStickers : Api73_messages_AllStickers
+
+@property (nonatomic, strong, readonly) NSNumber * phash;
+
+@end
+
+
+@interface Api73_PhoneConnection : NSObject
+
++ (Api73_PhoneConnection_phoneConnectionNotReady *)phoneConnectionNotReady;
++ (Api73_PhoneConnection_phoneConnection *)phoneConnectionWithPid:(NSNumber *)pid ip:(NSString *)ip ipv6:(NSString *)ipv6 port:(NSNumber *)port peerTag:(NSData *)peerTag;
+
+@end
+
+@interface Api73_PhoneConnection_phoneConnectionNotReady : Api73_PhoneConnection
+
+@end
+
+@interface Api73_PhoneConnection_phoneConnection : Api73_PhoneConnection
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSString * ip;
+@property (nonatomic, strong, readonly) NSString * ipv6;
+@property (nonatomic, strong, readonly) NSNumber * port;
+@property (nonatomic, strong, readonly) NSData * peerTag;
+
+@end
+
+
+@interface Api73_AccountDaysTTL : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * days;
+
++ (Api73_AccountDaysTTL_accountDaysTTL *)accountDaysTTLWithDays:(NSNumber *)days;
+
+@end
+
+@interface Api73_AccountDaysTTL_accountDaysTTL : Api73_AccountDaysTTL
+
+@end
+
+
+@interface Api73_Scheme : NSObject
+
++ (Api73_Scheme_scheme *)schemeWithSchemeRaw:(NSString *)schemeRaw types:(NSArray *)types methods:(NSArray *)methods version:(NSNumber *)version;
++ (Api73_Scheme_schemeNotModified *)schemeNotModified;
+
+@end
+
+@interface Api73_Scheme_scheme : Api73_Scheme
+
+@property (nonatomic, strong, readonly) NSString * schemeRaw;
+@property (nonatomic, strong, readonly) NSArray * types;
+@property (nonatomic, strong, readonly) NSArray * methods;
+@property (nonatomic, strong, readonly) NSNumber * version;
+
+@end
+
+@interface Api73_Scheme_schemeNotModified : Api73_Scheme
+
+@end
+
+
+@interface Api73_account_Password : NSObject
+
+@property (nonatomic, strong, readonly) NSData * pnewSalt;
+@property (nonatomic, strong, readonly) NSString * emailUnconfirmedPattern;
+
++ (Api73_account_Password_account_noPassword *)account_noPasswordWithPnewSalt:(NSData *)pnewSalt emailUnconfirmedPattern:(NSString *)emailUnconfirmedPattern;
++ (Api73_account_Password_account_password *)account_passwordWithCurrentSalt:(NSData *)currentSalt pnewSalt:(NSData *)pnewSalt hint:(NSString *)hint hasRecovery:(Api73_Bool *)hasRecovery emailUnconfirmedPattern:(NSString *)emailUnconfirmedPattern;
+
+@end
+
+@interface Api73_account_Password_account_noPassword : Api73_account_Password
+
+@end
+
+@interface Api73_account_Password_account_password : Api73_account_Password
+
+@property (nonatomic, strong, readonly) NSData * currentSalt;
+@property (nonatomic, strong, readonly) NSString * hint;
+@property (nonatomic, strong, readonly) Api73_Bool * hasRecovery;
+
+@end
+
+
+@interface Api73_InputBotInlineResult : NSObject
+
+@property (nonatomic, strong, readonly) NSString * pid;
+@property (nonatomic, strong, readonly) Api73_InputBotInlineMessage * sendMessage;
+
++ (Api73_InputBotInlineResult_inputBotInlineResult *)inputBotInlineResultWithFlags:(NSNumber *)flags pid:(NSString *)pid type:(NSString *)type title:(NSString *)title pdescription:(NSString *)pdescription url:(NSString *)url thumbUrl:(NSString *)thumbUrl contentUrl:(NSString *)contentUrl contentType:(NSString *)contentType w:(NSNumber *)w h:(NSNumber *)h duration:(NSNumber *)duration sendMessage:(Api73_InputBotInlineMessage *)sendMessage;
++ (Api73_InputBotInlineResult_inputBotInlineResultPhoto *)inputBotInlineResultPhotoWithPid:(NSString *)pid type:(NSString *)type photo:(Api73_InputPhoto *)photo sendMessage:(Api73_InputBotInlineMessage *)sendMessage;
++ (Api73_InputBotInlineResult_inputBotInlineResultDocument *)inputBotInlineResultDocumentWithFlags:(NSNumber *)flags pid:(NSString *)pid type:(NSString *)type title:(NSString *)title pdescription:(NSString *)pdescription document:(Api73_InputDocument *)document sendMessage:(Api73_InputBotInlineMessage *)sendMessage;
++ (Api73_InputBotInlineResult_inputBotInlineResultGame *)inputBotInlineResultGameWithPid:(NSString *)pid shortName:(NSString *)shortName sendMessage:(Api73_InputBotInlineMessage *)sendMessage;
+
+@end
+
+@interface Api73_InputBotInlineResult_inputBotInlineResult : Api73_InputBotInlineResult
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSString * thumbUrl;
+@property (nonatomic, strong, readonly) NSString * contentUrl;
+@property (nonatomic, strong, readonly) NSString * contentType;
+@property (nonatomic, strong, readonly) NSNumber * w;
+@property (nonatomic, strong, readonly) NSNumber * h;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+
+@end
+
+@interface Api73_InputBotInlineResult_inputBotInlineResultPhoto : Api73_InputBotInlineResult
+
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) Api73_InputPhoto * photo;
+
+@end
+
+@interface Api73_InputBotInlineResult_inputBotInlineResultDocument : Api73_InputBotInlineResult
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * type;
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSString * pdescription;
+@property (nonatomic, strong, readonly) Api73_InputDocument * document;
+
+@end
+
+@interface Api73_InputBotInlineResult_inputBotInlineResultGame : Api73_InputBotInlineResult
+
+@property (nonatomic, strong, readonly) NSString * shortName;
+
+@end
+
+
+@interface Api73_account_PrivacyRules : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * rules;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_account_PrivacyRules_account_privacyRules *)account_privacyRulesWithRules:(NSArray *)rules users:(NSArray *)users;
+
+@end
+
+@interface Api73_account_PrivacyRules_account_privacyRules : Api73_account_PrivacyRules
+
+@end
+
+
+@interface Api73_messages_Message : NSObject
+
++ (Api73_messages_Message_messages_messageEmpty *)messages_messageEmpty;
++ (Api73_messages_Message_messages_message *)messages_messageWithMessage:(Api73_Message *)message chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_Message_messages_messageEmpty : Api73_messages_Message
+
+@end
+
+@interface Api73_messages_Message_messages_message : Api73_messages_Message
+
+@property (nonatomic, strong, readonly) Api73_Message * message;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_PrivacyRule : NSObject
+
++ (Api73_PrivacyRule_privacyValueAllowContacts *)privacyValueAllowContacts;
++ (Api73_PrivacyRule_privacyValueAllowAll *)privacyValueAllowAll;
++ (Api73_PrivacyRule_privacyValueAllowUsers *)privacyValueAllowUsersWithUsers:(NSArray *)users;
++ (Api73_PrivacyRule_privacyValueDisallowContacts *)privacyValueDisallowContacts;
++ (Api73_PrivacyRule_privacyValueDisallowAll *)privacyValueDisallowAll;
++ (Api73_PrivacyRule_privacyValueDisallowUsers *)privacyValueDisallowUsersWithUsers:(NSArray *)users;
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueAllowContacts : Api73_PrivacyRule
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueAllowAll : Api73_PrivacyRule
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueAllowUsers : Api73_PrivacyRule
+
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueDisallowContacts : Api73_PrivacyRule
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueDisallowAll : Api73_PrivacyRule
+
+@end
+
+@interface Api73_PrivacyRule_privacyValueDisallowUsers : Api73_PrivacyRule
+
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_MessageAction : NSObject
+
++ (Api73_MessageAction_messageActionEmpty *)messageActionEmpty;
++ (Api73_MessageAction_messageActionChatCreate *)messageActionChatCreateWithTitle:(NSString *)title users:(NSArray *)users;
++ (Api73_MessageAction_messageActionChatEditTitle *)messageActionChatEditTitleWithTitle:(NSString *)title;
++ (Api73_MessageAction_messageActionChatEditPhoto *)messageActionChatEditPhotoWithPhoto:(Api73_Photo *)photo;
++ (Api73_MessageAction_messageActionChatDeletePhoto *)messageActionChatDeletePhoto;
++ (Api73_MessageAction_messageActionChatDeleteUser *)messageActionChatDeleteUserWithUserId:(NSNumber *)userId;
++ (Api73_MessageAction_messageActionSentRequest *)messageActionSentRequestWithHasPhone:(Api73_Bool *)hasPhone;
++ (Api73_MessageAction_messageActionAcceptRequest *)messageActionAcceptRequest;
++ (Api73_MessageAction_messageActionChatJoinedByLink *)messageActionChatJoinedByLinkWithInviterId:(NSNumber *)inviterId;
++ (Api73_MessageAction_messageActionChannelCreate *)messageActionChannelCreateWithTitle:(NSString *)title;
++ (Api73_MessageAction_messageActionChatMigrateTo *)messageActionChatMigrateToWithChannelId:(NSNumber *)channelId;
++ (Api73_MessageAction_messageActionChannelMigrateFrom *)messageActionChannelMigrateFromWithTitle:(NSString *)title chatId:(NSNumber *)chatId;
++ (Api73_MessageAction_messageActionChatAddUser *)messageActionChatAddUserWithUsers:(NSArray *)users;
++ (Api73_MessageAction_messageActionPinMessage *)messageActionPinMessage;
++ (Api73_MessageAction_messageActionHistoryClear *)messageActionHistoryClear;
++ (Api73_MessageAction_messageActionGameScore *)messageActionGameScoreWithGameId:(NSNumber *)gameId score:(NSNumber *)score;
++ (Api73_MessageAction_messageActionPhoneCall *)messageActionPhoneCallWithFlags:(NSNumber *)flags callId:(NSNumber *)callId reason:(Api73_PhoneCallDiscardReason *)reason duration:(NSNumber *)duration;
++ (Api73_MessageAction_messageActionPaymentSentMe *)messageActionPaymentSentMeWithFlags:(NSNumber *)flags currency:(NSString *)currency totalAmount:(NSNumber *)totalAmount payload:(NSData *)payload info:(Api73_PaymentRequestedInfo *)info shippingOptionId:(NSString *)shippingOptionId charge:(Api73_PaymentCharge *)charge;
++ (Api73_MessageAction_messageActionPaymentSent *)messageActionPaymentSentWithCurrency:(NSString *)currency totalAmount:(NSNumber *)totalAmount;
++ (Api73_MessageAction_messageActionScreenshotTaken *)messageActionScreenshotTaken;
++ (Api73_MessageAction_messageActionCustomAction *)messageActionCustomActionWithMessage:(NSString *)message;
+
+@end
+
+@interface Api73_MessageAction_messageActionEmpty : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionChatCreate : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_MessageAction_messageActionChatEditTitle : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * title;
+
+@end
+
+@interface Api73_MessageAction_messageActionChatEditPhoto : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) Api73_Photo * photo;
+
+@end
+
+@interface Api73_MessageAction_messageActionChatDeletePhoto : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionChatDeleteUser : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_MessageAction_messageActionSentRequest : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) Api73_Bool * hasPhone;
+
+@end
+
+@interface Api73_MessageAction_messageActionAcceptRequest : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionChatJoinedByLink : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * inviterId;
+
+@end
+
+@interface Api73_MessageAction_messageActionChannelCreate : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * title;
+
+@end
+
+@interface Api73_MessageAction_messageActionChatMigrateTo : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * channelId;
+
+@end
+
+@interface Api73_MessageAction_messageActionChannelMigrateFrom : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * title;
+@property (nonatomic, strong, readonly) NSNumber * chatId;
+
+@end
+
+@interface Api73_MessageAction_messageActionChatAddUser : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_MessageAction_messageActionPinMessage : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionHistoryClear : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionGameScore : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * gameId;
+@property (nonatomic, strong, readonly) NSNumber * score;
+
+@end
+
+@interface Api73_MessageAction_messageActionPhoneCall : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * callId;
+@property (nonatomic, strong, readonly) Api73_PhoneCallDiscardReason * reason;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+
+@end
+
+@interface Api73_MessageAction_messageActionPaymentSentMe : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSNumber * totalAmount;
+@property (nonatomic, strong, readonly) NSData * payload;
+@property (nonatomic, strong, readonly) Api73_PaymentRequestedInfo * info;
+@property (nonatomic, strong, readonly) NSString * shippingOptionId;
+@property (nonatomic, strong, readonly) Api73_PaymentCharge * charge;
+
+@end
+
+@interface Api73_MessageAction_messageActionPaymentSent : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * currency;
+@property (nonatomic, strong, readonly) NSNumber * totalAmount;
+
+@end
+
+@interface Api73_MessageAction_messageActionScreenshotTaken : Api73_MessageAction
+
+@end
+
+@interface Api73_MessageAction_messageActionCustomAction : Api73_MessageAction
+
+@property (nonatomic, strong, readonly) NSString * message;
+
+@end
+
+
+@interface Api73_PhoneCall : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_PhoneCall_phoneCallEmpty *)phoneCallEmptyWithPid:(NSNumber *)pid;
++ (Api73_PhoneCall_phoneCallWaiting *)phoneCallWaitingWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId protocol:(Api73_PhoneCallProtocol *)protocol;
++ (Api73_PhoneCall_phoneCallRequested *)phoneCallRequestedWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId gA:(NSData *)gA protocol:(Api73_PhoneCallProtocol *)protocol;
++ (Api73_PhoneCall_phoneCall *)phoneCallWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId gAOrB:(NSData *)gAOrB keyFingerprint:(NSNumber *)keyFingerprint protocol:(Api73_PhoneCallProtocol *)protocol connection:(Api73_PhoneConnection *)connection;
++ (Api73_PhoneCall_phoneCallDiscarded *)phoneCallDiscardedWithFlags:(NSNumber *)flags pid:(NSNumber *)pid reason:(Api73_PhoneCallDiscardReason *)reason duration:(NSNumber *)duration;
+
+@end
+
+@interface Api73_PhoneCall_phoneCallEmpty : Api73_PhoneCall
+
+@end
+
+@interface Api73_PhoneCall_phoneCallWaiting : Api73_PhoneCall
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+@property (nonatomic, strong, readonly) Api73_PhoneCallProtocol * protocol;
+
+@end
+
+@interface Api73_PhoneCall_phoneCallRequested : Api73_PhoneCall
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+@property (nonatomic, strong, readonly) NSData * gA;
+@property (nonatomic, strong, readonly) Api73_PhoneCallProtocol * protocol;
+
+@end
+
+@interface Api73_PhoneCall_phoneCall : Api73_PhoneCall
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+@property (nonatomic, strong, readonly) NSData * gAOrB;
+@property (nonatomic, strong, readonly) NSNumber * keyFingerprint;
+@property (nonatomic, strong, readonly) Api73_PhoneCallProtocol * protocol;
+@property (nonatomic, strong, readonly) Api73_PhoneConnection * connection;
+
+@end
+
+@interface Api73_PhoneCall_phoneCallDiscarded : Api73_PhoneCall
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_PhoneCallDiscardReason * reason;
+@property (nonatomic, strong, readonly) NSNumber * duration;
+
+@end
+
+
+@interface Api73_PeerNotifyEvents : NSObject
+
++ (Api73_PeerNotifyEvents_peerNotifyEventsEmpty *)peerNotifyEventsEmpty;
++ (Api73_PeerNotifyEvents_peerNotifyEventsAll *)peerNotifyEventsAll;
+
+@end
+
+@interface Api73_PeerNotifyEvents_peerNotifyEventsEmpty : Api73_PeerNotifyEvents
+
+@end
+
+@interface Api73_PeerNotifyEvents_peerNotifyEventsAll : Api73_PeerNotifyEvents
+
+@end
+
+
+@interface Api73_ContactLink : NSObject
+
++ (Api73_ContactLink_contactLinkUnknown *)contactLinkUnknown;
++ (Api73_ContactLink_contactLinkNone *)contactLinkNone;
++ (Api73_ContactLink_contactLinkHasPhone *)contactLinkHasPhone;
++ (Api73_ContactLink_contactLinkContact *)contactLinkContact;
+
+@end
+
+@interface Api73_ContactLink_contactLinkUnknown : Api73_ContactLink
+
+@end
+
+@interface Api73_ContactLink_contactLinkNone : Api73_ContactLink
+
+@end
+
+@interface Api73_ContactLink_contactLinkHasPhone : Api73_ContactLink
+
+@end
+
+@interface Api73_ContactLink_contactLinkContact : Api73_ContactLink
+
+@end
+
+
+@interface Api73_WebDocument : NSObject
+
+@property (nonatomic, strong, readonly) NSString * url;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * size;
+@property (nonatomic, strong, readonly) NSString * mimeType;
+@property (nonatomic, strong, readonly) NSArray * attributes;
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+
++ (Api73_WebDocument_webDocument *)webDocumentWithUrl:(NSString *)url accessHash:(NSNumber *)accessHash size:(NSNumber *)size mimeType:(NSString *)mimeType attributes:(NSArray *)attributes dcId:(NSNumber *)dcId;
+
+@end
+
+@interface Api73_WebDocument_webDocument : Api73_WebDocument
+
+@end
+
+
+@interface Api73_help_AppPrefs : NSObject
+
+@property (nonatomic, strong, readonly) NSData * bytes;
+
++ (Api73_help_AppPrefs_help_appPrefs *)help_appPrefsWithBytes:(NSData *)bytes;
+
+@end
+
+@interface Api73_help_AppPrefs_help_appPrefs : Api73_help_AppPrefs
+
+@end
+
+
+@interface Api73_contacts_Found : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * results;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_contacts_Found_contacts_found *)contacts_foundWithResults:(NSArray *)results chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_Found_contacts_found : Api73_contacts_Found
+
+@end
+
+
+@interface Api73_ChannelAdminLogEventsFilter : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+
++ (Api73_ChannelAdminLogEventsFilter_channelAdminLogEventsFilter *)channelAdminLogEventsFilterWithFlags:(NSNumber *)flags;
+
+@end
+
+@interface Api73_ChannelAdminLogEventsFilter_channelAdminLogEventsFilter : Api73_ChannelAdminLogEventsFilter
+
+@end
+
+
+@interface Api73_PeerNotifySettings : NSObject
+
++ (Api73_PeerNotifySettings_peerNotifySettingsEmpty *)peerNotifySettingsEmpty;
++ (Api73_PeerNotifySettings_peerNotifySettings *)peerNotifySettingsWithFlags:(NSNumber *)flags muteUntil:(NSNumber *)muteUntil sound:(NSString *)sound;
+
+@end
+
+@interface Api73_PeerNotifySettings_peerNotifySettingsEmpty : Api73_PeerNotifySettings
+
+@end
+
+@interface Api73_PeerNotifySettings_peerNotifySettings : Api73_PeerNotifySettings
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * muteUntil;
+@property (nonatomic, strong, readonly) NSString * sound;
+
+@end
+
+
+@interface Api73_InputBotInlineMessageID : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
++ (Api73_InputBotInlineMessageID_inputBotInlineMessageID *)inputBotInlineMessageIDWithDcId:(NSNumber *)dcId pid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputBotInlineMessageID_inputBotInlineMessageID : Api73_InputBotInlineMessageID
+
+@end
+
+
+@interface Api73_SchemeParam : NSObject
+
+@property (nonatomic, strong, readonly) NSString * name;
+@property (nonatomic, strong, readonly) NSString * type;
+
++ (Api73_SchemeParam_schemeParam *)schemeParamWithName:(NSString *)name type:(NSString *)type;
+
+@end
+
+@interface Api73_SchemeParam_schemeParam : Api73_SchemeParam
+
+@end
+
+
+@interface Api73_StickerPack : NSObject
+
+@property (nonatomic, strong, readonly) NSString * emoticon;
+@property (nonatomic, strong, readonly) NSArray * documents;
+
++ (Api73_StickerPack_stickerPack *)stickerPackWithEmoticon:(NSString *)emoticon documents:(NSArray *)documents;
+
+@end
+
+@interface Api73_StickerPack_stickerPack : Api73_StickerPack
+
+@end
+
+
+@interface Api73_UserProfilePhoto : NSObject
+
++ (Api73_UserProfilePhoto_userProfilePhotoEmpty *)userProfilePhotoEmpty;
++ (Api73_UserProfilePhoto_userProfilePhoto *)userProfilePhotoWithPhotoId:(NSNumber *)photoId photoSmall:(Api73_FileLocation *)photoSmall photoBig:(Api73_FileLocation *)photoBig;
++ (Api73_UserProfilePhoto_photos_updateProfilePhoto *)photos_updateProfilePhotoWithPid:(Api73_InputPhoto *)pid;
+
+@end
+
+@interface Api73_UserProfilePhoto_userProfilePhotoEmpty : Api73_UserProfilePhoto
+
+@end
+
+@interface Api73_UserProfilePhoto_userProfilePhoto : Api73_UserProfilePhoto
+
+@property (nonatomic, strong, readonly) NSNumber * photoId;
+@property (nonatomic, strong, readonly) Api73_FileLocation * photoSmall;
+@property (nonatomic, strong, readonly) Api73_FileLocation * photoBig;
+
+@end
+
+@interface Api73_UserProfilePhoto_photos_updateProfilePhoto : Api73_UserProfilePhoto
+
+@property (nonatomic, strong, readonly) Api73_InputPhoto * pid;
+
+@end
+
+
+@interface Api73_payments_SavedInfo : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) Api73_PaymentRequestedInfo * savedInfo;
+
++ (Api73_payments_SavedInfo_payments_savedInfo *)payments_savedInfoWithFlags:(NSNumber *)flags savedInfo:(Api73_PaymentRequestedInfo *)savedInfo;
+
+@end
+
+@interface Api73_payments_SavedInfo_payments_savedInfo : Api73_payments_SavedInfo
+
+@end
+
+
+@interface Api73_updates_ChannelDifference : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * flags;
+@property (nonatomic, strong, readonly) NSNumber * pts;
+@property (nonatomic, strong, readonly) NSNumber * timeout;
+
++ (Api73_updates_ChannelDifference_updates_channelDifferenceEmpty *)updates_channelDifferenceEmptyWithFlags:(NSNumber *)flags pts:(NSNumber *)pts timeout:(NSNumber *)timeout;
++ (Api73_updates_ChannelDifference_updates_channelDifference *)updates_channelDifferenceWithFlags:(NSNumber *)flags pts:(NSNumber *)pts timeout:(NSNumber *)timeout pnewMessages:(NSArray *)pnewMessages otherUpdates:(NSArray *)otherUpdates chats:(NSArray *)chats users:(NSArray *)users;
++ (Api73_updates_ChannelDifference_updates_channelDifferenceTooLong *)updates_channelDifferenceTooLongWithFlags:(NSNumber *)flags pts:(NSNumber *)pts timeout:(NSNumber *)timeout topMessage:(NSNumber *)topMessage readInboxMaxId:(NSNumber *)readInboxMaxId readOutboxMaxId:(NSNumber *)readOutboxMaxId unreadCount:(NSNumber *)unreadCount unreadMentionsCount:(NSNumber *)unreadMentionsCount messages:(NSArray *)messages chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_updates_ChannelDifference_updates_channelDifferenceEmpty : Api73_updates_ChannelDifference
+
+@end
+
+@interface Api73_updates_ChannelDifference_updates_channelDifference : Api73_updates_ChannelDifference
+
+@property (nonatomic, strong, readonly) NSArray * pnewMessages;
+@property (nonatomic, strong, readonly) NSArray * otherUpdates;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+@interface Api73_updates_ChannelDifference_updates_channelDifferenceTooLong : Api73_updates_ChannelDifference
+
+@property (nonatomic, strong, readonly) NSNumber * topMessage;
+@property (nonatomic, strong, readonly) NSNumber * readInboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * readOutboxMaxId;
+@property (nonatomic, strong, readonly) NSNumber * unreadCount;
+@property (nonatomic, strong, readonly) NSNumber * unreadMentionsCount;
+@property (nonatomic, strong, readonly) NSArray * messages;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_channels_AdminLogResults : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * events;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_channels_AdminLogResults_channels_adminLogResults *)channels_adminLogResultsWithEvents:(NSArray *)events chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_channels_AdminLogResults_channels_adminLogResults : Api73_channels_AdminLogResults
+
+@end
+
+
+@interface Api73_MessageEntity : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * offset;
+@property (nonatomic, strong, readonly) NSNumber * length;
+
++ (Api73_MessageEntity_messageEntityUnknown *)messageEntityUnknownWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityMention *)messageEntityMentionWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityHashtag *)messageEntityHashtagWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityBotCommand *)messageEntityBotCommandWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityUrl *)messageEntityUrlWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityEmail *)messageEntityEmailWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityBold *)messageEntityBoldWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityItalic *)messageEntityItalicWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityCode *)messageEntityCodeWithOffset:(NSNumber *)offset length:(NSNumber *)length;
++ (Api73_MessageEntity_messageEntityPre *)messageEntityPreWithOffset:(NSNumber *)offset length:(NSNumber *)length language:(NSString *)language;
++ (Api73_MessageEntity_messageEntityTextUrl *)messageEntityTextUrlWithOffset:(NSNumber *)offset length:(NSNumber *)length url:(NSString *)url;
++ (Api73_MessageEntity_messageEntityMentionName *)messageEntityMentionNameWithOffset:(NSNumber *)offset length:(NSNumber *)length userId:(NSNumber *)userId;
++ (Api73_MessageEntity_inputMessageEntityMentionName *)inputMessageEntityMentionNameWithOffset:(NSNumber *)offset length:(NSNumber *)length userId:(Api73_InputUser *)userId;
+
+@end
+
+@interface Api73_MessageEntity_messageEntityUnknown : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityMention : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityHashtag : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityBotCommand : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityUrl : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityEmail : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityBold : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityItalic : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityCode : Api73_MessageEntity
+
+@end
+
+@interface Api73_MessageEntity_messageEntityPre : Api73_MessageEntity
+
+@property (nonatomic, strong, readonly) NSString * language;
+
+@end
+
+@interface Api73_MessageEntity_messageEntityTextUrl : Api73_MessageEntity
+
+@property (nonatomic, strong, readonly) NSString * url;
+
+@end
+
+@interface Api73_MessageEntity_messageEntityMentionName : Api73_MessageEntity
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+
+@end
+
+@interface Api73_MessageEntity_inputMessageEntityMentionName : Api73_MessageEntity
+
+@property (nonatomic, strong, readonly) Api73_InputUser * userId;
+
+@end
+
+
+@interface Api73_InputPhoto : NSObject
+
++ (Api73_InputPhoto_inputPhotoEmpty *)inputPhotoEmpty;
++ (Api73_InputPhoto_inputPhoto *)inputPhotoWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash;
+
+@end
+
+@interface Api73_InputPhoto_inputPhotoEmpty : Api73_InputPhoto
+
+@end
+
+@interface Api73_InputPhoto_inputPhoto : Api73_InputPhoto
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+
+@end
+
+
+@interface Api73_contacts_TopPeers : NSObject
+
++ (Api73_contacts_TopPeers_contacts_topPeersNotModified *)contacts_topPeersNotModified;
++ (Api73_contacts_TopPeers_contacts_topPeers *)contacts_topPeersWithCategories:(NSArray *)categories chats:(NSArray *)chats users:(NSArray *)users;
+
+@end
+
+@interface Api73_contacts_TopPeers_contacts_topPeersNotModified : Api73_contacts_TopPeers
+
+@end
+
+@interface Api73_contacts_TopPeers_contacts_topPeers : Api73_contacts_TopPeers
+
+@property (nonatomic, strong, readonly) NSArray * categories;
+@property (nonatomic, strong, readonly) NSArray * chats;
+@property (nonatomic, strong, readonly) NSArray * users;
+
+@end
+
+
+@interface Api73_auth_SentCodeType : NSObject
+
++ (Api73_auth_SentCodeType_auth_sentCodeTypeApp *)auth_sentCodeTypeAppWithLength:(NSNumber *)length;
++ (Api73_auth_SentCodeType_auth_sentCodeTypeSms *)auth_sentCodeTypeSmsWithLength:(NSNumber *)length;
++ (Api73_auth_SentCodeType_auth_sentCodeTypeCall *)auth_sentCodeTypeCallWithLength:(NSNumber *)length;
++ (Api73_auth_SentCodeType_auth_sentCodeTypeFlashCall *)auth_sentCodeTypeFlashCallWithPattern:(NSString *)pattern;
+
+@end
+
+@interface Api73_auth_SentCodeType_auth_sentCodeTypeApp : Api73_auth_SentCodeType
+
+@property (nonatomic, strong, readonly) NSNumber * length;
+
+@end
+
+@interface Api73_auth_SentCodeType_auth_sentCodeTypeSms : Api73_auth_SentCodeType
+
+@property (nonatomic, strong, readonly) NSNumber * length;
+
+@end
+
+@interface Api73_auth_SentCodeType_auth_sentCodeTypeCall : Api73_auth_SentCodeType
+
+@property (nonatomic, strong, readonly) NSNumber * length;
+
+@end
+
+@interface Api73_auth_SentCodeType_auth_sentCodeTypeFlashCall : Api73_auth_SentCodeType
+
+@property (nonatomic, strong, readonly) NSString * pattern;
+
+@end
+
+
+@interface Api73_EncryptedChat : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_EncryptedChat_encryptedChatEmpty *)encryptedChatEmptyWithPid:(NSNumber *)pid;
++ (Api73_EncryptedChat_encryptedChatWaiting *)encryptedChatWaitingWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId;
++ (Api73_EncryptedChat_encryptedChatDiscarded *)encryptedChatDiscardedWithPid:(NSNumber *)pid;
++ (Api73_EncryptedChat_encryptedChatRequested *)encryptedChatRequestedWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId gA:(NSData *)gA;
++ (Api73_EncryptedChat_encryptedChat *)encryptedChatWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date adminId:(NSNumber *)adminId participantId:(NSNumber *)participantId gAOrB:(NSData *)gAOrB keyFingerprint:(NSNumber *)keyFingerprint;
+
+@end
+
+@interface Api73_EncryptedChat_encryptedChatEmpty : Api73_EncryptedChat
+
+@end
+
+@interface Api73_EncryptedChat_encryptedChatWaiting : Api73_EncryptedChat
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+
+@end
+
+@interface Api73_EncryptedChat_encryptedChatDiscarded : Api73_EncryptedChat
+
+@end
+
+@interface Api73_EncryptedChat_encryptedChatRequested : Api73_EncryptedChat
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+@property (nonatomic, strong, readonly) NSData * gA;
+
+@end
+
+@interface Api73_EncryptedChat_encryptedChat : Api73_EncryptedChat
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSNumber * adminId;
+@property (nonatomic, strong, readonly) NSNumber * participantId;
+@property (nonatomic, strong, readonly) NSData * gAOrB;
+@property (nonatomic, strong, readonly) NSNumber * keyFingerprint;
+
+@end
+
+
+@interface Api73_Document : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * pid;
+
++ (Api73_Document_documentEmpty *)documentEmptyWithPid:(NSNumber *)pid;
++ (Api73_Document_document *)documentWithPid:(NSNumber *)pid accessHash:(NSNumber *)accessHash date:(NSNumber *)date mimeType:(NSString *)mimeType size:(NSNumber *)size thumb:(Api73_PhotoSize *)thumb dcId:(NSNumber *)dcId version:(NSNumber *)version attributes:(NSArray *)attributes;
+
+@end
+
+@interface Api73_Document_documentEmpty : Api73_Document
+
+@end
+
+@interface Api73_Document_document : Api73_Document
+
+@property (nonatomic, strong, readonly) NSNumber * accessHash;
+@property (nonatomic, strong, readonly) NSNumber * date;
+@property (nonatomic, strong, readonly) NSString * mimeType;
+@property (nonatomic, strong, readonly) NSNumber * size;
+@property (nonatomic, strong, readonly) Api73_PhotoSize * thumb;
+@property (nonatomic, strong, readonly) NSNumber * dcId;
+@property (nonatomic, strong, readonly) NSNumber * version;
+@property (nonatomic, strong, readonly) NSArray * attributes;
+
+@end
+
+
+@interface Api73_messages_HighScores : NSObject
+
+@property (nonatomic, strong, readonly) NSArray * scores;
+@property (nonatomic, strong, readonly) NSArray * users;
+
++ (Api73_messages_HighScores_messages_highScores *)messages_highScoresWithScores:(NSArray *)scores users:(NSArray *)users;
+
+@end
+
+@interface Api73_messages_HighScores_messages_highScores : Api73_messages_HighScores
+
+@end
+
+
+@interface Api73_ImportedContact : NSObject
+
+@property (nonatomic, strong, readonly) NSNumber * userId;
+@property (nonatomic, strong, readonly) NSNumber * clientId;
+
++ (Api73_ImportedContact_importedContact *)importedContactWithUserId:(NSNumber *)userId clientId:(NSNumber *)clientId;
+
+@end
+
+@interface Api73_ImportedContact_importedContact : Api73_ImportedContact
+
+@end
+
+
+/*
+ * Functions 73
+ */
+
+@interface Api73: NSObject
+
++ (Api73_FunctionContext *)messages_getMessagesWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)messages_restoreMessagesWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)messages_getChatsWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)messages_getFullChatWithChatId:(NSNumber *)chatId;
++ (Api73_FunctionContext *)messages_getDhConfigWithVersion:(NSNumber *)version randomLength:(NSNumber *)randomLength;
++ (Api73_FunctionContext *)messages_requestEncryptionWithUserId:(Api73_InputUser *)userId randomId:(NSNumber *)randomId gA:(NSData *)gA;
++ (Api73_FunctionContext *)messages_acceptEncryptionWithPeer:(Api73_InputEncryptedChat *)peer gB:(NSData *)gB keyFingerprint:(NSNumber *)keyFingerprint;
++ (Api73_FunctionContext *)messages_discardEncryptionWithChatId:(NSNumber *)chatId;
++ (Api73_FunctionContext *)messages_setEncryptedTypingWithPeer:(Api73_InputEncryptedChat *)peer typing:(Api73_Bool *)typing;
++ (Api73_FunctionContext *)messages_readEncryptedHistoryWithPeer:(Api73_InputEncryptedChat *)peer maxDate:(NSNumber *)maxDate;
++ (Api73_FunctionContext *)messages_sendEncryptedWithPeer:(Api73_InputEncryptedChat *)peer randomId:(NSNumber *)randomId data:(NSData *)data;
++ (Api73_FunctionContext *)messages_sendEncryptedFileWithPeer:(Api73_InputEncryptedChat *)peer randomId:(NSNumber *)randomId data:(NSData *)data file:(Api73_InputEncryptedFile *)file;
++ (Api73_FunctionContext *)messages_sendEncryptedServiceWithPeer:(Api73_InputEncryptedChat *)peer randomId:(NSNumber *)randomId data:(NSData *)data;
++ (Api73_FunctionContext *)messages_receivedQueueWithMaxQts:(NSNumber *)maxQts;
++ (Api73_FunctionContext *)messages_setTypingWithPeer:(Api73_InputPeer *)peer action:(Api73_SendMessageAction *)action;
++ (Api73_FunctionContext *)messages_getStickersWithEmoticon:(NSString *)emoticon phash:(NSString *)phash;
++ (Api73_FunctionContext *)messages_readMessageContentsWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)messages_editChatTitleWithChatId:(NSNumber *)chatId title:(NSString *)title;
++ (Api73_FunctionContext *)messages_editChatPhotoWithChatId:(NSNumber *)chatId photo:(Api73_InputChatPhoto *)photo;
++ (Api73_FunctionContext *)messages_addChatUserWithChatId:(NSNumber *)chatId userId:(Api73_InputUser *)userId fwdLimit:(NSNumber *)fwdLimit;
++ (Api73_FunctionContext *)messages_deleteChatUserWithChatId:(NSNumber *)chatId userId:(Api73_InputUser *)userId;
++ (Api73_FunctionContext *)messages_createChatWithUsers:(NSArray *)users title:(NSString *)title;
++ (Api73_FunctionContext *)messages_sendBroadcastWithContacts:(NSArray *)contacts randomId:(NSArray *)randomId message:(NSString *)message media:(Api73_InputMedia *)media;
++ (Api73_FunctionContext *)messages_getWebPagePreviewWithMessage:(NSString *)message;
++ (Api73_FunctionContext *)messages_forwardMessageWithPeer:(Api73_InputPeer *)peer pid:(NSNumber *)pid randomId:(NSNumber *)randomId;
++ (Api73_FunctionContext *)messages_receivedMessagesWithMaxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)messages_exportChatInviteWithChatId:(NSNumber *)chatId;
++ (Api73_FunctionContext *)messages_checkChatInviteWithPhash:(NSString *)phash;
++ (Api73_FunctionContext *)messages_importChatInviteWithPhash:(NSString *)phash;
++ (Api73_FunctionContext *)messages_getStickerSetWithStickerset:(Api73_InputStickerSet *)stickerset;
++ (Api73_FunctionContext *)messages_uninstallStickerSetWithStickerset:(Api73_InputStickerSet *)stickerset;
++ (Api73_FunctionContext *)messages_getMessagesViewsWithPeer:(Api73_InputPeer *)peer pid:(NSArray *)pid increment:(Api73_Bool *)increment;
++ (Api73_FunctionContext *)messages_toggleChatAdminsWithChatId:(NSNumber *)chatId enabled:(Api73_Bool *)enabled;
++ (Api73_FunctionContext *)messages_editChatAdminWithChatId:(NSNumber *)chatId userId:(Api73_InputUser *)userId isAdmin:(Api73_Bool *)isAdmin;
++ (Api73_FunctionContext *)messages_readHistoryWithPeer:(Api73_InputPeer *)peer maxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)messages_migrateChatWithChatId:(NSNumber *)chatId;
++ (Api73_FunctionContext *)messages_searchGlobalWithQ:(NSString *)q offsetDate:(NSNumber *)offsetDate offsetPeer:(Api73_InputPeer *)offsetPeer offsetId:(NSNumber *)offsetId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_startBotWithBot:(Api73_InputUser *)bot peer:(Api73_InputPeer *)peer randomId:(NSNumber *)randomId startParam:(NSString *)startParam;
++ (Api73_FunctionContext *)messages_getAllStickersWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_reorderStickerSetsWithOrder:(NSArray *)order;
++ (Api73_FunctionContext *)messages_getDocumentByHashWithSha256:(NSData *)sha256 size:(NSNumber *)size mimeType:(NSString *)mimeType;
++ (Api73_FunctionContext *)messages_searchGifsWithQ:(NSString *)q offset:(NSNumber *)offset;
++ (Api73_FunctionContext *)messages_getSavedGifsWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_saveGifWithPid:(Api73_InputDocument *)pid unsave:(Api73_Bool *)unsave;
++ (Api73_FunctionContext *)messages_setInlineBotResultsWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId results:(NSArray *)results cacheTime:(NSNumber *)cacheTime nextOffset:(NSString *)nextOffset;
++ (Api73_FunctionContext *)messages_getHistoryWithPeer:(Api73_InputPeer *)peer offsetId:(NSNumber *)offsetId offsetDate:(NSNumber *)offsetDate addOffset:(NSNumber *)addOffset limit:(NSNumber *)limit maxId:(NSNumber *)maxId minId:(NSNumber *)minId;
++ (Api73_FunctionContext *)messages_sendMessageWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer replyToMsgId:(NSNumber *)replyToMsgId message:(NSString *)message randomId:(NSNumber *)randomId replyMarkup:(Api73_ReplyMarkup *)replyMarkup entities:(NSArray *)entities;
++ (Api73_FunctionContext *)messages_sendInlineBotResultWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer replyToMsgId:(NSNumber *)replyToMsgId randomId:(NSNumber *)randomId queryId:(NSNumber *)queryId pid:(NSString *)pid;
++ (Api73_FunctionContext *)messages_getInlineBotResultsWithFlags:(NSNumber *)flags bot:(Api73_InputUser *)bot geoPoint:(Api73_InputGeoPoint *)geoPoint query:(NSString *)query offset:(NSString *)offset;
++ (Api73_FunctionContext *)messages_getPeerDialogsWithPeers:(NSArray *)peers;
++ (Api73_FunctionContext *)messages_saveDraftWithFlags:(NSNumber *)flags replyToMsgId:(NSNumber *)replyToMsgId peer:(Api73_InputPeer *)peer message:(NSString *)message entities:(NSArray *)entities;
++ (Api73_FunctionContext *)messages_getAllDrafts;
++ (Api73_FunctionContext *)messages_deleteHistoryWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer maxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)messages_getFeaturedStickersWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_readFeaturedStickers;
++ (Api73_FunctionContext *)messages_getRecentStickersWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_saveRecentStickerWithPid:(Api73_InputDocument *)pid unsave:(Api73_Bool *)unsave;
++ (Api73_FunctionContext *)messages_clearRecentStickers;
++ (Api73_FunctionContext *)messages_installStickerSetWithStickerset:(Api73_InputStickerSet *)stickerset archived:(Api73_Bool *)archived;
++ (Api73_FunctionContext *)messages_getUnusedStickersWithLimit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_getArchivedStickersWithOffsetId:(NSNumber *)offsetId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_setGameScoreWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer pid:(NSNumber *)pid userId:(Api73_InputUser *)userId score:(NSNumber *)score;
++ (Api73_FunctionContext *)messages_setInlineGameScoreWithFlags:(NSNumber *)flags pid:(Api73_InputBotInlineMessageID *)pid userId:(Api73_InputUser *)userId score:(NSNumber *)score;
++ (Api73_FunctionContext *)messages_getGameHighScoresWithPeer:(Api73_InputPeer *)peer pid:(NSNumber *)pid userId:(Api73_InputUser *)userId;
++ (Api73_FunctionContext *)messages_getInlineGameHighScoresWithPid:(Api73_InputBotInlineMessageID *)pid userId:(Api73_InputUser *)userId;
++ (Api73_FunctionContext *)messages_getBotCallbackAnswerWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer msgId:(NSNumber *)msgId data:(NSData *)data;
++ (Api73_FunctionContext *)messages_setBotCallbackAnswerWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId message:(NSString *)message url:(NSString *)url cacheTime:(NSNumber *)cacheTime;
++ (Api73_FunctionContext *)messages_getCommonChatsWithUserId:(Api73_InputUser *)userId maxId:(NSNumber *)maxId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_getAllChatsWithExceptIds:(NSArray *)exceptIds;
++ (Api73_FunctionContext *)messages_getWebPageWithPid:(NSNumber *)pid phash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_toggleDialogPinWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer;
++ (Api73_FunctionContext *)messages_reorderPinnedDialogsWithFlags:(NSNumber *)flags order:(NSArray *)order;
++ (Api73_FunctionContext *)messages_getPinnedDialogs;
++ (Api73_FunctionContext *)messages_getDialogsWithFlags:(NSNumber *)flags offsetDate:(NSNumber *)offsetDate offsetId:(NSNumber *)offsetId offsetPeer:(Api73_InputPeer *)offsetPeer limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_deleteMessagesWithFlags:(NSNumber *)flags pid:(NSArray *)pid;
++ (Api73_FunctionContext *)messages_setBotShippingResultsWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId error:(NSString *)error shippingOptions:(NSArray *)shippingOptions;
++ (Api73_FunctionContext *)messages_setBotPrecheckoutResultsWithFlags:(NSNumber *)flags queryId:(NSNumber *)queryId error:(NSString *)error;
++ (Api73_FunctionContext *)messages_getFavedStickersWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)messages_faveStickerWithPid:(Api73_InputDocument *)pid unfave:(Api73_Bool *)unfave;
++ (Api73_FunctionContext *)messages_searchWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer q:(NSString *)q fromId:(Api73_InputUser *)fromId filter:(Api73_MessagesFilter *)filter minDate:(NSNumber *)minDate maxDate:(NSNumber *)maxDate offsetId:(NSNumber *)offsetId addOffset:(NSNumber *)addOffset limit:(NSNumber *)limit maxId:(NSNumber *)maxId minId:(NSNumber *)minId;
++ (Api73_FunctionContext *)messages_getUnreadMentionsWithPeer:(Api73_InputPeer *)peer offsetId:(NSNumber *)offsetId addOffset:(NSNumber *)addOffset limit:(NSNumber *)limit maxId:(NSNumber *)maxId minId:(NSNumber *)minId;
++ (Api73_FunctionContext *)messages_readMentionsWithPeer:(Api73_InputPeer *)peer;
++ (Api73_FunctionContext *)messages_editGeoLiveWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer pid:(NSNumber *)pid geoPoint:(Api73_InputGeoPoint *)geoPoint;
++ (Api73_FunctionContext *)messages_getRecentLocationsWithPeer:(Api73_InputPeer *)peer limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)messages_sendMediaWithFlags:(NSNumber *)flags peer:(Api73_InputPeer *)peer replyToMsgId:(NSNumber *)replyToMsgId media:(Api73_InputMedia *)media randomId:(NSNumber *)randomId replyMarkup:(Api73_ReplyMarkup *)replyMarkup;
++ (Api73_FunctionContext *)messages_forwardMessagesWithFlags:(NSNumber *)flags fromPeer:(Api73_InputPeer *)fromPeer pid:(NSArray *)pid randomId:(NSArray *)randomId toPeer:(Api73_InputPeer *)toPeer groupedId:(NSNumber *)groupedId;
++ (Api73_FunctionContext *)channels_getDialogsWithOffset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)channels_readHistoryWithChannel:(Api73_InputChannel *)channel maxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)channels_deleteMessagesWithChannel:(Api73_InputChannel *)channel pid:(NSArray *)pid;
++ (Api73_FunctionContext *)channels_deleteUserHistoryWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId;
++ (Api73_FunctionContext *)channels_reportSpamWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId pid:(NSArray *)pid;
++ (Api73_FunctionContext *)channels_getMessagesWithChannel:(Api73_InputChannel *)channel pid:(NSArray *)pid;
++ (Api73_FunctionContext *)channels_getParticipantWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId;
++ (Api73_FunctionContext *)channels_getChannelsWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)channels_getFullChannelWithChannel:(Api73_InputChannel *)channel;
++ (Api73_FunctionContext *)channels_editAboutWithChannel:(Api73_InputChannel *)channel about:(NSString *)about;
++ (Api73_FunctionContext *)channels_editTitleWithChannel:(Api73_InputChannel *)channel title:(NSString *)title;
++ (Api73_FunctionContext *)channels_editPhotoWithChannel:(Api73_InputChannel *)channel photo:(Api73_InputChatPhoto *)photo;
++ (Api73_FunctionContext *)channels_toggleCommentsWithChannel:(Api73_InputChannel *)channel enabled:(Api73_Bool *)enabled;
++ (Api73_FunctionContext *)channels_checkUsernameWithChannel:(Api73_InputChannel *)channel username:(NSString *)username;
++ (Api73_FunctionContext *)channels_updateUsernameWithChannel:(Api73_InputChannel *)channel username:(NSString *)username;
++ (Api73_FunctionContext *)channels_joinChannelWithChannel:(Api73_InputChannel *)channel;
++ (Api73_FunctionContext *)channels_leaveChannelWithChannel:(Api73_InputChannel *)channel;
++ (Api73_FunctionContext *)channels_inviteToChannelWithChannel:(Api73_InputChannel *)channel users:(NSArray *)users;
++ (Api73_FunctionContext *)channels_kickFromChannelWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId kicked:(Api73_Bool *)kicked;
++ (Api73_FunctionContext *)channels_exportInviteWithChannel:(Api73_InputChannel *)channel;
++ (Api73_FunctionContext *)channels_deleteChannelWithChannel:(Api73_InputChannel *)channel;
++ (Api73_FunctionContext *)channels_createChannelWithFlags:(NSNumber *)flags title:(NSString *)title about:(NSString *)about;
++ (Api73_FunctionContext *)channels_getImportantHistoryWithChannel:(Api73_InputChannel *)channel offsetId:(NSNumber *)offsetId offsetDate:(NSNumber *)offsetDate addOffset:(NSNumber *)addOffset limit:(NSNumber *)limit maxId:(NSNumber *)maxId minId:(NSNumber *)minId;
++ (Api73_FunctionContext *)channels_toggleInvitesWithChannel:(Api73_InputChannel *)channel enabled:(Api73_Bool *)enabled;
++ (Api73_FunctionContext *)channels_exportMessageLinkWithChannel:(Api73_InputChannel *)channel pid:(NSNumber *)pid;
++ (Api73_FunctionContext *)channels_toggleSignaturesWithChannel:(Api73_InputChannel *)channel enabled:(Api73_Bool *)enabled;
++ (Api73_FunctionContext *)channels_editMessageWithFlags:(NSNumber *)flags channel:(Api73_InputChannel *)channel pid:(NSNumber *)pid message:(NSString *)message entities:(NSArray *)entities;
++ (Api73_FunctionContext *)channels_updatePinnedMessageWithFlags:(NSNumber *)flags channel:(Api73_InputChannel *)channel pid:(NSNumber *)pid;
++ (Api73_FunctionContext *)channels_getAdminedPublicChannels;
++ (Api73_FunctionContext *)channels_editAdminWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId adminRights:(Api73_ChannelAdminRights *)adminRights;
++ (Api73_FunctionContext *)channels_editBannedWithChannel:(Api73_InputChannel *)channel userId:(Api73_InputUser *)userId bannedRights:(Api73_ChannelBannedRights *)bannedRights;
++ (Api73_FunctionContext *)channels_getAdminLogWithFlags:(NSNumber *)flags channel:(Api73_InputChannel *)channel q:(NSString *)q eventsFilter:(Api73_ChannelAdminLogEventsFilter *)eventsFilter admins:(NSArray *)admins maxId:(NSNumber *)maxId minId:(NSNumber *)minId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)channels_setStickersWithChannel:(Api73_InputChannel *)channel stickerset:(Api73_InputStickerSet *)stickerset;
++ (Api73_FunctionContext *)channels_readMessageContentsWithChannel:(Api73_InputChannel *)channel pid:(NSArray *)pid;
++ (Api73_FunctionContext *)channels_deleteHistoryWithChannel:(Api73_InputChannel *)channel maxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)channels_togglePreHistoryHiddenWithChannel:(Api73_InputChannel *)channel enabled:(Api73_Bool *)enabled;
++ (Api73_FunctionContext *)channels_getParticipantsWithChannel:(Api73_InputChannel *)channel filter:(Api73_ChannelParticipantsFilter *)filter offset:(NSNumber *)offset limit:(NSNumber *)limit phash:(NSNumber *)phash;
++ (Api73_FunctionContext *)payments_getPaymentFormWithMsgId:(NSNumber *)msgId;
++ (Api73_FunctionContext *)payments_getPaymentReceiptWithMsgId:(NSNumber *)msgId;
++ (Api73_FunctionContext *)payments_validateRequestedInfoWithFlags:(NSNumber *)flags msgId:(NSNumber *)msgId info:(Api73_PaymentRequestedInfo *)info;
++ (Api73_FunctionContext *)payments_sendPaymentFormWithFlags:(NSNumber *)flags msgId:(NSNumber *)msgId requestedInfoId:(NSString *)requestedInfoId shippingOptionId:(NSString *)shippingOptionId credentials:(Api73_InputPaymentCredentials *)credentials;
++ (Api73_FunctionContext *)payments_getSavedInfo;
++ (Api73_FunctionContext *)payments_clearSavedInfoWithFlags:(NSNumber *)flags;
++ (Api73_FunctionContext *)auth_checkPhoneWithPhoneNumber:(NSString *)phoneNumber;
++ (Api73_FunctionContext *)auth_sendCallWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash;
++ (Api73_FunctionContext *)auth_signUpWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneCode:(NSString *)phoneCode firstName:(NSString *)firstName lastName:(NSString *)lastName;
++ (Api73_FunctionContext *)auth_signInWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneCode:(NSString *)phoneCode;
++ (Api73_FunctionContext *)auth_logOut;
++ (Api73_FunctionContext *)auth_resetAuthorizations;
++ (Api73_FunctionContext *)auth_sendInvitesWithPhoneNumbers:(NSArray *)phoneNumbers message:(NSString *)message;
++ (Api73_FunctionContext *)auth_exportAuthorizationWithDcId:(NSNumber *)dcId;
++ (Api73_FunctionContext *)auth_importAuthorizationWithPid:(NSNumber *)pid bytes:(NSData *)bytes;
++ (Api73_FunctionContext *)auth_sendSmsWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash;
++ (Api73_FunctionContext *)auth_resetAccountPasswordWithFirstName:(NSString *)firstName lastName:(NSString *)lastName;
++ (Api73_FunctionContext *)auth_checkPasswordWithPasswordHash:(NSData *)passwordHash;
++ (Api73_FunctionContext *)auth_requestPasswordRecovery;
++ (Api73_FunctionContext *)auth_recoverPasswordWithCode:(NSString *)code;
++ (Api73_FunctionContext *)auth_sendCodeWithFlags:(NSNumber *)flags phoneNumber:(NSString *)phoneNumber currentNumber:(Api73_Bool *)currentNumber apiId:(NSNumber *)apiId apiHash:(NSString *)apiHash langCode:(NSString *)langCode;
++ (Api73_FunctionContext *)auth_resendCodeWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash;
++ (Api73_FunctionContext *)auth_cancelCodeWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash;
++ (Api73_FunctionContext *)bots_sendCustomRequestWithCustomMethod:(NSString *)customMethod params:(Api73_DataJSON *)params;
++ (Api73_FunctionContext *)bots_answerWebhookJSONQueryWithQueryId:(NSNumber *)queryId data:(Api73_DataJSON *)data;
++ (Api73_FunctionContext *)geo_saveGeoPlaceWithGeoPoint:(Api73_InputGeoPoint *)geoPoint langCode:(NSString *)langCode placeName:(Api73_InputGeoPlaceName *)placeName;
++ (Api73_FunctionContext *)users_getUsersWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)users_getFullUserWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_getContactIDs;
++ (Api73_FunctionContext *)contacts_getStatuses;
++ (Api73_FunctionContext *)contacts_getRequestsWithOffset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)contacts_getLinkWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_getLocatedWithGeoPoint:(Api73_InputGeoPoint *)geoPoint hidden:(Api73_Bool *)hidden radius:(NSNumber *)radius limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)contacts_getSuggestedWithLimit:(NSNumber *)limit;
++ (Api73_FunctionContext *)contacts_sendRequestWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_acceptRequestWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_declineRequestWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_deleteContactWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_clearContactWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_deleteContactsWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)contacts_blockWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_unblockWithPid:(Api73_InputUser *)pid;
++ (Api73_FunctionContext *)contacts_getBlockedWithOffset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)contacts_searchWithQ:(NSString *)q limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)contacts_resolveUsernameWithUsername:(NSString *)username;
++ (Api73_FunctionContext *)contacts_getTopPeersWithFlags:(NSNumber *)flags offset:(NSNumber *)offset limit:(NSNumber *)limit phash:(NSNumber *)phash;
++ (Api73_FunctionContext *)contacts_resetTopPeerRatingWithCategory:(Api73_TopPeerCategory *)category peer:(Api73_InputPeer *)peer;
++ (Api73_FunctionContext *)contacts_importContactsWithContacts:(NSArray *)contacts;
++ (Api73_FunctionContext *)contacts_resetSaved;
++ (Api73_FunctionContext *)contacts_getContactsWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)contest_saveDeveloperInfoWithVkId:(NSNumber *)vkId name:(NSString *)name phoneNumber:(NSString *)phoneNumber age:(NSNumber *)age city:(NSString *)city;
++ (Api73_FunctionContext *)help_getConfig;
++ (Api73_FunctionContext *)help_getNearestDc;
++ (Api73_FunctionContext *)help_getSchemeWithVersion:(NSNumber *)version;
++ (Api73_FunctionContext *)help_getAppUpdateWithDeviceModel:(NSString *)deviceModel systemVersion:(NSString *)systemVersion appVersion:(NSString *)appVersion langCode:(NSString *)langCode;
++ (Api73_FunctionContext *)help_getInviteTextWithLangCode:(NSString *)langCode;
++ (Api73_FunctionContext *)help_getAppPrefsWithApiId:(NSNumber *)apiId apiHash:(NSString *)apiHash;
++ (Api73_FunctionContext *)help_saveNetworkStatsWithStats:(NSArray *)stats;
++ (Api73_FunctionContext *)help_test;
++ (Api73_FunctionContext *)help_getSupport;
++ (Api73_FunctionContext *)help_getTermsOfServiceWithLangCode:(NSString *)langCode;
++ (Api73_FunctionContext *)help_setBotUpdatesStatusWithPendingUpdatesCount:(NSNumber *)pendingUpdatesCount message:(NSString *)message;
++ (Api73_FunctionContext *)help_getAppChangelogWithPrevAppVersion:(NSString *)prevAppVersion;
++ (Api73_FunctionContext *)help_getCdnConfig;
++ (Api73_FunctionContext *)help_getRecentMeUrlsWithReferer:(NSString *)referer;
++ (Api73_FunctionContext *)updates_getState;
++ (Api73_FunctionContext *)updates_subscribeWithUsers:(NSArray *)users;
++ (Api73_FunctionContext *)updates_unsubscribeWithUsers:(NSArray *)users;
++ (Api73_FunctionContext *)updates_getDifferenceWithFlags:(NSNumber *)flags pts:(NSNumber *)pts ptsTotalLimit:(NSNumber *)ptsTotalLimit date:(NSNumber *)date qts:(NSNumber *)qts;
++ (Api73_FunctionContext *)updates_getChannelDifferenceWithFlags:(NSNumber *)flags channel:(Api73_InputChannel *)channel filter:(Api73_ChannelMessagesFilter *)filter pts:(NSNumber *)pts limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)upload_saveFilePartWithFileId:(NSNumber *)fileId filePart:(NSNumber *)filePart bytes:(NSData *)bytes;
++ (Api73_FunctionContext *)upload_getFileWithLocation:(Api73_InputFileLocation *)location offset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)upload_saveBigFilePartWithFileId:(NSNumber *)fileId filePart:(NSNumber *)filePart fileTotalParts:(NSNumber *)fileTotalParts bytes:(NSData *)bytes;
++ (Api73_FunctionContext *)upload_getWebFileWithLocation:(Api73_InputWebFileLocation *)location offset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)upload_getCdnFileWithFileToken:(NSData *)fileToken offset:(NSNumber *)offset limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)upload_reuploadCdnFileWithFileToken:(NSData *)fileToken requestToken:(NSData *)requestToken;
++ (Api73_FunctionContext *)upload_getCdnFileHashesWithFileToken:(NSData *)fileToken offset:(NSNumber *)offset;
++ (Api73_FunctionContext *)account_unregisterDeviceWithTokenType:(NSNumber *)tokenType token:(NSString *)token;
++ (Api73_FunctionContext *)account_updateNotifySettingsWithPeer:(Api73_InputNotifyPeer *)peer settings:(Api73_InputPeerNotifySettings *)settings;
++ (Api73_FunctionContext *)account_getNotifySettingsWithPeer:(Api73_InputNotifyPeer *)peer;
++ (Api73_FunctionContext *)account_resetNotifySettings;
++ (Api73_FunctionContext *)account_updateStatusWithOffline:(Api73_Bool *)offline;
++ (Api73_FunctionContext *)account_getWallPapers;
++ (Api73_FunctionContext *)account_registerDeviceWithTokenType:(NSNumber *)tokenType token:(NSString *)token deviceModel:(NSString *)deviceModel systemVersion:(NSString *)systemVersion appVersion:(NSString *)appVersion appSandbox:(Api73_Bool *)appSandbox langCode:(NSString *)langCode;
++ (Api73_FunctionContext *)account_checkUsernameWithUsername:(NSString *)username;
++ (Api73_FunctionContext *)account_updateUsernameWithUsername:(NSString *)username;
++ (Api73_FunctionContext *)account_getPrivacyWithKey:(Api73_InputPrivacyKey *)key;
++ (Api73_FunctionContext *)account_setPrivacyWithKey:(Api73_InputPrivacyKey *)key rules:(NSArray *)rules;
++ (Api73_FunctionContext *)account_deleteAccountWithReason:(NSString *)reason;
++ (Api73_FunctionContext *)account_getAccountTTL;
++ (Api73_FunctionContext *)account_setAccountTTLWithTtl:(Api73_AccountDaysTTL *)ttl;
++ (Api73_FunctionContext *)account_changePhoneWithPhoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneCode:(NSString *)phoneCode;
++ (Api73_FunctionContext *)account_setPasswordWithCurrentPasswordHash:(NSData *)currentPasswordHash pnewSalt:(NSData *)pnewSalt pnewPasswordHash:(NSData *)pnewPasswordHash hint:(NSString *)hint;
++ (Api73_FunctionContext *)account_updateDeviceLockedWithPeriod:(NSNumber *)period;
++ (Api73_FunctionContext *)account_getAuthorizations;
++ (Api73_FunctionContext *)account_resetAuthorizationWithPhash:(NSNumber *)phash;
++ (Api73_FunctionContext *)account_getPassword;
++ (Api73_FunctionContext *)account_getPasswordSettingsWithCurrentPasswordHash:(NSData *)currentPasswordHash;
++ (Api73_FunctionContext *)account_updatePasswordSettingsWithCurrentPasswordHash:(NSData *)currentPasswordHash pnewSettings:(Api73_account_PasswordInputSettings *)pnewSettings;
++ (Api73_FunctionContext *)account_updateProfileWithFlags:(NSNumber *)flags firstName:(NSString *)firstName lastName:(NSString *)lastName about:(NSString *)about;
++ (Api73_FunctionContext *)account_sendChangePhoneCodeWithFlags:(NSNumber *)flags phoneNumber:(NSString *)phoneNumber currentNumber:(Api73_Bool *)currentNumber;
++ (Api73_FunctionContext *)account_getTmpPasswordWithPasswordHash:(NSData *)passwordHash period:(NSNumber *)period;
++ (Api73_FunctionContext *)langpack_getLangPackWithLangCode:(NSString *)langCode;
++ (Api73_FunctionContext *)langpack_getStringsWithLangCode:(NSString *)langCode keys:(NSArray *)keys;
++ (Api73_FunctionContext *)langpack_getDifferenceWithFromVersion:(NSNumber *)fromVersion;
++ (Api73_FunctionContext *)langpack_getLanguages;
++ (Api73_FunctionContext *)photos_getPhotosWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)photos_getWallWithUserId:(Api73_InputUser *)userId offset:(NSNumber *)offset maxId:(NSNumber *)maxId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)photos_readWallWithUserId:(Api73_InputUser *)userId maxId:(NSNumber *)maxId;
++ (Api73_FunctionContext *)photos_editPhotoWithPid:(Api73_InputPhoto *)pid caption:(NSString *)caption geoPoint:(Api73_InputGeoPoint *)geoPoint;
++ (Api73_FunctionContext *)photos_updateProfilePhotoWithPid:(Api73_InputPhoto *)pid crop:(Api73_InputPhotoCrop *)crop;
++ (Api73_FunctionContext *)photos_uploadPhotoWithFile:(Api73_InputFile *)file caption:(NSString *)caption geoPoint:(Api73_InputGeoPoint *)geoPoint;
++ (Api73_FunctionContext *)photos_uploadProfilePhotoWithFile:(Api73_InputFile *)file caption:(NSString *)caption geoPoint:(Api73_InputGeoPoint *)geoPoint crop:(Api73_InputPhotoCrop *)crop;
++ (Api73_FunctionContext *)photos_deletePhotosWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)photos_restorePhotosWithPid:(NSArray *)pid;
++ (Api73_FunctionContext *)photos_getUserPhotosWithUserId:(Api73_InputUser *)userId offset:(NSNumber *)offset maxId:(NSNumber *)maxId limit:(NSNumber *)limit;
++ (Api73_FunctionContext *)phone_getDhConfig;
++ (Api73_FunctionContext *)phone_confirmCallWithPid:(Api73_InputPhoneCall *)pid aOrB:(NSData *)aOrB;
++ (Api73_FunctionContext *)phone_declineCallWithPid:(Api73_InputPhoneCall *)pid;
++ (Api73_FunctionContext *)phone_requestCallWithUserId:(Api73_InputUser *)userId randomId:(NSNumber *)randomId gA:(NSData *)gA protocol:(Api73_PhoneCallProtocol *)protocol;
++ (Api73_FunctionContext *)phone_acceptCallWithPeer:(Api73_InputPhoneCall *)peer gB:(NSData *)gB keyFingerprint:(NSNumber *)keyFingerprint protocol:(Api73_PhoneCallProtocol *)protocol;
++ (Api73_FunctionContext *)phone_discardCallWithPeer:(Api73_InputPhoneCall *)peer duration:(NSNumber *)duration reason:(Api73_PhoneCallDiscardReason *)reason connectionId:(NSNumber *)connectionId;
++ (Api73_FunctionContext *)phone_setCallRatingWithPeer:(Api73_InputPhoneCall *)peer rating:(NSNumber *)rating comment:(NSString *)comment;
++ (Api73_FunctionContext *)phone_getCallConfig;
+@end

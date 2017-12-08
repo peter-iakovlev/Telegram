@@ -1,5 +1,7 @@
 #import "TGRecentPeersSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
@@ -7,7 +9,6 @@
 #import "TGUserDataRequestBuilder.h"
 #import "TGConversation+Telegraph.h"
 #import "TGMessage+Telegraph.h"
-#import "TGPeerIdAdapter.h"
 
 #import "TGRecentHashtagsSignal.h"
 

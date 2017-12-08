@@ -1,12 +1,11 @@
 #import "TGOpenInLocationItems.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <CoreLocation/CoreLocation.h>
 #import <MapKit/MapKit.h>
 
 #import "TGApplication.h"
-#import "TGStringUtils.h"
-
-#import "TGLocationMediaAttachment.h"
 
 NSString *const TGOpenInLocationDirectionsKey = @"directions";
 

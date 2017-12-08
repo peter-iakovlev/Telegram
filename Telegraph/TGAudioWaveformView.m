@@ -1,6 +1,6 @@
 #import "TGAudioWaveformView.h"
 
-#import "TGAudioWaveform.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGAudioWaveformContentView : UIView
 

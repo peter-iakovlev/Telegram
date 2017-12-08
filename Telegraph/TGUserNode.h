@@ -6,9 +6,9 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "SGraphNode.h"
+#import <LegacyComponents/SGraphNode.h>
 
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGUserNode : SGraphNode
 

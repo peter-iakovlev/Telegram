@@ -1,20 +1,15 @@
 #import "TGInstantPageAudioView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-
-#import "TGDocumentMediaAttachment.h"
-
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGMusicPlayer.h"
 #import "TGTelegraph.h"
 
 #import "TGMusicPlayerScrubbingArea.h"
-
-#import <pop/POP.h>
 
 #import "TGMusicPlayerItem.h"
 

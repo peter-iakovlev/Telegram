@@ -1,14 +1,13 @@
 #import "TGNotificationFilePreviewView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGNotificationView.h"
 
-#import "TGDocumentMediaAttachment.h"
 #import "TGSharedMediaController.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGSharedMediaFileThumbnailView.h"
-
-#import "TGStringUtils.h"
-#import "TGFont.h"
 
 @interface TGNotificationFilePreviewView ()
 {

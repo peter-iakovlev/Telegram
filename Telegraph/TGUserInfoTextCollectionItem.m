@@ -1,10 +1,10 @@
 #import "TGUserInfoTextCollectionItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGUserInfoTextCollectionItemView.h"
 
 #import "TGModernTextViewModel.h"
-#import "TGMessage.h"
-#import "TGFont.h"
 #import "TGReusableLabel.h"
 
 @interface TGUserInfoTextCollectionItem () {
@@ -50,11 +50,12 @@
     _textModel.textCheckingResults = textCheckingResults;
 }
 
-- (CGSize)itemSizeForContainerSize:(CGSize)containerSize
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)safeAreaInset
 {
     _containerSize = containerSize;
-    if ([_textModel layoutNeedsUpdatingForContainerSize:CGSizeMake(containerSize.width - 35.0f - 10.0f, CGFLOAT_MAX)])
-        [_textModel layoutForContainerSize:CGSizeMake(containerSize.width - 35.0f - 10.0f, CGFLOAT_MAX)];
+    CGFloat width = containerSize.width - 35.0f - 10.0f - safeAreaInset.left - safeAreaInset.right;
+    if ([_textModel layoutNeedsUpdatingForContainerSize:CGSizeMake(width, CGFLOAT_MAX)])
+        [_textModel layoutForContainerSize:CGSizeMake(width, CGFLOAT_MAX)];
     
     return CGSizeMake(containerSize.width, [TGUserInfoTextCollectionItemView heightForWidth:containerSize.width textModel:_textModel]);
 }

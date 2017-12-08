@@ -62,10 +62,18 @@
     return CGSizeMake(containerSize.width, 0);
 }
 
+- (CGSize)itemSizeForContainerSize:(CGSize)containerSize safeAreaInset:(UIEdgeInsets)__unused safeAreaInset
+{
+    return [self itemSizeForContainerSize:containerSize];
+}
+
 - (void)bindView:(TGCollectionItemView *)view
 {
     _view = view;
     _view.boundItem = self;
+    _view.presentation = _presentation;
+    
+    [_view setIgnoreSeparatorInset:_ignoreSeparatorInset];
 }
 
 - (void)unbindView
@@ -77,6 +85,18 @@
 - (TGCollectionItemView *)boundView
 {
     return _view;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    [_view setPresentation:presentation];
+}
+
+- (void)setIgnoreSeparatorInset:(bool)ignoreSeparatorInset
+{
+    _ignoreSeparatorInset = ignoreSeparatorInset;
+    [_view setIgnoreSeparatorInset:ignoreSeparatorInset];
 }
 
 - (void)itemSelected:(id)__unused actionTarget

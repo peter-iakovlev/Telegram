@@ -1,5 +1,6 @@
 #import "TGDialogListCellEditingButton.h"
-#import "TGFont.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGDialogListCellEditingButton () {
     UILabel *_labelView;

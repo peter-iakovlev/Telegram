@@ -1,12 +1,13 @@
 #import "TGUserAboutSetupController.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAccountSignals.h"
 
 #import "TGCollectionMultilineInputItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
 #import "TGDatabase.h"
@@ -116,7 +117,7 @@
     [_updateAboutDisposable setDisposable:[[[[TGAccountSignals updateAbout:text] deliverOn:[SQueue mainQueue]] onDispose:^{
         [progressWindow dismiss:true];
     }] startWithNext:nil error:^(__unused id error) {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Channel.About.Error") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
     } completed:^{
         __strong TGUserAboutSetupController *strongSelf = weakSelf;
         if (strongSelf != nil) {

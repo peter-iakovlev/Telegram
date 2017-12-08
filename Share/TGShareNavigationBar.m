@@ -16,7 +16,7 @@
     if (self != nil)
     {
         _backView = [[UIView alloc] initWithFrame:self.bounds];
-        _backView.backgroundColor = TGColorWithHex(0xf7f7f7);
+        _backView.backgroundColor = [UIColor hexColor:0xf7f7f7];
         [self addSubview:_backView];
     }
     return self;

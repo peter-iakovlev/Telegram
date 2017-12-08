@@ -1,8 +1,8 @@
 #import "TGOpenInCarouselCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 #import "TGOpenInAppItem.h"
 #import "TGOpenInSignals.h"

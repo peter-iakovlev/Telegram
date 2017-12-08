@@ -732,3 +732,36 @@
 
 @end
 
+@implementation TLMessageAction$messageActionCustomAction : TLMessageAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xfae69f56;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x45995670;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageAction$messageActionCustomAction *object = [[TLMessageAction$messageActionCustomAction alloc] init];
+    object.message = metaObject->getString((int32_t)0xc43b7853);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.message;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc43b7853, value));
+    }
+}
+
+
+@end
+

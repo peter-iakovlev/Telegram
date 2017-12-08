@@ -109,6 +109,9 @@
         } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionScreenshotTaken class]]) {
             self.actionType = TGMessageActionEncryptedChatMessageScreenshot;
             self.actionData = @{};
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionCustomAction class]]) {
+            self.actionType = TGMessageActionText;
+            self.actionData = @{@"text": ((TLMessageAction$messageActionCustomAction *)actionDesc).message};
         }
     }
     return self;

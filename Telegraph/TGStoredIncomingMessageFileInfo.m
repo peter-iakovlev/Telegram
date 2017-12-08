@@ -1,6 +1,6 @@
 #import "TGStoredIncomingMessageFileInfo.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGStoredIncomingMessageFileInfo
 

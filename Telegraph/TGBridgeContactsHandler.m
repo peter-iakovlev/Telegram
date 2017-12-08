@@ -1,8 +1,10 @@
 #import "TGBridgeContactsHandler.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeContactsSubscription.h"
 
 #import "TGSearchPeersSignals.h"
-#import "TGUser.h"
 
 #import "TGBridgeUser+TGUser.h"
 

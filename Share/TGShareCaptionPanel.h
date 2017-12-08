@@ -15,7 +15,7 @@
 @property (nonatomic, assign, getter=isCollapsed) bool collapsed;
 - (void)setCollapsed:(bool)collapsed animated:(bool)animated;
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve;
+- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight safeAreaInset:(UIEdgeInsets)safeAreaInset duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve;
 
 - (void)dismiss;
 

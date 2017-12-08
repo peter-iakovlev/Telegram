@@ -1,8 +1,8 @@
 #import "TGMessageViewsViewModel.h"
 
-#import "TGMessageViewsView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
+#import "TGMessageViewsView.h"
 
 @interface TGMessageViewsViewModel () {
 }

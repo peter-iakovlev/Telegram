@@ -1,15 +1,15 @@
 #import "TGNotificationView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGNotificationBackgroundView.h"
 #import "TGNotificationContentView.h"
 #import "TGNotificationReplyPanelView.h"
 
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGUser.h"
-#import "TGStringUtils.h"
-
-#import "TGModernConversationMentionsAssociatedPanel.h"
-#import "TGModernConversationHashtagsAssociatedPanel.h"
+#import <LegacyComponents/TGModernConversationMentionsAssociatedPanel.h>
+#import <LegacyComponents/TGModernConversationHashtagsAssociatedPanel.h>
 #import "TGStickerAssociatedInputPanel.h"
 
 const CGFloat TGNotificationDefaultHeight = 68.0f;
@@ -126,7 +126,7 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
                 origin = offset < 0 ? offset : 0;
             }
             
-            self.frame = CGRectMake(self.frame.origin.x, origin, self.frame.size.width, height);
+            self.frame = CGRectMake(self.frame.origin.x, origin + _safeAreaInset.top, self.frame.size.width, height);
             
             CGFloat threshold = expandedHeight - 95.0f;
             CGFloat progress = MAX(0, (offset - threshold) / (diff - threshold));
@@ -334,7 +334,7 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
     
     void (^changeBlock)(void) = ^
     {
-        self.frame = CGRectMake(self.frame.origin.x, 0, self.frame.size.width, expandedHeight);
+        self.frame = CGRectMake(self.frame.origin.x, _safeAreaInset.top, self.frame.size.width, expandedHeight);
         _contentView.frame = CGRectMake(_contentView.frame.origin.x, 0, _contentView.frame.size.width, expandedContentHeight);
         
         [self setExpandProgress:1.0f isExpanded:true fromGesture:fromGesture];
@@ -358,7 +358,7 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
 {
     void (^changeBlock)(void) = ^
     {
-        self.frame = CGRectMake(self.frame.origin.x, 0, self.frame.size.width, TGNotificationDefaultHeight);
+        self.frame = CGRectMake(self.frame.origin.x, _safeAreaInset.top, self.frame.size.width, TGNotificationDefaultHeight);
         _contentView.frame = CGRectMake(_contentView.frame.origin.x, 0, _contentView.frame.size.width, _contentView.frame.size.height);
     };
     
@@ -452,8 +452,9 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
     
     [UIView animateWithDuration:duration delay:0.0 options:(animationCurve | UIViewAnimationOptionLayoutSubviews) animations:^
     {
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, [self expandedHeight]);
-        _replyView.frame = CGRectMake((self.frame.size.width - contentWidth) / 2, self.frame.size.height - replyPanelHeight, contentWidth, replyPanelHeight);
+        _replyView.frame = CGRectMake((self.frame.size.width - contentWidth) / 2, [self expandedHeight] - replyPanelHeight, contentWidth, replyPanelHeight);
+        self.frame = CGRectMake(self.frame.origin.x, _safeAreaInset.top, self.frame.size.width, [self expandedHeight]);
+        [self setNeedsLayout];
     } completion:nil];
 }
 
@@ -728,11 +729,17 @@ const CGFloat TGNotificationBottomHitTestInset = 20.0f;
 
 #pragma mark -
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
+}
+
 - (void)layoutSubviews
 {
     _backgroundView.frame = CGRectMake(TGNotificationBackgroundInset, TGNotificationBackgroundInset, self.frame.size.width - 2 * TGNotificationBackgroundInset, self.frame.size.height - TGNotificationBackgroundInset);
     
-    CGFloat contentWidth = self.frame.size.width;
+    CGFloat contentWidth = self.frame.size.width - _safeAreaInset.left - _safeAreaInset.right;
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
         contentWidth = MIN(contentWidth, TGNotificationMaximumWidth);
     

@@ -1,7 +1,7 @@
 #import "TGSynchronizationStateSignal.h"
 
 #import "TGTelegramNetworking.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGSynchronizationStateHelper : NSObject <ASWatcher>
 {

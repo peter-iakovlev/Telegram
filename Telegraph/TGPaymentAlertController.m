@@ -1,8 +1,8 @@
 #import "TGPaymentAlertController.h"
 
-#import "TGArchivedStickerPacksAlert.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGOverlayController.h"
+#import "TGArchivedStickerPacksAlert.h"
 
 #import "TGPaymentAlertView.h"
 
@@ -62,11 +62,11 @@
 
 @implementation TGPaymentAlert
 
-- (instancetype)initWithParentController:(TGViewController *)parentController text:(NSString *)text {
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController text:(NSString *)text {
     TGPaymentAlertView *alertView = [[TGPaymentAlertView alloc] init];
     alertView.controller = parentController;
     
-    self = [super initWithParentController:parentController contentController:[[TGPaymentAlertController alloc] initWithView:alertView]];
+    self = [super initWithManager:manager parentController:parentController contentController:[[TGPaymentAlertController alloc] initWithView:alertView]];
     if (self != nil)
     {
         _view = alertView;

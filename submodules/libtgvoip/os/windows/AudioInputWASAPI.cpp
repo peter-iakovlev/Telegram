@@ -61,12 +61,13 @@ AudioInputWASAPI::AudioInputWASAPI(std::string deviceID){
 	audioClient=NULL;
 	captureClient=NULL;
 	thread=NULL;
+	started=false;
 
 	SetCurrentDevice(deviceID);
 }
 
 AudioInputWASAPI::~AudioInputWASAPI(){
-	if(audioClient && isRecording){
+	if(audioClient && started){
 		audioClient->Stop();
 	}
 
@@ -109,15 +110,14 @@ void AudioInputWASAPI::Start(){
 		thread=CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)AudioInputWASAPI::StartThread, this, 0, NULL);
 	}
 	
-	if(audioClient)
+	started=true;
+	if(audioClient){
 		audioClient->Start();
+	}
 }
 
 void AudioInputWASAPI::Stop(){
 	isRecording=false;
-
-	if(audioClient)
-		audioClient->Stop();
 }
 
 bool AudioInputWASAPI::IsRecording(){
@@ -278,8 +278,11 @@ void AudioInputWASAPI::ActuallySetCurrentDevice(std::string deviceID){
 
 	audioClient=audioClient2;
 #endif
-
-	res = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST | 0x80000000/*AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM*/, 60 * 10000, 0, &format, NULL);
+	
+	
+	// {2C693079-3F59-49FD-964F-61C005EAA5D3}
+	const GUID guid = { 0x2c693079, 0x3f59, 0x49fd, { 0x96, 0x4f, 0x61, 0xc0, 0x5, 0xea, 0xa5, 0xd3 } };
+	res = audioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK | AUDCLNT_STREAMFLAGS_NOPERSIST | 0x80000000/*AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM*/, 60 * 10000, 0, &format, &guid);
 	CHECK_RES(res, "audioClient->Initialize");
 
 	uint32_t bufSize;
@@ -365,7 +368,8 @@ void AudioInputWASAPI::RunThread() {
 			memcpy(remainingData+remainingDataLen, data, dataLen);
 			remainingDataLen+=dataLen;
 			while(remainingDataLen>960*2){
-				InvokeCallback(remainingData, 960*2);
+				if(isRecording)
+					InvokeCallback(remainingData, 960*2);
 				memmove(remainingData, remainingData+(960*2), remainingDataLen-960*2);
 				remainingDataLen-=960*2;
 			}

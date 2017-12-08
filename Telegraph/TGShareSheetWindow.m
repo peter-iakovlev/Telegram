@@ -1,6 +1,7 @@
 #import "TGShareSheetWindow.h"
 
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
 
 @interface TGShareSheetController : TGOverlayWindowViewController
@@ -19,7 +20,12 @@
     [super loadView];
     self.view.userInteractionEnabled = true;
     
+    UIEdgeInsets safeAreaInset = [TGViewController safeAreaInsetForOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
+    if (safeAreaInset.bottom > FLT_EPSILON)
+        safeAreaInset.bottom -= 22;
+    
     TGShareSheetView *attachmentSheetView = [[TGShareSheetView alloc] initWithFrame:CGRectZero];
+    attachmentSheetView.safeAreaInset = safeAreaInset;
     [self setAttachmentSheetView:attachmentSheetView];
 }
 
@@ -32,14 +38,30 @@
 {
     [_attachmentSheetView removeFromSuperview];
     
+    UIEdgeInsets safeAreaInset = [TGViewController safeAreaInsetForOrientation:[[UIApplication sharedApplication] statusBarOrientation]];
+    if (safeAreaInset.bottom > FLT_EPSILON)
+        safeAreaInset.bottom -= 22;
+    
+    attachmentSheetView.safeAreaInset = safeAreaInset;
     _attachmentSheetView = attachmentSheetView;
     _attachmentSheetView.frame = self.view.frame;
     _attachmentSheetView.attachmentSheetWindow = _attachmentSheetWindow;
     _attachmentSheetView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_attachmentSheetView];
-    
+ 
     if (stickToBottom)
         [_attachmentSheetView scrollToBottomAnimated:false];
+}
+
+- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    UIEdgeInsets safeAreaInset = [TGViewController safeAreaInsetForOrientation:toInterfaceOrientation];
+    if (safeAreaInset.bottom > FLT_EPSILON)
+        safeAreaInset.bottom -= 22;
+    
+    _attachmentSheetView.safeAreaInset = safeAreaInset;
+    
+    [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
 }
 
 @end

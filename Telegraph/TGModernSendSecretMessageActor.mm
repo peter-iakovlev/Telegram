@@ -1,15 +1,15 @@
 #import "TGModernSendSecretMessageActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
 #import <MTProtoKit/MTEncryption.h>
 #import "TLMetaClassStore.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGFileUtils.h"
+#import <LegacyComponents/TGFileUtils.h>
 
 #import "TGPreparedTextMessage.h"
 #import "TGPreparedMapMessage.h"
@@ -30,20 +30,20 @@
 #import "TGPreparedAssetVideoMessage.h"
 #import "TGPreparedRemoteVideoMessage.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 #import "TGImageDownloadActor.h"
 
-#import "TGMediaAssetsLibrary.h"
-#import "TGMediaAssetImageSignals.h"
+#import <LegacyComponents/TGMediaAssetsLibrary.h>
+#import <LegacyComponents/TGMediaAssetImageSignals.h>
 #import "TGVideoConverter.h"
-#import "TGMediaVideoConverter.h"
+#import <LegacyComponents/TGMediaVideoConverter.h>
 #import "TGMediaLiveUploadWatcher.h"
 
-#import "UIImage+TG.h"
+#import <LegacyComponents/UIImage+TG.h>
 
 #import "TGDownloadManager.h"
 
-#import "TGImageManager.h"
+#import <LegacyComponents/TGImageManager.h>
 
 #import "TGMediaStoreContext.h"
 
@@ -61,6 +61,8 @@
 #import "TGRecentStickersSignal.h"
 
 #import <AVFoundation/AVFoundation.h>
+
+#import "TGAudioMediaAttachment+Telegraph.h"
 
 @interface TGModernSendSecretMessageActor ()
 {
@@ -91,7 +93,7 @@
 
 + (NSUInteger)currentLayer
 {
-    return 66;
+    return 73;
 }
 
 + (NSString *)genericPath
@@ -103,6 +105,8 @@
 {
     if (_downloadingItemId != nil)
         [[TGDownloadManager instance] cancelItem:_downloadingItemId];
+    
+    [self.preparedMessage.postingContext cancelPreparedMessage:self.preparedMessage];
     
     [super cancel];
 }
@@ -150,6 +154,12 @@
             } else {
                 return [Secret66_DecryptedMessageMedia decryptedMessageMediaVenueWithLat:@(latitude) plong:@(longitude) title:venue.title == nil ? @"" : venue.title address:venue.address == nil ? @"" : venue.address provider:venue.provider == nil ? @"" : venue.provider venueId:venue.venueId == nil ? @"" : venue.venueId];
             }
+        case 73:
+            if (venue == nil) {
+                return [Secret73_DecryptedMessageMedia decryptedMessageMediaGeoPointWithLat:@(latitude) plong:@(longitude)];
+            } else {
+                return [Secret73_DecryptedMessageMedia decryptedMessageMediaVenueWithLat:@(latitude) plong:@(longitude) title:venue.title == nil ? @"" : venue.title address:venue.address == nil ? @"" : venue.address provider:venue.provider == nil ? @"" : venue.provider venueId:venue.venueId == nil ? @"" : venue.venueId];
+            }
         default:
             break;
     }
@@ -173,6 +183,8 @@
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
         case 66:
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaPhotoWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) w:@((int)imageSize.width) h:@((int)imageSize.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
         default:
             break;
     }
@@ -196,6 +208,8 @@
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
         case 66:
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
     }
     
     return nil;
@@ -285,6 +299,49 @@
                 return [Secret66_DocumentAttribute documentAttributeVideoWithFlags:@(flags) duration:@(concreteAttribute.duration) w:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
             }
             break;
+        case 73:
+            if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
+                return [Secret73_DocumentAttribute documentAttributeAnimated];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                TGDocumentAttributeAudio *concreteAttribute = attribute;
+                int32_t flags = 0;
+                if (concreteAttribute.isVoice) {
+                    flags |= (1 << 10);
+                }
+                if (concreteAttribute.title != nil) {
+                    flags |= (1 << 0);
+                }
+                if (concreteAttribute.performer != nil) {
+                    flags |= (1 << 1);
+                }
+                if (concreteAttribute.waveform != nil) {
+                    flags |= (1 << 2);
+                }
+                
+                return [Secret73_DocumentAttribute documentAttributeAudioWithFlags:@(flags) duration:@(concreteAttribute.duration) title:concreteAttribute.title performer:concreteAttribute.performer waveform:[concreteAttribute.waveform bitstream]];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeFilename class]]) {
+                TGDocumentAttributeFilename *concreteAttribute = attribute;
+                return [Secret73_DocumentAttribute documentAttributeFilenameWithFileName:concreteAttribute.filename == nil ? @"" : concreteAttribute.filename];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
+                TGDocumentAttributeImageSize *concreteAttribute = attribute;
+                return [Secret73_DocumentAttribute documentAttributeImageSizeWithW:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]]) {
+                TGDocumentAttributeSticker *concreteAttribute = attribute;
+                id stickerset = [Secret73_InputStickerSet inputStickerSetEmpty];
+                NSString *shortName = [TGStickersSignals stickerPackShortName:concreteAttribute.packReference];
+                if (shortName.length != 0) {
+                    stickerset = [Secret73_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
+                }
+                return [Secret73_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
+            } else if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                TGDocumentAttributeVideo *concreteAttribute = attribute;
+                int32_t flags = 0;
+                if (concreteAttribute.isRoundMessage) {
+                    flags |= (1 << 0);
+                }
+                return [Secret73_DocumentAttribute documentAttributeVideoWithFlags:@(flags) duration:@(concreteAttribute.duration) w:@((int)concreteAttribute.size.width) h:@((int)concreteAttribute.size.height)];
+            }
+            break;
     }
     return nil;
 }
@@ -328,6 +385,8 @@
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) mimeType:mimeType size:@(size) key:key iv:iv attributes:convertedAttributes caption:caption == nil ? @"" : caption];
         case 66:
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) mimeType:mimeType size:@(size) key:key iv:iv attributes:convertedAttributes caption:caption == nil ? @"" : caption];
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaDocumentWithThumb:thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) mimeType:mimeType size:@(size) key:key iv:iv attributes:convertedAttributes caption:caption == nil ? @"" : caption];
         default:
             break;
     }
@@ -351,6 +410,8 @@
             return [Secret46_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
         case 66:
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaAudioWithDuration:@(duration) mimeType:mimeType size:@(size) key:key iv:iv];
         default:
             break;
     }
@@ -377,6 +438,9 @@
                 case 66:
                     convertedAttribute = [Secret66_DocumentAttribute documentAttributeFilenameWithFileName:((TGDocumentAttributeFilename *)attribute).filename];
                     break;
+                case 73:
+                    convertedAttribute = [Secret73_DocumentAttribute documentAttributeFilenameWithFileName:((TGDocumentAttributeFilename *)attribute).filename];
+                    break;
                 default:
                     break;
             }
@@ -397,6 +461,9 @@
                 case 66:
                     convertedAttribute = [Secret66_DocumentAttribute documentAttributeAnimated];
                     break;
+                case 73:
+                    convertedAttribute = [Secret73_DocumentAttribute documentAttributeAnimated];
+                    break;
                 default:
                     break;
             }
@@ -416,6 +483,9 @@
                     break;
                 case 66:
                     convertedAttribute = [Secret66_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.width) h:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.height)];
+                    break;
+                case 73:
+                    convertedAttribute = [Secret73_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.width) h:@((int32_t)((TGDocumentAttributeImageSize *)attribute).size.height)];
                     break;
                 default:
                     break;
@@ -450,6 +520,16 @@
                         stickerset = [Secret66_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
                     }
                     convertedAttribute = [Secret66_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
+                    break;
+                }
+                case 73:
+                {
+                    Secret73_InputStickerSet *stickerset = [Secret73_InputStickerSet inputStickerSetEmpty];
+                    NSString *shortName = [TGStickersSignals stickerPackShortName:concreteAttribute.packReference];
+                    if (shortName.length != 0) {
+                        stickerset = [Secret73_InputStickerSet inputStickerSetShortNameWithShortName:shortName];
+                    }
+                    convertedAttribute = [Secret73_DocumentAttribute documentAttributeStickerWithAlt:concreteAttribute.alt == nil ? @"" : concreteAttribute.alt stickerset:stickerset];
                     break;
                 }
                 default:
@@ -497,6 +577,16 @@
             Secret66_PhotoSize_photoCachedSize *cachedSize = [Secret66_PhotoSize photoCachedSizeWithType:@"s" location:[Secret66_FileLocation_fileLocation fileLocationWithDcId:@(thumbDcId) volumeId:@(thumbVolumeId) localId:@(thumbLocalId) secret:@(thumbSecret)] w:@(thumbnailSize.width) h:@(thumbnailSize.height) bytes:thumbnailData];
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaExternalDocumentWithPid:@(n_id) accessHash:@(accessHash) date:@(date) mimeType:mimeType == nil ? @"" : mimeType size:@(size) thumb:cachedSize dcId:@(dcId) attributes:[self convertDocumentAttributes:attributes toLayer:layer]];
         }
+        case 73:
+        {
+            int32_t thumbDcId = 0;
+            int64_t thumbVolumeId = 0;
+            int32_t thumbLocalId = 0;
+            int64_t thumbSecret = 0;
+            extractFileUrlComponents(thumbnailUri, &thumbDcId, &thumbVolumeId, &thumbLocalId, &thumbSecret);
+            Secret73_PhotoSize_photoCachedSize *cachedSize = [Secret73_PhotoSize photoCachedSizeWithType:@"s" location:[Secret73_FileLocation_fileLocation fileLocationWithDcId:@(thumbDcId) volumeId:@(thumbVolumeId) localId:@(thumbLocalId) secret:@(thumbSecret)] w:@(thumbnailSize.width) h:@(thumbnailSize.height) bytes:thumbnailData];
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaExternalDocumentWithPid:@(n_id) accessHash:@(accessHash) date:@(date) mimeType:mimeType == nil ? @"" : mimeType size:@(size) thumb:cachedSize dcId:@(dcId) attributes:[self convertDocumentAttributes:attributes toLayer:layer]];
+        }
         default:
             break;
     }
@@ -514,6 +604,9 @@
             break;
         case 66:
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaWebPageWithUrl:url];
+            break;
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaWebPageWithUrl:url];
             break;
         default:
             break;
@@ -543,6 +636,10 @@
     return 0;
 }
 
+- (int64_t)groupedId {
+    return self.preparedMessage.groupedId;
+}
+
 - (id)convertedMessageEntityWithLayer:(NSUInteger)layer entity:(TGMessageEntity *)entity {
     if ([entity isKindOfClass:[TGMessageEntityBold class]]) {
         switch (layer) {
@@ -551,6 +648,9 @@
                 break;
             case 66:
                 return [Secret66_MessageEntity messageEntityBoldWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityBoldWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -563,6 +663,9 @@
             case 66:
                 return [Secret66_MessageEntity messageEntityBotCommandWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityBotCommandWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -573,6 +676,9 @@
                 break;
             case 66:
                 return [Secret66_MessageEntity messageEntityCodeWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityCodeWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -585,6 +691,9 @@
             case 66:
                 return [Secret66_MessageEntity messageEntityEmailWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityEmailWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -595,6 +704,9 @@
                 break;
             case 66:
                 return [Secret66_MessageEntity messageEntityHashtagWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityHashtagWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -607,6 +719,9 @@
             case 66:
                 return [Secret66_MessageEntity messageEntityItalicWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityItalicWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -617,6 +732,9 @@
                 break;
             case 66:
                 return [Secret66_MessageEntity messageEntityMentionWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityMentionWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
             default:
                 break;
@@ -653,6 +771,9 @@
             case 66:
                 return [Secret66_MessageEntity messageEntityUrlWithOffset:@(entity.range.location) length:@(entity.range.length)];
                 break;
+            case 73:
+                return [Secret73_MessageEntity messageEntityUrlWithOffset:@(entity.range.location) length:@(entity.range.length)];
+                break;
             default:
                 break;
         }
@@ -667,6 +788,9 @@
         [self _fail];
     else
     {
+        if (self.preparedMessage.postingContext != nil)
+            [self.preparedMessage.postingContext startMediaUploadForPreparedMessage:self.preparedMessage actor:self];
+        
         if ([self.preparedMessage isKindOfClass:[TGPreparedTextMessage class]])
         {
             [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
@@ -693,7 +817,7 @@
                 media = [self decryptedWebpageWithLayer:[self currentPeerLayer] url:textMessage.parsedWebpage.url];
             }
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:textMessage.text media:media entities:convertedEntities viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:textMessage.text media:media entities:convertedEntities viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
         }
         else if ([self.preparedMessage isKindOfClass:[TGPreparedMapMessage class]])
         {
@@ -707,7 +831,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
         }
         else if ([self.preparedMessage isKindOfClass:[TGPreparedLocalImageMessage class]])
         {
@@ -814,7 +938,7 @@
                                 if (randomId == 0)
                                     arc4random_buf(&randomId, 8);
                                 
-                                strongSelf->_actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[strongSelf peerId] layer:[strongSelf currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[strongSelf currentPeerLayer] text:nil media:media entities:nil viaBotName:[strongSelf viaBotName] lifetime:strongSelf.preparedMessage.messageLifetime replyToRandomId:[strongSelf replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:strongSelf];
+                                strongSelf->_actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[strongSelf peerId] layer:[strongSelf currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[strongSelf currentPeerLayer] text:nil media:media entities:nil viaBotName:[strongSelf viaBotName] lifetime:strongSelf.preparedMessage.messageLifetime replyToRandomId:[strongSelf replyToRandomId] randomId:randomId groupedId:[strongSelf groupedId]] storedFileInfo:nil watcher:strongSelf];
                             }
                         } error:^(__unused id error) {
                             __strong TGModernSendSecretMessageActor *strongSelf = weakSelf;
@@ -832,7 +956,7 @@
                     if (randomId == 0)
                         arc4random_buf(&randomId, 8);
                     
-                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
                 }
             } else {
                 NSString *thumbnailUri = [preparedDocument.thumbnailInfo imageUrlForLargestSize:NULL];
@@ -918,7 +1042,7 @@
                     if (randomId == 0)
                         arc4random_buf(&randomId, 8);
                     
-                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
                 } else if ([self isMediaLocallyAvailable:media])
                 {
                     if ([self doesMediaRequireUpload:media])
@@ -944,7 +1068,7 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:preparedForwardedMessage.innerMessage.text media:nil entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:preparedForwardedMessage.innerMessage.text media:nil entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
             }
         }
         else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
@@ -1336,6 +1460,7 @@
                         updatedMessage = self.preparedMessage.message;
                     }
                     updatedMessage.cid = _conversationId;
+                    updatedMessage.mediaAttachments = assetVideoMessage.message.mediaAttachments;
                     
                     TGDatabaseUpdateMessageWithMessage *messageUpdate = [[TGDatabaseUpdateMessageWithMessage alloc] initWithPeerId:0 messageId:self.preparedMessage.mid message:updatedMessage dispatchEdited:false];
                     [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
@@ -1512,7 +1637,7 @@
     }
 }
 
-- (void)_fail
+- (void)_fail:(bool)manual
 {
     TGDatabaseUpdateMessageFailedDeliveryInBackground *messageUpdate = [[TGDatabaseUpdateMessageFailedDeliveryInBackground alloc] initWithPeerId:_conversationId messageId:self.preparedMessage.mid];
     [TGDatabaseInstance() transactionUpdateMessages:@[messageUpdate] updateConversationDatas:nil];
@@ -1521,7 +1646,10 @@
         @"previousMid": @(self.preparedMessage.mid)
     }];
     
-    [super _fail];
+    if (!manual)
+        [self.preparedMessage.postingContext failPreparedMessage:self.preparedMessage];
+    
+    [super _fail:manual];
 }
 
 #pragma mark -
@@ -1784,7 +1912,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             return true;
         }
         else
@@ -1843,7 +1971,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             return true;
         }
         else
@@ -1926,7 +2054,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             return true;
         }
         else
@@ -1950,7 +2078,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             return true;
         }
         else
@@ -1968,7 +2096,7 @@
         if (randomId == 0)
             arc4random_buf(&randomId, 8);
         
-        _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:nil watcher:self];
+        _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
         return true;
     }
     
@@ -2047,6 +2175,8 @@
 - (void)uploadProgressChanged
 {
     [self restartFailTimeoutIfRunning];
+    
+    [self.preparedMessage.postingContext maybeNotifyGroupedUploadProgressWithPreparedMessage:self.preparedMessage];
 }
 
 - (void)uploadsCompleted:(NSDictionary *)filePathToUploadedFile
@@ -2072,7 +2202,16 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            SSignal *readySignal = localImageMessage.postingContext ? [localImageMessage.postingContext readyToPostPreparedMessage:localImageMessage] : [SSignal complete];
+            if (self.groupedId != 0)
+                readySignal = [[localImageMessage.postingContext readyToPostGroupedId:self.groupedId force:true] then:[readySignal then:[[SSignal complete] delay:0.05 onQueue:[SQueue concurrentDefaultQueue]]]];
+            [self.disposables add:[[readySignal deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:nil completed:^
+            {
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                [localImageMessage.postingContext notifyPostedMessage:localImageMessage];
+            }]];
+            
+            [localImageMessage.postingContext markPreparedMessageAsReadyToSend:localImageMessage];
         }
         else
             [self _fail];
@@ -2094,7 +2233,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
         else
             [self _fail];
@@ -2139,7 +2278,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
         else
             [self _fail];
@@ -2181,7 +2320,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
     }
     else if ([self.preparedMessage isKindOfClass:[TGPreparedDownloadImageMessage class]])
@@ -2208,7 +2347,7 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -2239,7 +2378,7 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -2291,7 +2430,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
         else
             [self _fail];
@@ -2363,7 +2502,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         } else {
             [self _fail];
         }
@@ -2416,7 +2555,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         } else {
             [self _fail];
         }
@@ -2487,7 +2626,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
         else
             [self _fail];
@@ -2557,7 +2696,7 @@
             if (randomId == 0)
                 arc4random_buf(&randomId, 8);
             
-            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
         }
         else
             [self _fail];
@@ -2585,7 +2724,16 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                SSignal *readySignal = assetImageMessage.postingContext ? [assetImageMessage.postingContext readyToPostPreparedMessage:assetImageMessage] : [SSignal complete];
+                if (self.groupedId != 0)
+                    readySignal = [[assetImageMessage.postingContext readyToPostGroupedId:self.groupedId force:true] then:[readySignal then:[[SSignal complete] delay:0.05 onQueue:[SQueue concurrentDefaultQueue]]]];
+                [self.disposables add:[[readySignal deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:nil completed:^
+                {
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                    [assetImageMessage.postingContext notifyPostedMessage:assetImageMessage];
+                }]];
+                
+                [assetImageMessage.postingContext markPreparedMessageAsReadyToSend:assetImageMessage];
             }
             else
                 [self _fail];
@@ -2628,7 +2776,7 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -2659,7 +2807,16 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                SSignal *readySignal = assetVideoMessage.postingContext ? [assetVideoMessage.postingContext readyToPostPreparedMessage:assetVideoMessage] : [SSignal complete];
+                if (self.groupedId != 0)
+                    readySignal = [[assetVideoMessage.postingContext readyToPostGroupedId:self.groupedId force:true] then:[readySignal then:[[SSignal complete] delay:0.05 onQueue:[SQueue concurrentDefaultQueue]]]];
+                [self.disposables add:[[readySignal deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:nil completed:^
+                {
+                    _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                    [assetVideoMessage.postingContext notifyPostedMessage:assetVideoMessage];
+                }]];
+                
+                [assetVideoMessage.postingContext markPreparedMessageAsReadyToSend:assetVideoMessage];
             }
             else
                 [self _fail];
@@ -2692,7 +2849,7 @@
                         filename = ((TGDocumentAttributeFilename *)attribute).filename;
                 }
                 
-                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetVideoMessage.attributes mimeType:(assetVideoMessage.isAnimation ? @"video/mp4" : assetVideoMessage.mimeType) caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetVideoMessage.attributes mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedDocumentSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedDocumentKey = fileInfo[@"key"];
@@ -2702,7 +2859,7 @@
                 if (randomId == 0)
                     arc4random_buf(&randomId, 8);
                 
-                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
+                _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:[self storedFileInfoForSchemeFileInfo:fileInfo[@"file"]] watcher:self];
             }
             else
                 [self _fail];
@@ -3032,62 +3189,90 @@
     return _actionId == actionId;
 }
 
-+ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key
++ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key v2:(bool)v2
 {
     NSData *authKey = key;
     if (authKey == nil || authKey.length == 0)
         return nil;
     
-    int x = incoming ? 8 : 0;
-    
-    NSData *sha1_a = nil;
-    {
-        NSMutableData *data = [[NSMutableData alloc] init];
-        [data appendData:messageKey];
-        [data appendBytes:(((int8_t *)authKey.bytes) + x) length:32];
-        sha1_a = MTSha1(data);
+    if (v2) {
+        int xValue = incoming ? 8 : 0;
+        
+        NSMutableData *sha256_a_data = [[NSMutableData alloc] init];
+        [sha256_a_data appendData:messageKey];
+        [sha256_a_data appendBytes:((int8_t *)authKey.bytes) + xValue length:36];
+        
+        NSData *sha256_a = MTSha256(sha256_a_data);
+        
+        NSMutableData *sha256_b_data = [[NSMutableData alloc] init];
+        [sha256_b_data appendBytes:((int8_t *)authKey.bytes) + 40 + xValue length:36];
+        [sha256_b_data appendData:messageKey];
+        
+        NSData *sha256_b = MTSha256(sha256_b_data);
+        
+        NSMutableData *aesKey = [[NSMutableData alloc] init];
+        [aesKey appendBytes:((int8_t *)sha256_a.bytes) + 0 length:8];
+        [aesKey appendBytes:((int8_t *)sha256_b.bytes) + 8 length:16];
+        [aesKey appendBytes:((int8_t *)sha256_a.bytes) + 24 length:8];
+        
+        NSMutableData *aesIv = [[NSMutableData alloc] init];
+        [aesIv appendBytes:((int8_t *)sha256_b.bytes) + 0 length:8];
+        [aesIv appendBytes:((int8_t *)sha256_a.bytes) + 8 length:16];
+        [aesIv appendBytes:((int8_t *)sha256_b.bytes) + 24 length:8];
+                                    
+        return [[MTMessageEncryptionKey alloc] initWithKey:[[NSData alloc] initWithData:aesKey] iv:[[NSData alloc] initWithData:aesIv]];
+    } else {
+        int x = 0;
+        
+        NSData *sha1_a = nil;
+        {
+            NSMutableData *data = [[NSMutableData alloc] init];
+            [data appendData:messageKey];
+            [data appendBytes:(((int8_t *)authKey.bytes) + x) length:32];
+            sha1_a = MTSha1(data);
+        }
+        
+        NSData *sha1_b = nil;
+        {
+            NSMutableData *data = [[NSMutableData alloc] init];
+            [data appendBytes:(((int8_t *)authKey.bytes) + 32 + x) length:16];
+            [data appendData:messageKey];
+            [data appendBytes:(((int8_t *)authKey.bytes) + 48 + x) length:16];
+            sha1_b = MTSha1(data);
+        }
+        
+        NSData *sha1_c = nil;
+        {
+            NSMutableData *data = [[NSMutableData alloc] init];
+            [data appendBytes:(((int8_t *)authKey.bytes) + 64 + x) length:32];
+            [data appendData:messageKey];
+            sha1_c = MTSha1(data);
+        }
+        
+        NSData *sha1_d = nil;
+        {
+            NSMutableData *data = [[NSMutableData alloc] init];
+            [data appendData:messageKey];
+            [data appendBytes:(((int8_t *)authKey.bytes) + 96 + x) length:32];
+            sha1_d = MTSha1(data);
+        }
+        
+        NSMutableData *aesKey = [[NSMutableData alloc] init];
+        [aesKey appendBytes:(((int8_t *)sha1_a.bytes)) length:8];
+        [aesKey appendBytes:(((int8_t *)sha1_b.bytes) + 8) length:12];
+        [aesKey appendBytes:(((int8_t *)sha1_c.bytes) + 4) length:12];
+        
+        NSMutableData *aesIv = [[NSMutableData alloc] init];
+        [aesIv appendBytes:(((int8_t *)sha1_a.bytes) + 8) length:12];
+        [aesIv appendBytes:(((int8_t *)sha1_b.bytes)) length:8];
+        [aesIv appendBytes:(((int8_t *)sha1_c.bytes) + 16) length:4];
+        [aesIv appendBytes:(((int8_t *)sha1_d.bytes)) length:8];
+        
+        return [[MTMessageEncryptionKey alloc] initWithKey:[[NSData alloc] initWithData:aesKey] iv:[[NSData alloc] initWithData:aesIv]];
     }
-    
-    NSData *sha1_b = nil;
-    {
-        NSMutableData *data = [[NSMutableData alloc] init];
-        [data appendBytes:(((int8_t *)authKey.bytes) + 32 + x) length:16];
-        [data appendData:messageKey];
-        [data appendBytes:(((int8_t *)authKey.bytes) + 48 + x) length:16];
-        sha1_b = MTSha1(data);
-    }
-    
-    NSData *sha1_c = nil;
-    {
-        NSMutableData *data = [[NSMutableData alloc] init];
-        [data appendBytes:(((int8_t *)authKey.bytes) + 64 + x) length:32];
-        [data appendData:messageKey];
-        sha1_c = MTSha1(data);
-    }
-    
-    NSData *sha1_d = nil;
-    {
-        NSMutableData *data = [[NSMutableData alloc] init];
-        [data appendData:messageKey];
-        [data appendBytes:(((int8_t *)authKey.bytes) + 96 + x) length:32];
-        sha1_d = MTSha1(data);
-    }
-    
-    NSMutableData *aesKey = [[NSMutableData alloc] init];
-    [aesKey appendBytes:(((int8_t *)sha1_a.bytes)) length:8];
-    [aesKey appendBytes:(((int8_t *)sha1_b.bytes) + 8) length:12];
-    [aesKey appendBytes:(((int8_t *)sha1_c.bytes) + 4) length:12];
-    
-    NSMutableData *aesIv = [[NSMutableData alloc] init];
-    [aesIv appendBytes:(((int8_t *)sha1_a.bytes) + 8) length:12];
-    [aesIv appendBytes:(((int8_t *)sha1_b.bytes)) length:8];
-    [aesIv appendBytes:(((int8_t *)sha1_c.bytes) + 16) length:4];
-    [aesIv appendBytes:(((int8_t *)sha1_d.bytes)) length:8];
-    
-    return [[MTMessageEncryptionKey alloc] initWithKey:[[NSData alloc] initWithData:aesKey] iv:[[NSData alloc] initWithData:aesIv]];
 }
 
-+ (NSData *)prepareDecryptedMessageWithLayer:(NSUInteger)layer text:(NSString *)text media:(id)media entities:(NSArray *)entities viaBotName:(NSString *)viaBotName lifetime:(int32_t)lifetime replyToRandomId:(int64_t)replyToRandomId randomId:(int64_t)randomId
++ (NSData *)prepareDecryptedMessageWithLayer:(NSUInteger)layer text:(NSString *)text media:(id)media entities:(NSArray *)entities viaBotName:(NSString *)viaBotName lifetime:(int32_t)lifetime replyToRandomId:(int64_t)replyToRandomId randomId:(int64_t)randomId groupedId:(int64_t)groupedId
 {
     NSData *messageData = nil;
     
@@ -3145,6 +3330,27 @@
                 flags |= (1 << 3);
             }
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageWithFlags:@(flags) randomId:@(randomId) ttl:@(lifetime) message:text media:media entities:entities viaBotName:viaBotName replyToRandomId:replyToRandomId == 0 ? nil : @(replyToRandomId)]];
+            break;
+        }
+        case 73:
+        {
+            int32_t flags = 0;
+            if (media != nil) {
+                flags |= (1 << 9);
+            }
+            if (entities != nil) {
+                flags |= (1 << 7);
+            }
+            if (viaBotName.length != 0) {
+                flags |= (1 << 11);
+            }
+            if (replyToRandomId != 0) {
+                flags |= (1 << 3);
+            }
+            if (groupedId != 0) {
+                flags |= (1 << 17);
+            }
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageWithFlags:@(flags) randomId:@(randomId) ttl:@(lifetime) message:text media:media entities:entities viaBotName:viaBotName replyToRandomId:replyToRandomId == 0 ? nil : @(replyToRandomId) groupedId:groupedId == 0 ? nil : @(groupedId)]];
             break;
         }
         default:
@@ -3312,30 +3518,63 @@
     } synchronous:false];
 }
 
-+ (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId
++ (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId currentClientIsCreator:(bool)currentClientIsCreator v2:(bool)v2
 {
     if (serializedMessage == nil)
         return nil;
+    
     NSMutableData *decryptedBytesOriginal = [serializedMessage mutableCopy];
     int32_t messageLength = (int32_t)decryptedBytesOriginal.length;
     [decryptedBytesOriginal replaceBytesInRange:NSMakeRange(0, 0) withBytes:&messageLength length:4];
     
-    NSData *messageKeyFull = MTSha1(decryptedBytesOriginal);
-    NSData *messageKey = [[NSData alloc] initWithBytes:(((int8_t *)messageKeyFull.bytes) + messageKeyFull.length - 16) length:16];
+    NSData *messageKey = nil;
     
-    uint8_t randomBuf[16];
-    arc4random_buf(randomBuf, 16);
-    int index = 0;
+    if (!v2) {
+        NSData *messageKeyFull = MTSha1(decryptedBytesOriginal);
+        messageKey = [[NSData alloc] initWithBytes:(((int8_t *)messageKeyFull.bytes) + messageKeyFull.length - 16) length:16];
+    }
     
     NSMutableData *decryptedBytes = [[NSMutableData alloc] initWithCapacity:decryptedBytesOriginal.length + 16];
     [decryptedBytes appendData:decryptedBytesOriginal];
-    while (decryptedBytes.length % 16 != 0)
-    {
-        [decryptedBytes appendBytes:randomBuf + index length:1];
-        index++;
+    
+    uint8_t randomBytes[128];
+    arc4random_buf(randomBytes, 128);
+    if (v2) {
+        int take = 0;
+        while (take < 12) {
+            [decryptedBytes appendBytes:randomBytes + take length:1];
+            take++;
+        }
+    
+        while (decryptedBytes.length % 16 != 0) {
+            [decryptedBytes appendBytes:randomBytes + take length:1];
+            take++;
+        }
+    
+        int remainingCount = arc4random_uniform(72 + 1 - take);
+        while (remainingCount % 16 != 0) {
+            remainingCount--;
+        }
+    
+        for (int i = 0; i < remainingCount; i++) {
+            [decryptedBytes appendBytes:randomBytes + take length:1];
+            take++;
+        }
+        
+        int xValue = currentClientIsCreator ? 0 : 8;
+        NSMutableData *msgKeyLargeData = [[NSMutableData alloc] init];
+        [msgKeyLargeData appendBytes:((uint8_t *)key.bytes) + 88 + xValue length:32];
+        [msgKeyLargeData appendData:decryptedBytes];
+        
+        NSData *msgKeyLarge = MTSha256(msgKeyLargeData);
+        messageKey = [msgKeyLarge subdataWithRange:NSMakeRange(8, 16)];
+    } else {
+        for (int i = 0; ((int)decryptedBytes.length) % 16 != 0; i++) {
+            [decryptedBytes appendBytes:randomBytes + i length:1];
+        }
     }
     
-    MTMessageEncryptionKey *keyData = [self generateMessageKeyData:messageKey incoming:false key:key];
+    MTMessageEncryptionKey *keyData = [self generateMessageKeyData:messageKey incoming:!currentClientIsCreator key:key v2:v2];
     
     if (keyData != nil)
     {
@@ -3379,6 +3618,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtlSeconds:@(ttl)]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionSetMessageTTLWithTtlSeconds:@(ttl)]]];
+            break;
         default:
             break;
     }
@@ -3413,6 +3655,9 @@
             break;
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandomIds:randomIds]]];
+            break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionDeleteMessagesWithRandomIds:randomIds]]];
             break;
         default:
             break;
@@ -3449,6 +3694,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionFlushHistory]]];
+            break;
         default:
             break;
     }
@@ -3479,6 +3727,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandomIds:randomIds]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionReadMessagesWithRandomIds:randomIds]]];
+            break;
         default:
             break;
     }
@@ -3508,6 +3759,9 @@
             break;
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionScreenshotMessagesWithRandomIds:randomIds]]];
+            break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionScreenshotMessagesWithRandomIds:randomIds]]];
             break;
         default:
             break;
@@ -3544,6 +3798,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionNotifyLayerWithLayer:@(notifyLayer)]]];
+            break;
         default:
             break;
     }
@@ -3574,6 +3831,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionResendWithStartSeqNo:@(fromSeq) endSeqNo:@(toSeq)]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionResendWithStartSeqNo:@(fromSeq) endSeqNo:@(toSeq)]]];
+            break;
         default:
             break;
     }
@@ -3602,6 +3862,9 @@
             break;
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionRequestKeyWithExchangeId:@(exchangeId) gA:g_a]]];
+            break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionRequestKeyWithExchangeId:@(exchangeId) gA:g_a]]];
             break;
         default:
             break;
@@ -3632,6 +3895,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionAcceptKeyWithExchangeId:@(exchangeId) gB:g_b keyFingerprint:@(keyFingerprint)]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionAcceptKeyWithExchangeId:@(exchangeId) gB:g_b keyFingerprint:@(keyFingerprint)]]];
+            break;
         default:
             break;
     }
@@ -3660,6 +3926,9 @@
             break;
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionCommitKeyWithExchangeId:@(exchangeId) keyFingerprint:@(keyFingerprint)]]];
+            break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionCommitKeyWithExchangeId:@(exchangeId) keyFingerprint:@(keyFingerprint)]]];
             break;
         default:
             break;
@@ -3690,6 +3959,9 @@
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionAbortKeyWithExchangeId:@(exchangeId)]]];
             break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionAbortKeyWithExchangeId:@(exchangeId)]]];
+            break;
         default:
             break;
     }
@@ -3718,6 +3990,9 @@
             break;
         case 66:
             messageData = [Secret66__Environment serializeObject:[Secret66_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret66_DecryptedMessageAction decryptedMessageActionNoop]]];
+            break;
+        case 73:
+            messageData = [Secret73__Environment serializeObject:[Secret73_DecryptedMessage decryptedMessageServiceWithRandomId:@(randomId) action:[Secret73_DecryptedMessageAction decryptedMessageActionNoop]]];
             break;
         default:
             break;

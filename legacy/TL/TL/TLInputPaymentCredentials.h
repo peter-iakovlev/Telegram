@@ -24,3 +24,9 @@
 
 @end
 
+@interface TLInputPaymentCredentials$inputPaymentCredentialsApplePay : TLInputPaymentCredentials
+
+@property (nonatomic, retain) TLDataJSON *payment_data;
+
+@end
+

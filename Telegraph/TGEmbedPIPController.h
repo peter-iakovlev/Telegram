@@ -1,5 +1,6 @@
-#import "TGOverlayController.h"
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 
 @class TGEmbedPIPPlaceholderView;
 @class TGWebPageMediaAttachment;

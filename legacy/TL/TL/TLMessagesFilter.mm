@@ -378,3 +378,107 @@
 
 @end
 
+@implementation TLMessagesFilter$inputMessagesFilterMyMentions : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xc1f8e69a;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x3330f265;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterMyMentions *object = [[TLMessagesFilter$inputMessagesFilterMyMentions alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessagesFilter$inputMessagesFilterMyMentionsUnread : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x46caf4a8;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x680cae7d;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterMyMentionsUnread *object = [[TLMessagesFilter$inputMessagesFilterMyMentionsUnread alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessagesFilter$inputMessagesFilterGeo : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xe7026d0d;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x1f09bf6b;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterGeo *object = [[TLMessagesFilter$inputMessagesFilterGeo alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+
+@implementation TLMessagesFilter$inputMessagesFilterContacts : TLMessagesFilter
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xe062db83;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xf1b4dde;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLMessagesFilter$inputMessagesFilterContacts *object = [[TLMessagesFilter$inputMessagesFilterContacts alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

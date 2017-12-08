@@ -1,15 +1,11 @@
 #import "TGRoundMessageViewModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGDateUtils.h"
-#import "TGPeerIdAdapter.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGMessage.h"
-#import "TGDocumentMediaAttachment.h"
 #import "TGPreparedLocalDocumentMessage.h"
 #import "TGPreparedLocalVideoMessage.h"
 
@@ -25,7 +21,7 @@
 #import "TGModernButtonViewModel.h"
 #import "TGRoundMessageRingViewModel.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 #import "TGMessageImageView.h"
@@ -37,7 +33,7 @@
 #import "TGMusicPlayer.h"
 #import "TGNativeAudioPlayer.h"
 
-#import "TGMediaVideoConverter.h"
+#import <LegacyComponents/TGMediaVideoConverter.h>
 #import "TGVideoMessagePIPController.h"
 
 #import "TGMessageReplyButtonsModel.h"
@@ -46,11 +42,11 @@
 {
     TGMessage *_message;
     bool _incoming;
-    bool _incomingAppearance;
     bool _read;
     int _date;
     TGMessageDeliveryState _deliveryState;
     bool _hasAvatar;
+    bool _savedMessage;
     
     bool _isMessageViewed;
     NSTimeInterval _messageViewDate;
@@ -180,14 +176,26 @@
         
         _hasAvatar = authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]];
         if ([authorPeer isKindOfClass:[TGConversation class]]) {
-            if ([context isAdminLog]) {
+            if ([context isAdminLog] || context.isSavedMessages) {
                 _hasAvatar = true;
             }
         }
         _needsEditingCheckButton = true;
         
+        TGForwardedMessageMediaAttachment *forwardAttachment = nil;
+        for (TGMediaAttachment *attachment in message.mediaAttachments)
+        {
+            if (attachment.type == TGForwardedMessageMediaAttachmentType)
+            {
+                forwardAttachment = (TGForwardedMessageMediaAttachment *)attachment;
+                break;
+            }
+        }
+        _savedMessage = forwardAttachment != nil && context.isSavedMessages && forwardAttachment.forwardSourcePeerId != message.cid;
+        bool hasForwardPostId = forwardAttachment.forwardPostId != 0 || forwardAttachment.forwardMid != 0;
+        
         _canDownload = video.videoId != 0;
-        _incomingAppearance = _incoming || [authorPeer isKindOfClass:[TGConversation class]];
+        _incomingAppearance = _incoming || [authorPeer isKindOfClass:[TGConversation class]] || _savedMessage;
         
         CGFloat scale = [UIScreen mainScreen].scale;
         static dispatch_once_t onceToken;
@@ -215,6 +223,7 @@
         NSString *imageUri = [previewImageInfo imageUrlForLargestSize:NULL];
         
         _imageModel = [[TGMessageImageViewModel alloc] initWithUri:imageUri];
+        [_imageModel setPresentation:_context.presentation];
         _imageModel.skipDrawInContext = true;
         [_imageModel setBlurlessOverlay:true];
         if ([imageUri hasPrefix:@"video-thumbnail://?"])
@@ -247,7 +256,7 @@
         }
         
         _imageModel.flexibleTimestamp = true;
-        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
+        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && !(_incomingAppearance && _context.isSavedMessages) && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         _imageModel.timestampHidden = false;
         
@@ -270,12 +279,13 @@
         
         _muteButtonModel = [[TGModernImageViewModel alloc] init];
         _muteButtonModel.accountForTransform = true;
+        [_muteButtonModel setViewUserInteractionDisabled:true];
         [_muteButtonModel setImage:[[TGTelegraphConversationMessageAssetsSource instance] systemUnmuteButton]];
         [self addSubmodel:_muteButtonModel];
         
         [self _updateMuted:true];
         
-        if (replyHeader != nil || forwardPeer != nil)
+        if (replyHeader != nil || (forwardPeer != nil && !_context.isSavedMessages))
         {
             _replyMessageId = replyHeader.mid;
             
@@ -291,7 +301,7 @@
                 _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:replyPeer incoming:_incomingAppearance system:true];
                 [_contentModel addSubmodel:_replyHeaderModel];
             }
-            else
+            else if (!_context.isSavedMessages)
             {
                 [self setForwardHeader:forwardPeer forwardAuthor:forwardAuthor messageId:forwardMessageId];
                 [_contentModel addSubmodel:_forwardedHeaderModel];
@@ -319,9 +329,9 @@
             }
         }
         
-        if (_incomingAppearance && (isChannel || _context.isBot || (_context.isPublicGroup) || isBot || forwardedFromChannel) && !_context.isAdminLog) {
+        if (_incomingAppearance && ((_savedMessage && hasForwardPostId) || isChannel || _context.isBot || (_context.isPublicGroup) || isBot || forwardedFromChannel) && !_context.isAdminLog) {
             _shareButtonModel = [[TGModernButtonViewModel alloc] init];
-            _shareButtonModel.image = [[TGTelegraphConversationMessageAssetsSource instance] systemShareButton];
+            _shareButtonModel.image = _savedMessage ? [[TGTelegraphConversationMessageAssetsSource instance] systemGoToButton] : [[TGTelegraphConversationMessageAssetsSource instance] systemShareButton];
             _shareButtonModel.modernHighlight = true;
             _shareButtonModel.frame = CGRectMake(0.0f, 0.0f, 29.0f, 29.0f);
             [self addSubmodel:_shareButtonModel];
@@ -376,7 +386,7 @@
 
 - (void)setAuthorSignature:(NSString *)authorSignature {
     _authorSignature = authorSignature;
-    [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
+    [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && !(_incomingAppearance && _context.isSavedMessages) && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
 }
 
 - (void)updateAdditionalDataString
@@ -418,7 +428,7 @@
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            image = [UIImage imageNamed:@"ModernMessageUnsentButton.png"];
+            image = TGImageNamed(@"ModernMessageUnsentButton.png");
         });
         
         _unsentButtonModel = [[TGModernImageViewModel alloc] initWithImage:image];
@@ -545,7 +555,7 @@
         _deliveryState = message.deliveryState;
         _read = !messageUnread;
         
-        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
+        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && !(_incomingAppearance && _context.isSavedMessages) && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         
         if (_deliveryState == TGMessageDeliveryStateDelivered)
@@ -678,7 +688,7 @@
     bool previousRead = _read;
     _read = ![_context isMessageUnread:_message];
     if (previousRead != _read) {
-        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
+        [_imageModel setTimestampString:[self timestampString] signatureString:_authorSignature displayCheckmarks:!_incoming && !(_incomingAppearance && _context.isSavedMessages) && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:true];
     }
     
     if (_isSecret)
@@ -1040,8 +1050,28 @@
         [self activateMediaPlayback];
 }
 
-- (void)sharePressed {
-    [_context.companionHandle requestAction:@"fastForwardMessage" options:@{@"mid": @(_mid)}];
+- (void)sharePressed
+{
+    if (_savedMessage)
+    {
+        int64_t peerId = 0;
+        int32_t messageId = 0;
+        for (TGMediaAttachment *attachment in _message.mediaAttachments)
+        {
+            if (attachment.type == TGForwardedMessageMediaAttachmentType)
+            {
+                peerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardSourcePeerId ? : ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                messageId = ((TGForwardedMessageMediaAttachment *)attachment).forwardMid ?: ((TGForwardedMessageMediaAttachment *)attachment).forwardPostId;
+                break;
+            }
+        }
+        
+        [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(peerId), @"messageId": @(messageId)}];
+    }
+    else
+    {
+        [_context.companionHandle requestAction:@"fastForwardMessage" options:@{@"mid": @(_mid)}];
+    }
 }
 
 - (void)activateMediaPlayback
@@ -1344,6 +1374,9 @@
     if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
     
+    if (!_editing && fabs(_replyPanOffset) > FLT_EPSILON)
+        backgroundFrame.origin.x += _replyPanOffset;
+    
     _backgroundModel.frame = backgroundFrame;
     CGFloat inset = 2.0f;
     if (TGScreenScaling() == 2.0f)
@@ -1443,6 +1476,36 @@
     self.frame = frame;
     
     [super layoutForContainerSize:containerSize];
+}
+
+- (void)avatarTapGesture:(UITapGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        int64_t peerId = _message.fromUid;
+        bool peer = !TGPeerIdIsUser(peerId);
+        if (_context.isSavedMessages)
+        {
+            for (TGMediaAttachment *attachment in _message.mediaAttachments)
+            {
+                if (attachment.type == TGForwardedMessageMediaAttachmentType)
+                {
+                    peerId = ((TGForwardedMessageMediaAttachment *)attachment).forwardPeerId;
+                    peer = true;
+                    break;
+                }
+            }
+        }
+        
+        if (peer)
+        {
+            [_context.companionHandle requestAction:@"peerAvatarTapped" options:@{@"peerId": @(peerId), @"messageId": @(_mid), @"chat": @(_context.isSavedMessages)}];
+        }
+        else
+        {
+            [_context.companionHandle requestAction:@"userAvatarTapped" options:@{@"uid": @(peerId), @"mid": @(_mid)}];
+        }
+    }
 }
 
 @end

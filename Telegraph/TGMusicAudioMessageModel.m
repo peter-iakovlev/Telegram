@@ -1,28 +1,19 @@
 #import "TGMusicAudioMessageModel.h"
 
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDocumentMessageIconModel.h"
-
 #import "TGDocumentMessageIconView.h"
 
 #import "TGMessageImageView.h"
 #import "TGModernLabelViewModel.h"
 
-#import "TGFont.h"
-
-#import "TGMessage.h"
-
 #import "TGModernFlatteningViewModel.h"
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 #import "TGModernTextViewModel.h"
 #import "TGReplyHeaderModel.h"
 
-#import "TGViewController.h"
-
 #import "TGMusicPlayer.h"
-
-#import "TGUser.h"
 
 #import "TGReusableLabel.h"
 
@@ -227,8 +218,7 @@ static CTFontRef textFontForSize(CGFloat size)
     if (_textModel.text.length != 0 && ![_textModel.text isEqualToString:@" "]) {
         CGRect textFrame = _textModel.frame;
         
-        CGFloat textInset = 0.0f;
-        textInset = CGRectGetMaxY(_iconModel.frame) - 8.0f;
+        CGFloat textInset = _iconModel.frame.size.height - 8.0f;
         textFrame.origin = CGPointMake(1, textInset + headerHeight);
         _textModel.frame = textFrame;
         headerHeight += textFrame.size.height;
@@ -298,7 +288,7 @@ static CTFontRef textFontForSize(CGFloat size)
     [self updateImageOverlay:false];
 }
 
-- (CGSize)contentSizeForContainerSize:(CGSize)__unused containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth
+- (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth
 {
     CGFloat additionalWidth = 0.0f;
     if (_performerModel.frame.size.width < _titleModel.frame.size.width)
@@ -334,7 +324,7 @@ static CTFontRef textFontForSize(CGFloat size)
         //textSize.width = MAX(textSize.width, MIN(containerSize.width, infoWidth + sizeWidth + previewSize.width + 16.0f));
     }
     
-    CGSize size = CGSizeMake(57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 30.0f, 59.0f + textSize.height);
+    CGSize size = CGSizeMake(MIN(containerSize.width + 28.0f, 57.0f + 10.0f + MAX(_titleModel.frame.size.width, _performerModel.frame.size.width) + 20.0f), 59.0f + textSize.height);
     if (infoWidth > size.width - 40.0f) {
         size.height += 10.0f;
     }

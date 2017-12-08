@@ -1,8 +1,9 @@
 #import "TGNotificationWindow.h"
 
-#import "TGViewController.h"
-#import "ActionStage.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGAppDelegate.h"
 

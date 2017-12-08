@@ -1,13 +1,10 @@
 #import "TGImageSearchActor.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
-#import "ActionStage.h"
-#import "TGStringUtils.h"
-
-#import "TGImageInfo.h"
-
-#import "TGViewController.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGAppDelegate.h"
 

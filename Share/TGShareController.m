@@ -36,7 +36,7 @@
     if (self != nil)
     {
         self.viewControllers = @[ [[TGShareRecipientController alloc] init] ];
-        [self.navigationBar setTintColor:TGColorWithHex(0x007ee5)];
+        [self.navigationBar setTintColor:[UIColor hexColor:0x007ee5]];
     }
     return self;
 }
@@ -203,7 +203,7 @@
                     }
                     if (isGif)
                     {
-                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api70_DocumentAttribute documentAttributeAnimated], [Api70_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
+                        uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api73_DocumentAttribute documentAttributeAnimated], [Api73_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)] ]];
                     }
                     else
                     {
@@ -216,12 +216,12 @@
                 {
                     uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"file" : fileName mimeType:mimeType == nil ? @"application/octet-stream" : mimeType attributes:@[]];
                 }
-
             }
             else if (description[@"video"] != nil)
             {
                 AVURLAsset *asset = description[@"video"];
-                uploadMediaSignal = [[TGShareVideoConverter convertAVAsset:asset] mapToSignal:^SSignal *(id value)
+                bool isRoundMessage = [description[@"isRoundMessage"] boolValue];
+                uploadMediaSignal = [[TGShareVideoConverter convertAVAsset:asset preset:isRoundMessage ? TGMediaVideoConversionPresetVideoMessage : TGMediaVideoConversionPresetCompressedMedium] mapToSignal:^SSignal *(id value)
                 {
                     if ([value isKindOfClass:[NSDictionary class]])
                     {
@@ -238,7 +238,7 @@
                         int32_t duration = (int32_t)[desc[@"duration"] doubleValue];
                         CGSize dimensions = [desc[@"dimensions"] CGSizeValue];
                         
-                        return [[TGUploadMediaSignals uploadVideoWithContext:strongSelf->_currentShareContext data:videoData thumbData:thumbnailData duration:duration width:dimensions.width height:dimensions.height mimeType:desc[@"mimeType"]] map:^id(id value)
+                        return [[TGUploadMediaSignals uploadVideoWithContext:strongSelf->_currentShareContext data:videoData thumbData:thumbnailData duration:duration width:dimensions.width height:dimensions.height mimeType:desc[@"mimeType"] roundMessage:isRoundMessage] map:^id(id value)
                         {
                             if ([value isKindOfClass:[NSNumber class]])
                                 return @(0.5f + [value floatValue] / 2.0f);
@@ -293,7 +293,7 @@
                 }
                 
                 NSMutableArray *attributes = [[NSMutableArray alloc] init];
-                [attributes addObject:[Api70_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
+                [attributes addObject:[Api73_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
                 
                 uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:audioData name:fileName mimeType:description[@"mimeType"] attributes:attributes];
             }
@@ -325,7 +325,7 @@
                 if (strongSelf == nil)
                     return [SSignal fail:nil];
                 
-                if ([next isKindOfClass:[Api70_InputMedia class]])
+                if ([next isKindOfClass:[Api73_InputMedia class]])
                 {
                     return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:next]];
                 }

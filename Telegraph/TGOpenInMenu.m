@@ -1,17 +1,17 @@
 #import "TGOpenInMenu.h"
 
-#import "TGViewController.h"
-#import "TGMenuSheetController.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGMenuSheetController.h>
 
 #import "TGOpenInCarouselItemView.h"
 #import "TGOpenInAppItem.h"
 
-#import "TGWebPageMediaAttachment.h"
-#import "TGLocationMediaAttachment.h"
+#import "TGLegacyComponentsContext.h"
 
 @implementation TGOpenInMenu
 
-+ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title url:(NSURL *)url buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(void))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
++ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title url:(NSURL *)url buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(TGMenuSheetController *))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
 {
     TGWebPageMediaAttachment *attachment = [[TGWebPageMediaAttachment alloc] init];
     attachment.url = url.absoluteString;
@@ -27,7 +27,7 @@
     return [self hasThirdPartyAppsForWebPageAttachment:attachment];
 }
 
-+ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title webPageAttachment:(TGWebPageMediaAttachment *)attachment buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(void))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
++ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title webPageAttachment:(TGWebPageMediaAttachment *)attachment buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(TGMenuSheetController *))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
 {
     return [self presentInParentController:parentController menuController:menuController title:title webPageAttachment:attachment locationAttachment:nil directions:false buttonTitle:buttonTitle buttonAction:buttonAction sourceView:sourceView sourceRect:sourceRect barButtonItem:barButtonItem];
 }
@@ -37,7 +37,7 @@
     return ([TGOpenInAppItem appItemsForWebPageAttachment:attachment].count > 1);
 }
 
-+ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title locationAttachment:(TGLocationMediaAttachment *)attachment directions:(bool)directions buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(void))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
++ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title locationAttachment:(TGLocationMediaAttachment *)attachment directions:(bool)directions buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(TGMenuSheetController *))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
 {
     return [self presentInParentController:parentController menuController:menuController title:title webPageAttachment:nil locationAttachment:attachment directions:directions buttonTitle:buttonTitle buttonAction:buttonAction sourceView:sourceView sourceRect:sourceRect barButtonItem:barButtonItem];
 }
@@ -47,12 +47,12 @@
     return ([TGOpenInAppItem appItemsForLocationAttachment:attachment directions:directions].count > 1);
 }
 
-+ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title webPageAttachment:(TGWebPageMediaAttachment *)webPage locationAttachment:(TGLocationMediaAttachment *)location directions:(bool)directions buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(void))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
++ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController title:(NSString *)title webPageAttachment:(TGWebPageMediaAttachment *)webPage locationAttachment:(TGLocationMediaAttachment *)location directions:(bool)directions buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(TGMenuSheetController *))buttonAction sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
 {
     TGMenuSheetController *controller = nil;
     if (menuController == nil)
     {
-        controller = [[TGMenuSheetController alloc] init];
+        controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
         controller.dismissesByOutsideTap = true;
         controller.hasSwipeGesture = true;
         controller.narrowInLandscape = true;
@@ -94,8 +94,9 @@
     {
         TGMenuSheetButtonItemView *actionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:buttonTitle type:TGMenuSheetButtonTypeDefault action:^
         {
+            __strong TGMenuSheetController *strongController = weakController;
             if (buttonAction != nil)
-                buttonAction();
+                buttonAction(strongController);
         }];
         [itemViews addObject:actionButton];
     }

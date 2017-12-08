@@ -1,18 +1,11 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGEditableCollectionItemView.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGCollectionMenuView.h"
 #import "TGEditingScrollView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import "TGPresentation.h"
 
 @interface TGEditableCollectionItemView () <TGEditingScrollViewDelegate>
 {
@@ -36,10 +29,19 @@
         _enableEditing = true;
         
         _editingScrollView = [[TGEditingScrollView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _editingScrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _editingScrollView.editingDelegate = self;
         [self addSubview:_editingScrollView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.pallete.collectionMenuAccentColor : self.presentation.pallete.collectionMenuDestructiveColor;
 }
 
 - (void)prepareForReuse
@@ -112,10 +114,11 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     if (_actionButton == nil)
     {
         _actionButton = [[UIButton alloc] init];
-        _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGAccentColor() : TGDestructiveAccentColor();
+        _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.pallete.collectionMenuAccentColor : self.presentation.pallete.collectionMenuDestructiveColor;
         [_actionButton setTitle:self.optionText forState:UIControlStateNormal];
         [_actionButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
         _actionButton.titleLabel.font = TGSystemFontOfSize(18);
+        _actionButton.titleEdgeInsets = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, self.safeAreaInset.right);
         [_actionButton addTarget:self action:@selector(optionButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_actionButton];
     }
@@ -187,7 +190,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     if (_indicatorMode != indicatorMode) {
         _indicatorMode = indicatorMode;
         if (_deleteIndicator != nil) {
-            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? [UIImage imageNamed:@"ModernMenuAddIcon.png"] : [UIImage imageNamed:@"ModernMenuDeleteIcon.png"];
+            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGImageNamed(@"ModernMenuAddIcon.png") : TGImageNamed(@"ModernMenuDeleteIcon.png");
         }
         if (_actionButton != nil) {
             _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGAccentColor() : TGDestructiveAccentColor();
@@ -201,7 +204,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     {
         if (_deleteIndicator == nil)
         {
-            _deleteIndicator = [[UIImageView alloc] initWithImage:_indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? [UIImage imageNamed:@"ModernMenuAddIcon.png"] : [UIImage imageNamed:@"ModernMenuDeleteIcon.png"]];
+            _deleteIndicator = [[UIImageView alloc] initWithImage:_indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGImageNamed(@"ModernMenuAddIcon.png") : TGImageNamed(@"ModernMenuDeleteIcon.png")];
             _deleteIndicator.userInteractionEnabled = true;
             [_deleteIndicator addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(deleteIndicatorTapGesture:)]];
             
@@ -265,7 +268,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
 - (void)_layoutDeleteIndicator
 {
     CGSize deleteIndicatorSize = _deleteIndicator.bounds.size;
-    _deleteIndicator.frame = CGRectMake((_showsDeleteIndicator ? 12.0f : -deleteIndicatorSize.width), CGFloor((self.bounds.size.height - deleteIndicatorSize.height) / 2.0f) + 1.0f, deleteIndicatorSize.width, deleteIndicatorSize.height);
+    _deleteIndicator.frame = CGRectMake((_showsDeleteIndicator ? 12.0f + self.safeAreaInset.left : -deleteIndicatorSize.width), CGFloor((self.bounds.size.height - deleteIndicatorSize.height) / 2.0f) + 1.0f, deleteIndicatorSize.width, deleteIndicatorSize.height);
 }
 
 - (void)_layoutActionButton
@@ -276,6 +279,12 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     _actionButton.frame = CGRectMake(bounds.size.width - MIN(bounds.origin.x, optionsWidth), _optionsOffset.y, optionsWidth, bounds.size.height);
 }
 
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _actionButton.titleEdgeInsets = UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, safeAreaInset.right);
+    [super setSafeAreaInset:safeAreaInset];
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -284,7 +293,7 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     
     CGFloat separatorHeight = TGScreenPixel;
     
-    _editingScrollView.contentSize = CGSizeMake(bounds.size.width + 82.0f, bounds.size.height + separatorHeight);
+    _editingScrollView.contentSize = CGSizeMake(bounds.size.width + 82.0f + self.safeAreaInset.right, bounds.size.height + separatorHeight);
     _editingScrollView.frame = CGRectMake(0.0f, 0.0f, bounds.size.width, bounds.size.height + separatorHeight);
     
     if (_deleteIndicator != nil)

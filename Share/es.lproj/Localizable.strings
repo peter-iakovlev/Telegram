@@ -30,3 +30,11 @@
 "Share.TouchId" = "Pon tu código de acceso";
 
 "Share.AddCaption" = "Escribe un comentario...";
+
+"Share.PasscodeFailedAttempts_1" = "1 intento fallido";
+"Share.PasscodeFailedAttempts_2" = "2 intentos fallidos";
+"Share.PasscodeFailedAttempts_3_10" = "%@ intentos fallidos";
+"Share.PasscodeFailedAttempts_any" = "%@ intento fallido";
+"Share.PasscodeTryAgainIn1Minute" = "Vuelve a intentarlo en 1 minuto";
+
+"Share.SavedMessages" = "Mensajes guardados";

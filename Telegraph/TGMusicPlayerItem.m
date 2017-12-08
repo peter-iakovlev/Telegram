@@ -1,6 +1,6 @@
 #import "TGMusicPlayerItem.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"

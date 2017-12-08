@@ -2,8 +2,8 @@
 
 #import "TGUserDataRequestBuilder.h"
 
-#import "ActionStage.h"
-#import "SGraphListNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphListNode.h>
 
 #import "TGTelegraph.h"
 

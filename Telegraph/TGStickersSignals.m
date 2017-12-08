@@ -3,7 +3,7 @@
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
 
@@ -112,31 +112,37 @@ static OSSpinLock cachedPacksLock = 0;
     }];
 }
 
-+ (void)updateShowStickerButtonModeForStickerPacks:(NSArray *)stickerPacks
++ (void)updateShowStickerButtonModeForStickerPacks:(NSArray *)__unused stickerPacks
 {
-    for (TGStickerPack *stickerPack in stickerPacks)
+//    for (TGStickerPack *stickerPack in stickerPacks)
+//    {
+//        bool isExternalPack = true;
+//        if ([stickerPack.packReference isKindOfClass:[TGStickerPackBuiltinReference class]])
+//            isExternalPack = false;
+//        
+//        if ([stickerPack.packReference isKindOfClass:[TGStickerPackIdReference class]])
+//        {
+//            TGStickerPackIdReference *reference = (TGStickerPackIdReference *)stickerPack.packReference;
+//            if (reference.shortName.length == 0)
+//                isExternalPack = false;
+//        }
+//        
+//        if (true || isExternalPack)
+//        {
+//            if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
+//            {
+//                TGAppDelegateInstance.alwaysShowStickersMode = 2;
+//                [TGAppDelegateInstance saveSettings];
+//            }
+//            
+//            break;
+//        }
+//    }
+    
+    if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
     {
-        bool isExternalPack = true;
-        if ([stickerPack.packReference isKindOfClass:[TGStickerPackBuiltinReference class]])
-            isExternalPack = false;
-        
-        if ([stickerPack.packReference isKindOfClass:[TGStickerPackIdReference class]])
-        {
-            TGStickerPackIdReference *reference = (TGStickerPackIdReference *)stickerPack.packReference;
-            if (reference.shortName.length == 0)
-                isExternalPack = false;
-        }
-        
-        if (true || isExternalPack)
-        {
-            if (TGAppDelegateInstance.alwaysShowStickersMode == 0)
-            {
-                TGAppDelegateInstance.alwaysShowStickersMode = 2;
-                [TGAppDelegateInstance saveSettings];
-            }
-            
-            break;
-        }
+        TGAppDelegateInstance.alwaysShowStickersMode = 2;
+        [TGAppDelegateInstance saveSettings];
     }
 }
 
@@ -1216,6 +1222,30 @@ static OSSpinLock cachedPacksLock = 0;
     }];
     
     return nil;
+}
+
++ (SSignal *)cachedStickerPack:(id<TGStickerPackReference>)packReference {
+    if (packReference == nil)
+        return [SSignal single:nil];
+    
+    SSignal *cachedSignal = [SSignal defer:^SSignal *{
+        if ([packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+            TGStickerPackIdReference *packIdReference = (TGStickerPackIdReference *)packReference;
+            TGCachedStickerPack *cachedStickerPack = [TGDatabaseInstance() stickerPackForReference:packIdReference];
+            
+            int32_t expirationTimestamp = cachedStickerPack.date + 60 * 60;
+            if (CFAbsoluteTimeGetCurrent() < expirationTimestamp)
+                return [SSignal single:cachedStickerPack.stickerPack];
+        }
+        
+        return [SSignal fail:nil];
+    }];
+    
+    return [cachedSignal catch:^SSignal *(__unused id error) {
+        return [[self stickerPackInfo:packReference] onNext:^(TGStickerPack *next) {
+            [TGDatabaseInstance() storeStickerPack:next forReference:next.packReference];
+        }];
+    }];
 }
 
 @end

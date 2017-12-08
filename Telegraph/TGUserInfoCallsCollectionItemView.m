@@ -1,11 +1,7 @@
 #import "TGUserInfoCallsCollectionItemView.h"
 
-#import "TGStringUtils.h"
-#import "TGDateUtils.h"
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMessage.h"
 #import "TGCallDiscardReason.h"
 
 @interface TGUserInfoCallView : UIView
@@ -82,11 +78,11 @@
     CGFloat separatorHeight = TGScreenPixel;
     _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
     
-    _dateLabel.frame = CGRectMake(36, 0, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
+    _dateLabel.frame = CGRectMake(36 + self.safeAreaInset.left, 0, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
     
     [_callViews enumerateObjectsUsingBlock:^(TGUserInfoCallView *callView, NSUInteger index, __unused BOOL *stop)
     {
-        callView.frame = CGRectMake(0, 26.0f + 26.0f * index, self.frame.size.width, 26.0f);
+        callView.frame = CGRectMake(self.safeAreaInset.left, 26.0f + 26.0f * index, self.frame.size.width, 26.0f);
     }];
 }
 

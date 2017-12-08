@@ -1,6 +1,6 @@
 #import "TGSharedMediaImageViewQueue.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGSharedMediaImageViewWithUri : NSObject
 

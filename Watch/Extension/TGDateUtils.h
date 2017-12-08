@@ -20,10 +20,9 @@ typedef enum
 + (NSString *)stringForDayOfWeek:(int)date;
 + (NSString *)stringForMonthOfYear:(int)date;
 + (NSString *)stringForPreciseDate:(int)date;
-+ (NSString *)stringForMessageListDate:(int)date;
-+ (NSString *)stringForLastSeen:(int)date;
 + (NSString *)stringForApproximateDate:(int)date;
 + (NSString *)stringForRelativeLastSeen:(int)date;
++ (NSString *)stringForMessageListDate:(int)date;
 
 + (TGChatTimestamp *)timestampForDateIfNeeded:(int)date previousDate:(NSNumber *)previousDate;
 

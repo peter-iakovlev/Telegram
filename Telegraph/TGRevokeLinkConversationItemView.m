@@ -1,10 +1,8 @@
 #import "TGRevokeLinkConversationItemView.h"
 
-#import "TGConversation.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGRevokeLinkConversationItemView () {
     TGLetteredAvatarView *_avatarView;

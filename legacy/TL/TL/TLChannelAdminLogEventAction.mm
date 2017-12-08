@@ -6,6 +6,7 @@
 #import "TLChatPhoto.h"
 #import "TLMessage.h"
 #import "TLChannelParticipant.h"
+#import "TLInputStickerSet.h"
 
 @implementation TLChannelAdminLogEventAction
 
@@ -527,6 +528,79 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.n_new_participant;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf6311a80, value));
+    }
+}
+
+
+@end
+
+@implementation TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet : TLChannelAdminLogEventAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xb1c3caa7;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xf17e13b5;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet *object = [[TLChannelAdminLogEventAction$channelAdminLogEventActionChangeStickerSet alloc] init];
+    object.prev_stickerset = metaObject->getObject((int32_t)0xa88400e1);
+    object.n_new_stickerset = metaObject->getObject((int32_t)0xc2c4916c);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.prev_stickerset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa88400e1, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.n_new_stickerset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc2c4916c, value));
+    }
+}
+
+
+@end
+
+@implementation TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden : TLChannelAdminLogEventAction
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x5f5c95f1;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x97d44287;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden *object = [[TLChannelAdminLogEventAction$channelAdminLogEventActionTogglePreHistoryHidden alloc] init];
+    object.n_new_value = metaObject->getBool((int32_t)0xc81df074);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveBool;
+        value.primitive.boolValue = self.n_new_value;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc81df074, value));
     }
 }
 

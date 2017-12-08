@@ -2,7 +2,7 @@
 
 #import "TelegramMediaResources.h"
 #import "MultipartFetch.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 SSignal *fetchResource(id<MediaResource> resource, NSRange range, TGNetworkMediaTypeTag mediaTypeTag) {
     if ([resource conformsToProtocol:@protocol(TelegramCloudMediaResource)]) {

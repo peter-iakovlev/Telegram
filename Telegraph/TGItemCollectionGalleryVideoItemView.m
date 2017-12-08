@@ -1,14 +1,14 @@
 #import "TGItemCollectionGalleryVideoItemView.h"
 
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernGalleryVideoPlayerView.h"
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 
 #import "TGDatabase.h"
 
-#import "TGModernButton.h"
-#import "TGModernGalleryZoomableScrollView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGModernGalleryZoomableScrollView.h>
 #import "TGEmbedPIPPlaceholderView.h"
 #import "TGEmbedPIPController.h"
 

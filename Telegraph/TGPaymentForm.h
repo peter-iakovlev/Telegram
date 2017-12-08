@@ -81,6 +81,14 @@
 
 @end
 
+@interface TGPaymentCredentialsApplePay : NSObject
+
+@property (nonatomic, strong, readonly) NSString *data;
+
+- (instancetype)initWithData:(NSString *)data;
+
+@end
+
 @interface TGPaymentCredentialsSaved : NSObject
 
 @property (nonatomic, strong, readonly) NSString *cardId;

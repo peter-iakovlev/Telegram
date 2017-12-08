@@ -1,36 +1,39 @@
 #import "TGFastCameraController.h"
-#import "TGCameraController.h"
-#import "TGTelegraph.h"
-#import "TGAppDelegate.h"
 
-#import "TGHacks.h"
-#import "TGImageBlur.h"
-#import "TGImageUtils.h"
-#import "TGPhotoEditorUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "PGCamera.h"
-#import "PGCameraCaptureSession.h"
-#import "PGCameraDeviceAngleSampler.h"
-#import "PGCameraVolumeButtonHandler.h"
+#import "TGLegacyComponentsContext.h"
 
-#import "TGCameraPreviewView.h"
+#import <LegacyComponents/TGCameraController.h>
+
+#import <LegacyComponents/TGPhotoEditorUtils.h>
+
+#import <LegacyComponents/PGCamera.h>
+#import <LegacyComponents/PGCameraCaptureSession.h>
+#import <LegacyComponents/PGCameraDeviceAngleSampler.h>
+#import <LegacyComponents/PGCameraVolumeButtonHandler.h>
+
+#import <LegacyComponents/TGCameraPreviewView.h>
 #import "TGFastCameraControlPanel.h"
 
-#import "TGCameraTimeCodeView.h"
-#import "TGCameraFlipButton.h"
+#import <LegacyComponents/TGCameraTimeCodeView.h>
+#import <LegacyComponents/TGCameraFlipButton.h>
 
-#import "TGCameraPhotoPreviewController.h"
+#import <LegacyComponents/TGCameraPhotoPreviewController.h>
 
-#import "TGModernGalleryController.h"
-#import "TGMediaPickerGalleryModel.h"
-#import "TGMediaPickerGalleryVideoItem.h"
-#import "TGMediaPickerGalleryVideoItemView.h"
+#import <LegacyComponents/TGModernGalleryController.h>
+#import <LegacyComponents/TGMediaPickerGalleryModel.h>
+#import <LegacyComponents/TGMediaPickerGalleryVideoItem.h>
+#import <LegacyComponents/TGMediaPickerGalleryVideoItemView.h>
 
-#import "TGMediaAssetsLibrary.h"
-#import "TGMediaAssetImageSignals.h"
-#import "AVURLAsset+TGMediaItem.h"
-#import "TGVideoEditAdjustments.h"
-#import "TGPaintingData.h"
+#import <LegacyComponents/TGMediaAssetsLibrary.h>
+#import <LegacyComponents/TGMediaAssetImageSignals.h>
+#import <LegacyComponents/AVURLAsset+TGMediaItem.h>
+#import <LegacyComponents/TGVideoEditAdjustments.h>
+#import <LegacyComponents/TGPaintingData.h>
+
+#import "TGLegacyComponentsContext.h"
+#import "TGAppDelegate.h"
 
 NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
 
@@ -55,12 +58,15 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     NSTimeInterval _startTimestamp;
 
     TGMediaEditingContext *_editingContext;
+    
+    bool _saveCapturedMedia;
+    bool _saveEditedPhotos;
 }
 @end
 
 @implementation TGFastCameraController
 
-- (instancetype)initWithParentController:(TGViewController *)parentController attachmentButtonFrame:(CGRect)attachmentButtonFrame
+- (instancetype)initWithParentController:(TGViewController *)parentController attachmentButtonFrame:(CGRect)attachmentButtonFrame saveCapturedMedia:(bool)saveCapturedMedia saveEditedPhotos:(bool)saveEditedPhotos
 {
     self = [super init];
     if (self != nil)
@@ -73,9 +79,12 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         _camera = [[PGCamera alloc] initWithMode:PGCameraModeVideo position:position];
         _attachmentButtonFrame = attachmentButtonFrame;
         
-        TGCameraControllerWindow *window = [[TGCameraControllerWindow alloc] initWithParentController:parentController contentController:self keepKeyboard:true];
+        TGCameraControllerWindow *window = [[TGCameraControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:parentController contentController:self keepKeyboard:true];
         window.windowLevel = 100000000.0f + 0.001f;
         window.hidden = false;
+        
+        _saveCapturedMedia = saveCapturedMedia;
+        _saveEditedPhotos = saveEditedPhotos;
     }
     return self;
 }
@@ -121,16 +130,16 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     };
     [_interfaceView addSubview:_controlPanel];
     
-    _topPanelView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 40.0f)];
+    _topPanelView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 40.0f + self.controllerSafeAreaInset.top)];
     _topPanelView.alpha = 0.0f;
     _topPanelView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.37f];
     [_interfaceView addSubview:_topPanelView];
     
-    _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 44.0f, 0, 40.0f, 40.0f)];
+    _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 44.0f, _topPanelView.frame.size.height - 40.0f, 40.0f, 40.0f)];
     [_flipButton addTarget:self action:@selector(flipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_topPanelView addSubview:_flipButton];
     
-    _timecodeView = [[TGCameraTimeCodeView alloc] initWithFrame:CGRectMake((self.view.frame.size.width - 120) / 2, 10, 120, 20)];
+    _timecodeView = [[TGCameraTimeCodeView alloc] initWithFrame:CGRectMake((self.view.frame.size.width - 120) / 2,  _topPanelView.frame.size.height - 30.0f, 120, 20)];
     _timecodeView.hidden = true;
     _timecodeView.requestedRecordingDuration = ^NSTimeInterval
     {
@@ -175,10 +184,9 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     
     _startTimestamp = CFAbsoluteTimeGetCurrent();
     
-    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
+    [[LegacyComponentsGlobals provider] setIdleTimerDisabled:true];
     
-    if (TGTelegraphInstance.musicPlayer != nil)
-        [TGTelegraphInstance.musicPlayer controlPause];
+    [[LegacyComponentsGlobals provider] pauseMusicPlayback];
 }
 
 - (void)viewDidAppear:(BOOL)animated
@@ -193,7 +201,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
 {
     [super dismiss];
     
-    [[UIApplication sharedApplication] setIdleTimerDisabled:false];
+    [[LegacyComponentsGlobals provider] setIdleTimerDisabled:false];
     [self stopCapture];
     
     if (_autorotationWasEnabled)
@@ -221,7 +229,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [_controlPanel setLabelsHidden:false];
         _previewView.alpha = 0.0f;
         _topPanelView.alpha = 0.0f;
-        [TGHacks setApplicationStatusBarAlpha:1.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
     }];
     
     [UIView animateWithDuration:0.38 delay:0.05 usingSpringWithDamping:0.65f initialSpringVelocity:0.15f options:UIViewAnimationOptionCurveLinear animations:^
@@ -278,7 +286,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [_buttonHandler ignoreEventsFor:1.0f andDisable:false];
         
         __weak TGFastCameraController *weakSelf = self;
-        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, __unused TGLiveUploadActorData *liveUploadData, bool success)
+        [_camera startVideoRecordingForMoment:false completion:^(NSURL *outputURL, __unused CGAffineTransform transform, CGSize dimensions, NSTimeInterval duration, bool success)
          {
              __strong TGFastCameraController *strongSelf = weakSelf;
              if (strongSelf == nil)
@@ -329,7 +337,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     __weak TGFastCameraController *weakSelf = self;
     TGOverlayController *overlayController = nil;
     
-    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithImage:image metadata:metadata recipientName:self.recipientName backButtonTitle:TGLocalized(@"Common.Cancel") doneButtonTitle:TGLocalized(@"MediaPicker.Send")];
+    TGCameraPhotoPreviewController *controller = [[TGCameraPhotoPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] image:image metadata:metadata recipientName:self.recipientName backButtonTitle:TGLocalized(@"Common.Cancel") doneButtonTitle:TGLocalized(@"MediaPicker.Send") saveCapturedMedia:TGAppDelegateInstance.saveCapturedMedia saveEditedPhotos:TGAppDelegateInstance.saveEditedPhotos];
     controller.allowCaptions = self.allowCaptions;
     controller.shouldStoreAssets = self.shouldStoreCapturedAssets;
     controller.suggestionContext = self.suggestionContext;
@@ -387,7 +395,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     
     overlayController = controller;
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:controller];
+    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
     controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
     controllerWindow.hidden = false;
     
@@ -421,11 +429,11 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     videoItem.editingContext = _editingContext;
     videoItem.immediateThumbnailImage = thumbnailImage;
     
-    TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] init];
+    TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
     galleryController.adjustsStatusBarVisibility = false;
     galleryController.hasFadeOutTransition = true;
     
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithItems:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions hasTimer:self.hasTimer inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false recipientName:self.recipientName];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:[TGLegacyComponentsContext shared] items:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions hasTimer:self.hasTimer inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false recipientName:self.recipientName];
     model.controller = galleryController;
     model.suggestionContext = self.suggestionContext;
     
@@ -507,7 +515,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
                 strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers, timer);
         }];
         
-        if (strongSelf.shouldStoreCapturedAssets)
+        if (strongSelf.shouldStoreCapturedAssets && timer == nil)
             [strongSelf _saveVideoToCameraRollWithURL:url completion:nil];
     };
     
@@ -572,7 +580,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [snapshotView removeFromSuperview];
     };
     
-    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:self contentController:galleryController];
+    TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:galleryController];
     controllerWindow.hidden = false;
     controllerWindow.windowLevel = self.view.window.windowLevel + 0.0001f;
     galleryController.view.clipsToBounds = true;
@@ -583,7 +591,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
 - (void)dismissTransitionForResultController:(TGOverlayController *)resultController success:(bool)success
 {
     self.view.hidden = true;
-    [TGHacks setApplicationStatusBarAlpha:1.0f];
+    [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
     
     if (success)
     {
@@ -616,8 +624,8 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     if (originalImage == nil)
         return;
     
-    SSignal *savePhotoSignal = TGAppDelegateInstance.saveCapturedMedia ? [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage] : [SSignal complete];
-    if (TGAppDelegateInstance.saveEditedPhotos && editedImage != nil)
+    SSignal *savePhotoSignal = _saveCapturedMedia ? [[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:originalImage] : [SSignal complete];
+    if (_saveEditedPhotos && editedImage != nil)
         savePhotoSignal = [savePhotoSignal then:[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImage:editedImage]];
     
     [savePhotoSignal startWithNext:nil];
@@ -625,7 +633,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
 
 - (void)_saveVideoToCameraRollWithURL:(NSURL *)url completion:(void (^)(void))completion
 {
-    if (!TGAppDelegateInstance.saveCapturedMedia)
+    if (!_saveCapturedMedia)
         return;
     
     [[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:url] startWithNext:nil error:^(__unused NSError *error)
@@ -676,7 +684,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [_controlPanel setLabelsHidden:false];
         _previewView.alpha = 1.0f;
         _topPanelView.alpha = 1.0f;
-        [TGHacks setApplicationStatusBarAlpha:0.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
     } completion:^(__unused BOOL finished)
     {
         self.view.backgroundColor = [UIColor blackColor];

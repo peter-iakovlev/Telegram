@@ -1,11 +1,10 @@
 #import "TGStickerPreviewPage.h"
 
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGImageView.h>
 
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGStickerAssociation.h>
 
 @interface TGStickerPreviewPageImageView : TGImageView
 {

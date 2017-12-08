@@ -20,7 +20,7 @@
 
 - (int)layerVersion
 {
-    return 8;
+    return 71;
 }
 
 - (int32_t)TLconstructorSignature
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xda30b32d;
+    return (int32_t)0x2c800be5;
 }
 
 - (int32_t)TLconstructorName
@@ -66,7 +66,6 @@
 {
     TLRPCcontacts_importContacts$contacts_importContacts *object = [[TLRPCcontacts_importContacts$contacts_importContacts alloc] init];
     object.contacts = metaObject->getArray((int32_t)0x48dc7107);
-    object.replace = metaObject->getBool((int32_t)0x2b90b095);
     return object;
 }
 
@@ -77,12 +76,6 @@
         value.type = TLConstructedValueTypeVector;
         value.nativeObject = self.contacts;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x48dc7107, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveBool;
-        value.primitive.boolValue = self.replace;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x2b90b095, value));
     }
 }
 

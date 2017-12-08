@@ -1,15 +1,8 @@
 #import "TGModernConversationRestrictedInlineAssociatedPanel.h"
 
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGMentionPanelCell.h"
-
-#import "TGImageUtils.h"
-#import "TGFont.h"
-
-#import "TGViewController.h"
-
-#import "TGLocalization.h"
+#import <LegacyComponents/TGMentionPanelCell.h>
 
 @interface TGModernConversationRestrictedInlineAssociatedPanel ()
 {

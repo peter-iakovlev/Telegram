@@ -1,13 +1,6 @@
 #import "TGCommandKeyboardView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGBotComandInfo.h"
-
-#import "TGBotReplyMarkup.h"
-
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGCommandKeyboardScrollView : UIScrollView
 
@@ -36,6 +29,8 @@
 @end
 
 @implementation TGCommandKeyboardView
+
+@synthesize safeAreaInset = _safeAreaInset;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -212,11 +207,19 @@
     CGSize buttonSize = [self buttonSize];
     CGFloat rowSpacing = [self rowSpacing];
     
-    contentSize.height += insets.top + insets.bottom;
+    contentSize.height += insets.top + insets.bottom + _safeAreaInset.bottom;
     
     contentSize.height += _replyMarkup.rows.count * buttonSize.height + MAX((int)_replyMarkup.rows.count - 1, 0) * rowSpacing;
     
     return CGSizeMake(contentSize.width, MIN(190.0f, contentSize.height));
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    _scrollView.contentInset = UIEdgeInsetsMake(0.0f, 0.0f, safeAreaInset.bottom, 0.0f);
+    _scrollView.scrollIndicatorInsets = _scrollView.contentInset;
+    [self layoutSubviews];
 }
 
 - (void)layoutSubviews
@@ -224,15 +227,16 @@
     [super layoutSubviews];
     
     CGSize bounds = self.bounds.size;
+    CGFloat boundsWidth = bounds.width - _safeAreaInset.left - _safeAreaInset.right;
     
     _backgroundView.frame = CGRectMake(0.0f, 0.0f, bounds.width, bounds.height + 210.0f);
     
     _topSeparatorView.frame = CGRectMake(0.0f, 0.0f, bounds.width, TGScreenPixel);
     
-    _scrollView.frame = CGRectMake(0.0f, 0.0f, bounds.width, bounds.height);
+    _scrollView.frame = CGRectMake(_safeAreaInset.left, 0.0f, boundsWidth, bounds.height);
     
     CGSize contentSize = CGSizeZero;
-    contentSize.width = bounds.width;
+    contentSize.width = boundsWidth;
     UIEdgeInsets insets = [self insets];
     CGSize buttonSize = [self buttonSize];
     
@@ -244,7 +248,7 @@
     if (contentSize.height < self.frame.size.height)
     {
         CGFloat spacingHeight = 0.0f;
-        CGFloat availableHeight = self.frame.size.height - contentSize.height - spacingHeight;
+        CGFloat availableHeight = self.frame.size.height - contentSize.height - spacingHeight - _safeAreaInset.bottom;
         buttonSize.height += CGFloor(availableHeight / _replyMarkup.rows.count);
         
         contentSize.height = insets.top + insets.bottom + _replyMarkup.rows.count * buttonSize.height + MAX((int)_replyMarkup.rows.count - 1, 0) * rowSpacing;
@@ -257,7 +261,7 @@
     for (TGBotReplyMarkupRow *row in _replyMarkup.rows)
     {
         NSInteger columnCount = row.buttons.count;
-        buttonSize.width = CGFloor(((bounds.width - insets.left - insets.right) + columnSpacing - columnCount * columnSpacing) / columnCount);
+        buttonSize.width = CGFloor(((boundsWidth - insets.left - insets.right) + columnSpacing - columnCount * columnSpacing) / columnCount);
         
         CGFloat topEdge = insets.top + rowIndex * (buttonSize.height + rowSpacing);
         NSInteger columnIndex = 0;
@@ -285,6 +289,11 @@
     
 }
 
+- (void)setVisible:(bool)__unused visible animated:(bool)__unused animated
+{
+    
+}
+
 - (CGFloat)preferredHeight:(bool)landscape
 {
     if (!self.matchDefaultHeight)
@@ -296,7 +305,9 @@
     if (TGIsPad())
         return landscape ? 398.0f : 313.0f;
     
-    if ([TGViewController hasVeryLargeScreen])
+    if ([TGViewController hasTallScreen])
+        return landscape ? 209.0f : 333.0f;
+    else if ([TGViewController hasVeryLargeScreen])
         return landscape ? 194.0f : 271.0f;
     else if ([TGViewController hasLargeScreen])
         return landscape ? 194.0f : 258.0f;

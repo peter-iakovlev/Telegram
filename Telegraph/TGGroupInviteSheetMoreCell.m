@@ -1,6 +1,6 @@
 #import "TGGroupInviteSheetMoreCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGGroupInviteSheetMoreCell () {
     UIImageView *_circleView;

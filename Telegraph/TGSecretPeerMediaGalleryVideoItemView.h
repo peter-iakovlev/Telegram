@@ -1,5 +1,5 @@
-#import "TGModernGalleryVideoItemView.h"
+#import "TGModernGalleryNewVideoItemView.h"
 
-@interface TGSecretPeerMediaGalleryVideoItemView : TGModernGalleryVideoItemView
+@interface TGSecretPeerMediaGalleryVideoItemView : TGModernGalleryNewVideoItemView
 
 @end

@@ -1,11 +1,9 @@
 #import "TGStickerWebpageFooterModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGMessageImageViewModel.h"
 
-#import "TGWebPageMediaAttachment.h"
-#import "TGDocumentMediaAttachment.h"
-#import "TGStringUtils.h"
-#import "TGImageUtils.h"
 #import "TGTelegraphConversationMessageAssetsSource.h"
 #import "TGMessageImageView.h"
 

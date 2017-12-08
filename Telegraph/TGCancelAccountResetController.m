@@ -1,19 +1,18 @@
 #import "TGCancelAccountResetController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGHeaderCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 #import "TGPhoneCodeCollectionItem.h"
 
-#import "TGStringUtils.h"
-#import "TGPhoneUtils.h"
-
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGTelegramNetworking.h"
 #import "TGAccountSignals.h"
 
 #import "TGAlertView.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"

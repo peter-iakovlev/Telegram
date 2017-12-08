@@ -5,9 +5,9 @@
 #import "TGBridgeContext.h"
 #import "TGBridgeMessage.h"
 
-#import "TGColor.h"
+#import "TGWatchColor.h"
 
-#import "TGPeerIdAdapter.h"
+#import "TGBridgePeerIdAdapter.h"
 
 const CGFloat TGNeoSmiliesMessageHeight = 39;
 

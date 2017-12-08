@@ -4,6 +4,8 @@
 
 @interface TGCallEncryptionKeyView : UIView
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 @property (nonatomic, copy) void (^backPressed)(void);
 @property (nonatomic, copy) CGPoint (^emojiInitialCenter)(void);
 

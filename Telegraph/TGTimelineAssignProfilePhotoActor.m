@@ -1,6 +1,6 @@
 #import "TGTimelineAssignProfilePhotoActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGUser+Telegraph.h"
 #import "TGTelegraph.h"

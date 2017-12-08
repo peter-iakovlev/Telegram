@@ -7,6 +7,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "TGMediaPostingContext.h"
 
 @class TGMessage;
 @class TGBotContextResultAttachment;
@@ -18,6 +19,7 @@
 @property (nonatomic) int32_t mid;
 @property (nonatomic) int32_t date;
 @property (nonatomic) bool isBroadcast;
+@property (nonatomic) int64_t groupedId;
 
 @property (nonatomic) int32_t replacingMid;
 
@@ -26,6 +28,8 @@
 @property (nonatomic, strong) TGMessage *replyMessage;
 @property (nonatomic, strong) TGBotContextResultAttachment *botContextResult;
 @property (nonatomic, strong) TGReplyMarkupAttachment *replyMarkup;
+
+@property (nonatomic, strong) TGMediaPostingContext *postingContext;
 
 @property (nonatomic, copy) void (^executeOnAdd)();
 

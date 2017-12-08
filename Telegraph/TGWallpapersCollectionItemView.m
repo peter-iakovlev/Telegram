@@ -1,10 +1,10 @@
 #import "TGWallpapersCollectionItemView.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGWallpaperInfo.h"
+#import <LegacyComponents/TGRemoteImageView.h>
+
+#import <LegacyComponents/TGWallpaperInfo.h>
 
 @interface TGWallpapersCollectionItemView ()
 {
@@ -35,7 +35,7 @@
         _titleLabel.font = TGSystemFontOfSize(17);
         [self addSubview:_titleLabel];
         
-        _disclosureIndicator = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernListsDisclosureIndicator.png"]];
+        _disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
         [self addSubview:_disclosureIndicator];
         
         _imageViews = [[NSMutableArray alloc] init];
@@ -119,7 +119,11 @@
         
         if ([UIScreen mainScreen].scale >= 2.0f - FLT_EPSILON)
         {
-            if (widescreenWidth >= 736.0f - FLT_EPSILON)
+            if (widescreenWidth >= 812.0f - FLT_EPSILON)
+            {
+                imageSize = CGSizeMake(108.0f, 163.0f);
+            }
+            else if (widescreenWidth >= 736.0f - FLT_EPSILON)
             {
                 imageSize = CGSizeMake(122.0f, 216.0f);
             }

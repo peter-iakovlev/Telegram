@@ -1,14 +1,6 @@
 #import "TGContactMessageViewModel.h"
 
-#import "TGMessage.h"
-#import "TGUser.h"
-#import "TGConversation.h"
-#import "TGPeerIdAdapter.h"
-
-#import "TGDateUtils.h"
-#import "TGImageUtils.h"
-#import "TGPhoneUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernConversationItem.h"
 #import "TGModernView.h"
@@ -26,7 +18,7 @@
 
 #import "TGModernLetteredAvatarViewModel.h"
 
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 #import "TGReplyHeaderModel.h"
 
@@ -34,11 +26,13 @@
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
-#import "TGFont.h"
+
 
 #import "TGDatabase.h"
 
 #import "TGMessageReplyButtonsModel.h"
+
+#import "TGPresentation.h"
 
 @interface TGContactMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
@@ -66,7 +60,6 @@
     TGMessage *_message;
     
     bool _incoming;
-    bool _incomingAppearance;
     TGMessageDeliveryState _deliveryState;
     bool _read;
     int32_t _date;
@@ -119,8 +112,8 @@
         static UIColor *outgoingForwardColor = nil;
         static UIColor *incomingSeparatorColor = nil;
         static UIColor *outgoingSeparatorColor = nil;
-        static UIImage *actionImageIncoming = nil;
-        static UIImage *actionImageOutgoing = nil;
+        UIImage *actionImageIncoming = nil;
+        UIImage *actionImageOutgoing = nil;
         
         static dispatch_once_t onceToken1;
         dispatch_once(&onceToken1, ^
@@ -133,9 +126,10 @@
             outgoingSeparatorColor = UIColorRGBA(0x008c09, 0.3f);
             incomingForwardColor = UIColorRGBA(0x007bff, 1.0f);
             outgoingForwardColor = UIColorRGBA(0x00a516, 1.0f);
-            actionImageIncoming = [UIImage imageNamed:@"ModernMessageContactAdd_Incoming.png"];
-            actionImageOutgoing = [UIImage imageNamed:@"ModernMessageContactAdd_Outgoing.png"];
         });
+        
+        actionImageIncoming = TGImageNamed(@"ModernMessageContactAdd_Incoming.png");
+        actionImageOutgoing = TGImageNamed(@"ModernMessageContactAdd_Outgoing.png");
         
         _needsEditingCheckButton = true;
         
@@ -254,18 +248,8 @@
         
         if (!_incoming)
         {
-            static UIImage *checkPartialImage = nil;
-            static UIImage *checkCompleteImage = nil;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                checkPartialImage = [UIImage imageNamed:@"ModernMessageCheckmark2.png"];
-                checkCompleteImage = [UIImage imageNamed:@"ModernMessageCheckmark1.png"];
-            });
-            
-            _checkFirstModel = [[TGModernImageViewModel alloc] initWithImage:checkCompleteImage];
-            _checkSecondModel = [[TGModernImageViewModel alloc] initWithImage:checkPartialImage];
+            _checkFirstModel = [[TGModernImageViewModel alloc] initWithImage:_context.presentation.images.chatDeliveredIcon];
+            _checkSecondModel = [[TGModernImageViewModel alloc] initWithImage:_context.presentation.images.chatReadIcon];
             
             if (_deliveryState == TGMessageDeliveryStatePending)
             {
@@ -344,7 +328,7 @@
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            image = [UIImage imageNamed:@"ModernMessageUnsentButton.png"];
+            image = TGImageNamed(@"ModernMessageUnsentButton.png");
         });
         
         _unsentButtonModel = [[TGModernImageViewModel alloc] initWithImage:image];

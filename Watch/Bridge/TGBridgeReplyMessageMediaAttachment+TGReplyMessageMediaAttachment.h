@@ -1,5 +1,6 @@
 #import "TGBridgeReplyMessageMediaAttachment.h"
-#import "TGReplyMessageMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeReplyMessageMediaAttachment (TGReplyMessageMediaAttachment)
 

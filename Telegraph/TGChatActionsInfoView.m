@@ -1,6 +1,6 @@
 #import "TGChatActionsInfoView.h"
 
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGChatActionsInfoView ()
 {

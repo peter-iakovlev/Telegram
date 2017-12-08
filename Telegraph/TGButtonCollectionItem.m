@@ -10,7 +10,6 @@
     if (self != nil)
     {
         _title = title;
-        _titleColor = TGAccentColor();
         _alignment = NSTextAlignmentLeft;
         _enabled = true;
         

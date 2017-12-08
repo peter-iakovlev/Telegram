@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5f688205;
+    return (int32_t)0x1a65a4a8;
 }
 
 - (int32_t)TLconstructorName
@@ -71,6 +71,8 @@
     object.edit_time_limit = metaObject->getInt32((int32_t)0x70ce70f9);
     object.rating_e_decay = metaObject->getInt32((int32_t)0x86a34057);
     object.stickers_recent_limit = metaObject->getInt32((int32_t)0x7efa480e);
+    object.stickers_faved_limit = metaObject->getInt32((int32_t)0x809f4d42);
+    object.channels_read_media_period = metaObject->getInt32((int32_t)0xbaf97684);
     object.tmp_sessions = metaObject->getInt32((int32_t)0xe9a8fb12);
     object.pinned_dialogs_count_max = metaObject->getInt32((int32_t)0x52bee8cc);
     object.call_receive_timeout_ms = metaObject->getInt32((int32_t)0x6ee06778);
@@ -217,6 +219,18 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.stickers_recent_limit;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7efa480e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.stickers_faved_limit;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x809f4d42, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.channels_read_media_period;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xbaf97684, value));
     }
     {
         TLConstructedValue value;

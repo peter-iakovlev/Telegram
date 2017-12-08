@@ -1,4 +1,4 @@
-#import "TGMediaPickerController.h"
+#import <LegacyComponents/TGMediaPickerController.h>
 
 @interface TGMediaSearchController : TGMediaPickerController
 

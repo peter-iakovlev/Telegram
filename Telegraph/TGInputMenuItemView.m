@@ -1,8 +1,6 @@
 #import "TGInputMenuItemView.h"
 
-#import "TGImageUtils.h"
-
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGInputMenuItemView () <UITextFieldDelegate>
 

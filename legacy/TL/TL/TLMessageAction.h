@@ -138,3 +138,9 @@
 
 @end
 
+@interface TLMessageAction$messageActionCustomAction : TLMessageAction
+
+@property (nonatomic, retain) NSString *message;
+
+@end
+

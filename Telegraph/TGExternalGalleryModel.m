@@ -1,27 +1,37 @@
 #import "TGExternalGalleryModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
+#import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 #import "TGActionSheet.h"
 
 #import "TGApplication.h"
 
-#import "TGWebPageMediaAttachment.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGInstagramMediaIdSignal.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGAppDelegate.h"
 
 #import "TGGenericPeerMediaGalleryImageItem.h"
 #import "TGGenericPeerMediaGalleryVideoItem.h"
+#import "TGGenericPeerGalleryGroupItem.h"
 
-#import "TGMediaAssetsLibrary.h"
-#import "TGAccessChecker.h"
+#import <LegacyComponents/TGMediaAssetsLibrary.h>
+
+#import "TGWebpageSignals.h"
 
 @interface TGExternalGalleryModel ()
 {
     TGWebPageMediaAttachment *_webPage;
+    
+    TGGenericPeerMediaGalleryDefaultFooterView *_footerView;
+    
+    NSMutableDictionary *_groupedItemsMap;
+    id<SDisposable> _updatePageDisposable;
 }
 
 @end
@@ -35,38 +45,218 @@
     {
         _webPage = webPage;
         
-        bool isVideo = false;
-        for (id attribute in webPage.document.attributes) {
-            if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
-                isVideo = true;
-            }
+        bool foundGallery = false;
+        bool isInstantGallery = [[webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[webPage.siteName lowercaseString] isEqualToString:@"twitter"];
+        if (isInstantGallery && webPage.instantPage != nil)
+        {
+            foundGallery = [self setupWithWebPage:_webPage peerId:peerId messageId:messageId];
         }
         
-        id<TGModernGalleryItem> item = nil;
-        
-        if (isVideo) {
-            TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithDocument:webPage.document peerId:peerId messageId:messageId];
-            videoItem.date = webPage.photo.date;
-            videoItem.messageId = messageId;
-            videoItem.caption = webPage.photo.caption;
-            item = videoItem;
-        } else {
-            TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId accessHash:webPage.photo.accessHash orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo embeddedStickerDocuments:webPage.photo.embeddedStickerDocuments hasStickers:webPage.photo.hasStickers];
-            imageItem.date = webPage.photo.date;
-            imageItem.messageId = messageId;
-            if ([webPage.pageType isEqualToString:@"invoice"]) {
-                imageItem.caption = webPage.pageDescription;
+        if (!foundGallery)
+        {
+            bool isVideo = false;
+            for (id attribute in webPage.document.attributes) {
+                if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]]) {
+                    isVideo = true;
+                }
+            }
+            
+            id<TGModernGalleryItem> item = nil;
+            
+            if (isVideo) {
+                TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithDocument:webPage.document peerId:peerId messageId:messageId];
+                videoItem.date = webPage.photo.date;
+                videoItem.messageId = messageId;
+                videoItem.caption = webPage.photo.caption;
+                item = videoItem;
             } else {
-                imageItem.caption = webPage.photo.caption;
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId accessHash:webPage.photo.accessHash orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo embeddedStickerDocuments:webPage.photo.embeddedStickerDocuments hasStickers:webPage.photo.hasStickers];
+                imageItem.date = webPage.photo.date;
+                imageItem.messageId = messageId;
+                if ([webPage.pageType isEqualToString:@"invoice"]) {
+                    imageItem.caption = webPage.pageDescription;
+                } else {
+                    imageItem.caption = webPage.photo.caption;
+                }
+                item = imageItem;
             }
-            item = imageItem;
+            
+            NSArray *items = @[item];
+            
+            [self _replaceItems:items focusingOnItem:item];
+            
+            if (isInstantGallery)
+            {
+                __weak TGExternalGalleryModel *weakSelf = self;
+                _updatePageDisposable = [[[TGWebpageSignals updatedWebpage:webPage] deliverOn:[SQueue mainQueue]] startWithNext:^(TGWebPageMediaAttachment *updatedWebPage) {
+                    __strong TGExternalGalleryModel *strongSelf = weakSelf;
+                    if (strongSelf != nil && updatedWebPage.instantPage != nil) {
+                        strongSelf->_webPage = updatedWebPage;
+                        [strongSelf setupWithWebPage:updatedWebPage peerId:peerId messageId:messageId];
+                    }
+                }];
+            }
         }
-        
-        NSArray *items = @[item];
-        
-        [self _replaceItems:items focusingOnItem:item];
     }
     return self;
+}
+
+- (bool)setupWithWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId
+{
+    int32_t date = 0;
+    NSArray *galleryItems = nil;
+    bool foundGallery = false;
+    for (TGInstantPageBlock *block in webPage.instantPage.blocks)
+    {
+        if ([block isKindOfClass:[TGInstantPageBlockSlideshow class]])
+        {
+            galleryItems = ((TGInstantPageBlockSlideshow *)block).items;
+        } else if ([block isKindOfClass:[TGInstantPageBlockCollage class]])
+        {
+            galleryItems = ((TGInstantPageBlockCollage *)block).items;
+        }
+        else if ([block isKindOfClass:[TGInstantPageBlockAuthorAndDate class]])
+        {
+            date = ((TGInstantPageBlockAuthorAndDate *)block).date;
+        }
+    }
+    
+    if (galleryItems.count > 1)
+    {
+        foundGallery = true;
+        
+        _groupedItemsMap = [[NSMutableDictionary alloc] init];
+        NSMutableArray *groupItems = [[NSMutableArray alloc] init];
+        
+        NSMutableArray *items = [[NSMutableArray alloc] init];
+        int32_t itemId = 0;
+        NSString *author = webPage.author.length > 0 ? webPage.author : nil;
+        for (TGInstantPageBlock *block in galleryItems)
+        {
+            if ([block isKindOfClass:[TGInstantPageBlockPhoto class]])
+            {
+                TGInstantPageBlockPhoto *photoBlock = (TGInstantPageBlockPhoto *)block;
+                
+                TGImageMediaAttachment *image = webPage.instantPage.images[@(photoBlock.photoId)];
+                if (image == nil && webPage.photo.imageId == photoBlock.photoId)
+                    image = webPage.photo;
+                
+                if (image != nil)
+                {
+                    TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithMedia:image localId:0 peerId:peerId messageId:itemId == 0 ? messageId : itemId];
+                    imageItem.caption = nil;
+                    imageItem.groupItems = groupItems;
+                    imageItem.groupedId = 2;
+                    imageItem.author = author;
+                    imageItem.date = date;
+                    
+                    [items addObject:imageItem];
+                    
+                    [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:imageItem]];
+                    _groupedItemsMap[@(itemId)] = imageItem;
+                }
+            }
+            else if ([block isKindOfClass:[TGInstantPageBlockVideo class]])
+            {
+                TGInstantPageBlockVideo *videoBlock = (TGInstantPageBlockVideo *)block;
+                
+                TGVideoMediaAttachment *video = webPage.instantPage.videos[@(videoBlock.videoId)];
+                if (video == nil && webPage.document.documentId == videoBlock.videoId)
+                {
+                    TGDocumentMediaAttachment *documentAttachment = webPage.document;
+                    
+                    for (id attribute in documentAttachment.attributes)
+                    {
+                        if ([attribute isKindOfClass:[TGDocumentAttributeVideo class]])
+                        {
+                            TGDocumentAttributeVideo *videoAttribute = attribute;
+                            
+                            video = [[TGVideoMediaAttachment alloc] init];
+                            video.videoId = documentAttachment.documentId;
+                            video.accessHash = documentAttachment.accessHash;
+                            video.duration = videoAttribute.duration;
+                            video.dimensions = videoAttribute.size;
+                            video.thumbnailInfo = documentAttachment.thumbnailInfo;
+                            video.caption = documentAttachment.caption;
+                            video.roundMessage = videoAttribute.isRoundMessage;
+                            
+                            TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
+                            [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"video:%lld:%lld:%d:%d", video.videoId, video.accessHash, documentAttachment.datacenterId, documentAttachment.size] size:documentAttachment.size];
+                            video.videoInfo = videoInfo;
+                            break;
+                        }
+                    }
+                }
+                
+                if (video != nil)
+                {
+                    TGGenericPeerMediaGalleryVideoItem *videoItem = [[TGGenericPeerMediaGalleryVideoItem alloc] initWithVideoMedia:video peerId:peerId messageId:itemId == 0 ? messageId : itemId];
+                    videoItem.caption = nil;
+                    videoItem.groupItems = groupItems;
+                    videoItem.groupedId = 2;
+                    videoItem.author = author;
+                    videoItem.date = date;
+                    
+                    [items addObject:videoItem];
+                    
+                    [groupItems addObject:[[TGGenericPeerGalleryGroupItem alloc] initWithGalleryItem:videoItem]];
+                    _groupedItemsMap[@(itemId)] = videoItem;
+                }
+            }
+            itemId--;
+        }
+        
+        [self _replaceItems:items focusingOnItem:items.firstObject];
+    }
+    return foundGallery;
+}
+
+- (UIView<TGModernGalleryDefaultHeaderView> *)createDefaultHeaderView
+{
+    if (self.items.count < 2)
+        return nil;
+    
+    __weak TGExternalGalleryModel *weakSelf = self;
+    return [[TGGenericPeerMediaGalleryDefaultHeaderView alloc] initWithPositionAndCountBlock:^(id<TGModernGalleryItem> item, NSUInteger *position, NSUInteger *count)
+    {
+        __strong TGExternalGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            if (position != NULL)
+            {
+                NSUInteger index = [strongSelf.items indexOfObject:item];
+                if (index != NSNotFound)
+                    *position = index;
+            }
+            if (count != NULL)
+                *count = strongSelf.items.count;
+        }
+    }];
+}
+
+- (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
+{
+    if (self.items.count < 2)
+        return nil;
+    
+    _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    __weak TGExternalGalleryModel *weakSelf = self;
+    _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
+    {
+        __strong TGExternalGalleryModel *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        id<TGModernGalleryItem> galleryItem = strongSelf->_groupedItemsMap[@(item.keyId)];
+        [strongSelf _focusOnItem:(id<TGModernGalleryItem>)galleryItem synchronously:synchronously];
+    };
+    
+    return _footerView;
+}
+
+- (void)_interItemTransitionProgressChanged:(CGFloat)progress
+{
+    [_footerView setInterItemTransitionProgress:progress];
 }
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView
@@ -146,7 +336,7 @@
                                 __strong TGExternalGalleryModel *strongSelf = weakSelf;
                                 if (strongSelf != nil)
                                 {
-                                    NSString *instagramShortcode = [self instagramShortcodeFromText:strongSelf->_webPage.url];
+                                    NSString *instagramShortcode = [strongSelf instagramShortcodeFromText:strongSelf->_webPage.url];
                                     if (instagramShortcode.length != 0)
                                     {
                                         if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:@"instagram://media?id=1"]])
@@ -178,13 +368,21 @@
                                             __strong TGExternalGalleryModel *strongSelf = weakSelf;
                                             if (strongSelf != nil)
                                             {
-                                                [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
+                                                strongSelf.dismiss(false, false);
+                                                TGDispatchAfter(0.35, dispatch_get_main_queue(), ^
+                                                {
+                                                    [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
+                                                });
                                             }
                                         }
                                         return;
                                     }
                                     
-                                    [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
+                                    strongSelf.dismiss(false, false);
+                                    TGDispatchAfter(0.35, dispatch_get_main_queue(), ^
+                                    {
+                                        [(TGApplication *)[UIApplication sharedApplication] openURL:[NSURL URLWithString:strongSelf->_webPage.url] forceNative:true];
+                                    });
                                     
                                     if (strongSelf.dismissWhenReady) {
                                         strongSelf.dismissWhenReady(false);
@@ -212,7 +410,7 @@
     if (data == nil)
         return;
     
-    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+    if (![[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
         return;
     
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -220,7 +418,7 @@
     
     [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithImageData:data] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
     {
-        [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+        [[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
         [progressWindow dismiss:true];
     } completed:^
     {
@@ -234,7 +432,7 @@
     if (filePath == nil)
         return;
     
-    if (![TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
+    if (![[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil])
         return;
     
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
@@ -242,7 +440,7 @@
     
     [[[[TGMediaAssetsLibrary sharedLibrary] saveAssetWithVideoAtUrl:[NSURL fileURLWithPath:filePath]] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(__unused id error)
      {
-         [TGAccessChecker checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
+         [[[LegacyComponentsGlobals provider] accessChecker] checkPhotoAuthorizationStatusForIntent:TGPhotoAccessIntentSave alertDismissCompletion:nil];
          [progressWindow dismiss:true];
      } completed:^
      {
@@ -252,12 +450,35 @@
 
 - (NSString *)instagramShortcodeFromText:(NSString *)text
 {
-    if ([text hasPrefix:@"http://instagram.com/p/"] || [text hasPrefix:@"https://instagram.com/p/"])
+    NSArray *prefixes = @
+    [
+     @"http://instagram.com/p/",
+     @"https://instagram.com/p/",
+     @"http://www.instagram.com/p/",
+     @"https://www.instagram.com/p/"
+     ];
+    
+    NSString *currentPrefix = nil;
+    for (NSString *prefix in prefixes)
     {
-        NSString *prefix = [text hasPrefix:@"http://instagram.com/p/"] ? @"http://instagram.com/p/" : @"https://instagram.com/p/";
+        if ([text hasPrefix:prefix])
+        {
+            currentPrefix = prefix;
+            break;
+        }
+    }
+    
+    if (currentPrefix != nil)
+    {
+        NSString *prefix = currentPrefix;
         int length = (int)text.length;
         bool badCharacters = false;
         int slashCount = 0;
+        
+        NSUInteger excl = [text rangeOfString:@"?"].location;
+        if (excl != NSNotFound)
+            length = (int)excl;
+        
         for (int i = (int)prefix.length; i < length; i++)
         {
             unichar c = [text characterAtIndex:i];

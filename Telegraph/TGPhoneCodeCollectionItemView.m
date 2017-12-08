@@ -1,7 +1,8 @@
 #import "TGPhoneCodeCollectionItemView.h"
 
-#import "TGTextField.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGTextField.h>
 
 @interface TGPhoneCodeCollectionItemView () <UITextFieldDelegate>
 {

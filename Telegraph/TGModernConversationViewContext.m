@@ -4,6 +4,12 @@
 
 @implementation TGModernConversationViewContext
 
+- (bool)isFocusedOnMessage:(int32_t)messageId
+{
+    TGModernConversationCompanion *companion = _companion;
+    return [companion focusedOnMessageId] == messageId;
+}
+
 - (bool)isMediaVisibleInMessage:(int32_t)messageId
 {
     TGModernConversationCompanion *companion = _companion;
@@ -14,6 +20,12 @@
 {
     TGModernConversationCompanion *companion = _companion;
     return [companion _isMessageChecked:messageId];
+}
+
+- (bool)isGroupChecked:(int64_t)groupedId
+{
+    TGModernConversationCompanion *companion = _companion;
+    return [companion _isGroupChecked:groupedId];
 }
 
 - (bool)isSecretMessageViewed:(int32_t)messageId

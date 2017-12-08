@@ -1,10 +1,10 @@
 #import "TGReplyHeaderPhotoModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedMediaSignals.h"
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
-
-#import "TGImageMediaAttachment.h"
 
 @interface TGReplyHeaderPhotoModel ()
 {

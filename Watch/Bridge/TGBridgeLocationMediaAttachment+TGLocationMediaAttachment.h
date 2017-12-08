@@ -1,5 +1,6 @@
 #import "TGBridgeLocationMediaAttachment.h"
-#import "TGLocationMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeLocationMediaAttachment (TGLocationMediaAttachment)
 

@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-#import "TGMessageHole.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 typedef enum {
     TGVisibleMessageHoleDirectionEarlier,

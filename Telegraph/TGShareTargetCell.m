@@ -1,19 +1,13 @@
 #import "TGShareTargetCell.h"
 
-#import "TGFont.h"
-#import "TGDateUtils.h"
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDatabase.h"
+#import "TGTelegraph.h"
 #import "TGChannelManagementSignals.h"
-#import "TGLocalization.h"
 
-#import "TGUser.h"
-#import "TGConversation.h"
-
-#import "TGCheckButtonView.h"
-#import "TGLetteredAvatarView.h"
+#import <LegacyComponents/TGCheckButtonView.h>
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 @interface TGShareTargetCell ()
 {
@@ -25,6 +19,7 @@
     CALayer *_separatorLayer;
     
     int64_t _peerId;
+    bool _isLastCell;
     
     SMetaDisposable *_channelDisposable;
 }
@@ -107,6 +102,12 @@
 {
 }
 
+- (void)setIsLastCell:(bool)lastCell
+{
+    _isLastCell = lastCell;
+    [self setNeedsLayout];
+}
+
 - (void)setupWithPeer:(id)peer
 {
     CGFloat diameter = TGIsPad() ? 45.0f : 40.0f;
@@ -114,21 +115,22 @@
     static UIImage *placeholder = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
-                  {
-                      UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-                      CGContextRef context = UIGraphicsGetCurrentContext();
-                      
-                      CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                      CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                      CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-                      CGContextSetLineWidth(context, 1.0f);
-                      CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
-                      
-                      placeholder = UIGraphicsGetImageFromCurrentImageContext();
-                      UIGraphicsEndImageContext();
-                  });
+    {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
+        
+        placeholder = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
     
     UIColor *subLabelColor = UIColorRGB(0x8e8e93);
+    UIColor *backgroundColor = [UIColor whiteColor];
     
     NSString *title = nil;
     NSString *subtitle = TGLocalized(@"Channel.NotificationLoading");
@@ -136,6 +138,9 @@
     {
         TGConversation *conversation = (TGConversation *)peer;
         _peerId = conversation.conversationId;
+        
+        if (conversation.pinnedToTop)
+            backgroundColor = UIColorRGB(0xf7f7f7);
         
         if (conversation.additionalProperties[@"user"] != nil)
         {
@@ -178,52 +183,62 @@
         }
         else
         {
-            title = conversation.chatTitle;
-            if (!conversation.isChannel)
+            if (conversation.conversationId == TGTelegraphInstance.clientUserId)
             {
-                subtitle = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:(int32_t)conversation.chatParticipantCount];;
+                backgroundColor = UIColorRGB(0xf7f7f7);
+                title = TGLocalized(@"DialogList.SavedMessages");
+                subtitle = @"";
+                [_avatarView loadSavedMessagesWithSize:CGSizeMake(diameter, diameter) placeholder:placeholder];
             }
             else
             {
-                SSignal *signal = [[[TGDatabaseInstance() channelCachedData:conversation.conversationId] take:1] mapToSignal:^SSignal *(TGCachedConversationData *data) {
-                    if (data.memberCount != 0)
-                    {
-                        return [SSignal single:@(data.memberCount)];
-                    }
-                    else
-                    {
-                        return [[TGChannelManagementSignals updateChannelExtendedInfo:conversation.conversationId accessHash:conversation.accessHash updateUnread:false] then:[[[TGDatabaseInstance() channelCachedData:conversation.conversationId] take:1] map:^id(TGCachedConversationData *data)
-                                                                                                                                                                               {
-                                                                                                                                                                                   return @(data.memberCount);
-                                                                                                                                                                               }]];
-                    }
-                }];
-                
-                __weak TGShareTargetCell *weakSelf = self;
-                [_channelDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *memberCount)
-                                                   {
-                                                       __strong TGShareTargetCell *strongSelf = weakSelf;
-                                                       if (strongSelf != nil) {
-                                                           strongSelf->_subLabel.text = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:memberCount.int32Value];
-                                                           strongSelf->_subLabel.textColor = subLabelColor;
-                                                           [strongSelf->_subLabel sizeToFit];
-                                                           
-                                                           [strongSelf setNeedsLayout];
-                                                       }
-                                                   }]];
-            }
-            
-            if (conversation.chatPhotoSmall.length != 0)
-            {
-                _avatarView.fadeTransitionDuration = 0.3;
-                if (![conversation.chatPhotoSmall isEqualToString:_avatarView.currentUrl])
+                title = conversation.chatTitle;
+                if (!conversation.isChannel)
                 {
-                    [_avatarView loadImage:conversation.chatPhotoSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                    subtitle = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:(int32_t)conversation.chatParticipantCount];;
                 }
-            }
-            else
-            {
-                [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(diameter, diameter) conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
+                else
+                {
+                    SSignal *signal = [[[TGDatabaseInstance() channelCachedData:conversation.conversationId] take:1] mapToSignal:^SSignal *(TGCachedConversationData *data) {
+                        if (data.memberCount != 0)
+                        {
+                            return [SSignal single:@(data.memberCount)];
+                        }
+                        else
+                        {
+                            return [[TGChannelManagementSignals updateChannelExtendedInfo:conversation.conversationId accessHash:conversation.accessHash updateUnread:false] then:[[[TGDatabaseInstance() channelCachedData:conversation.conversationId] take:1] map:^id(TGCachedConversationData *data)
+                            {
+                                return @(data.memberCount);
+                            }]];
+                        }
+                    }];
+                    
+                    __weak TGShareTargetCell *weakSelf = self;
+                    [_channelDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *memberCount)
+                    {
+                        __strong TGShareTargetCell *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            strongSelf->_subLabel.text = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:memberCount.int32Value];
+                            strongSelf->_subLabel.textColor = subLabelColor;
+                            [strongSelf->_subLabel sizeToFit];
+                            
+                            [strongSelf setNeedsLayout];
+                        }
+                    }]];
+                }
+                
+                if (conversation.chatPhotoSmall.length != 0)
+                {
+                    _avatarView.fadeTransitionDuration = 0.3;
+                    if (![conversation.chatPhotoSmall isEqualToString:_avatarView.currentUrl])
+                    {
+                        [_avatarView loadImage:conversation.chatPhotoSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                    }
+                }
+                else
+                {
+                    [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(diameter, diameter) conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
+                }
             }
         }
     }
@@ -268,6 +283,8 @@
         subtitle = presenceString;
     }
     
+    self.backgroundColor = backgroundColor;
+    
     _nameLabel.text = title;
     [_nameLabel sizeToFit];
     
@@ -280,6 +297,7 @@
 
 - (void)prepareForReuse
 {
+    [super prepareForReuse];
     [_channelDisposable setDisposable:nil];
 }
 
@@ -288,18 +306,20 @@
     [super layoutSubviews];
     
     CGFloat separatorHeight = TGSeparatorHeight();
-    CGFloat separatorInset = 65;
-    //if (TGIsPad())
-    //    separatorInset += 21.0f;
+    CGFloat separatorInset = _isLastCell ? 0.0f : 65;
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
     
     CGRect frame = self.selectedBackgroundView.frame;
-    frame.origin.y = true ? -1 : 0;
+    frame.origin.y = -1;
     frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
     
     CGFloat leftPadding = CGRectGetMaxX(_avatarView.frame) + 12.0f;
-    _nameLabel.frame = CGRectMake(leftPadding, 5.0f, MIN(_nameLabel.frame.size.width, self.frame.size.width - leftPadding - _checkButton.frame.size.width - 30.0f), _nameLabel.frame.size.height);
+    CGFloat nameOrigin = 5.0f;
+    if (_subLabel.text.length == 0)
+        nameOrigin = round((self.frame.size.height - _nameLabel.frame.size.height) / 2.0f);
+        
+    _nameLabel.frame = CGRectMake(leftPadding, nameOrigin, MIN(_nameLabel.frame.size.width, self.frame.size.width - leftPadding - _checkButton.frame.size.width - 30.0f), _nameLabel.frame.size.height);
     _subLabel.frame = CGRectMake(leftPadding, 26.0f, MIN(_subLabel.frame.size.width, self.frame.size.width - leftPadding - _checkButton.frame.size.width - 30.0f), _subLabel.frame.size.height);
     
     CGRect checkFrame = CGRectMake(self.frame.size.width - _checkButton.frame.size.width - 10.0f, (CGFloat)ceil((self.frame.size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);

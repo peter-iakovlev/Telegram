@@ -26,6 +26,8 @@
 @property (nonatomic, strong) UIScrollView *scrollView;
 @property (nonatomic, strong) NSString *placeholder;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 - (float)preferredHeight;
 - (void)scrollToTextField:(bool)animated;
 

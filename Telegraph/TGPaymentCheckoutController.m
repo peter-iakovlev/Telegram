@@ -1,6 +1,7 @@
 #import "TGPaymentCheckoutController.h"
 
-#import "TGMessage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGBotSignals.h"
 
@@ -8,14 +9,12 @@
 #import "TGPaymentCheckoutPriceItem.h"
 #import "TGVariantCollectionItem.h"
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 #import "TGPaymentCheckoutInfoController.h"
-#import "TGNavigationController.h"
-#import "TGShippingMethodController.h"
 #import "TGPaymentMethodController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGPaymentPasswordAlert.h"
 #import "TGTwoStepConfigSignal.h"
@@ -32,8 +31,6 @@
 #import "TGAppDelegate.h"
 
 #import "TGPasscodeSettingsController.h"
-
-#import "TGStringUtils.h"
 
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <PassKit/PassKit.h>
@@ -57,13 +54,28 @@ static NSTimeInterval passwordSaveDuration() {
     static dispatch_once_t onceToken;
     static NSTimeInterval duration = 0.0;
     dispatch_once(&onceToken, ^{
-        if ([TGPasscodeSettingsController supportsTouchId]) {
+        if ([TGPasscodeSettingsController supportsBiometrics:NULL]) {
             duration = passwordSaveDurationTouchId;
         } else {
             duration = passwordSaveDurationGeneric;
         }
     });
     return duration;
+}
+
+static NSArray *nativeApplePayProviders() {
+    return @[
+        @"stripe",
+        @"sberbank",
+        @"yandex"
+    ];
+}
+
+static bool isNativeApplePayProvider(NSString *provider) {
+    if (provider == nil) {
+        return false;
+    }
+    return [nativeApplePayProviders() containsObject:provider];
 }
 
 @interface TGPaymentCheckoutController () <PKPaymentAuthorizationViewControllerDelegate> {
@@ -97,6 +109,8 @@ static NSTimeInterval passwordSaveDuration() {
     bool _saveInfo;
     
     STPAPIClient *_apiClient;
+    
+    bool _overridePasswordMissing;
 }
 
 @end
@@ -190,7 +204,7 @@ static NSTimeInterval passwordSaveDuration() {
                 strongSelf->_validatedInfo = validatedInfo;
                 
                 bool defaultToApplePay = false;
-                if ([TGPaymentMethodController supportsApplePay] && [paymentForm.nativeProvider isEqualToString:@"stripe"]) {
+                if ([TGPaymentMethodController supportsApplePay] && (isNativeApplePayProvider(paymentForm.nativeProvider))) {
                     NSData *data = [TGDatabaseInstance() customProperty:@"payment.usedApplePay"];
                     if (data.length != 0) {
                         defaultToApplePay = true;
@@ -261,9 +275,10 @@ static NSTimeInterval passwordSaveDuration() {
     self.collectionView.backgroundColor = [UIColor whiteColor];
     self.collectionView.scrollEnabled = _paymentForm != nil;
     
-    _payButton.frame = CGRectMake(15.0f, 14.0f, self.view.frame.size.width - 30.0f, 48.0f);
-    _applePayButton.frame = CGRectMake(15.0f, 14.0f, self.view.frame.size.width - 30.0f, 48.0f);
-    _payButtonContainer = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 76.0f, self.view.frame.size.width, 76.0f)];
+    UIEdgeInsets safeAreaInset = self.controllerSafeAreaInset;
+    _payButton.frame = CGRectMake(15.0f + safeAreaInset.left, 14.0f, self.view.frame.size.width - 30.0f - safeAreaInset.left - safeAreaInset.right, 48.0f);
+    _applePayButton.frame = CGRectMake(15.0f + safeAreaInset.left, 14.0f, self.view.frame.size.width - 30.0f - safeAreaInset.left - safeAreaInset.right, 48.0f);
+    _payButtonContainer = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 76.0f - safeAreaInset.bottom, self.view.frame.size.width, 76.0f + safeAreaInset.bottom)];
     _payButtonContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     _payButtonContainer.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
     _payButtonContainer.hidden = _paymentForm == nil;
@@ -324,9 +339,10 @@ static NSTimeInterval passwordSaveDuration() {
     
     _activityIndicator.center = CGPointMake(size.width / 2.0f, self.controllerInset.top + 163.0f + CGFloor((size.height - (self.controllerInset.top + 163.0f)) / 2.0f));
     
-    _payButton.frame = CGRectMake(15.0f, 14.0f, size.width - 30.0f, 48.0f);
-    _applePayButton.frame = CGRectMake(15.0f, 14.0f, size.width - 30.0f, 48.0f);
-    _payButtonContainer.frame = CGRectMake(0.0f, size.height - 76.0f, size.width, 76.0f);
+    UIEdgeInsets safeAreaInset = [self calculatedSafeAreaInset];
+    _payButton.frame = CGRectMake(15.0f + safeAreaInset.left, 14.0f, size.width - 30.0f - safeAreaInset.left - safeAreaInset.right, 48.0f);
+    _applePayButton.frame = CGRectMake(15.0f + safeAreaInset.left, 14.0f, size.width - 30.0f - safeAreaInset.left - safeAreaInset.right, 48.0f);
+    _payButtonContainer.frame = CGRectMake(0.0f, size.height - 76.0f - safeAreaInset.bottom, size.width, 76.0f + safeAreaInset.bottom);
 }
 
 - (void)reloadItems {
@@ -352,7 +368,7 @@ static NSTimeInterval passwordSaveDuration() {
     }
     
     if (_paymentForm != nil) {
-        int32_t totalPrice = 0;
+        int64_t totalPrice = 0;
         for (TGInvoicePrice *price in _paymentForm.invoice.prices) {
             
             NSString *string = [[TGCurrencyFormatter shared] formatAmount:price.amount currency:_paymentForm.invoice.currency];
@@ -453,48 +469,11 @@ static NSTimeInterval passwordSaveDuration() {
 - (void)shippingMethodPressed {
     if (_validatedInfo != nil && _validatedInfo.shippingOptions.count != 0) {
         [self showShippingMethodSheet];
-        /*TGShippingMethodController *shippingController = [[TGShippingMethodController alloc] initWithOptions:_validatedInfo.shippingOptions currentOption:_currentShippingOption];
-        __weak TGPaymentCheckoutController *weakSelf = self;
-        shippingController.completed = ^(TGShippingOption *option) {
-            __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-            if (strongSelf != nil && !TGObjectCompare(option, strongSelf->_currentShippingOption)) {
-                strongSelf->_currentShippingOption = option;
-                [strongSelf reloadItems];
-            }
-            [strongSelf dismissViewControllerAnimated:true completion:nil];
-        };
-        TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:shippingController];
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-            navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-            navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-        }
-        [self presentViewController:navigationController animated:true completion:nil];*/
     }
 }
 
 - (void)paymentMethodPressed {
     [self showPaymentMethodSheet];
-    
-    /*TGPaymentMethods *paymentMethods = _paymentMethods;
-    if (paymentMethods == nil) {
-        paymentMethods = [[TGPaymentMethods alloc] initWithMethods:@[] selectedIndex:NSNotFound];
-    }
-    TGPaymentMethodController *paymentController = [[TGPaymentMethodController alloc] initWithPaymentMethods:paymentMethods useWebviewUrl:([_paymentForm.nativeProvider isEqualToString:@"stripe"] && _paymentForm.nativeParams.length != 0) ? nil : _paymentForm.url botName:_bot.displayName canSave:_paymentForm.canSaveCredentials allowSaving:!_paymentForm.passwordMissing nativeParams:_paymentForm.nativeParams];
-    __weak TGPaymentCheckoutController *weakSelf = self;
-    paymentController.completed = ^(TGPaymentMethods *result) {
-        __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-        if (strongSelf != nil) {
-            strongSelf->_paymentMethods = result;
-            [strongSelf reloadItems];
-            [strongSelf dismissViewControllerAnimated:true completion:nil];
-        }
-    };
-    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:paymentController];
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        navigationController.presentationStyle = TGNavigationControllerPresentationStyleInFormSheet;
-        navigationController.modalPresentationStyle = UIModalPresentationFormSheet;
-    }
-    [self presentViewController:navigationController animated:true completion:nil];*/
 }
 
 - (void)shippingAddressPressed {
@@ -586,75 +565,78 @@ static NSTimeInterval passwordSaveDuration() {
         if ([paymentMethod isKindOfClass:[TGPaymentMethodApplePay class]]) {
             PKPaymentRequest *request = [[PKPaymentRequest alloc] init];
             
-            request.merchantIdentifier = @"merchant.ph.telegra.Telegraph";
-            request.supportedNetworks = @[PKPaymentNetworkVisa, PKPaymentNetworkAmex, PKPaymentNetworkMasterCard];
-            request.merchantCapabilities = PKMerchantCapability3DS;
-            request.countryCode = @"US";
-            request.currencyCode = [_paymentForm.invoice.currency uppercaseString];
-            
-            if (_paymentForm.invoice.shippingAddressRequested || _paymentForm.invoice.nameRequested || _paymentForm.invoice.emailRequested || _paymentForm.invoice.phoneRequested) {
-                PKContact *shippingContact = [[PKContact alloc] init];
+            NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[_paymentForm.nativeParams dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+            request.merchantIdentifier = dict[@"apple_pay_merchant_id"];
+            if (request.merchantIdentifier != nil) {
+                request.supportedNetworks = @[PKPaymentNetworkVisa, PKPaymentNetworkAmex, PKPaymentNetworkMasterCard];
+                request.merchantCapabilities = PKMerchantCapability3DS;
+                request.countryCode = @"US";
+                request.currencyCode = [_paymentForm.invoice.currency uppercaseString];
                 
-                if (_paymentForm.invoice.shippingAddressRequested) {
-                    request.requiredShippingAddressFields |= PKAddressFieldPostalAddress;
+                if (_paymentForm.invoice.shippingAddressRequested || _paymentForm.invoice.nameRequested || _paymentForm.invoice.emailRequested || _paymentForm.invoice.phoneRequested) {
+                    PKContact *shippingContact = [[PKContact alloc] init];
                     
-                    CNMutablePostalAddress *postalAddress = [[CNMutablePostalAddress alloc] init];
+                    if (_paymentForm.invoice.shippingAddressRequested) {
+                        request.requiredShippingAddressFields |= PKAddressFieldPostalAddress;
+                        
+                        CNMutablePostalAddress *postalAddress = [[CNMutablePostalAddress alloc] init];
 
-                    NSString *lines = _currentInfo.shippingAddress.streetLine1;
-                    if (_currentInfo.shippingAddress.streetLine2.length != 0) {
-                        lines = [lines stringByAppendingFormat:@"\n%@", _currentInfo.shippingAddress.streetLine2];
+                        NSString *lines = _currentInfo.shippingAddress.streetLine1;
+                        if (_currentInfo.shippingAddress.streetLine2.length != 0) {
+                            lines = [lines stringByAppendingFormat:@"\n%@", _currentInfo.shippingAddress.streetLine2];
+                        }
+                        postalAddress.street = lines;
+                        postalAddress.state = _currentInfo.shippingAddress.state;
+                        postalAddress.city =  _currentInfo.shippingAddress.city;
+                        postalAddress.ISOCountryCode = _currentInfo.shippingAddress.countryIso2;
+                        postalAddress.postalCode = _currentInfo.shippingAddress.postCode;
+                        
+                        shippingContact.postalAddress = postalAddress;
                     }
-                    postalAddress.street = lines;
-                    postalAddress.state = _currentInfo.shippingAddress.state;
-                    postalAddress.city =  _currentInfo.shippingAddress.city;
-                    postalAddress.ISOCountryCode = _currentInfo.shippingAddress.countryIso2;
-                    postalAddress.postalCode = _currentInfo.shippingAddress.postCode;
                     
-                    shippingContact.postalAddress = postalAddress;
+                    if (_paymentForm.invoice.nameRequested) {
+                        request.requiredShippingAddressFields |= PKAddressFieldName;
+                        NSPersonNameComponents *nameComponents = [[NSPersonNameComponents alloc] init];
+                        nameComponents.givenName = _currentInfo.name;
+                        shippingContact.name = nameComponents;
+                    }
+                    
+                    if (_paymentForm.invoice.emailRequested) {
+                        request.requiredShippingAddressFields |= PKAddressFieldEmail;
+                        shippingContact.emailAddress = _currentInfo.email;
+                    }
+                    
+                    if (_paymentForm.invoice.phoneRequested) {
+                        request.requiredShippingAddressFields |= PKAddressFieldPhone;
+                        shippingContact.phoneNumber = [[CNPhoneNumber alloc] initWithStringValue:_currentInfo.phone];
+                    }
+                    
+                    request.shippingContact = shippingContact;
                 }
                 
-                if (_paymentForm.invoice.nameRequested) {
-                    request.requiredShippingAddressFields |= PKAddressFieldName;
-                    NSPersonNameComponents *nameComponents = [[NSPersonNameComponents alloc] init];
-                    nameComponents.givenName = _currentInfo.name;
-                    shippingContact.name = nameComponents;
-                }
+                NSMutableArray *items = [[NSMutableArray alloc] init];
                 
-                if (_paymentForm.invoice.emailRequested) {
-                    request.requiredShippingAddressFields |= PKAddressFieldEmail;
-                    shippingContact.emailAddress = _currentInfo.email;
-                }
-                
-                if (_paymentForm.invoice.phoneRequested) {
-                    request.requiredShippingAddressFields |= PKAddressFieldPhone;
-                    shippingContact.phoneNumber = [[CNPhoneNumber alloc] initWithStringValue:_currentInfo.phone];
-                }
-                
-                request.shippingContact = shippingContact;
-            }
-            
-            NSMutableArray *items = [[NSMutableArray alloc] init];
-            
-            int64_t totalAmount = 0;
-            for (TGInvoicePrice *price in _paymentForm.invoice.prices) {
-                totalAmount += price.amount;
-                [items addObject:[PKPaymentSummaryItem summaryItemWithLabel:price.label amount:[[NSDecimalNumber alloc] initWithDouble:price.amount * 0.01]]];
-            }
-            if (_currentShippingOption != nil) {
-                for (TGInvoicePrice *price in _currentShippingOption.prices) {
+                int64_t totalAmount = 0;
+                for (TGInvoicePrice *price in _paymentForm.invoice.prices) {
                     totalAmount += price.amount;
                     [items addObject:[PKPaymentSummaryItem summaryItemWithLabel:price.label amount:[[NSDecimalNumber alloc] initWithDouble:price.amount * 0.01]]];
                 }
-            }
-            
-            [items addObject:[PKPaymentSummaryItem summaryItemWithLabel:_bot.displayName amount:[[NSDecimalNumber alloc] initWithDouble:totalAmount * 0.01]]];
-            
-            request.paymentSummaryItems = items;
-            
-            PKPaymentAuthorizationViewController *controller = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:request];
-            if (controller != nil) {
-                controller.delegate = self;
-                [self presentViewController:controller animated:true completion:nil];
+                if (_currentShippingOption != nil) {
+                    for (TGInvoicePrice *price in _currentShippingOption.prices) {
+                        totalAmount += price.amount;
+                        [items addObject:[PKPaymentSummaryItem summaryItemWithLabel:price.label amount:[[NSDecimalNumber alloc] initWithDouble:price.amount * 0.01]]];
+                    }
+                }
+                
+                [items addObject:[PKPaymentSummaryItem summaryItemWithLabel:_bot.displayName amount:[[NSDecimalNumber alloc] initWithDouble:totalAmount * 0.01]]];
+                
+                request.paymentSummaryItems = items;
+                
+                PKPaymentAuthorizationViewController *controller = [[PKPaymentAuthorizationViewController alloc] initWithPaymentRequest:request];
+                if (controller != nil) {
+                    controller.delegate = self;
+                    [self presentViewController:controller animated:true completion:nil];
+                }
             }
         } else if ([paymentMethod isKindOfClass:[TGPaymentMethodStripeToken class]]) {
             TGPaymentMethodStripeToken *token = (TGPaymentMethodStripeToken *)paymentMethod;
@@ -673,7 +655,7 @@ static NSTimeInterval passwordSaveDuration() {
             
             int32_t timestamp = (int32_t)[[TGTelegramNetworking instance] approximateRemoteTime];
             if (currentStoredPassword != nil && timestamp < currentStoredPassword.validUntil - 10) {
-                if ([TGPasscodeSettingsController supportsTouchId]) {
+                if ([TGPasscodeSettingsController supportsBiometrics:NULL]) {
                     LAContext *context = [[LAContext alloc] init];
                     
                     __weak TGPaymentCheckoutController *weakSelf = self;
@@ -681,7 +663,11 @@ static NSTimeInterval passwordSaveDuration() {
                     NSError *error = nil;
                     if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
                         context.localizedFallbackTitle = TGLocalized(@"Checkout.EnterPassword");
-                        [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics localizedReason:TGLocalized(@"Checkout.PayWithTouchId") reply:^(BOOL success, NSError *error)
+                        NSString *reason = TGLocalized(@"Checkout.PayWithTouchId");
+                        if ([context respondsToSelector:@selector(biometryType)] && context.biometryType == LABiometryTypeFaceID)
+                            reason = TGLocalized(@"Checkout.PayWithFaceId");
+                            
+                        [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics localizedReason:reason reply:^(BOOL success, NSError *error)
                         {
                             if (error != nil)
                             {
@@ -811,8 +797,9 @@ static NSTimeInterval passwordSaveDuration() {
     int32_t duration = (int32_t)passwordSaveDuration();
     NSString *durationString = [TGStringUtils stringForMessageTimerSeconds:duration];
     
-    if ([TGPasscodeSettingsController supportsTouchId]) {
-        saveText = [NSString stringWithFormat:TGLocalized(@"Checkout.SavePasswordTimeoutAndTouchId"), durationString];
+    bool hasFaceId = false;
+    if ([TGPasscodeSettingsController supportsBiometrics:&hasFaceId]) {
+        saveText = [NSString stringWithFormat:hasFaceId ? TGLocalized(@"Checkout.SavePasswordTimeoutAndFaceId") : TGLocalized(@"Checkout.SavePasswordTimeoutAndTouchId"), durationString];
     } else {
         saveText = [NSString stringWithFormat:TGLocalized(@"Checkout.SavePasswordTimeout"), durationString];
     }
@@ -967,39 +954,50 @@ static NSTimeInterval passwordSaveDuration() {
 }
 
 - (void)continuePassKitPaymentWithCompletion:(void (^)(PKPaymentAuthorizationStatus status))completion payment:(PKPayment *)payment {
-    NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[_paymentForm.nativeParams dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
-    NSString *publishableKey = dict[@"publishable_key"];
-    if (publishableKey == nil) {
-        if (completion) {
+    if ([_paymentForm.nativeProvider isEqualToString:@"stripe"]) {
+        NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[_paymentForm.nativeParams dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+        NSString *publishableKey = dict[@"publishable_key"];
+        if (publishableKey == nil) {
+            if (completion) {
+                completion(PKPaymentAuthorizationStatusFailure);
+            }
+            return;
+        }
+        
+        STPPaymentConfiguration *configuration = [[STPPaymentConfiguration sharedConfiguration] copy];
+        configuration.smsAutofillDisabled = true;
+        configuration.publishableKey = publishableKey;
+        configuration.appleMerchantIdentifier = @"merchant.ph.telegra.Telegraph";
+        
+        _apiClient = [[STPAPIClient alloc] initWithConfiguration:configuration];
+        
+        __weak TGPaymentCheckoutController *weakSelf = self;
+        [_apiClient createTokenWithPayment:payment completion:^(STPToken *token, NSError *error) {
+            TGDispatchOnMainThread(^{
+                __strong TGPaymentCheckoutController *strongSelf = weakSelf;
+                if (error != nil || token == nil) {
+                    completion(PKPaymentAuthorizationStatusFailure);
+                } else {
+                    NSString *last4 = token.card.last4;
+                    NSString *brand = [NSString stp_stringWithCardBrand:token.card.brand];
+                    
+                    TGPaymentCredentialsStripeToken *stripeToken = [[TGPaymentCredentialsStripeToken alloc] initWithTokenId:token.tokenId title:[[brand stringByAppendingString:@"*"] stringByAppendingString:last4] saveCredentials:false];
+                    [strongSelf payWithCredentials:stripeToken isApplePay:true completion:^(bool result) {
+                        completion(result ? PKPaymentAuthorizationStatusSuccess : PKPaymentAuthorizationStatusFailure);
+                    }];
+                }
+            });
+        }];
+    } else {
+        NSString *paymentString = [[NSString alloc] initWithData:payment.token.paymentData encoding:NSUTF8StringEncoding];
+        if (paymentString != nil) {
+            [self payWithCredentials:[[TGPaymentCredentialsApplePay alloc] initWithData:paymentString] isApplePay:true completion:^(bool result) {
+                completion(result ? PKPaymentAuthorizationStatusSuccess : PKPaymentAuthorizationStatusFailure);
+            }];
+        } else {
             completion(PKPaymentAuthorizationStatusFailure);
         }
-        return;
     }
-    
-    STPPaymentConfiguration *configuration = [[STPPaymentConfiguration sharedConfiguration] copy];
-    configuration.smsAutofillDisabled = true;
-    configuration.publishableKey = publishableKey;
-    configuration.appleMerchantIdentifier = @"merchant.ph.telegra.Telegraph";
-    
-    _apiClient = [[STPAPIClient alloc] initWithConfiguration:configuration];
-    
-    __weak TGPaymentCheckoutController *weakSelf = self;
-    [_apiClient createTokenWithPayment:payment completion:^(STPToken *token, NSError *error) {
-        TGDispatchOnMainThread(^{
-            __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-            if (error != nil || token == nil) {
-                completion(PKPaymentAuthorizationStatusFailure);
-            } else {
-                NSString *last4 = token.card.last4;
-                NSString *brand = [NSString stp_stringWithCardBrand:token.card.brand];
-                
-                TGPaymentCredentialsStripeToken *stripeToken = [[TGPaymentCredentialsStripeToken alloc] initWithTokenId:token.tokenId title:[[brand stringByAppendingString:@"*"] stringByAppendingString:last4] saveCredentials:false];
-                [strongSelf payWithCredentials:stripeToken isApplePay:true completion:^(bool result) {
-                    completion(result ? PKPaymentAuthorizationStatusSuccess : PKPaymentAuthorizationStatusFailure);
-                }];
-            }
-        });
-    }];
 }
 
 - (void)paymentAuthorizationViewControllerDidFinish:(PKPaymentAuthorizationViewController *)__unused controller {
@@ -1119,7 +1117,7 @@ static NSTimeInterval passwordSaveDuration() {
         }
     }
     if (!found && enableApplePay) {
-        if ([TGPaymentMethodController supportsApplePay] && [_paymentForm.nativeProvider isEqualToString:@"stripe"]) {
+        if ([TGPaymentMethodController supportsApplePay] && (isNativeApplePayProvider(_paymentForm.nativeProvider))) {
             [updatedPaymentMethods insertObject:[[TGPaymentMethodApplePay alloc] init] atIndex:0];
             updatedSelectedIndex += 1;
         }
@@ -1197,7 +1195,7 @@ static NSTimeInterval passwordSaveDuration() {
     
     if (useWebviewUrl != nil) {
         bool canSave = self->_paymentForm.canSaveCredentials || self->_paymentForm.passwordMissing;
-        bool allowSaving = !_paymentForm.passwordMissing;
+        bool allowSaving = self->_paymentForm.canSaveCredentials && !_paymentForm.passwordMissing;
         
         TGPaymentWebController *controller = [[TGPaymentWebController alloc] initWithUrl:useWebviewUrl confirmation:false canSave:canSave allowSaving:allowSaving];
         __weak TGPaymentCheckoutController *weakSelf = self;
@@ -1217,7 +1215,7 @@ static NSTimeInterval passwordSaveDuration() {
                 }
                 
                 if (enableApplePay) {
-                    if ([TGPaymentMethodController supportsApplePay] && [strongSelf->_paymentForm.nativeProvider isEqualToString:@"stripe"]) {
+                    if ([TGPaymentMethodController supportsApplePay] && isNativeApplePayProvider(strongSelf->_paymentForm.nativeProvider)) {
                         [updatedMethods insertObject:[[TGPaymentMethodApplePay alloc] init] atIndex:0];
                     }
                 }
@@ -1236,10 +1234,18 @@ static NSTimeInterval passwordSaveDuration() {
             if (strongSelf != nil) {
                 NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:[strongSelf->_paymentForm.nativeParams dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
                 if (dict != nil) {
-                    bool canSave = strongSelf->_paymentForm.canSaveCredentials || strongSelf->_paymentForm.passwordMissing;
-                    bool allowSaving = !strongSelf->_paymentForm.passwordMissing;
+                    bool canSave = strongSelf->_paymentForm.canSaveCredentials || (strongSelf->_paymentForm.passwordMissing || strongSelf->_overridePasswordMissing);
+                    bool allowSaving = !(strongSelf->_paymentForm.passwordMissing && !strongSelf->_overridePasswordMissing);
                     
                     TGAddPaymentCardController *addController = [[TGAddPaymentCardController alloc] initWithCanSave:canSave allowSaving:allowSaving requestCountry:[dict[@"need_country"] boolValue] requestPostcode:[dict[@"need_zip"] boolValue] requestName:[dict[@"need_cardholder_name"] boolValue] publishableKey:dict[@"publishable_key"]];
+                    addController.canSaveUpdated = ^(bool value) {
+                        __strong TGPaymentCheckoutController *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            if (value) {
+                                strongSelf->_overridePasswordMissing = true;
+                            }
+                        }
+                    };
                     addController.completion = ^(TGPaymentMethodStripeToken *token) {
                         __strong TGPaymentCheckoutController *strongSelf = weakSelf;
                         if (strongSelf != nil && token != nil) {
@@ -1256,7 +1262,7 @@ static NSTimeInterval passwordSaveDuration() {
                             }
                             
                             if (enableApplePay) {
-                                if ([TGPaymentMethodController supportsApplePay] && [strongSelf->_paymentForm.nativeProvider isEqualToString:@"stripe"]) {
+                                if ([TGPaymentMethodController supportsApplePay] && isNativeApplePayProvider(strongSelf->_paymentForm.nativeProvider)) {
                                     [updatedMethods insertObject:[[TGPaymentMethodApplePay alloc] init] atIndex:0];
                                 }
                             }

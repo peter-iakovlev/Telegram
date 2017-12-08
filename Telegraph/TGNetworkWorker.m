@@ -8,8 +8,8 @@
 
 #import "TGNetworkWorker.h"
 
-#import "ASQueue.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ASQueue.h>
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
 

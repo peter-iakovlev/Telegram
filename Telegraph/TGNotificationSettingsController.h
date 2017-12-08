@@ -8,7 +8,7 @@
 
 #import "TGCollectionMenuController.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGNotificationSettingsController : TGCollectionMenuController <ASWatcher>
 

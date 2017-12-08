@@ -1,7 +1,9 @@
 #import "TGBridgeMessage+TGMessage.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeMediaAttachment+TGMediaAttachment.h"
-#import "TGMessage.h"
-#import "TGConversation.h"
+
 
 @implementation TGBridgeMessage (TGMessage)
 

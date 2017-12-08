@@ -1,6 +1,6 @@
 #import "TGConversationScrollState.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGConversationScrollState
 

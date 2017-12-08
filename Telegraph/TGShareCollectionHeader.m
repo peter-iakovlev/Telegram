@@ -1,6 +1,6 @@
 #import "TGShareCollectionHeader.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGShareCollectionHeader ()
 {

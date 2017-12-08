@@ -2,7 +2,6 @@
 
 #import <LegacyDatabase/LegacyDatabase.h>
 
-#import "TGStringUtils.h"
 #import "TGShareTextViewInternal.h"
 #import "TGShareButton.h"
 
@@ -17,6 +16,7 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 @interface TGShareCaptionPanel () <TGShareGrowingTextViewDelegate>
 {
+    UIEdgeInsets _safeAreaInset;
     CGFloat _keyboardHeight;
     NSString *_caption;
     bool _dismissing;
@@ -59,7 +59,7 @@ static void setViewFrame(UIView *view, CGRect frame)
             
             UIGraphicsBeginImageContextWithOptions(placeholderSize, false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGColorWithHex(0xffffff).CGColor);
+            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
             [placeholderText drawAtPoint:CGPointMake(1.0f, 1.0f) withFont:placeholderFont];
             placeholderImage = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
@@ -76,12 +76,12 @@ static void setViewFrame(UIView *view, CGRect frame)
         
         _backgroundView = [[UIView alloc] initWithFrame:_wrapperView.bounds];
         _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        _backgroundView.backgroundColor = TGColorWithHex(0xf7f7f7);
+        _backgroundView.backgroundColor = [UIColor hexColor:0xf7f7f7];
         [backgroundWrapperView addSubview:_backgroundView];
         
         CGFloat separatorHeight = 1.0f / [[UIScreen mainScreen] scale];
         UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -separatorHeight, self.frame.size.width, separatorHeight)];
-        stripeView.backgroundColor = TGColorWithHex(0xb2b2b2);
+        stripeView.backgroundColor = [UIColor hexColor:0xb2b2b2];
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_wrapperView addSubview:stripeView];
         
@@ -93,7 +93,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         _placeholderLabel.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         _placeholderLabel.backgroundColor = [UIColor clearColor];
         _placeholderLabel.font = [UIFont systemFontOfSize:16];
-        _placeholderLabel.textColor = TGColorWithHex(0xbebec0);
+        _placeholderLabel.textColor = [UIColor hexColor:0xbebec0];
         _placeholderLabel.text = NSLocalizedString(@"Share.AddCaption", nil);
         _placeholderLabel.userInteractionEnabled = true;
         [_placeholderLabel sizeToFit];
@@ -247,14 +247,15 @@ static void setViewFrame(UIView *view, CGRect frame)
 
 #pragma mark -
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve
+- (void)adjustForOrientation:(UIInterfaceOrientation)orientation keyboardHeight:(CGFloat)keyboardHeight safeAreaInset:(UIEdgeInsets)safeAreaInset duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve
 {
-    [self adjustForOrientation:orientation keyboardHeight:keyboardHeight duration:duration animationCurve:animationCurve completion:nil];
+    [self adjustForOrientation:orientation keyboardHeight:keyboardHeight safeAreaInset:safeAreaInset duration:duration animationCurve:animationCurve completion:nil];
 }
 
-- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve completion:(void (^)(void))completion
+- (void)adjustForOrientation:(UIInterfaceOrientation)__unused orientation keyboardHeight:(CGFloat)keyboardHeight safeAreaInset:(UIEdgeInsets)safeAreaInset duration:(NSTimeInterval)duration animationCurve:(NSInteger)animationCurve completion:(void (^)(void))completion
 {
     _keyboardHeight = keyboardHeight;
+    _safeAreaInset = safeAreaInset;
     
     void(^changeBlock)(void) = ^
     {
@@ -268,7 +269,7 @@ static void setViewFrame(UIView *view, CGRect frame)
         }
         else
         {
-            self.frame = CGRectMake(self.frame.origin.x, screenSize.height - inputContainerHeight, self.frame.size.width, inputContainerHeight);
+            self.frame = CGRectMake(self.frame.origin.x, screenSize.height - inputContainerHeight - safeAreaInset.bottom, self.frame.size.width, inputContainerHeight + safeAreaInset.bottom);
         }
         
         [self layoutSubviews];
@@ -379,23 +380,9 @@ static void setViewFrame(UIView *view, CGRect frame)
     if ([delegate respondsToSelector:@selector(inputPanelFocused:)])
         [delegate inputPanelFocused:self];
     
-//    _inputField.alpha = 0.0f;
-//    [UIView animateWithDuration:0.2f animations:^
-//     {
-//         _inputField.alpha = 1.0f;
-//         _inputFieldOnelineLabel.alpha = 0.0f;
-//     } completion:^(BOOL finished)
-//     {
-//         if (finished)
-//         {
-//             _inputFieldOnelineLabel.alpha = 1.0f;
-//             _inputFieldOnelineLabel.hidden = true;
-//         }
-//     }];
-    
     if (_keyboardHeight < FLT_EPSILON)
     {
-        [self adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:0 duration:0.2f animationCurve:7 << 16];
+        [self adjustForOrientation:UIInterfaceOrientationPortrait keyboardHeight:0 safeAreaInset:_safeAreaInset duration:0.2f animationCurve:7 << 16];
     }
     
     [_inputField refreshHeight:false];
@@ -404,23 +391,6 @@ static void setViewFrame(UIView *view, CGRect frame)
 -(void)growingTextViewDidEndEditing:(TGShareGrowingTextView *)__unused growingTextView
 {
     _caption = _inputField.text;
-//    _inputFieldOnelineLabel.text = [self oneLinedCaptionForText:_caption];
-//    _inputFieldOnelineLabel.alpha = 0.0f;
-//    _inputFieldOnelineLabel.hidden = false;
-//    
-//    [UIView animateWithDuration:0.2f animations:^
-//     {
-//         _inputField.alpha = 0.0f;
-//         _inputFieldOnelineLabel.alpha = 1.0f;
-//     } completion:^(BOOL finished)
-//     {
-//         if (finished)
-//         {
-//             _inputField.alpha = 1.0f;
-//             _inputFieldClippingContainer.hidden = true;
-//         }
-//     }];
-//    
     [_inputField refreshHeight:false];
 }
 
@@ -650,7 +620,7 @@ static void removeViewAnimation(UIView *view, NSString *animationPrefix)
     UIEdgeInsets inputFieldInsets = [self _inputFieldInsets];
   
     CGFloat inputContainerHeight = [self heightForInputFieldHeight:_inputField.frame.size.height];
-    CGRect fieldFrame = CGRectMake(inputFieldInsets.left, inputFieldInsets.top, frame.size.width - inputFieldInsets.left - inputFieldInsets.right, inputContainerHeight - inputFieldInsets.top - inputFieldInsets.bottom);
+    CGRect fieldFrame = CGRectMake(inputFieldInsets.left + _safeAreaInset.left, inputFieldInsets.top, frame.size.width - inputFieldInsets.left - inputFieldInsets.right - _safeAreaInset.left - _safeAreaInset.right, inputContainerHeight - inputFieldInsets.top - inputFieldInsets.bottom);
     CGRect visualFieldFrame = fieldFrame;
     if (!_sendButton.userInteractionEnabled)
         visualFieldFrame.size.width += 39.0f;
@@ -680,7 +650,7 @@ static void removeViewAnimation(UIView *view, NSString *animationPrefix)
         setViewFrame(_inputField, inputFieldFrame);
     }
     
-    _sendButton.center = CGPointMake(frame.size.width - 45.0f / 2.0f, CGRectGetMaxY(_fieldBackground.frame) - 45.0f / 2.0f + 6.0f);
+    _sendButton.center = CGPointMake(frame.size.width - 45.0f / 2.0f - _safeAreaInset.right, CGRectGetMaxY(_fieldBackground.frame) - 45.0f / 2.0f + 6.0f);
 }
 
 @end

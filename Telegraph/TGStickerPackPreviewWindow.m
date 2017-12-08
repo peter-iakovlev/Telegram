@@ -1,6 +1,6 @@
 #import "TGStickerPackPreviewWindow.h"
 
-#import "TGOverlayController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGStickerPackPreviewController : TGOverlayController
 {
@@ -61,12 +61,12 @@
 
 @implementation TGStickerPackPreviewWindow
 
-- (instancetype)initWithParentController:(TGViewController *)parentController stickerPack:(TGStickerPack *)stickerPack
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController stickerPack:(TGStickerPack *)stickerPack
 {
     TGStickerPackPreviewView *stickerPackPreviewView = [[TGStickerPackPreviewView alloc] init];
     stickerPackPreviewView.controller = parentController;
     
-    self = [super initWithParentController:parentController contentController:[[TGStickerPackPreviewController alloc] initWithStickerPackPreviewView:stickerPackPreviewView]];
+    self = [super initWithManager:manager parentController:parentController contentController:[[TGStickerPackPreviewController alloc] initWithStickerPackPreviewView:stickerPackPreviewView]];
     if (self != nil)
     {
         _view = stickerPackPreviewView;

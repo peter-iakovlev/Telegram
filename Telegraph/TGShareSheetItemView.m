@@ -1,8 +1,6 @@
 #import "TGShareSheetItemView.h"
 
-#import "TGImageUtils.h"
-
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGShareSheetItemView ()
 {

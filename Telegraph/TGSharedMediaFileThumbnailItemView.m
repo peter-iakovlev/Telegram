@@ -1,10 +1,8 @@
 #import "TGSharedMediaFileThumbnailItemView.h"
 
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-#import "TGImageView.h"
-#import "TGViewController.h"
+#import <LegacyComponents/TGImageView.h>
 #import "TGSharedMediaUtils.h"
 
 #import "TGSharedFileSignals.h"

@@ -1,9 +1,8 @@
 #import "TGToastTitlePanel.h"
 
-#import "TGImageUtils.h"
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGToastTitlePanel () {
     UILabel *_label;
@@ -30,7 +29,7 @@
         
         _closeButton = [[TGModernButton alloc] init];
         _closeButton.adjustsImageWhenHighlighted = false;
-        [_closeButton setImage:[UIImage imageNamed:@"MusicPlayerMinimizedClose.png"] forState:UIControlStateNormal];
+        [_closeButton setImage:TGImageNamed(@"MusicPlayerMinimizedClose.png") forState:UIControlStateNormal];
         [_closeButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_closeButton];
         _closeButton.hidden = true;
@@ -54,14 +53,14 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     
-    CGFloat maxWidth = self.frame.size.width - 60.0f;
+    CGFloat maxWidth = self.frame.size.width - 60.0f - self.safeAreaInset.left - self.safeAreaInset.right;
     CGSize labelSize = [_label.text sizeWithFont:_label.font constrainedToSize:CGSizeMake(maxWidth, self.frame.size.height)];
     labelSize.width = MIN(maxWidth, CGCeil(labelSize.width));
     labelSize.height = CGCeil(labelSize.height);
     
     _label.frame = CGRectMake(CGFloor((self.frame.size.width - labelSize.width) / 2.0f), CGFloor((self.frame.size.height - labelSize.height) / 2.0f), labelSize.width, labelSize.height);
     
-    _closeButton.frame = CGRectMake(self.frame.size.width - 44.0f, TGRetinaPixel, 44.0f, 36.0f);
+    _closeButton.frame = CGRectMake(self.frame.size.width - 44.0f - self.safeAreaInset.right, TGRetinaPixel, 44.0f, 36.0f);
     
     CGFloat separatorHeight = TGScreenPixel;
     _separatorView.frame = CGRectMake(0.0f, self.frame.size.height - separatorHeight, self.frame.size.width, separatorHeight);

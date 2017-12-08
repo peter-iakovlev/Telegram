@@ -1,6 +1,6 @@
 #import "TGSignalImageViewWithProgress.h"
 
-#import "TGMessageImageViewOverlayView.h"
+#import <LegacyComponents/TGMessageImageViewOverlayView.h>
 
 @interface TGSignalImageViewWithProgress ()
 {

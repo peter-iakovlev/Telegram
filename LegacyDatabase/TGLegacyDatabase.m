@@ -1,7 +1,7 @@
 #import "TGLegacyDatabase.h"
 
 #import "FMDatabase.h"
-#import "TGPeerIdAdapter.h"
+
 #import "PSKeyValueDecoder.h"
 
 #import "TGLegacyUser.h"
@@ -9,6 +9,30 @@
 #import "TGPrivateChatModel.h"
 #import "TGGroupChatModel.h"
 #import "TGChannelChatModel.h"
+
+static inline bool TGPeerIdIsChannel(int64_t peerId) {
+    return peerId <= ((int64_t)INT32_MIN) * 2 && peerId > ((int64_t)INT32_MIN) * 3;
+}
+
+static inline int64_t TGPeerIdFromChannelId(int32_t channelId) {
+    return ((int64_t)INT32_MIN) * 2 - ((int64_t)channelId);
+}
+
+static inline int32_t TGChannelIdFromPeerId(int64_t peerId) {
+    if (TGPeerIdIsChannel(peerId)) {
+        return (int32_t)(((int64_t)INT32_MIN) * 2 - peerId);
+    } else {
+        return 0;
+    }
+}
+
+static inline bool TGPeerIdIsGroup(int64_t peerId) {
+    return peerId < 0 && peerId > INT32_MIN;
+}
+
+static inline bool TGPeerIdIsUser(int64_t peerId) {
+    return peerId > 0 && peerId < INT32_MAX;
+}
 
 #import <SSignalKit/SSignalKit.h>
 
@@ -320,7 +344,7 @@ int32_t murMurHash32(NSString *string)
 - (NSArray<TGLegacyUser *> *)topUsers {
     NSMutableArray<TGLegacyUser *> *users = [[NSMutableArray alloc] init];
     
-    FMResultSet *result = [_database executeQuery:[NSString stringWithFormat:@"SELECT u.uid, u.first_name, u.last_name, u.access_hash, u.photo_small FROM users_v29 u JOIN peer_rating_29 p ON u.uid = p.peer_id WHERE p.category = 1 ORDER BY p.rating DESC LIMIT 8"]];
+    FMResultSet *result = [_database executeQuery:[NSString stringWithFormat:@"SELECT u.uid, u.first_name, u.last_name, u.access_hash, u.photo_small FROM users_v29 u JOIN peer_rating_29 p ON u.uid = p.peer_id WHERE p.category = 1 ORDER BY p.rating DESC LIMIT 9"]];
     while ([result next]) {
         int32_t uid = [result intForColumnIndex:0];
         NSString *firstName = [result stringForColumnIndex:1];

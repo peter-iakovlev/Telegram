@@ -1,16 +1,10 @@
 #import "TGCommandPanelCell.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGBotComandInfo.h"
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
-#import "TGLetteredAvatarView.h"
-
-#import "TGFont.h"
-#import "TGImageUtils.h"
-
-#import "TGUser.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGModernButton.h>
 
 static UIImage *arrowImage() {
     static UIImage *image = nil;

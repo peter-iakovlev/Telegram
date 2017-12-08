@@ -47,7 +47,9 @@
 		692AB9201E675F7000706ACC /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 692AB91D1E675F7000706ACC /* AudioUnit.framework */; };
 		692AB9211E675F7000706ACC /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 692AB91E1E675F7000706ACC /* CoreAudio.framework */; };
 		695B20621EBD39FF00E31757 /* DarwinSpecific.h in Headers */ = {isa = PBXBuildFile; fileRef = 695B20601EBD39FF00E31757 /* DarwinSpecific.h */; };
-		695B20631EBD39FF00E31757 /* DarwinSpecific.mm in Sources */ = {isa = PBXBuildFile; fileRef = 695B20611EBD39FF00E31757 /* DarwinSpecific.mm */; };
+		698848421F4B39F700076DF0 /* AudioInputAudioUnit.h in Headers */ = {isa = PBXBuildFile; fileRef = 6988483C1F4B39F700076DF0 /* AudioInputAudioUnit.h */; };
+		698848441F4B39F700076DF0 /* AudioOutputAudioUnit.h in Headers */ = {isa = PBXBuildFile; fileRef = 6988483E1F4B39F700076DF0 /* AudioOutputAudioUnit.h */; };
+		698848461F4B39F700076DF0 /* AudioUnitIO.h in Headers */ = {isa = PBXBuildFile; fileRef = 698848401F4B39F700076DF0 /* AudioUnitIO.h */; };
 		69A6DEB91E96149300000E69 /* array_view.h in Headers */ = {isa = PBXBuildFile; fileRef = 69A6DE231E96149300000E69 /* array_view.h */; };
 		69A6DEBA1E96149300000E69 /* atomicops.h in Headers */ = {isa = PBXBuildFile; fileRef = 69A6DE241E96149300000E69 /* atomicops.h */; };
 		69A6DEBB1E96149300000E69 /* basictypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 69A6DE251E96149300000E69 /* basictypes.h */; };
@@ -183,6 +185,12 @@
 		69A6DF441E9614B700000E69 /* AudioInputAudioUnitOSX.h in Headers */ = {isa = PBXBuildFile; fileRef = 69A6DF401E9614B700000E69 /* AudioInputAudioUnitOSX.h */; };
 		69A6DF451E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 69A6DF411E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp */; };
 		69A6DF461E9614B700000E69 /* AudioOutputAudioUnitOSX.h in Headers */ = {isa = PBXBuildFile; fileRef = 69A6DF421E9614B700000E69 /* AudioOutputAudioUnitOSX.h */; };
+		69AC14911F4B41CF00AC3173 /* Resampler.h in Headers */ = {isa = PBXBuildFile; fileRef = 69AC148F1F4B41CF00AC3173 /* Resampler.h */; };
+		C2A87DD81F4B6A33002D3F73 /* Resampler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C2A87DD71F4B6A33002D3F73 /* Resampler.cpp */; };
+		C2A87DDA1F4B6A57002D3F73 /* DarwinSpecific.mm in Sources */ = {isa = PBXBuildFile; fileRef = C2A87DD91F4B6A57002D3F73 /* DarwinSpecific.mm */; };
+		C2A87DDF1F4B6A61002D3F73 /* AudioInputAudioUnit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C2A87DDB1F4B6A61002D3F73 /* AudioInputAudioUnit.cpp */; };
+		C2A87DE01F4B6A61002D3F73 /* AudioOutputAudioUnit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C2A87DDD1F4B6A61002D3F73 /* AudioOutputAudioUnit.cpp */; };
+		C2A87DE41F4B6AD3002D3F73 /* AudioUnitIO.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C2A87DE31F4B6AD3002D3F73 /* AudioUnitIO.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -271,8 +279,14 @@
 		692AB91C1E675F7000706ACC /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		692AB91D1E675F7000706ACC /* AudioUnit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioUnit.framework; path = System/Library/Frameworks/AudioUnit.framework; sourceTree = SDKROOT; };
 		692AB91E1E675F7000706ACC /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
-		695B20601EBD39FF00E31757 /* DarwinSpecific.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DarwinSpecific.h; path = ../../../../../TDesktop/TBuild/tdesktop/third_party/libtgvoip/os/darwin/DarwinSpecific.h; sourceTree = "<group>"; };
-		695B20611EBD39FF00E31757 /* DarwinSpecific.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = DarwinSpecific.mm; path = ../../../../../TDesktop/TBuild/tdesktop/third_party/libtgvoip/os/darwin/DarwinSpecific.mm; sourceTree = "<group>"; };
+		695B20601EBD39FF00E31757 /* DarwinSpecific.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DarwinSpecific.h; sourceTree = "<group>"; };
+		695B20611EBD39FF00E31757 /* DarwinSpecific.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = DarwinSpecific.mm; path = ../../../../../libtgvoip/os/darwin/DarwinSpecific.mm; sourceTree = "<group>"; };
+		6988483B1F4B39F700076DF0 /* AudioInputAudioUnit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AudioInputAudioUnit.cpp; path = ../../../../../libtgvoip/os/darwin/AudioInputAudioUnit.cpp; sourceTree = "<group>"; };
+		6988483C1F4B39F700076DF0 /* AudioInputAudioUnit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AudioInputAudioUnit.h; path = ../../../../../libtgvoip/os/darwin/AudioInputAudioUnit.h; sourceTree = "<group>"; };
+		6988483D1F4B39F700076DF0 /* AudioOutputAudioUnit.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AudioOutputAudioUnit.cpp; path = ../../../../../libtgvoip/os/darwin/AudioOutputAudioUnit.cpp; sourceTree = "<group>"; };
+		6988483E1F4B39F700076DF0 /* AudioOutputAudioUnit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AudioOutputAudioUnit.h; path = ../../../../../libtgvoip/os/darwin/AudioOutputAudioUnit.h; sourceTree = "<group>"; };
+		6988483F1F4B39F700076DF0 /* AudioUnitIO.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AudioUnitIO.cpp; path = ../../../../../libtgvoip/os/darwin/AudioUnitIO.cpp; sourceTree = "<group>"; };
+		698848401F4B39F700076DF0 /* AudioUnitIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AudioUnitIO.h; path = ../../../../../libtgvoip/os/darwin/AudioUnitIO.h; sourceTree = "<group>"; };
 		69A6DE231E96149300000E69 /* array_view.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = array_view.h; sourceTree = "<group>"; };
 		69A6DE241E96149300000E69 /* atomicops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = atomicops.h; sourceTree = "<group>"; };
 		69A6DE251E96149300000E69 /* basictypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = basictypes.h; sourceTree = "<group>"; };
@@ -408,7 +422,18 @@
 		69A6DF401E9614B700000E69 /* AudioInputAudioUnitOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioInputAudioUnitOSX.h; sourceTree = "<group>"; };
 		69A6DF411E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AudioOutputAudioUnitOSX.cpp; sourceTree = "<group>"; };
 		69A6DF421E9614B700000E69 /* AudioOutputAudioUnitOSX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AudioOutputAudioUnitOSX.h; sourceTree = "<group>"; };
+		69AC148E1F4B41CF00AC3173 /* Resampler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Resampler.cpp; path = "../../../../Telegram-iOS/submodules/libtgvoip/audio/Resampler.cpp"; sourceTree = "<group>"; };
+		69AC148F1F4B41CF00AC3173 /* Resampler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Resampler.h; path = "../../../../Telegram-iOS/submodules/libtgvoip/audio/Resampler.h"; sourceTree = "<group>"; };
 		69F842361E67540700C110F7 /* libtgvoip.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = libtgvoip.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2A87DD71F4B6A33002D3F73 /* Resampler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Resampler.cpp; path = audio/Resampler.cpp; sourceTree = "<group>"; };
+		C2A87DD91F4B6A57002D3F73 /* DarwinSpecific.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = DarwinSpecific.mm; path = os/darwin/DarwinSpecific.mm; sourceTree = "<group>"; };
+		C2A87DDB1F4B6A61002D3F73 /* AudioInputAudioUnit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioInputAudioUnit.cpp; path = os/darwin/AudioInputAudioUnit.cpp; sourceTree = "<group>"; };
+		C2A87DDC1F4B6A61002D3F73 /* AudioInputAudioUnitOSX.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioInputAudioUnitOSX.cpp; path = os/darwin/AudioInputAudioUnitOSX.cpp; sourceTree = "<group>"; };
+		C2A87DDD1F4B6A61002D3F73 /* AudioOutputAudioUnit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioOutputAudioUnit.cpp; path = os/darwin/AudioOutputAudioUnit.cpp; sourceTree = "<group>"; };
+		C2A87DDE1F4B6A61002D3F73 /* AudioOutputAudioUnitOSX.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioOutputAudioUnitOSX.cpp; path = os/darwin/AudioOutputAudioUnitOSX.cpp; sourceTree = "<group>"; };
+		C2A87DE11F4B6A89002D3F73 /* AudioInput.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioInput.cpp; path = audio/AudioInput.cpp; sourceTree = "<group>"; };
+		C2A87DE21F4B6A89002D3F73 /* AudioOutput.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioOutput.cpp; path = audio/AudioOutput.cpp; sourceTree = "<group>"; };
+		C2A87DE31F4B6AD3002D3F73 /* AudioUnitIO.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AudioUnitIO.cpp; path = os/darwin/AudioUnitIO.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -481,6 +506,8 @@
 				692AB8891E6759DD00706ACC /* AudioInput.h */,
 				692AB88A1E6759DD00706ACC /* AudioOutput.cpp */,
 				692AB88B1E6759DD00706ACC /* AudioOutput.h */,
+				69AC148E1F4B41CF00AC3173 /* Resampler.cpp */,
+				69AC148F1F4B41CF00AC3173 /* Resampler.h */,
 			);
 			path = audio;
 			sourceTree = "<group>";
@@ -497,6 +524,12 @@
 		692AB8BD1E6759DD00706ACC /* darwin */ = {
 			isa = PBXGroup;
 			children = (
+				6988483B1F4B39F700076DF0 /* AudioInputAudioUnit.cpp */,
+				6988483C1F4B39F700076DF0 /* AudioInputAudioUnit.h */,
+				6988483D1F4B39F700076DF0 /* AudioOutputAudioUnit.cpp */,
+				6988483E1F4B39F700076DF0 /* AudioOutputAudioUnit.h */,
+				6988483F1F4B39F700076DF0 /* AudioUnitIO.cpp */,
+				698848401F4B39F700076DF0 /* AudioUnitIO.h */,
 				69A6DF3F1E9614B700000E69 /* AudioInputAudioUnitOSX.cpp */,
 				69A6DF401E9614B700000E69 /* AudioInputAudioUnitOSX.h */,
 				69A6DF411E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp */,
@@ -816,6 +849,15 @@
 		69F8422C1E67540700C110F7 = {
 			isa = PBXGroup;
 			children = (
+				C2A87DE31F4B6AD3002D3F73 /* AudioUnitIO.cpp */,
+				C2A87DE11F4B6A89002D3F73 /* AudioInput.cpp */,
+				C2A87DE21F4B6A89002D3F73 /* AudioOutput.cpp */,
+				C2A87DDB1F4B6A61002D3F73 /* AudioInputAudioUnit.cpp */,
+				C2A87DDC1F4B6A61002D3F73 /* AudioInputAudioUnitOSX.cpp */,
+				C2A87DDD1F4B6A61002D3F73 /* AudioOutputAudioUnit.cpp */,
+				C2A87DDE1F4B6A61002D3F73 /* AudioOutputAudioUnitOSX.cpp */,
+				C2A87DD91F4B6A57002D3F73 /* DarwinSpecific.mm */,
+				C2A87DD71F4B6A33002D3F73 /* Resampler.cpp */,
 				692AB8861E6759BF00706ACC /* libtgvoip */,
 				69F842371E67540700C110F7 /* Products */,
 				692AB9061E675E8700706ACC /* Frameworks */,
@@ -840,6 +882,7 @@
 				69A6DF181E96149300000E69 /* gain_control.h in Headers */,
 				69A6DF231E96149300000E69 /* nsx_core.h in Headers */,
 				692AB9011E6759DD00706ACC /* threading.h in Headers */,
+				698848461F4B39F700076DF0 /* AudioUnitIO.h in Headers */,
 				69A6DF2B1E96149300000E69 /* three_band_filter_bank.h in Headers */,
 				692AB8EA1E6759DD00706ACC /* MediaStreamItf.h in Headers */,
 				69A6DF3E1E96149300000E69 /* typedefs.h in Headers */,
@@ -900,6 +943,7 @@
 				69A6DF3C1E96149300000E69 /* metrics.h in Headers */,
 				692AB8D61E6759DD00706ACC /* BufferPool.h in Headers */,
 				69A6DF0E1E96149300000E69 /* aecm_core.h in Headers */,
+				698848421F4B39F700076DF0 /* AudioInputAudioUnit.h in Headers */,
 				69A6DF2F1E96149300000E69 /* delay_estimator.h in Headers */,
 				69A6DEC41E96149300000E69 /* stringutils.h in Headers */,
 				69A6DF1F1E96149300000E69 /* noise_suppression_x.h in Headers */,
@@ -913,7 +957,9 @@
 				69A6DF301E96149300000E69 /* delay_estimator_internal.h in Headers */,
 				69A6DEBB1E96149300000E69 /* basictypes.h in Headers */,
 				69A6DEE71E96149300000E69 /* spl_inl_mips.h in Headers */,
+				69AC14911F4B41CF00AC3173 /* Resampler.h in Headers */,
 				69A6DF261E96149300000E69 /* nsx_defines.h in Headers */,
+				698848441F4B39F700076DF0 /* AudioOutputAudioUnit.h in Headers */,
 				69A6DEC11E96149300000E69 /* safe_conversions_impl.h in Headers */,
 				69A6DEC01E96149300000E69 /* safe_conversions.h in Headers */,
 			);
@@ -1044,6 +1090,7 @@
 				69A6DEF41E96149300000E69 /* resample_fractional.c in Sources */,
 				6915307B1E6B5BAB004F643F /* logging.cpp in Sources */,
 				69A6DEE11E96149300000E69 /* get_scaling_square.c in Sources */,
+				C2A87DE41F4B6AD3002D3F73 /* AudioUnitIO.cpp in Sources */,
 				690725C21EBBD5F2005D860B /* NetworkSocket.cpp in Sources */,
 				69A6DEC71E96149300000E69 /* channel_buffer.cc in Sources */,
 				69A6DF191E96149300000E69 /* apm_data_dumper.cc in Sources */,
@@ -1058,12 +1105,10 @@
 				69A6DEF71E96149300000E69 /* spl_sqrt.c in Sources */,
 				69A6DEED1E96149300000E69 /* real_fft.c in Sources */,
 				692AB9021E6759DD00706ACC /* VoIPController.cpp in Sources */,
-				69A6DF431E9614B700000E69 /* AudioInputAudioUnitOSX.cpp in Sources */,
 				69A6DF0D1E96149300000E69 /* aecm_core.cc in Sources */,
 				69A6DF101E96149300000E69 /* aecm_core_neon.cc in Sources */,
 				69A6DED71E96149300000E69 /* division_operations.c in Sources */,
 				69A6DEDB1E96149300000E69 /* energy.c in Sources */,
-				695B20631EBD39FF00E31757 /* DarwinSpecific.mm in Sources */,
 				69A6DEC61E96149300000E69 /* audio_util.cc in Sources */,
 				69A6DF141E96149300000E69 /* analog_agc.c in Sources */,
 				69A6DEF81E96149300000E69 /* spl_sqrt_floor.c in Sources */,
@@ -1084,8 +1129,16 @@
 				69A6DEF11E96149300000E69 /* resample_by_2.c in Sources */,
 				69A6DEEC1E96149300000E69 /* randomization_functions.c in Sources */,
 				69A6DEEE1E96149300000E69 /* refl_coef_to_lpc.c in Sources */,
+				C2A87DDF1F4B6A61002D3F73 /* AudioInputAudioUnit.cpp in Sources */,
+				69A6DF431E9614B700000E69 /* AudioInputAudioUnitOSX.cpp in Sources */,
+				C2A87DE01F4B6A61002D3F73 /* AudioOutputAudioUnit.cpp in Sources */,
+				69A6DF451E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp in Sources */,
 				69A6DEFC1E96149300000E69 /* vector_scaling_operations.c in Sources */,
 				692AB8E61E6759DD00706ACC /* JitterBuffer.cpp in Sources */,
+				692AB8CB1E6759DD00706ACC /* AudioInput.cpp in Sources */,
+				692AB8CD1E6759DD00706ACC /* AudioOutput.cpp in Sources */,
+				C2A87DDA1F4B6A57002D3F73 /* DarwinSpecific.mm in Sources */,
+				C2A87DD81F4B6A33002D3F73 /* Resampler.cpp in Sources */,
 				69A6DEFA1E96149300000E69 /* splitting_filter_impl.c in Sources */,
 				69A6DEE01E96149300000E69 /* get_hanning_window.c in Sources */,
 				69A6DF161E96149300000E69 /* digital_agc.c in Sources */,
@@ -1095,7 +1148,6 @@
 				692AB8D11E6759DD00706ACC /* BufferInputStream.cpp in Sources */,
 				692AB8E91E6759DD00706ACC /* MediaStreamItf.cpp in Sources */,
 				69A6DF2C1E96149300000E69 /* block_mean_calculator.cc in Sources */,
-				69A6DF451E9614B700000E69 /* AudioOutputAudioUnitOSX.cpp in Sources */,
 				69A6DEBC1E96149300000E69 /* checks.cc in Sources */,
 				692AB8DA1E6759DD00706ACC /* EchoCanceller.cpp in Sources */,
 				69A6DF281E96149300000E69 /* splitting_filter.cc in Sources */,
@@ -1112,14 +1164,12 @@
 				69A6DF1E1E96149300000E69 /* noise_suppression_x.c in Sources */,
 				692AB8D51E6759DD00706ACC /* BufferPool.cpp in Sources */,
 				69A6DED01E96149300000E69 /* complex_bit_reverse.c in Sources */,
-				692AB8CB1E6759DD00706ACC /* AudioInput.cpp in Sources */,
 				69A6DEDF1E96149300000E69 /* filter_ma_fast_q12.c in Sources */,
 				69A6DEFF1E96149300000E69 /* wav_file.cc in Sources */,
 				69A6DF351E96149300000E69 /* ooura_fft_neon.cc in Sources */,
 				69A6DECE1E96149300000E69 /* auto_corr_to_refl_coef.c in Sources */,
 				69A6DEFD1E96149300000E69 /* sparse_fir_filter.cc in Sources */,
 				69A6DED91E96149300000E69 /* downsample_fast.c in Sources */,
-				692AB8CD1E6759DD00706ACC /* AudioOutput.cpp in Sources */,
 				69A6DF251E96149300000E69 /* nsx_core_neon.c in Sources */,
 				69A6DF081E96149300000E69 /* aec_core_sse2.cc in Sources */,
 				69A6DEEA1E96149300000E69 /* min_max_operations.c in Sources */,
@@ -1138,7 +1188,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		69F8423C1E67540700C110F7 /* Debug */ = {
+		69F8423C1E67540700C110F7 /* Debug Hockeyapp */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1187,9 +1237,9 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
-			name = Debug;
+			name = "Debug Hockeyapp";
 		};
-		69F8423D1E67540700C110F7 /* Release */ = {
+		69F8423D1E67540700C110F7 /* Release Hockeyapp */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1232,9 +1282,9 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
-			name = Release;
+			name = "Release Hockeyapp";
 		};
-		69F8423F1E67540700C110F7 /* Debug */ = {
+		69F8423F1E67540700C110F7 /* Debug Hockeyapp */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
@@ -1271,9 +1321,9 @@
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 			};
-			name = Debug;
+			name = "Debug Hockeyapp";
 		};
-		69F842401E67540700C110F7 /* Release */ = {
+		69F842401E67540700C110F7 /* Release Hockeyapp */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
@@ -1310,7 +1360,7 @@
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 			};
-			name = Release;
+			name = "Release Hockeyapp";
 		};
 		D04D01C31E678C0D0086DDC0 /* Debug AppStore */ = {
 			isa = XCBuildConfiguration;
@@ -1402,7 +1452,7 @@
 			};
 			name = "Debug AppStore";
 		};
-		D04D01CB1E678C230086DDC0 /* Hockeyapp */ = {
+		D04D01CB1E678C230086DDC0 /* Release AppStore */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1445,9 +1495,9 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
-			name = Hockeyapp;
+			name = "Release AppStore";
 		};
-		D04D01CC1E678C230086DDC0 /* Hockeyapp */ = {
+		D04D01CC1E678C230086DDC0 /* Release AppStore */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
@@ -1484,7 +1534,7 @@
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 			};
-			name = Hockeyapp;
+			name = "Release AppStore";
 		};
 /* End XCBuildConfiguration section */
 
@@ -1492,24 +1542,24 @@
 		69F842301E67540700C110F7 /* Build configuration list for PBXProject "libtgvoip_osx" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				69F8423C1E67540700C110F7 /* Debug */,
+				69F8423C1E67540700C110F7 /* Debug Hockeyapp */,
 				D04D01C31E678C0D0086DDC0 /* Debug AppStore */,
-				69F8423D1E67540700C110F7 /* Release */,
-				D04D01CB1E678C230086DDC0 /* Hockeyapp */,
+				69F8423D1E67540700C110F7 /* Release Hockeyapp */,
+				D04D01CB1E678C230086DDC0 /* Release AppStore */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = "Release Hockeyapp";
 		};
 		69F8423E1E67540700C110F7 /* Build configuration list for PBXNativeTarget "libtgvoip" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				69F8423F1E67540700C110F7 /* Debug */,
+				69F8423F1E67540700C110F7 /* Debug Hockeyapp */,
 				D04D01C41E678C0D0086DDC0 /* Debug AppStore */,
-				69F842401E67540700C110F7 /* Release */,
-				D04D01CC1E678C230086DDC0 /* Hockeyapp */,
+				69F842401E67540700C110F7 /* Release Hockeyapp */,
+				D04D01CC1E678C230086DDC0 /* Release AppStore */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = "Release Hockeyapp";
 		};
 /* End XCConfigurationList section */
 	};

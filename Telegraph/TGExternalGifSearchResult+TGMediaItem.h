@@ -1,6 +1,6 @@
 #import "TGExternalGifSearchResult.h"
-#import "TGMediaSelectionContext.h"
-#import "TGMediaEditingContext.h"
+#import <LegacyComponents/TGMediaSelectionContext.h>
+#import <LegacyComponents/TGMediaEditingContext.h>
 
 @interface TGExternalGifSearchResult (TGMediaItem) <TGMediaSelectableItem, TGMediaEditableItem>
 

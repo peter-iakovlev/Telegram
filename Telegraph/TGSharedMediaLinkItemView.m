@@ -1,15 +1,13 @@
 #import "TGSharedMediaLinkItemView.h"
 
-#import "TGMessage.h"
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernTextViewModel.h"
 #import "TGModernViewStorage.h"
 #import "TGReusableLabel.h"
-#import "TGImageView.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/TGModernButton.h>
 #import "TGActionSheet.h"
 #import "TGAppDelegate.h"
 #import "TGSharedMediaCheckButton.h"
@@ -57,7 +55,7 @@
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.textColor = [UIColor blackColor];
-        _titleLabel.font = TGMediumSystemFontOfSize(15.0f);
+        _titleLabel.font = TGSystemFontOfSize(17.0f);
         _titleLabel.numberOfLines = 1;
         _titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         [self.contentView addSubview:_titleLabel];
@@ -237,12 +235,19 @@
     for (NSString *link in _links)
     {
         TGModernButton *button = [[TGModernButton alloc] init];
+        button.adjustsImageWhenHighlighted = false;
         [button setTitleColor:TGAccentColor()];
         [button setTitle:link forState:UIControlStateNormal];
         button.extendedEdgeInsets = UIEdgeInsetsMake(4.0f, 4.0f, 4.0f, 4.0f);
         button.titleLabel.font = TGSystemFontOfSize(13.0f);
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
         [button addTarget:self action:@selector(linkButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        
+        if ([link isEqualToString:_webPage.url] && _webPage.instantPage != nil)
+        {
+            button.titleEdgeInsets = UIEdgeInsetsMake(0.0f, 4.0f, 0.0f, 0.0f);
+            [button setImage:[UIImage imageNamed:@"ConversationInstantPageButtonIconIncoming"] forState:UIControlStateNormal];
+        }
         
         button.userInteractionEnabled = !self.editing;
         
@@ -305,7 +310,7 @@
     [super layoutSubviews];
     
     CGFloat separatorHeight = TGScreenPixel;
-    UIEdgeInsets insets = UIEdgeInsetsMake(8.0f, 65.0f, 6.0f, 10.0f);
+    UIEdgeInsets insets = UIEdgeInsetsMake(7.0f, 76.0f, 6.0f, 10.0f);
     CGFloat editingOffset = self.editing ? [self editingInset] : 0.0f;
     
     _separatorView.frame = CGRectMake(insets.left + editingOffset, self.frame.size.height - separatorHeight, self.frame.size.width - insets.left - editingOffset, separatorHeight);
@@ -315,7 +320,7 @@
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font constrainedToSize:CGSizeMake(self.frame.size.width - insets.left - insets.right - 1.0f, CGFLOAT_MAX) lineBreakMode:NSLineBreakByTruncatingTail];
     titleSize.width = CGCeil(titleSize.width);
     titleSize.height = MIN(21.0f, CGCeil(titleSize.height));
-    _titleLabel.frame = CGRectMake(editingOffset + insets.left + 1.0f, insets.top + TGRetinaPixel, titleSize.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(editingOffset + insets.left + 1.0f, insets.top, titleSize.width, titleSize.height);
     
     _contentModel.frame = CGRectMake(editingOffset + insets.left + 1.0f, insets.top + titleSize.height + 1.0f, _textModel.frame.size.width, _textModel.frame.size.height + 2.0f);
     
@@ -326,18 +331,21 @@
     }
     [_contentModel updateSubmodelContentsIfNeeded];
     
-    _imageView.frame = CGRectMake(editingOffset + 9.0f, 12.0f, 42.0f, 42.0f);
+    _imageView.frame = CGRectMake(editingOffset + 12.0f, 6.0f + TGScreenPixel, 48.0f, 48.0f);
     _alternativeImageBackgroundView.frame = _imageView.frame;
     _alternativeImageLabel.frame = CGRectMake(_imageView.frame.origin.x + CGFloor((_imageView.frame.size.width - _alternativeImageLabel.frame.size.width) / 2.0f), _imageView.frame.origin.y + CGFloor((_imageView.frame.size.height - _alternativeImageLabel.frame.size.height) / 2.0f), _alternativeImageLabel.frame.size.width, _alternativeImageLabel.frame.size.height);
     
-    CGFloat startY = CGRectGetMaxY(_contentModel.frame) - 3.0f;
+    CGFloat startY = CGRectGetMaxY(_contentModel.frame) - 2.0f + TGScreenPixel;
     if (_textModel.frame.size.height < FLT_EPSILON)
         startY += 3.0f;
     CGFloat buttonHeight = 20.0f;
     for (TGModernButton *button in _linkButtons)
     {
         CGSize buttonSize = [[button titleForState:UIControlStateNormal] sizeWithFont:button.titleLabel.font];
-        button.frame = CGRectMake(editingOffset + insets.left + 1.0f, startY, MIN(self.bounds.size.width - insets.left - insets.right, buttonSize.width), buttonHeight);
+        CGFloat leftInset = insets.left;
+        if ([button imageForState:UIControlStateNormal] != nil)
+            leftInset -= 2.0f;
+        button.frame = CGRectMake(editingOffset + leftInset + 1.0f, startY, MIN(self.bounds.size.width - leftInset - insets.right, buttonSize.width), buttonHeight);
         startY += buttonHeight;
     }
     

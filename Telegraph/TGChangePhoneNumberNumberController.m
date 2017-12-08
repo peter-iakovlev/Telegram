@@ -1,6 +1,8 @@
 #import "TGChangePhoneNumberNumberController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGHeaderCollectionItem.h"
 #import "TGCommentCollectionItem.h"
@@ -8,12 +10,10 @@
 
 #import "TGChangePhoneNumberCodeController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
 #import "TGVerifyChangePhoneActor.h"
-
-#import "TGPhoneUtils.h"
 
 @interface TGChangePhoneNumberNumberController () <ASWatcher>
 {

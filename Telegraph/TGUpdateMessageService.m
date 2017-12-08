@@ -7,7 +7,7 @@
 #import <MTProtoKit/MTQueue.h>
 
 #import "TGTelegraph.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGApplyUpdatesActor.h"
 #import "TGUpdateMessage.h"
 #import "TGUpdate.h"

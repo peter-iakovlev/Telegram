@@ -1,18 +1,15 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGCommentCollectionItemView.h"
-#import "TGFont.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGPresentation.h"
 
 @interface TGCommentCollectionItemView ()
 {
     UILabel *_label;
     UIActivityIndicatorView *_activityIndicator;
+    
+    UIColor *_customTextColor;
 }
 
 @end
@@ -34,6 +31,14 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    if (_customTextColor == nil)
+        _label.textColor = presentation.pallete.collectionMenuCommentColor;
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
     if (CGRectContainsPoint(_label.frame, point))
@@ -53,7 +58,8 @@
 
 - (void)setTextColor:(UIColor *)textColor
 {
-    _label.textColor = textColor;
+    _customTextColor = textColor;
+    _label.textColor = textColor ?: self.presentation.pallete.collectionMenuCommentColor;
 }
 
 - (void)setLabelAlpha:(CGFloat)labelAlpha
@@ -110,8 +116,8 @@
 {
     [super layoutSubviews];
     
-    _label.frame = CGRectMake(15.0f, 7.0f + _topInset, self.bounds.size.width - 30.0f, _calculatedSize.height - 7.0f - 7.0f);
-    _activityIndicator.frame = CGRectMake(15.0f, 14.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
+    _label.frame = CGRectMake(15.0f + self.safeAreaInset.left, 7.0f + _topInset, self.bounds.size.width - 30.0f - self.safeAreaInset.left - self.safeAreaInset.right, _calculatedSize.height - 7.0f - 7.0f);
+    _activityIndicator.frame = CGRectMake(15.0f + self.safeAreaInset.left, 14.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
 }
 
 @end

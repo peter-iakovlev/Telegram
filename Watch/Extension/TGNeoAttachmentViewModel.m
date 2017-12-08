@@ -273,7 +273,7 @@
                     
                 case TGBridgeMessageActionGroupMigratedTo:
                 {
-                    messageText = TGLocalized(@"Notification.GroupMigratedToChannel");
+                    messageText = TGLocalized(@"Notification.ChannelMigratedFrom");
                 }
                     break;
                     

@@ -1,9 +1,9 @@
 #import "TGReplyHeaderAudioModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSharedVideoSignals.h"
 #import "TGSharedMediaUtils.h"
-
-#import "TGAudioMediaAttachment.h"
 
 #import "TGSignalImageViewModel.h"
 

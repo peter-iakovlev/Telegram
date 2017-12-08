@@ -1,10 +1,10 @@
 #import "TGArchivedStickerPacksAlertView.h"
 
-#import "TGFont.h"
-#import "TGModernButton.h"
-#import "TGPagerView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
+
+#import <LegacyComponents/TGModernButton.h>
+#import "TGPagerView.h"
 
 #import "TGStickerPackCollectionItemView.h"
 

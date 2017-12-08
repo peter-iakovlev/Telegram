@@ -30,3 +30,11 @@
 "Share.TouchId" = "잠금번호 입력";
 
 "Share.AddCaption" = "코멘트 쓰기..";
+
+"Share.PasscodeFailedAttempts_1" = "잠금번호 1회 실패";
+"Share.PasscodeFailedAttempts_2" = "잠금번호 2회 실패";
+"Share.PasscodeFailedAttempts_3_10" = "잠금번호 %@회 실패";
+"Share.PasscodeFailedAttempts_any" = "잠금번호 %@회 실패";
+"Share.PasscodeTryAgainIn1Minute" = "1분후 다시 시도해주세요";
+
+"Share.SavedMessages" = "저장된 메시지";

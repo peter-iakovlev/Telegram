@@ -8,8 +8,9 @@
 
 #import <UIKit/UIKit.h>
 
-#import "ActionStage.h"
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGContactCell : UITableViewCell
 

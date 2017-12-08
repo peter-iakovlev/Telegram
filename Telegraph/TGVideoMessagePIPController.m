@@ -1,11 +1,11 @@
 #import "TGVideoMessagePIPController.h"
 
-#import "TGImageUtils.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
-#import "TGOverlayControllerWindow.h"
 
 #import "TGNativeAudioPlayer.h"
 
@@ -106,7 +106,7 @@ static TGVideoMessagePIPCorner defaultCorner = TGVideoMessagePIPCornerTopRight;
     window.keepKeyboard = true;
     window.backgroundColor = [UIColor clearColor];
     window.rootViewController = self;
-    window.windowLevel = 100000000.0f + 0.001f;
+    window.windowLevel = UIWindowLevelStatusBar;
     window.hidden = false;
     _window = window;
 }

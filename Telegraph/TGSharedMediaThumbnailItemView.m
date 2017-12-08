@@ -1,8 +1,8 @@
 #import "TGSharedMediaThumbnailItemView.h"
 
-#import "TGImagePickerCellCheckButton.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
+#import "TGImagePickerCellCheckButton.h"
 
 @interface TGSharedMediaThumbnailItemView ()
 {

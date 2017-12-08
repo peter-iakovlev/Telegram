@@ -3,14 +3,14 @@
 #import "TGRemoteHttpLocationSignal.h"
 #import "TGInstagramMediaIdSignal.h"
 
-#import "TGEmbedYoutubePlayerView.h"
-#import "TGEmbedVimeoPlayerView.h"
-#import "TGEmbedVinePlayerView.h"
-#import "TGEmbedCoubPlayerView.h"
-#import "TGEmbedInstagramPlayerView.h"
-#import "TGEmbedSoundCloudPlayerView.h"
+#import <LegacyComponents/TGEmbedYoutubePlayerView.h>
+#import <LegacyComponents/TGEmbedVimeoPlayerView.h>
+#import <LegacyComponents/TGEmbedVinePlayerView.h>
+#import <LegacyComponents/TGEmbedCoubPlayerView.h>
+#import <LegacyComponents/TGEmbedInstagramPlayerView.h>
+#import <LegacyComponents/TGEmbedSoundCloudPlayerView.h>
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 @interface TGOpenInYoutubeItem : TGOpenInVideoItem
 
@@ -119,7 +119,8 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([url.host rangeOfString:@"youtube.com"].location != NSNotFound || [url.host rangeOfString:@"youtu.be"].location != NSNotFound)
+    NSString *host = [url.host lowercaseString];
+    if ([host rangeOfString:@"youtube.com"].location != NSNotFound || [host rangeOfString:@"youtu.be"].location != NSNotFound)
         return true;
     
     return false;
@@ -157,7 +158,7 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([url.host rangeOfString:@"vimeo.com"].location != NSNotFound)
+    if ([[url.host lowercaseString] rangeOfString:@"vimeo.com"].location != NSNotFound)
         return true;
     
     return false;
@@ -196,7 +197,7 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([url.host rangeOfString:@"vine.co"].location != NSNotFound)
+    if ([[url.host lowercaseString] rangeOfString:@"vine.co"].location != NSNotFound)
         return true;
     
     return false;
@@ -278,7 +279,7 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([url.host rangeOfString:@"coub.com"].location != NSNotFound)
+    if ([[url.host lowercaseString] rangeOfString:@"coub.com"].location != NSNotFound)
         return true;
     
     return false;
@@ -302,20 +303,29 @@
 - (void)performOpenIn
 {
     NSURL *url = (NSURL *)self.object;
-    NSString *identifier = [TGInstagramMediaIdSignal instagramShortcodeFromText:url.absoluteString];
-    
-    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-    [progressWindow performSelector:@selector(showAnimated) withObject:nil afterDelay:0.5];
-    
-    [[[[TGInstagramMediaIdSignal instagramMediaIdForShortcode:identifier] deliverOn:[SQueue mainQueue]] onDispose:^
+    if ([url.path hasPrefix:@"/p/"])
     {
-        [NSObject cancelPreviousPerformRequestsWithTarget:progressWindow selector:@selector(showAnimated) object:nil];
-        [progressWindow dismiss:true];
-    }] startWithNext:^(NSString *mediaId)
+        NSString *identifier = [TGInstagramMediaIdSignal instagramShortcodeFromText:url.absoluteString];
+        
+        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
+        [progressWindow performSelector:@selector(showAnimated) withObject:nil afterDelay:0.5];
+        
+        [[[[TGInstagramMediaIdSignal instagramMediaIdForShortcode:identifier] deliverOn:[SQueue mainQueue]] onDispose:^
+        {
+            [NSObject cancelPreviousPerformRequestsWithTarget:progressWindow selector:@selector(showAnimated) object:nil];
+            [progressWindow dismiss:true];
+        }] startWithNext:^(NSString *mediaId)
+        {
+            NSURL *openInURL = [NSURL URLWithString:[NSString stringWithFormat:@"instagram://media?id=%@", mediaId]];
+            [TGOpenInVideoItem openURL:openInURL];
+        }];
+    }
+    else if (url.pathComponents.count == 2)
     {
-        NSURL *openInURL = [NSURL URLWithString:[NSString stringWithFormat:@"instagram://media?id=%@", mediaId]];
+        NSString *username = url.pathComponents.lastObject;
+        NSURL *openInURL = [NSURL URLWithString:[NSString stringWithFormat:@"instagram://user?username=%@", username]];
         [TGOpenInVideoItem openURL:openInURL];
-    }];
+    }
 }
 
 + (NSString *)defaultURLScheme
@@ -326,7 +336,7 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([[url.host stringByReplacingOccurrencesOfString:@"www." withString:@""] isEqualToString:@"instagram.com"])
+    if ([[[url.host stringByReplacingOccurrencesOfString:@"www." withString:@""] lowercaseString] isEqualToString:@"instagram.com"])
         return true;
 
     return false;
@@ -370,7 +380,7 @@
 + (bool)canOpen:(id)object
 {
     NSURL *url = (NSURL *)object;
-    if ([url.host rangeOfString:@"soundcloud.com"].location != NSNotFound)
+    if ([[url.host lowercaseString] rangeOfString:@"soundcloud.com"].location != NSNotFound)
         return true;
     
     return false;

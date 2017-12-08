@@ -1,8 +1,12 @@
 #import "TGCallReceptionView.h"
 
-const NSInteger TGCallQualityViewCircleCount = 5;
-const CGSize TGCallQualityViewSize = { 34.0f, 6.0f };
-const CGFloat TGCallQualityCircleSpacing = 2.0f;
+#import <LegacyComponents/TGImageUtils.h>
+
+const NSInteger TGCallQualityViewBarCount = 4;
+const CGSize TGCallQualityViewSize = { 24.0f, 10.0f };
+
+const CGFloat TGCallQualityBarWidth = 3.0f;
+const CGFloat TGCallQualityBarSpacing = 1.5f;
 
 @interface TGCallReceptionView ()
 {
@@ -27,9 +31,9 @@ const CGFloat TGCallQualityCircleSpacing = 2.0f;
     return self;
 }
 
-- (void)setReception:(CGFloat)__unused reception
+- (void)setSignalBars:(NSInteger)signalBars
 {
-    NSInteger newReception = [self integralReception:4];
+    NSInteger newReception = signalBars;
     if (_currentReception != newReception)
     {
         _currentReception = newReception;
@@ -37,28 +41,24 @@ const CGFloat TGCallQualityCircleSpacing = 2.0f;
     }
 }
 
-- (NSInteger)integralReception:(CGFloat)state
-{
-    return (NSInteger)ceil(state * 6.0f) - 1;
-}
-
 - (void)drawRect:(CGRect)__unused rect
 {
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
-    CGContextSetLineWidth(context, 0.5f);
     
-    rect = CGRectInset(rect, 0.25f, 0.25f);
+    CGFloat spacing = TGCallQualityBarSpacing;
+    if (TGScreenScaling() > 2)
+        spacing = 4.0f / 3.0f;
     
-    const CGSize circleSize = { 5.0f, 5.0f };
-    for (NSInteger i = 0; i < TGCallQualityViewCircleCount; i++) {
-        CGRect circleRect = CGRectMake(rect.origin.x + i * (circleSize.width + TGCallQualityCircleSpacing), rect.origin.y, circleSize.width, circleSize.height);
+    for (NSInteger i = 0; i < TGCallQualityViewBarCount; i++) {
+        CGFloat height = 4 + 2 * i;
+        CGRect barRect = CGRectMake(rect.origin.x + i * (TGCallQualityBarWidth + spacing), TGCallQualityViewSize.height - height, TGCallQualityBarWidth, height);
         
-        CGContextStrokeEllipseInRect(context, circleRect);
+        if (i >= _currentReception)
+            CGContextSetAlpha(context, 0.4f);
         
-        if (i < _currentReception)
-            CGContextFillEllipseInRect(context, circleRect);
+        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:barRect cornerRadius:1.0f];
+        [path fill];
     }
 }
 

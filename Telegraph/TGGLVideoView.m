@@ -1,17 +1,17 @@
 #import "TGGLVideoView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <SSignalKit/SSignalKit.h>
 #import <GLKit/GLKit.h>
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 #import <AVFoundation/AVFoundation.h>
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import <libkern/OSAtomic.h>
 #import <pthread.h>
-
-#import "TGImageUtils.h"
 
 #import "TGImageMessageViewModel.h"
 

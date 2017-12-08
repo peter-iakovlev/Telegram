@@ -1,22 +1,24 @@
 #import "TGInstantPageController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
+#import "TGLegacyComponentsContext.h"
+
 #import <SafariServices/SafariServices.h>
 
 #import "TGInstantPageControllerView.h"
 #import "TGTelegraph.h"
 #import "TGApplication.h"
 #import "TGAppDelegate.h"
-#import "TGHacks.h"
 #import "TGDatabase.h"
 
-#import "TGModernGalleryController.h"
+#import <LegacyComponents/TGModernGalleryController.h>
 #import "TGItemCollectionGalleryModel.h"
-#import "TGOverlayControllerWindow.h"
 #import "TGItemCollectionGalleryItem.h"
 
 #import "TGItemCollectionGalleryVideoItemView.h"
 
-#import "TGEmbedPlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
 #import "TGEmbedPlayerController.h"
 #import "TGEmbedPIPController.h"
 #import "TGEmbedPIPPlaceholderView.h"
@@ -24,17 +26,13 @@
 #import "TGActionSheet.h"
 #import "TGOpenInMenu.h"
 #import "TGShareMenu.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGCallStatusBarView.h"
 #import "TGSendMessageSignals.h"
 #import "TGChannelManagementSignals.h"
 
 #import "TGSendMessageSignals.h"
 #import "TGWebpageSignals.h"
-
-#import "TGNavigationBar.h"
-
-#import "TGStringUtils.h"
 
 #import "TGGenericPeerPlaylistSignals.h"
 
@@ -83,7 +81,7 @@
         __weak TGInstantPageController *weakSelf = self;
         _updatePageDisposable = [[[TGWebpageSignals updatedWebpage:webPage] deliverOn:[SQueue mainQueue]] startWithNext:^(TGWebPageMediaAttachment *updatedWebPage) {
             __strong TGInstantPageController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
+            if (strongSelf != nil && updatedWebPage.instantPage != nil) {
                 strongSelf->_webPage = updatedWebPage;
                 if (strongSelf->_pageView != nil) {
                     [strongSelf->_pageView setWebPage:updatedWebPage];
@@ -115,6 +113,7 @@
     _pageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _pageView.peerId = _peerId;
     _pageView.messageId = _messageId;
+    _pageView.safeAreaInset = self.controllerSafeAreaInset;
     _pageView.autoNightThemeEnabled = _autoNightEnabled;
     [self processThemeChangeAnimated:false];
     _pageView.webPage = _webPage;
@@ -250,7 +249,7 @@
     _pageView.openMedia = ^(NSArray<TGInstantPageMedia *> *medias, TGInstantPageMedia *centralMedia) {
         __strong TGInstantPageController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] init];
+            TGModernGalleryController *galleryController = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
             TGItemCollectionGalleryModel *model = [[TGItemCollectionGalleryModel alloc] initWithMedias:medias centralMedia:centralMedia];
             galleryController.model = model;
             galleryController.asyncTransitionIn = true;
@@ -363,7 +362,7 @@
                 }
             };
             
-            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithParentController:strongSelf contentController:galleryController];
+            TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:strongSelf contentController:galleryController];
             controllerWindow.hidden = false;
         }
     };
@@ -506,6 +505,12 @@
             [strongSelf processThemeChangeAnimated:true];
         }
     };
+    _pageView.openInPressed = ^{
+        __strong TGInstantPageController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:strongSelf->_webPage.url]];
+        }
+    };
     
     [_pageView applyScrollState:_initialState];
 }
@@ -611,25 +616,45 @@
     self.navigationController.navigationBar.alpha = 0.0f;
 }
 
+- (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
+{
+    UIInterfaceOrientation orientation = self.interfaceOrientation;
+    CGFloat defaultStatusBarHeight = !TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape(orientation) ? 0.0f : 20.0f;
+    CGFloat statusBarHeight = !UIEdgeInsetsEqualToEdgeInsets(self.controllerSafeAreaInset, UIEdgeInsetsZero) ? self.controllerSafeAreaInset.top : defaultStatusBarHeight;
+    _pageView.statusBarHeight = statusBarHeight;
+    _pageView.safeAreaInset = self.controllerSafeAreaInset;
+    
+    [super controllerInsetUpdated:previousInset];
+}
+
 - (void)setStatusBarAlpha:(CGFloat)alpha {
-    [TGHacks setApplicationStatusBarAlpha:alpha];
+    if ([TGViewController hasTallScreen])
+        return;
+    
+    [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:alpha];
     [TGAppDelegateInstance.rootController.callStatusBarView setAlpha:alpha];
 }
 
 - (void)setStatusBarOffset:(CGFloat)offset {
+    if ([TGViewController hasTallScreen])
+        return;
+    
     [TGHacks setApplicationStatusBarOffset:offset];
     [TGAppDelegateInstance.rootController.callStatusBarView setOffset:offset];
 }
 
 - (bool)_updateControllerInsetForOrientation:(UIInterfaceOrientation)orientation force:(bool)force notify:(bool)notify {
     bool result = [super _updateControllerInsetForOrientation:orientation force:force notify:notify];
-    _pageView.statusBarHeight = [self controllerStatusBarHeight];
+    
+    CGFloat defaultStatusBarHeight = !TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape(orientation) ? 0.0f : 20.0f;
+    CGFloat statusBarHeight = !UIEdgeInsetsEqualToEdgeInsets(self.controllerSafeAreaInset, UIEdgeInsetsZero) ? self.controllerSafeAreaInset.top : defaultStatusBarHeight;
+    _pageView.statusBarHeight = statusBarHeight;
     return result;
 }
 
 - (void)presentShare {
     __weak TGInstantPageController *weakSelf = self;
-    _menuController = [TGShareMenu presentInParentController:self menuController:nil buttonTitle:TGLocalized(@"ShareMenu.CopyShareLink") buttonAction:^{
+    _menuController = [TGShareMenu presentInParentController:self menuController:nil topButtonTitle:nil topButtonAction:nil bottomButtonTitle:TGLocalized(@"ShareMenu.CopyShareLink") bottomButtonAction:^{
         [[UIPasteboard generalPasteboard] setString:_webPage.url];
     } shareAction:^(NSArray *peerIds, NSString *caption)
     {
@@ -721,6 +746,9 @@
 }
 
 - (bool)presentationAutoNightTheme {
+    if (iosMajorVersion() >= 11 && UIAccessibilityIsInvertColorsEnabled())
+        return false;
+    
     NSNumber *storedAutoNightTheme = [[NSUserDefaults standardUserDefaults] objectForKey:@"instantPage_autoNightTheme_v0"];
     if (storedAutoNightTheme) {
         return storedAutoNightTheme.boolValue;

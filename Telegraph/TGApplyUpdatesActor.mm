@@ -1,11 +1,11 @@
 #import "TGApplyUpdatesActor.h"
 
-#import "ASCommon.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import "TGTimer.h"
 
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
@@ -40,8 +40,6 @@
 
 #import "TLUser$modernUser.h"
 #import "TLUpdates+TG.h"
-
-#import "TGStringUtils.h"
 
 #import "TLMessageFwdHeader$messageFwdHeader.h"
 
@@ -117,6 +115,8 @@ static NSMutableArray *delayedNotifications()
 
 @property (nonatomic, strong) TGTimer *timeoutTimer;
 @property (nonatomic) NSTimeInterval overallTimeout;
+
+@property (nonatomic) NSMutableSet *notifiedGroups;
 
 @end
 
@@ -1512,7 +1512,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                     }
                                     case TGMessageActionCreateChat:
                                     {
-                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_CREATED"), user.displayName, chatName];
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_ADD_YOU"), user.displayName, chatName];
                                         attachmentFound = true;
                                         
                                         break;
@@ -1662,7 +1662,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGImageMediaAttachmentType)
                             {
-                                if (((TGImageMediaAttachment *)attachment).caption.length != 0) {
+                                if (globalMessagePreviewText && ((TGImageMediaAttachment *)attachment).caption.length != 0) {
                                     if (message.cid > 0) {
                                         text = [[NSString alloc] initWithFormat:@"%@: 🖼 %@", user.displayName, ((TGImageMediaAttachment *)attachment).caption];
                                     } else {
@@ -1688,7 +1688,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             {
                                 bool isRoundMessage = ((TGVideoMediaAttachment *)attachment).roundMessage;
                                 
-                                if (((TGVideoMediaAttachment *)attachment).caption.length != 0) {
+                                if (globalMessagePreviewText && ((TGVideoMediaAttachment *)attachment).caption.length != 0) {
                                     if (message.cid > 0) {
                                         text = [[NSString alloc] initWithFormat:@"%@: 📹 %@", user.displayName, ((TGVideoMediaAttachment *)attachment).caption];
                                     } else {
@@ -1719,10 +1719,21 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGLocationMediaAttachmentType)
                             {
-                                if (message.cid > 0)
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_GEO"), user.displayName];
+                                TGLocationMediaAttachment *attachment = (TGLocationMediaAttachment *)attachment;
+                                if (attachment.period > 0)
+                                {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_GEOLIVE"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_GEOLIVE"), user.displayName, chatName];
+                                }
                                 else
-                                    text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_GEO"), user.displayName, chatName];
+                                {
+                                    if (message.cid > 0)
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"MESSAGE_GEO"), user.displayName];
+                                    else
+                                        text = [[NSString alloc] initWithFormat:TGLocalized(@"CHAT_MESSAGE_GEO"), user.displayName, chatName];
+                                }
                                 
                                 attachmentFound = true;
                                 
@@ -1791,7 +1802,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                                 }
                                 else
                                 {
-                                    if (((TGDocumentMediaAttachment *)attachment).caption.length != 0) {
+                                    if (globalMessagePreviewText && ((TGDocumentMediaAttachment *)attachment).caption.length != 0) {
                                         if (message.cid > 0) {
                                             text = [[NSString alloc] initWithFormat:@"%@: 📎 %@", user.displayName, ((TGDocumentMediaAttachment *)attachment).caption];
                                         } else {

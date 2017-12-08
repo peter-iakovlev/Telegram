@@ -1,15 +1,12 @@
 #import "TGMessageReplyButtonsModel.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGModernButtonViewModel.h"
 
-#import "TGBotReplyMarkup.h"
 #import "TGModernView.h"
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
-
-#import "TGFont.h"
-
-#import "TGImageUtils.h"
 
 @interface TGMessageReplyButtonsView : UIView <TGModernView> {
     
@@ -67,6 +64,7 @@
         [_buttons removeLastObject];
     }
     
+    __weak TGMessageReplyButtonsModel *weakSelf = self;
     NSInteger index = -1;
     for (TGBotReplyMarkupRow *row in _replyMarkup.rows) {
         for (TGBotReplyMarkupButton *button in row.buttons) {
@@ -75,9 +73,10 @@
             if (hasReceipt && [button.action isKindOfClass:[TGBotReplyMarkupButtonActionPurchase class]]) {
                 text = TGLocalized(@"Message.ReplyActionButtonShowReceipt");
             }
+            
             TGModernButtonViewModel *buttonModel = [self makeButton:text action:button.action];
             buttonModel.pressed = ^{
-                __strong TGMessageReplyButtonsModel *strongSelf = self;
+                __strong TGMessageReplyButtonsModel *strongSelf = weakSelf;
                 if (strongSelf != nil) {
                     if (strongSelf.buttonActivated) {
                         strongSelf.buttonActivated(button, index);
@@ -124,28 +123,28 @@
         static UIImage *phoneImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            phoneImage = [[UIImage imageNamed:@"botbutton_phone.png"] preloadedImage];
+            phoneImage = [TGImageNamed(@"botbutton_phone.png") preloadedImage];
         });
         button.supplementaryIcon = phoneImage;
     } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionRequestLocation class]]) {
         static UIImage *locationImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            locationImage = [[UIImage imageNamed:@"botbutton_location.png"] preloadedImage];
+            locationImage = [TGImageNamed(@"botbutton_location.png") preloadedImage];
         });
         button.supplementaryIcon = locationImage;
     } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionSwitchInline class]]) {
         static UIImage *shareImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            shareImage = [[UIImage imageNamed:@"botbutton_share.png"] preloadedImage];
+            shareImage = [TGImageNamed(@"botbutton_share.png") preloadedImage];
         });
         button.supplementaryIcon = shareImage;
     } else if (action == nil) {
         static UIImage *messageImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            messageImage = [[UIImage imageNamed:@"botbutton_msg.png"] preloadedImage];
+            messageImage = [TGImageNamed(@"botbutton_msg.png") preloadedImage];
         });
         button.supplementaryIcon = messageImage;
     }

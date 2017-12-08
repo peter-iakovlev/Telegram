@@ -1,9 +1,10 @@
 #import "TGCollectionBottonDisclosureItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGCollectionBottonDisclosureItemView.h"
 #import "TGModernTextViewModel.h"
 
-#import "TGFont.h"
 #import "TGReusableLabel.h"
 
 @interface TGCollectionBottonDisclosureItem ()

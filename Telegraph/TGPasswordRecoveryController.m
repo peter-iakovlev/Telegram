@@ -5,7 +5,7 @@
 #import "TGUsernameCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGAlertView.h"
 

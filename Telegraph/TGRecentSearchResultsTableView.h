@@ -6,4 +6,6 @@
 @property (nonatomic, copy) void (^clearPressed)();
 @property (nonatomic, strong) NSArray *items;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 @end

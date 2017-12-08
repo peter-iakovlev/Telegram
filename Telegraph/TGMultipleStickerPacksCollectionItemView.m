@@ -1,26 +1,24 @@
 #import "TGMultipleStickerPacksCollectionItemView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGMultipleStickerPacksCell.h"
 
-#import "TGStickerPack.h"
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/TGStickerPack.h>
 
-#import "TGMenuSheetController.h"
-#import "TGNavigationController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
 
-#import "TGMenuView.h"
+#import <LegacyComponents/TGMenuView.h>
 
-#import "TGMenuSheetCollectionView.h"
+#import <LegacyComponents/TGMenuSheetCollectionView.h>
 #import "TGScrollIndicatorView.h"
 
-#import "TGItemPreviewController.h"
-#import "TGStickerItemPreviewView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGStickerItemPreviewView.h>
 
 static const CGFloat TGStickersCollectionItemHeight = 125.0f;
 static const UIEdgeInsets TGStickersCollecitonInsets = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -95,6 +93,8 @@ static const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         _collectionViewLayout.minimumLineSpacing = 0.0f;
         
         _collectionView = [[TGMultipleStickerPacksCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionViewLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.allowSimultaneousPan = true;
         _collectionView.backgroundColor = [UIColor clearColor];
         _collectionView.bounces = false;
@@ -501,7 +501,7 @@ static const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         CGFloat expandedHeight = TGStickersCollecitonSectionInsets.top + rows * (TGStickersCollectionItemHeight + _collectionViewLayout.minimumLineSpacing) + TGStickersCollecitonSectionInsets.bottom;
         
         CGFloat buttonsHeight = 0.0f;
-        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight);
+        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight - self.menuController.safeAreaInset.bottom);
         
         CGFloat maxCollapsedHeight = TGStickersCollecitonSectionInsets.top + (TGStickersCollectionItemHeight + _collectionViewLayout.minimumLineSpacing) * ((CGFloat)TGStickersCollectionNumberOfCollapsedRows - 0.5f) + 20.0f;
         

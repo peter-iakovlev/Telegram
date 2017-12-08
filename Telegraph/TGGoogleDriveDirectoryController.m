@@ -1,11 +1,11 @@
 #import "TGGoogleDriveDirectoryController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "GDFileManager.h"
 #import "GDURLMetadata.h"
 #import "GDGoogleDriveMetadata.h"
 #import "GDGoogleDriveURLMetadata.h"
-
-#import "TGFont.h"
 
 #import "TGGoogleDriveItemCell.h"
 
@@ -67,6 +67,8 @@ static NSComparator TGGoogleDriveDirectoryFileComparator = ^NSComparisonResult(G
     self.view.backgroundColor = [UIColor whiteColor];
     
     _tableView = [[UITableView alloc] initWithFrame:self.view.bounds];
+    if (iosMajorVersion() >= 11)
+        _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _tableView.dataSource = self;
     _tableView.delegate = self;

@@ -1,13 +1,12 @@
 #import "TGMediaSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegramNetworking.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 #import "TGRemoteFileSignal.h"
 #import "TGImageInfo+Telegraph.h"
-#import "TGImageManager.h"
-#import "TGStringUtils.h"
-#import "TGImageMediaAttachment.h"
-#import "TGVideoMediaAttachment.h"
+#import <LegacyComponents/TGImageManager.h>
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedVideoSignals.h"
@@ -16,8 +15,7 @@
 #import "TGSharedMediaUtils.h"
 #import "TGRemoteFileSignal.h"
 
-#import "TGImageBlur.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/TGImageBlur.h>
 
 @implementation TGMediaSignals
 

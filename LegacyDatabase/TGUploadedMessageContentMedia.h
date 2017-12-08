@@ -1,11 +1,11 @@
 #import "TGUploadedMessageContent.h"
 
-#import "ApiLayer70.h"
+#import "ApiLayer73.h"
 
 @interface TGUploadedMessageContentMedia : TGUploadedMessageContent
 
-@property (nonatomic, strong, readonly) Api70_InputMedia *inputMedia;
+@property (nonatomic, strong, readonly) Api73_InputMedia *inputMedia;
 
-- (instancetype)initWithInputMedia:(Api70_InputMedia *)inputMedia;
+- (instancetype)initWithInputMedia:(Api73_InputMedia *)inputMedia;
 
 @end

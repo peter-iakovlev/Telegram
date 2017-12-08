@@ -1,11 +1,11 @@
 #import "TGInstantPageSettingsView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGInstantPageLayout.h"
 
-#import "TGModernButton.h"
-#import "TGPhotoEditorSliderView.h"
+#import <LegacyComponents/TGModernButton.h>
+#import <LegacyComponents/TGPhotoEditorSliderView.h>
 #import "TGInstantPageColorView.h"
 
 @interface TGInstantPageSettingsView ()
@@ -16,7 +16,7 @@
     UIImageView *_arrowView;
     UIScrollView *_scrollView;
     UIView *_panelWrapperView;
-    UIView *_panelView;
+    UIImageView *_panelView;
     
     UIImageView *_brightnessMinIconView;
     UIImageView *_brightnessMaxIconView;
@@ -45,6 +45,9 @@
     UIImage *_separatorImage;
     UIImageView *_firstSepartorView;
     UIImageView *_secondSepartorView;
+    UIImageView *_thirdSepartorView;
+    
+    TGModernButton *_openInButton;
     
     UIImageView *_fontSeparatorLineView;
     UIImageView *_fontShortSeparatorLineView;
@@ -55,6 +58,8 @@
 @end
 
 @implementation TGInstantPageSettingsView
+
+@dynamic buttonPosition;
 
 - (instancetype)initWithFrame:(CGRect)frame presentation:(TGInstantPagePresentation *)presentation autoNightThemeEnabled:(bool)autoNightThemeEnabled {
     self = [super initWithFrame:frame];
@@ -69,12 +74,12 @@
         _panelWrapperView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 296.0f, 338.0f)];
         [self addSubview:_panelWrapperView];
         
-        _panelView = [[UIView alloc] initWithFrame:_panelWrapperView.bounds];
+        _panelView = [[UIImageView alloc] initWithFrame:_panelWrapperView.bounds];
         _panelView.clipsToBounds = true;
-        _panelView.layer.cornerRadius = 13.0f;
+        _panelView.userInteractionEnabled = true;
         [_panelWrapperView addSubview:_panelView];
         
-        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"InstantViewSettingsArrow"]];
+        _arrowView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"InstantViewRightCorner"]];
         [_panelWrapperView addSubview:_arrowView];
         
         _scrollView = [[UIScrollView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 296.0f, 338.0f)];
@@ -250,7 +255,7 @@
         [_scrollView addSubview:_serifFontButton];
 
         _fontSerif = presentation.fontSerif;
-        _checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"PaintCheck"]];
+        _checkView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"PaintCheck")];
         [_scrollView addSubview:_checkView];
         
         _whiteColorView = [[TGInstantPageColorView alloc] initWithFrame:CGRectMake(26.0f, 146.0f + 89.0f, 46.0f, 46.0f)];
@@ -281,6 +286,12 @@
         [_blackColorView addTarget:self action:@selector(themeChanged:) forControlEvents:UIControlEventTouchUpInside];
         [_scrollView addSubview:_blackColorView];
         
+        if (iosMajorVersion() >= 11)
+        {
+            _brightnessSliderView.knobView.accessibilityIgnoresInvertColors = true;
+            _fontSliderView.knobView.accessibilityIgnoresInvertColors = true;
+        }
+        
         _colorViews = @[_whiteColorView, _brownColorView, _grayColorView, _blackColorView];
         
         _themeSeparatorLineView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, CGRectGetMaxY(_secondSepartorView.frame) + 70.0f, _panelView.frame.size.width, TGScreenPixel)];
@@ -308,6 +319,21 @@
         
         [_scrollView addSubview:_autoThemeWrapperView];
         
+        _thirdSepartorView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, CGRectGetMaxY(_secondSepartorView.frame) + 70.0f + 44.0f, _panelView.frame.size.width, 5.0f)];
+        _thirdSepartorView.image = separatorImage;
+        [_scrollView addSubview:_thirdSepartorView];
+        
+        _openInButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, CGRectGetMaxY(_thirdSepartorView.frame), _panelView.frame.size.width, 45.0f)];
+        _openInButton.exclusiveTouch = true;
+        _openInButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        _openInButton.contentEdgeInsets = UIEdgeInsetsMake(0.0f, 14.0f, 0.0f, 0.0f);
+        _openInButton.titleLabel.font = TGSystemFontOfSize(17.0f);
+        [_openInButton setTitleColor:TGAccentColor()];
+        _openInButton.highlightBackgroundColor = UIColorRGB(0xebebeb);
+        [_openInButton setTitle:TGLocalized(@"Web.OpenExternal") forState:UIControlStateNormal];
+        [_openInButton addTarget:self action:@selector(openInButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_scrollView addSubview:_openInButton];
+        
         [self updatePresentation:presentation animated:false];
     }
     return self;
@@ -315,6 +341,11 @@
 
 - (void)setButtonPosition:(CGPoint (^)(void))buttonPosition {
     _settingsButtonPosition = buttonPosition();
+}
+
+- (void)openInButtonPressed {
+    if (self.openInPressed)
+        self.openInPressed();
 }
 
 - (void)brightnessChanged:(TGPhotoEditorSliderView *)sender {
@@ -366,11 +397,15 @@
 }
 
 - (void)themeChanged:(TGInstantPageColorView *)sender {
+    TGInstantPagePresentationTheme theme = (TGInstantPagePresentationTheme)sender.tag;
+    
+    if (iosMajorVersion() >= 11 && UIAccessibilityIsInvertColorsEnabled() && theme == TGInstantPagePresentationThemeBlack)
+        return;
+    
     for (TGInstantPageColorView *view in _colorViews) {
         view.selected = view == sender;
     }
-    
-    TGInstantPagePresentationTheme theme = (TGInstantPagePresentationTheme)sender.tag;
+
     if (self.themeChanged != nil) {
         self.themeChanged(theme);
     }
@@ -447,7 +482,7 @@
             UIColor *accentColor = UIColorRGB(0xb06900);
             _brightnessSliderView.trackColor = accentColor;
             _brightnessSliderView.backColor = UIColorRGB(0xb7b7b7);
-            _checkView.image = TGTintedImage([UIImage imageNamed:@"PaintCheck"], accentColor);
+            _checkView.image = TGTintedImage(TGComponentsImageNamed(@"PaintCheck"), accentColor);
         }
             break;
             
@@ -456,7 +491,7 @@
             _brightnessSliderView.trackColor = accentColor;
             _brightnessSliderView.backColor = UIColorRGB(0xb6b6b6);
             
-            _checkView.image = TGTintedImage([UIImage imageNamed:@"PaintCheck"], accentColor);
+            _checkView.image = TGTintedImage(TGComponentsImageNamed(@"PaintCheck"), accentColor);
         }
             break;
             
@@ -465,7 +500,7 @@
             _brightnessSliderView.trackColor = accentColor;
             _brightnessSliderView.backColor = UIColorRGB(0xa6a6a6);
             
-            _checkView.image = TGTintedImage([UIImage imageNamed:@"PaintCheck"], accentColor);
+            _checkView.image = TGTintedImage(TGComponentsImageNamed(@"PaintCheck"), accentColor);
             
             panelColor = UIColorRGB(0x232323);
             separatorColor = UIColorRGB(0x1b1b1b);
@@ -478,19 +513,32 @@
             UIColor *accentColor = TGAccentColor();
             _brightnessSliderView.trackColor = accentColor;
             _brightnessSliderView.backColor = UIColorRGB(0xb7b7b7);
-            _checkView.image = TGTintedImage([UIImage imageNamed:@"PaintCheck"], accentColor);
+            _checkView.image = TGTintedImage(TGComponentsImageNamed(@"PaintCheck"), accentColor);
         }
             break;
+    }
+    
+    UIImage *panelBackground = nil;
+    {
+        UIRectCorner panelCorners = UIRectCornerTopLeft | UIRectCornerBottomLeft | UIRectCornerBottomRight;
+        CGSize panelRadii = CGSizeMake(13.0f, 13.0f);
+        CGRect panelRect = CGRectMake(0.0f, 0.0f, 26.0f, 26.0f);
+        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:panelRect byRoundingCorners:panelCorners cornerRadii:panelRadii];
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(26.0f, 26.0f), false, 0.0f);
+        [panelColor setFill];
+        [path fill];
+        panelBackground = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(13.0f, 13.0f, 13.0f, 13.0f) resizingMode:UIImageResizingModeStretch];
+        UIGraphicsEndImageContext();
     }
     
     _fontSliderView.trackColor = _brightnessSliderView.trackColor;
     _fontSliderView.backColor = _brightnessSliderView.backColor;
     
-    UIImage *arrowImage = [UIImage imageNamed:@"InstantViewSettingsArrow"];
+    UIImage *arrowImage = [UIImage imageNamed:@"InstantViewRightCorner"];
     
+    _panelView.image = panelBackground;
     if ([panelColor isEqual:[UIColor whiteColor]]) {
-        _panelView.backgroundColor = [UIColor whiteColor];
-        
         _brightnessMinIconView.image = [UIImage imageNamed:@"InstantViewBrightnessMinIcon"];
         _brightnessMaxIconView.image = [UIImage imageNamed:@"InstantViewBrightnessMaxIcon"];
         
@@ -499,7 +547,6 @@
         
         _whiteColorView.isOnDarkBackground = false;
     } else {
-        _panelView.backgroundColor = panelColor;
         arrowImage = TGTintedImage(arrowImage, panelColor);
         
         UIColor *tintColor = UIColorRGB(0xa0a0a0);
@@ -530,6 +577,7 @@
         _themeSeparatorLineView.image = _separatorLineImage;
         _firstSepartorView.image = _separatorImage;
         _secondSepartorView.image = _separatorImage;
+        _thirdSepartorView.image = _separatorImage;
     } else {
         _fontSeparatorLineView.image = _separatorLineDarkImage;
         _fontShortSeparatorLineView.image = _separatorLineDarkImage;
@@ -538,9 +586,15 @@
         _firstSepartorView.backgroundColor = separatorColor;
         _secondSepartorView.image = nil;
         _secondSepartorView.backgroundColor = separatorColor;
+        _thirdSepartorView.image = nil;
+        _thirdSepartorView.backgroundColor = separatorColor;
     }
     
-    if (presentation.initialTheme == TGInstantPagePresentationThemeBlack) {
+    bool switchDisabled = false;
+    if (iosMajorVersion() >= 11 && UIAccessibilityIsInvertColorsEnabled())
+        switchDisabled = true;
+    
+    if (switchDisabled || presentation.initialTheme == TGInstantPagePresentationThemeBlack) {
         _autoThemeWrapperView.layer.rasterizationScale = TGScreenScaling();
         _autoThemeWrapperView.layer.shouldRasterize = true;
         
@@ -581,10 +635,10 @@
 }
 
 - (void)layoutSubviews {
-    CGFloat panelHeight = MIN(338.0f, self.frame.size.height - 76.0f);
+    CGFloat panelHeight = MIN(387.0f, self.frame.size.height - 76.0f);
     
-    _panelWrapperView.frame = CGRectMake(self.frame.size.width - 106.0f - 196.0f, 42.0f + 28.0f, _panelWrapperView.frame.size.width, panelHeight);
-    _arrowView.frame = CGRectMake((self.frame.size.width - _settingsButtonPosition.x - 15.0f) - _panelWrapperView.frame.origin.x, -13.0f, _arrowView.frame.size.width, _arrowView.frame.size.height);
+    _panelWrapperView.frame = CGRectMake(self.frame.size.width - 106.0f - 201.0f, 42.0f + 28.0f, _panelWrapperView.frame.size.width, panelHeight);
+    _arrowView.frame = CGRectMake((self.frame.size.width - _arrowView.frame.size.width - 11.0f) - _panelWrapperView.frame.origin.x, -12.0f - TGScreenPixel, _arrowView.frame.size.width, _arrowView.frame.size.height);
     
     _panelView.frame = CGRectMake(0.0f, 0.0f, _panelView.frame.size.width, panelHeight);
     _scrollView.frame = CGRectMake(0.0f, 0.0f, _scrollView.frame.size.width, panelHeight);

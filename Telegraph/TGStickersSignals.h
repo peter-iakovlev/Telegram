@@ -1,9 +1,11 @@
 #import <SSignalKit/SSignalKit.h>
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 #import "TGArchivedStickerPacksSummary.h"
 
 #import "TGStickerPacksArchive.h"
+
+@class TLInputStickerSet;
 
 @interface TGStickersSignals : NSObject
 
@@ -34,5 +36,9 @@
 
 + (void)markFeaturedStickersAsRead;
 + (void)markFeaturedStickerPackAsRead:(NSArray *)packIds;
+
++ (TLInputStickerSet *)_inputStickerSetFromPackReference:(id<TGStickerPackReference>)packReference;
+
++ (SSignal *)cachedStickerPack:(id<TGStickerPackReference>)packReference;
 
 @end

@@ -1,5 +1,7 @@
 #import "TGCallSession.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <libkern/OSAtomic.h>
 
 #import <AVFoundation/AVFoundation.h>
@@ -10,12 +12,10 @@
 #import "TGTelegramNetworking.h"
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
-#import "TGUser.h"
 #import "TGAudioSessionManager.h"
 
 #import "TGCallUtils.h"
-#import "TGImageUtils.h"
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import "TGCallSignals.h"
 #import "TGCallAudioPlayer.h"
@@ -97,6 +97,9 @@ const NSTimeInterval TGCallPacketTimeout = 10;
     SVariable *_transmissionState;
     SPipe *_transmissionPipe;
     TGCallTransmissionState _previousTransmissionState;
+    
+    SVariable *_signalBarsState;
+    SPipe *_signalBarsPipe;
 
     SPipe *_audioTogglesPipe;
     SPipe *_audioContextPipe;
@@ -151,6 +154,11 @@ const NSTimeInterval TGCallPacketTimeout = 10;
         _transmissionState = [[SVariable alloc] init];
         [_transmissionState set:_transmissionPipe.signalProducer()];
         _previousTransmissionState = TGCallTransmissionStateInitializing;
+        
+        _signalBarsPipe = [[SPipe alloc] init];
+        _signalBarsState = [[SVariable alloc] init];
+        [_signalBarsState set:_signalBarsPipe.signalProducer()];
+        _signalBarsPipe.sink(@4);
         
         _audioTogglesPipe = [[SPipe alloc] init];
         [self _updateAudioToggles];
@@ -232,6 +240,7 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
         tgvoip::VoIPController *controller = new tgvoip::VoIPController();
         controller->implData = (__bridge void *)self;
         controller->SetStateCallback(&controllerStateCallback);
+        controller->SetSignalBarsCountCallback(&signalBarsCallback);
 
         tgvoip::VoIPController::crypto.sha1 = &TGCallSha1;
         tgvoip::VoIPController::crypto.sha256 = &TGCallSha256;
@@ -264,36 +273,54 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
         default:
             break;
     }
-
-    if (tranmissionState == _previousTransmissionState)
-        return;
     
-    if (tranmissionState == TGCallTransmissionStateReconnecting)
-        [self playTone:TGCallToneConnecting];
-    else if (tranmissionState == TGCallTransmissionStateEstablished)
-        [self stopAudio];
-    
-    if (tranmissionState == TGCallTransmissionStateEstablished && _startTime < DBL_EPSILON)
-    {
-        _startTime = CFAbsoluteTimeGetCurrent();
-
-        if (self.onConnected != nil)
-            self.onConnected();
-    }
-    
-
-    _transmissionPipe.sink(@(tranmissionState));
-
     TGDispatchOnMainThread(^
     {
-        if (tranmissionState == TGCallTransmissionStateFailed)
+        if (tranmissionState == _previousTransmissionState)
+            return;
+        
+        if (tranmissionState == TGCallTransmissionStateEstablished && _startTime < DBL_EPSILON)
+        {
+            _startTime = CFAbsoluteTimeGetCurrent();
+            
+            if (self.onConnected != nil)
+                self.onConnected();
+        }
+        
+        _transmissionPipe.sink(@(tranmissionState));
+        
+        if (tranmissionState == TGCallTransmissionStateReconnecting)
+        {
+            [self playTone:TGCallToneConnecting];
+        }
+        else if (tranmissionState == TGCallTransmissionStateEstablished)
+        {
+            [self stopAudio];
+        }
+        else if (tranmissionState == TGCallTransmissionStateFailed)
         {
             [self playTone:TGCallToneEnded];
             [self _discardCurrentCallWithReason:TGCallDiscardReasonDisconnect];
         }
+        
+        _previousTransmissionState = tranmissionState;
     });
-    
-    _previousTransmissionState = tranmissionState;
+}
+
+#pragma mark - Signal Bars
+
+static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
+{
+    TGCallSession *session = (__bridge TGCallSession *)controller->implData;
+    [session signalBarsChanged:bars];
+}
+
+- (void)signalBarsChanged:(int)bars
+{
+    TGDispatchOnMainThread(^
+    {
+        _signalBarsPipe.sink(@(bars));
+    });
 }
 
 #pragma mark - Transmission
@@ -410,10 +437,36 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
                     }
                 }
                 
+                NSData *phoneCallsP2PContactsData = [TGDatabaseInstance() customProperty:@"phoneCallsP2PContacts"];
+                int32_t phoneCallsP2PContacts = 0;
+                if (phoneCallsP2PContactsData.length == 4) {
+                    [phoneCallsP2PContactsData getBytes:&phoneCallsP2PContacts];
+                }
+                
+                int32_t defaultMode = phoneCallsP2PContacts ? 3 : 2;
+                int32_t p2pMode = TGAppDelegateInstance.callsP2PMode;
+                if (p2pMode == 0)
+                    p2pMode = defaultMode;
+                
+                bool allowP2P = false;
+                switch (p2pMode)
+                {
+                    case 0:
+                        allowP2P = [TGDatabaseInstance() uidIsRemoteContact:(int32_t)state.peerId];
+                        break;
+                        
+                    case 2:
+                        allowP2P = true;
+                        break;
+                        
+                    default:
+                        break;
+                }
+                
                 controller.controller->SetConfig(&config);
 
                 controller.controller->SetEncryptionKey((char *)state.connection.key.bytes, _outgoing);
-                controller.controller->SetRemoteEndpoints(endpoints, !TGAppDelegateInstance.callsDisableP2P);
+                controller.controller->SetRemoteEndpoints(endpoints, allowP2P);
                 controller.controller->Start();
 
                 controller.controller->Connect();
@@ -466,23 +519,23 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
 {
     __weak TGCallSession *weakSelf = self;
     _networkDisposable = [[SMetaDisposable alloc] init];
-    [_networkDisposable setDisposable:[[[[TGCallUtils networkTypeSignal] map:^NSNumber *(NSNumber *value)
+    [_networkDisposable setDisposable:[[[[TGTelegraphInstance.networkTypeManager networkTypeSignal] map:^NSNumber *(NSNumber *value)
     {
-        switch ((TGCallNetworkType)value.integerValue)
+        switch ((TGNetworkType)value.integerValue)
         {
-            case TGCallNetworkTypeGPRS:
+            case TGNetworkTypeGPRS:
                 return @(NET_TYPE_GPRS);
 
-            case TGCallNetworkTypeEdge:
+            case TGNetworkTypeEdge:
                 return @(NET_TYPE_EDGE);
 
-            case TGCallNetworkType3G:
+            case TGNetworkType3G:
                 return @(NET_TYPE_3G);
 
-            case TGCallNetworkTypeLTE:
+            case TGNetworkTypeLTE:
                 return @(NET_TYPE_LTE);
 
-            case TGCallNetworkTypeWiFi:
+            case TGNetworkTypeWiFi:
                 return @(NET_TYPE_WIFI);
 
             default:
@@ -1134,7 +1187,7 @@ static id<SDisposable> audioSession;
 {
     __weak TGCallSession *weakSelf = self;
 
-    SSignal *combinedSignal = [SSignal combineSignals:@[_state.signal, [self audioContextSignal], _transmissionState.signal, _audioTogglesPipe.signalProducer()] withInitialStates:@[ [NSNull null], [NSNull null], @0, @0 ]];
+    SSignal *combinedSignal = [SSignal combineSignals:@[_state.signal, _signalBarsState.signal, [self audioContextSignal], _transmissionState.signal, _audioTogglesPipe.signalProducer()] withInitialStates:@[ [NSNull null], @0, [NSNull null], @0, @0 ]];
 
     return [[combinedSignal deliverOn:[SQueue mainQueue]] map:^id(NSArray *values)
     {
@@ -1143,13 +1196,14 @@ static id<SDisposable> audioSession;
             return nil;
 
         TGCallStateData *stateData = [values[0] isKindOfClass:[NSNull class]] ? nil : (TGCallStateData *)values[0];
-        TGCallAudioContext *audioContext = [values[1] isKindOfClass:[NSNull class]] ? nil : (TGCallAudioContext *)values[1];
-        TGCallTransmissionState transmissionState = (TGCallTransmissionState)[values[2] integerValue];
+        NSInteger signalBars = [values[1] integerValue];
+        TGCallAudioContext *audioContext = [values[2] isKindOfClass:[NSNull class]] ? nil : (TGCallAudioContext *)values[2];
+        TGCallTransmissionState transmissionState = (TGCallTransmissionState)[values[3] integerValue];
         
         bool muted = strongSelf->_muted;
         bool speaker = strongSelf->_targetSpeaker ? strongSelf->_targetSpeaker.boolValue : audioContext.speaker;
         
-        return [[TGCallSessionState alloc] initWithOutgoing:strongSelf->_outgoing callStateData:stateData transmissionState:transmissionState peer:strongSelf->_peer keySha256:strongSelf->_keySha256 startTime:strongSelf->_startTime mute:muted speaker:speaker audioRoutes:audioContext.availableRoutes activeAudioRoute:audioContext.activeRoute];
+        return [[TGCallSessionState alloc] initWithOutgoing:strongSelf->_outgoing callStateData:stateData transmissionState:transmissionState peer:strongSelf->_peer keySha256:strongSelf->_keySha256 startTime:strongSelf->_startTime signalBars:signalBars mute:muted speaker:speaker audioRoutes:audioContext.availableRoutes activeAudioRoute:audioContext.activeRoute];
     }];
 }
 
@@ -1320,7 +1374,7 @@ static id<SDisposable> audioSession;
 
 @implementation TGCallSessionState
 
-- (instancetype)initWithOutgoing:(bool)outgoing callStateData:(TGCallStateData *)stateData transmissionState:(TGCallTransmissionState)transmissionState peer:(TGUser *)peer keySha256:(NSData *)keySha256 startTime:(CFAbsoluteTime)startTime mute:(bool)mute speaker:(bool)speaker audioRoutes:(NSArray *)audioRoutes activeAudioRoute:(TGAudioRoute *)activeAudioRoute
+- (instancetype)initWithOutgoing:(bool)outgoing callStateData:(TGCallStateData *)stateData transmissionState:(TGCallTransmissionState)transmissionState peer:(TGUser *)peer keySha256:(NSData *)keySha256 startTime:(CFAbsoluteTime)startTime signalBars:(NSInteger)signalBars mute:(bool)mute speaker:(bool)speaker audioRoutes:(NSArray *)audioRoutes activeAudioRoute:(TGAudioRoute *)activeAudioRoute
 {
     self = [super init];
     if (self != nil)
@@ -1332,6 +1386,7 @@ static id<SDisposable> audioSession;
         _peer = peer;
         _keySha256 = keySha256;
         _startTime = startTime;
+        _signalBars = signalBars;
         _mute = mute;
         _speaker = speaker;
         _audioRoutes = audioRoutes;

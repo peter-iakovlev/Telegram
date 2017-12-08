@@ -89,6 +89,11 @@
 
 - (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged delayAvailability:(bool)__unused delayAvailability containerSize:(CGSize)__unused containerSize
 {
+    [self updateToItem:updatedItem viewStorage:viewStorage sizeChanged:sizeChanged delayAvailability:delayAvailability containerSize:containerSize force:false];
+}
+
+- (void)updateToItem:(TGModernConversationItem *)__unused updatedItem viewStorage:(TGModernViewStorage *)__unused viewStorage sizeChanged:(bool *)__unused sizeChanged delayAvailability:(bool)__unused delayAvailability containerSize:(CGSize)__unused containerSize force:(bool)__unused force
+{
 }
 
 - (void)updateProgress:(float)__unused progress viewStorage:(TGModernViewStorage *)__unused viewStorage animated:(bool)__unused animated
@@ -108,6 +113,10 @@
 }
 
 - (void)resumeInlineMedia
+{
+}
+
+- (void)updateMessageGroupedLayout:(TGMessageGroupedLayout *)__unused groupedLayout
 {
 }
 

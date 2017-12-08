@@ -1,6 +1,6 @@
 #import "TGGroupInfoShareLinkLinkItemView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGGroupInfoShareLinkLinkItemView ()
 {

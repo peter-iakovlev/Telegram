@@ -3,15 +3,13 @@
 #import "TL/TLMetaScheme.h"
 #import "TLMetaClassStore.h"
 
-//messages.editMessage flags:# no_webpage:flags.1?true peer:InputPeer id:int message:string entities:flags.3?Vector<MessageEntity> reply_markup:flags.2?ReplyMarkup = Updates
-
-//messages.editMessage flags:# no_webpage:flags.1?true peer:InputPeer id:int message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> = Updates;
+//messages.editMessage flags:# no_webpage:flags.1?true stop_geo_live:flags.12?true peer:InputPeer id:int message:flags.11?string reply_markup:flags.2?ReplyMarkup entities:flags.3?Vector<MessageEntity> geo_point:flags.13?InputGeoPoint = Updates;
 
 @implementation TLRPCmessages_editMessage
 
 - (int32_t)TLconstructorSignature
 {
-    return 0xce91e4ca;
+    return 0x5d1b8dd;
 }
 
 - (int32_t)TLconstructorName
@@ -67,6 +65,10 @@
         for (TLMessageEntity *entity in _entities) {
             TLMetaClassStore::serializeObject(os, entity, true);
         }
+    }
+    
+    if (realFlags & (1 << 13)) {
+        TLMetaClassStore::serializeObject(os, _geo_point, true);
     }
 }
 

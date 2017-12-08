@@ -1,6 +1,6 @@
 #import "TGGiphySearchResultItem+TGMediaItem.h"
 
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGGiphySearchResultItem (TGMediaItem)
 

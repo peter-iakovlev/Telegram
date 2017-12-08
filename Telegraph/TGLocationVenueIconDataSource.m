@@ -1,19 +1,19 @@
 #import "TGLocationVenueIconDataSource.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ASQueue.h>
 
 #import "TGWorkerPool.h"
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
-#import "TGMemoryImageCache.h"
+#import <LegacyComponents/TGMemoryImageCache.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGImageBlur.h"
-#import "UIImage+TG.h"
+#import <LegacyComponents/TGImageBlur.h>
+#import <LegacyComponents/UIImage+TG.h>
 
 #import "TGMediaStoreContext.h"
 
@@ -80,12 +80,19 @@ static ASQueue *taskManagementQueue()
     if (size != NULL)
         *size = imageSize;
     
-    return args[@"url"] == nil ? nil : [[NSString alloc] initWithFormat:@"%@", args[@"url"]];
+    if (args[@"type"] == nil)
+        return nil;
+    
+    NSString *url = [NSString stringWithFormat:@"https://ss3.4sqi.net/img/categories_v2/%@_88.png", args[@"type"]];
+    return url;
 }
 
 - (id)loadDataAsyncWithUri:(NSString *)uri progress:(void (^)(float))progress partialCompletion:(void (^)(TGDataResource *resource))__unused partialCompletion completion:(void (^)(TGDataResource *))completion
 {
     TGMediaPreviewTask *previewTask = [[TGMediaPreviewTask alloc] init];
+    
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[TGLocationVenueIconDataSource uriSchemeFull].length]];
+    UIColor *color = UIColorRGB([args[@"color"] integerValue]);
     
     [taskManagementQueue() dispatchOnQueue:^
      {
@@ -100,7 +107,7 @@ static ASQueue *taskManagementQueue()
                  return;
              
              if (completion != nil)
-                 completion(result != nil ? result : [TGLocationVenueIconDataSource resultForUnavailableImage]);
+                 completion(result != nil ? result : [TGLocationVenueIconDataSource resultForUnavailableImage:color]);
          }];
          
          if ([TGLocationVenueIconDataSource _isDataLocallyAvailableForUri:uri])
@@ -118,7 +125,7 @@ static ASQueue *taskManagementQueue()
                   else
                   {
                       if (completion != nil)
-                          completion([TGLocationVenueIconDataSource resultForUnavailableImage]);
+                          completion([TGLocationVenueIconDataSource resultForUnavailableImage:color]);
                   }
               } workerTask:workerTask];
          }
@@ -139,60 +146,13 @@ static ASQueue *taskManagementQueue()
      }];
 }
 
-+ (TGDataResource *)resultForUnavailableImage
++ (TGDataResource *)resultForUnavailableImage:(UIColor *)color
 {
-    static TGDataResource *imageData = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIImage *image = nil;
-        
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40, 40), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0xededed).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0, 0.0f, 40.0f, 40.0f));
-        image = UIGraphicsGetImageFromCurrentImageContext();
-
-        UIGraphicsEndImageContext();
-        
-        imageData = [[TGDataResource alloc] initWithImage:image decoded:true];
-    });
-    
-    return imageData;
+    return [[TGDataResource alloc] initWithImage:TGTintedImage(TGComponentsImageNamed(@"LocationMessagePinIcon"), color) decoded:true];
 }
 
-- (id)loadAttributeSyncForUri:(NSString *)__unused uri attribute:(NSString *)attribute
+- (id)loadAttributeSyncForUri:(NSString *)__unused uri attribute:(NSString *)__unused attribute
 {
-    if ([attribute isEqualToString:@"placeholder"])
-    {
-        static NSMutableDictionary *placeholderBySize = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            placeholderBySize = [[NSMutableDictionary alloc] init];
-        });
-        
-        CGSize size = CGSizeZero;
-        [TGLocationVenueIconDataSource iconAddressForUri:uri size:&size];
-        NSString *sizeString = NSStringFromCGSize(size);
-        UIImage *placeholder = placeholderBySize[sizeString];
-        if (placeholder != nil)
-            return placeholder;
-        
-        //ededed
-        //f2f2f2
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0xf2f2f2).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0, 0.0f, size.width, size.height));
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        if (placeholder != nil)
-            placeholderBySize[sizeString] = placeholder;
-        UIGraphicsEndImageContext();
-        
-        return placeholder;
-    }
-    
     return nil;
 }
 
@@ -222,27 +182,19 @@ static ASQueue *taskManagementQueue()
     if (isCancelled && isCancelled())
         return nil;
     
+    NSDictionary *args = [TGStringUtils argumentDictionaryInUrlString:[uri substringFromIndex:[TGLocationVenueIconDataSource uriSchemeFull].length]];
+    
     CGSize size = CGSizeZero;
     NSString *imageUrl = [TGLocationVenueIconDataSource iconAddressForUri:uri size:&size];
+    UIColor *color = UIColorRGB([args[@"color"] integerValue]);
     
     NSData *iconSourceData = [[[TGMediaStoreContext instance] temporaryFilesCache] getValueForKey:[imageUrl dataUsingEncoding:NSUTF8StringEncoding]];
     UIImage *iconSourceImage = [[UIImage alloc] initWithData:iconSourceData];
     
-    UIGraphicsBeginImageContextWithOptions(iconSourceImage.size, false, iconSourceImage.scale);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    [iconSourceImage drawAtPoint:CGPointZero];
-    CGContextSetBlendMode (context, kCGBlendModeSourceAtop);
-    CGContextSetFillColorWithColor(context, UIColorRGB(0xa0a0a0).CGColor);
-    CGContextFillRect(context, CGRectMake(0, 0, iconSourceImage.size.width, iconSourceImage.size.height));
-    UIImage *tintedIconImage = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
     UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-    context = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(context, UIColorRGB(0xf2f2f2).CGColor);
-    CGContextFillEllipseInRect(context, CGRectMake(0.0, 0.0f, size.width, size.height));
-    CGRect imageRect = CGRectMake(4.0f, 4.0f, 32.0f, 32.0f);
-    [tintedIconImage drawInRect:imageRect];
+    CGSize renderSize = CGSizeMake(size.width * 0.75f, size.height * 0.75f);
+    CGRect imageRect = CGRectMake((size.width - renderSize.width) / 2.0f, (size.height - renderSize.height) / 2.0f, renderSize.width, renderSize.height);
+    [TGTintedImage(iconSourceImage, color) drawInRect:imageRect];
     
     UIImage *iconImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();

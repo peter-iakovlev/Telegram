@@ -1,5 +1,6 @@
 #import "TGEmbedPIPPlaceholderView.h"
-#import "TGFont.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGEmbedPIPPlaceholderView ()
 {

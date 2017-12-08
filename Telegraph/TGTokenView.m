@@ -1,6 +1,6 @@
 #import "TGTokenView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 static UIImage *tokenBackgroundImage()
 {

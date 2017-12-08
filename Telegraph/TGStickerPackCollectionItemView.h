@@ -1,6 +1,6 @@
 #import "TGEditableCollectionItemView.h"
 
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 
 #import "TGStickerPackCollectionItem.h"
 
@@ -12,5 +12,7 @@
 - (void)setStickerPack:(TGStickerPack *)stickerPack;
 - (void)setUnread:(bool)unread;
 - (void)setStatus:(TGStickerPackItemStatus)status;
+- (void)setIsChecked:(bool)isChecked;
+- (void)setSearchStatus:(TGStickerPackItemSearchStatus)searchStatus;
 
 @end

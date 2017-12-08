@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @interface TGNotificationWindow : UIWindow
 

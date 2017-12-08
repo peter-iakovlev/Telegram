@@ -1,10 +1,8 @@
 #import "TGStickerAssociatedInputPanelCell.h"
 
-#import "TGDocumentMediaAttachment.h"
-#import "TGImageView.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/TGImageView.h>
 
 @interface TGStickerAssociatedInputPanelCell ()
 {

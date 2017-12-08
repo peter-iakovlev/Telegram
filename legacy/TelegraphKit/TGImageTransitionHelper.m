@@ -1,10 +1,8 @@
 #import "TGImageTransitionHelper.h"
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGImageUtils.h"
-
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 @interface TGImageTransitionHelper ()
 

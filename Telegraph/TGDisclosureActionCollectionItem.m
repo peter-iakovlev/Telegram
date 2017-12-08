@@ -38,6 +38,9 @@
 
 - (void)bindView:(TGDisclosureActionCollectionItemView *)view
 {
+    if (![view isKindOfClass:[TGDisclosureActionCollectionItemView class]])
+        return;
+    
     [super bindView:view];
     
     [view setTitle:_title];
@@ -69,7 +72,7 @@
 - (void)setBadge:(NSString *)badge {
     _badge = badge;
     
-    if (self.boundView != nil)
+    if (self.boundView != nil && [self.boundView respondsToSelector:@selector(setBadge:)])
         [(TGDisclosureActionCollectionItemView *)self.view setBadge:badge];
 }
 

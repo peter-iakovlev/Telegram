@@ -1,4 +1,4 @@
-#import "TGModernGalleryVideoView.h"
+#import <LegacyComponents/TGModernGalleryVideoView.h>
 
 @class TGMusicPlayerStatus;
 @class TGMusicPlayerItem;

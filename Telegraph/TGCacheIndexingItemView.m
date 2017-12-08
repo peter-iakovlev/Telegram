@@ -1,6 +1,6 @@
 #import "TGCacheIndexingItemView.h"
 
-#import "TGFont.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGCacheIndexingItemView () {
     UIActivityIndicatorView *_activityIndicator;

@@ -1,9 +1,10 @@
 #import "TGShareMenu.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAppDelegate.h"
-#import "TGViewController.h"
-#import "TGMenuSheetController.h"
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGMenuSheetController.h>
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGShareSearchItemView.h"
 #import "TGShareCollectionItemView.h"
@@ -13,8 +14,9 @@
 #import "TGTelegraph.h"
 #import "TGGlobalMessageSearchSignals.h"
 #import "TGChatSearchController.h"
-#import "TGConversation.h"
-#import "TGUser.h"
+#import "TGDialogListController.h"
+
+#import "TGLegacyComponentsContext.h"
 
 @interface TGDocumentInteractionControllerHandle : NSObject <UIDocumentInteractionControllerDelegate>
 {
@@ -29,6 +31,10 @@
 @implementation TGShareMenu
 
 + (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController buttonTitle:(NSString *)buttonTitle buttonAction:(void (^)(void))buttonAction shareAction:(void (^)(NSArray *peerIds, NSString *caption))shareAction externalShareItemSignal:(id)externalShareItemSignal sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
+{
+    return [self presentInParentController:parentController menuController:menuController topButtonTitle:nil topButtonAction:nil bottomButtonTitle:buttonTitle bottomButtonAction:buttonAction shareAction:shareAction externalShareItemSignal:externalShareItemSignal sourceView:sourceView sourceRect:sourceRect barButtonItem:barButtonItem];
+}
++ (TGMenuSheetController *)presentInParentController:(TGViewController *)parentController menuController:(TGMenuSheetController *)menuController topButtonTitle:(NSString *)topButtonTitle topButtonAction:(void (^)(void))topButtonAction bottomButtonTitle:(NSString *)bottomButtonTitle bottomButtonAction:(void (^)(void))bottomButtonAction shareAction:(void (^)(NSArray *peerIds, NSString *caption))shareAction externalShareItemSignal:(id)externalShareItemSignal sourceView:(UIView *)sourceView sourceRect:(CGRect (^)(void))sourceRect barButtonItem:(UIBarButtonItem *)barButtonItem
 {
     void (^externalShareBlock)(TGViewController *, UIView *, CGRect (^)(void)) = ^(TGViewController *viewController, UIView *sourceView, CGRect (^sourceRect)(void))
     {
@@ -86,7 +92,7 @@
     TGMenuSheetController *controller = nil;
     if (menuController == nil)
     {
-        controller = [[TGMenuSheetController alloc] init];
+        controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
         controller.dismissesByOutsideTap = true;
         controller.hasSwipeGesture = true;
         controller.narrowInLandscape = true;
@@ -104,7 +110,7 @@
     NSMutableArray *itemViews = [[NSMutableArray alloc] init];
     
     TGShareCollectionItemView *collectionItem = [[TGShareCollectionItemView alloc] init];
-    collectionItem.hasActionButton = (buttonTitle.length > 0);
+    collectionItem.hasActionButton = (bottomButtonTitle.length > 0);
     
     TGShareSearchItemView *searchItem = [[TGShareSearchItemView alloc] init];
     
@@ -125,7 +131,7 @@
     }
 
     __weak TGShareCollectionItemView *weakCollectionItem = collectionItem;
-    TGShareSendButtonItemView *sendItem = [[TGShareSendButtonItemView alloc] initWithActionTitle:buttonTitle action:^
+    TGShareSendButtonItemView *sendItem = [[TGShareSendButtonItemView alloc] initWithTopActionTitle:topButtonTitle topAction:^
     {
         __strong TGMenuSheetController *strongController = weakController;
         if (strongController == nil)
@@ -133,8 +139,18 @@
         
         [strongController dismissAnimated:true manual:true];
         
-        if (buttonAction != nil)
-            buttonAction();
+        if (topButtonAction != nil)
+            topButtonAction();
+    } bottomActionTitle:bottomButtonTitle bottomAction:^
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+        
+        if (bottomButtonAction != nil)
+            bottomButtonAction();
     } sendAction:^(NSString *caption)
     {
         __strong TGMenuSheetController *strongController = weakController;
@@ -146,6 +162,9 @@
             shareAction(strongCollectionItem.peerIds, caption);
         
         [strongController dismissAnimated:true];
+        
+        if ([strongCollectionItem.peerIds containsObject:@(TGTelegraphInstance.clientUserId)])
+            [TGAppDelegateInstance.rootController.dialogListController requestSavedMessagesTooltip];
     }];
     
     __weak TGShareSendButtonItemView *weakSendItem = sendItem;

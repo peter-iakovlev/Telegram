@@ -1,9 +1,10 @@
 #import "TGDialogListCellEditingControls.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDialogListCellEditingButton.h"
+
+#import "TGPresentationAssets.h"
 
 static UIFont *buttonFont;
 static CGFloat buttonWidth;
@@ -119,11 +120,11 @@ static UIImage *buttonImageForType(TGDialogListCellEditingControlButton button) 
     static UIImage *unpinImage = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        deleteImage = [[UIImage imageNamed:@"DialogListActionDelete.png"] preloadedImageWithAlpha];
-        muteImage = [[UIImage imageNamed:@"DialogListActionMute.png"] preloadedImageWithAlpha];
-        unmuteImage = [[UIImage imageNamed:@"DialogListActionUnmute.png"] preloadedImageWithAlpha];
-        pinImage = [[UIImage imageNamed:@"DialogListActionPin.png"] preloadedImageWithAlpha];
-        unpinImage = [[UIImage imageNamed:@"DialogListActionUnpin.png"] preloadedImageWithAlpha];
+        deleteImage = [TGPresentationAssets chatEditDeleteIcon];
+        muteImage = [TGPresentationAssets chatEditMuteIcon];
+        unmuteImage = [TGPresentationAssets chatEditUnmuteIcon];
+        pinImage = [TGPresentationAssets chatEditPinIcon];
+        unpinImage = [TGPresentationAssets chatEditUnpinIcon];
     });
     switch (button) {
         case TGDialogListCellEditingControlsDelete:
@@ -194,6 +195,8 @@ static CGRect validatedRect(CGRect value) {
     self = [super initWithFrame:frame];
     if (self != nil) {
         _scroller = [[TGDialogListCellEditingControlsScroller alloc] init];
+        if (iosMajorVersion() >= 11)
+            _scroller.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _scroller.directionalLockEnabled = true;
         _scroller.showsHorizontalScrollIndicator = false;
         _scroller.showsVerticalScrollIndicator = false;

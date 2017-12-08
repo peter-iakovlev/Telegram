@@ -1,16 +1,17 @@
 #import "TGVolumeBarView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <MediaPlayer/MediaPlayer.h>
 
 #import "TGTelegraph.h"
 #import "TGInterfaceManager.h"
 
-#import "TGHacks.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGEmbedPIPController.h"
 
-#import "TGOverlayControllerWindow.h"
+#import "TGLegacyComponentsContext.h"
 
 @interface TGVolumeBarView ()
 {
@@ -42,7 +43,7 @@
         _wrapperView.backgroundColor = UIColorRGB(0xf7f7f7);
         [self addSubview:_wrapperView];
         
-        _progressView = [[UIProgressView alloc] initWithFrame:CGRectMake(5.0f, 7.0f, frame.size.width - 10.0f, 2.0f)];
+        _progressView = [[UIProgressView alloc] initWithFrame:CGRectMake(5.0f, self.frame.size.height - 2.0f - 7.0f, frame.size.width - 10.0f, 2.0f)];
         _progressView.progress = 0.4f;
         _progressView.trackTintColor = UIColorRGB(0xededed);
         _progressView.progressTintColor = [UIColor blackColor];
@@ -136,15 +137,21 @@
     [UIView animateWithDuration:0.25 animations:^
     {
         _wrapperView.frame = self.bounds;
-        [TGHacks setApplicationStatusBarAlpha:0.0f];
+        [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
     }];
+}
+
+- (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
+{
+    _safeAreaInset = safeAreaInset;
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
-    _progressView.frame = CGRectMake(_progressView.frame.origin.x, _progressView.frame.origin.y, self.frame.size.width - _progressView.frame.origin.x * 2.0f, _progressView.frame.size.height);
+    _progressView.frame = CGRectMake(5.0f + _safeAreaInset.left, self.frame.size.height - 2.0f - 7.0f, self.frame.size.width - 10.0f - _safeAreaInset.left - _safeAreaInset.right, _progressView.frame.size.height);
 }
 
 - (void)hide
@@ -153,8 +160,8 @@
     {
         _wrapperView.frame = CGRectOffset(self.bounds, 0.0f, -self.bounds.size.height);
         
-        if ([TGHacks applicationStatusBarAlpha] < FLT_EPSILON)
-            [TGHacks setApplicationStatusBarAlpha:_initialStatusBarAlpha];
+        if ([[TGLegacyComponentsContext shared] applicationStatusBarAlpha] < FLT_EPSILON)
+            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:_initialStatusBarAlpha];
     } completion:^(BOOL finished)
     {
         if (finished && _wrapperView.layer.animationKeys.count == 0)
@@ -164,7 +171,7 @@
 
 - (void)_setupWindow
 {
-    _initialStatusBarAlpha = [TGHacks applicationStatusBarAlpha];
+    _initialStatusBarAlpha = [[TGLegacyComponentsContext shared] applicationStatusBarAlpha];
     
     _volumeWindow = [[UIWindow alloc] init];
     _volumeWindow.backgroundColor = [UIColor clearColor];

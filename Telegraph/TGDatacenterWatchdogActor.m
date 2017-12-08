@@ -8,7 +8,7 @@
 
 #import "TGDatacenterWatchdogActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import <MTProtoKit/MTContext.h>
 #import <MTProtoKit/MTProto.h>

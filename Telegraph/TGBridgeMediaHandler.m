@@ -1,4 +1,7 @@
 #import "TGBridgeMediaHandler.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGBridgeMediaSubscription.h"
 
 #import "TGBridgeServer.h"
@@ -8,7 +11,6 @@
 #import "TGSharedMediaSignals.h"
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
-#import "TGImageUtils.h"
 
 #import "TGBridgeImageMediaAttachment+TGImageMediaAttachment.h"
 #import "TGBridgeVideoMediaAttachment+TGVideoMediaAttachment.h"

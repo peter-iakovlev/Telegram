@@ -1,11 +1,11 @@
 #import "TGLocalizationSignals.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TL/TLMetaScheme.h"
 #import "TGTelegramNetworking.h"
 
 #import <MTProtoKit/MTProtoKit.h>
-
-#import "TGLocalization.h"
 
 #import "TGAppDelegate.h"
 
@@ -23,6 +23,18 @@
         _code = code;
     }
     return self;
+}
+
+- (instancetype)initWithCoder:(NSCoder *)aDecoder
+{
+    return [self initWithTitle:[aDecoder decodeObjectForKey:@"title"] localizedTitle:[aDecoder decodeObjectForKey:@"localizedTitle"] code:[aDecoder decodeObjectForKey:@"code"]];
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder
+{
+    [aCoder encodeObject:_title forKey:@"title"];
+    [aCoder encodeObject:_localizedTitle forKey:@"localizedTitle"];
+    [aCoder encodeObject:_code forKey:@"code"];
 }
 
 @end
@@ -88,15 +100,40 @@
     }];
 }
 
++ (NSString *)filePath {
+    return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"localizations.data"];
+}
+
++ (SSignal *)storedLocalizations {
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+        NSData *data = [NSData dataWithContentsOfFile:[self filePath]];
+        if (data.length == 0) {
+            [subscriber putCompletion];
+        } else {
+            NSArray *localizations = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+            [subscriber putNext:localizations];
+            [subscriber putCompletion];
+        }
+        return nil;
+    }];
+}
+
++ (void)storeLocalizations:(NSArray *)localizations {
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:localizations];
+    [data writeToFile:[self filePath] atomically:true];
+}
+
 + (SSignal *)availableLocalizations {
     TLRPClangpack_getLanguages$langpack_getLanguages *getLanguages = [[TLRPClangpack_getLanguages$langpack_getLanguages alloc] init];
-    return [[[TGTelegramNetworking instance] requestSignal:getLanguages] map:^id(NSArray *list) {
+    return [[[[TGTelegramNetworking instance] requestSignal:getLanguages] map:^id(NSArray *list) {
         NSMutableArray *result = [[NSMutableArray alloc] init];
         for (TLLangPackLanguage *desc in list) {
             NSString *code = desc.lang_code;
             [result addObject:[[TGAvailableLocalization alloc] initWithTitle:desc.name localizedTitle:desc.native_name code:code]];
         }
         return result;
+    }] onNext:^(NSArray *next) {
+        [self storeLocalizations:next];
     }];
 }
 

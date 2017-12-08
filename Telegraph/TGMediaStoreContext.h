@@ -1,4 +1,4 @@
-#import "TGModernCache.h"
+#import <LegacyComponents/TGModernCache.h>
 
 @interface TGMediaStoreContext : NSObject
 

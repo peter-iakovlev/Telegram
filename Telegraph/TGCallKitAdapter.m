@@ -32,14 +32,33 @@
         _audioSessionActivationPipe = [[SPipe alloc] init];
         _audioSessionDeactivationPipe = [[SPipe alloc] init];
         
-        _provider = [[CXProvider alloc] initWithConfiguration:[TGCallKitAdapter configuration]];
-        [_provider setDelegate:self queue:_queue._dispatch_queue];
-        
-        _callController = [[CXCallController alloc] initWithQueue:_queue._dispatch_queue];
-        
         _actionCompletionBlocks = [[NSMutableDictionary alloc] init];
     }
     return self;
+}
+
+- (void)initialize
+{
+    if (_provider == nil)
+    {
+        _provider = [[CXProvider alloc] initWithConfiguration:[TGCallKitAdapter configuration]];
+        [_provider setDelegate:self queue:_queue._dispatch_queue];
+    }
+    
+    if (_callController == nil)
+        _callController = [[CXCallController alloc] initWithQueue:_queue._dispatch_queue];
+}
+
+- (CXProvider *)provider
+{
+    [self initialize];
+    return _provider;
+}
+
+- (CXCallController *)controller
+{
+    [self initialize];  
+    return _callController;
 }
 
 + (CXProviderConfiguration *)configuration
@@ -49,7 +68,7 @@
     config.maximumCallsPerCallGroup = 1;
     config.maximumCallGroups = 1;
     config.supportedHandleTypes = [NSSet setWithObjects:@(CXHandleTypeGeneric), @(CXHandleTypePhoneNumber), nil];
-    config.iconTemplateImageData = UIImagePNGRepresentation([UIImage imageNamed:@"CallKitLogo"]);
+    config.iconTemplateImageData = UIImagePNGRepresentation(TGImageNamed(@"CallKitLogo"));
 
     return config;
 }
@@ -72,18 +91,18 @@
         update.supportsUngrouping = false;
         update.supportsDTMF = false;
         
-        [_provider reportCallWithUUID:uuid updated:update];
+        [[self provider] reportCallWithUUID:uuid updated:update];
     }];
 }
 
 - (void)updateCallWithUUID:(NSUUID *)uuid connectingAtDate:(NSDate *)date
 {
-    [_provider reportOutgoingCallWithUUID:uuid startedConnectingAtDate:date];
+    [[self provider] reportOutgoingCallWithUUID:uuid startedConnectingAtDate:date];
 }
 
 - (void)updateCallWithUUID:(NSUUID *)uuid connectedAtDate:(NSDate *)date
 {
-    [_provider reportOutgoingCallWithUUID:uuid connectedAtDate:date];
+    [[self provider] reportOutgoingCallWithUUID:uuid connectedAtDate:date];
 }
 
 - (void)endCallWithUUID:(NSUUID *)uuid reason:(TGCallDiscardReason)reason completion:(void (^)(void))completion
@@ -122,13 +141,13 @@
                 break;
         }
         
-        [_provider reportCallWithUUID:uuid endedAtDate:[NSDate date] reason:endedReason];
+        [[self provider] reportCallWithUUID:uuid endedAtDate:[NSDate date] reason:endedReason];
     }
 }
 
 - (void)_requestTransaction:(CXTransaction *)transaction completion:(void (^)(bool))completion
 {
-    [_callController requestTransaction:transaction completion:^(NSError *error)
+    [[self controller] requestTransaction:transaction completion:^(NSError *error)
     {
         if (error != nil)
         {
@@ -161,7 +180,7 @@
     {
         TGDispatchOnMainThread(^
         {
-            [_provider reportNewIncomingCallWithUUID:uuid update:update completion:^(NSError *error)
+            [[self provider] reportNewIncomingCallWithUUID:uuid update:update completion:^(NSError *error)
             {
                 bool silent = ([error.domain isEqualToString:CXErrorDomainIncomingCall] && error.code == CXErrorCodeIncomingCallErrorFilteredByDoNotDisturb);
                 TGDispatchOnMainThread(^
@@ -306,6 +325,10 @@
 
 + (bool)callKitAvailable
 {
+#if TARGET_OS_SIMULATOR
+    return false;
+#endif
+    
     return iosMajorVersion() >= 10;
 }
 

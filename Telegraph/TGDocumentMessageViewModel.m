@@ -1,7 +1,6 @@
 #import "TGDocumentMessageViewModel.h"
 
-#import "TGMessage.h"
-#import "TGPeerIdAdapter.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGModernRemoteImageViewModel.h"
 #import "TGMessageImageViewModel.h"
@@ -18,12 +17,8 @@
 #import "TGDocumentMessageIconModel.h"
 #import "TGDocumentMessageIconView.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
-
 #import "TGTelegraphConversationMessageAssetsSource.h"
-#import "TGDoubleTapGestureRecognizer.h"
+#import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
 #import "TGReplyHeaderModel.h"
 
@@ -412,8 +407,13 @@ static CTFontRef textFontForSize(CGFloat size)
         previewSize.height -= 4.0f + 8.0f;
     }
     
-    [_documentNameModel setText:_titleText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:needsContentsUpdate];
-    [_documentSizeModel setText:_sizeText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:needsContentsUpdate];
+    bool tempUpdateContents = false;
+    [_documentNameModel setText:_titleText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:&updateContents];
+    updateContents = updateContents || tempUpdateContents;
+    
+    [_documentSizeModel setText:_sizeText maxWidth:containerSize.width - previewSize.width - 16.0f needsContentUpdate:&tempUpdateContents];
+    updateContents = updateContents || tempUpdateContents;
+    
     
     CGFloat nameWidth = _documentNameModel.frame.size.width;
     CGFloat sizeWidth = _documentSizeModel.frame.size.width;

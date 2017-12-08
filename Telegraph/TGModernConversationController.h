@@ -1,14 +1,6 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGViewController.h"
-
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 #import "TGMessageRange.h"
 
@@ -34,9 +26,9 @@
 @class TGConversationScrollState;
 @class TGPIPSourceLocation;
 
-@protocol TGStickerPackReference;
+@class TGPresentation;
 
-@class TGPaymentFlow;
+@protocol TGStickerPackReference;
 
 extern NSInteger TGModernConversationControllerUnloadHistoryLimit;
 extern NSInteger TGModernConversationControllerUnloadHistoryThreshold;
@@ -55,13 +47,14 @@ typedef enum {
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, strong) TGModernConversationCompanion *companion;
 @property (nonatomic) bool shouldIgnoreAppearAnimationOnce;
 @property (nonatomic) bool shouldOpenKeyboardOnce;
 
 @property (nonatomic) bool canOpenKeyboardWhileInTransition;
 
-@property (nonatomic, strong) TGPaymentFlow *paymentFlow;
+@property (nonatomic, copy) void (^willChangeDim)(bool dim, UIView *keyboardSnapshotView, bool restoringFocus);
 
 - (void)setInitialSnapshot:(CGImageRef)image backgroundView:(TGModernTemporaryView *)backgroundView viewStorage:(TGModernViewStorage *)viewStorage topEdge:(CGFloat)topEdge displayScrollDownButton:(bool)displayScrollDownButton;
 - (TGMessage *)latestVisibleMessage;
@@ -77,7 +70,7 @@ typedef enum {
 - (void)_deleteItemsAtIndices:(NSIndexSet *)indices animated:(bool)animated animationFactor:(CGFloat)animationFactor;
 - (void)moveItems:(NSArray *)moveIndexPairs;
 - (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability;
-- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability animated:(bool)animated animateTransition:(bool)animateExpiration;
+- (void)updateItemAtIndex:(NSUInteger)index toItem:(TGModernConversationItem *)updatedItem delayAvailability:(bool)delayAvailability animated:(bool)animated animateTransition:(bool)animateExpiration force:(bool)force;
 - (void)updateItemProgressAtIndex:(NSUInteger)index toProgress:(CGFloat)progress animated:(bool)animated;
 - (void)imageDataInvalidated:(NSString *)imageUrl;
 - (void)updateCheckedMessages;
@@ -93,8 +86,9 @@ typedef enum {
 - (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
 - (void)openBrowserFromMessage:(int32_t)messageId url:(NSString *)url;
+- (void)openLocationFromMessage:(TGMessage *)message previewMode:(bool)previewMode zoomToFitAll:(bool)zoomToFitAll;
 - (void)showActionsMenuForUnsentMessage:(int32_t)messageId;
-- (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId;
+- (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId groupedId:(int64_t)groupedId;
 - (void)temporaryHighlightMessage:(int32_t)messageId automatically:(bool)automatically;
 - (void)showActionsMenuForLink:(NSString *)url webPage:(TGWebPageMediaAttachment *)webPage;
 - (void)showActionsMenuForContact:(TGUser *)contact isContact:(bool)isContact;
@@ -104,17 +98,18 @@ typedef enum {
 - (void)leaveEditingMode;
 - (void)openKeyboard;
 - (void)hideTitlePanel;
+- (void)endEditing;
 
 - (void)reloadBackground;
 - (void)refreshMetrics;
 - (void)setInputText:(NSString *)inputText replace:(bool)replace selectRange:(NSRange)selectRange;
-- (void)setInputText:(NSString *)inputText entities:(NSArray *)entities replace:(bool)replace replaceIfPrefix:(bool)replaceIfPrefix selectRange:(NSRange)selectRange;
+- (void)setInputText:(NSString *)inputText entities:(NSArray *)entities replace:(bool)replace replaceIfPrefix:(bool)replaceIfPrefix selectRange:(NSRange)selectRange forceSelectRange:(bool)forceSelectRange;
 - (void)setMessageEditingContext:(TGMessageEditingContext *)messageEditingContext;
 - (NSString *)inputText;
 - (void)updateWebpageLinks;
 - (void)setReplyMessage:(TGMessage *)replyMessage animated:(bool)animated;
 - (void)setReplyMessage:(TGMessage *)replyMessage openKeyboard:(bool)openKeyboard animated:(bool)animated;
-- (void)setForwardMessages:(NSArray *)forwardMessages animated:(bool)animated;
+- (void)setForwardMessages:(NSArray *)forwardMessages completeGroups:(NSSet *)completeGroups animated:(bool)animated;
 - (void)setInlineStickerList:(NSDictionary *)inlineStickerList;
 - (void)setTitle:(NSString *)title;
 - (void)setAvatarConversationId:(int64_t)conversationId title:(NSString *)title icon:(UIImage *)icon;
@@ -126,6 +121,7 @@ typedef enum {
 - (void)setAttributedStatus:(NSAttributedString *)status allowAnimation:(bool)allowAnimation;
 - (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity;
 - (void)setGlobalUnreadCount:(int)unreadCount;
+- (void)setUnreadMentionCount:(int32_t)unreadMentionCount;
 - (void)setCustomInputPanel:(TGModernConversationInputPanel *)customInputPanel;
 - (void)setDefaultInputPanel:(TGModernConversationInputPanel *)defaultInputPanel;
 
@@ -166,13 +162,13 @@ typedef enum {
 
 - (bool)openPIPSourceLocation:(TGPIPSourceLocation *)location;
 
+- (void)openStickerPackForReference:(id<TGStickerPackReference>)packReference;
 - (void)openStickerPackForMessageId:(int32_t)messageId;
-- (void)openCallMenuForMessageId:(int32_t)messageId;
-
-- (void)hideKeyboard;
 
 - (void)activateSearch;
-- (void)forwardMessages:(NSArray *)messageIds fastForward:(bool)fastForward;
+- (void)forwardMessages:(NSArray *)messageIds fastForward:(bool)fastForward grouped:(bool)grouped;
+
+- (void)setExclusiveSearchQuery:(NSString *)query;
 
 - (void)setLoadingMessages:(bool)loadingMessages;
 - (void)messagesDeleted:(NSArray *)messageIds;
@@ -190,5 +186,10 @@ typedef enum {
 - (void)setBannedMedia:(bool)bannedMedia;
 
 - (void)_updateItemForReplySwipeInteraction:(int32_t)mid ended:(bool)ended;
+- (void)_updateGroupedItemsForReplySwipeInteraction:(int32_t)mid groupedId:(int64_t)groupedId offset:(CGFloat)offset ended:(bool)ended;
+
+- (void)_displayLocationPicker;
+
+- (CGFloat)initialUnreadOffset;
 
 @end

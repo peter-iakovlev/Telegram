@@ -3,6 +3,7 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
+#import "TLPeer.h"
 
 @implementation TLMessageFwdHeader
 
@@ -38,7 +39,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xba3903bf;
+    return (int32_t)0xc65d2824;
 }
 
 - (int32_t)TLconstructorName
@@ -55,6 +56,8 @@
     object.channel_id = metaObject->getInt32((int32_t)0x1cfcdb86);
     object.channel_post = metaObject->getInt32((int32_t)0x2c34eb97);
     object.post_author = metaObject->getString((int32_t)0x6d88316);
+    object.saved_from_peer = metaObject->getObject((int32_t)0xf8e00e47);
+    object.saved_from_msg_id = metaObject->getInt32((int32_t)0x962e7bb0);
     return object;
 }
 
@@ -95,6 +98,18 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.post_author;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6d88316, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.saved_from_peer;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf8e00e47, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.saved_from_msg_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x962e7bb0, value));
     }
 }
 

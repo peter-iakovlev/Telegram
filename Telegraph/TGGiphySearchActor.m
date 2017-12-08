@@ -1,9 +1,10 @@
 #import "TGGiphySearchActor.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGTelegraph.h"
-#import "TGStringUtils.h"
 
 #import "TGGiphySearchResultItem.h"
 

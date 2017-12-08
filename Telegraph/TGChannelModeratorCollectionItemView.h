@@ -1,6 +1,6 @@
 #import "TGCollectionItemView.h"
 
-#import "TGUser.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGChannelModeratorCollectionItemView : TGCollectionItemView
 

@@ -5,19 +5,20 @@
 #import "TGHeaderCollectionItem.h"
 #import "TGButtonCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGAlertView.h"
 
 #import "TGPasswordSetupController.h"
 #import "TGPasswordEmailController.h"
 #import "TGPasswordHintController.h"
 #import "TGPasswordConfirmationController.h"
+#import "TGPasswordPlaceholderItem.h"
 
 #import "TGTwoStepConfigSignal.h"
 #import "TGTwoStepSetPaswordSignal.h"
 #import "TGTwoStepVerifyPasswordSignal.h"
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 #import <MTProtoKit/MTEncryption.h>
 
@@ -31,6 +32,7 @@
     TGProgressWindow *_progressWindow;
     
     TGCollectionMenuSection *_withoutPasswordSection;
+    TGPasswordPlaceholderItem *_placeholderItem;
     TGButtonCollectionItem *_setPasswordItem;
     TGCommentCollectionItem *_setPasswordCommentItem;
     TGCommentCollectionItem *_passwordHelpItem;
@@ -63,9 +65,13 @@
         _configDisposable = [[SMetaDisposable alloc] init];
         _setPasswordDisposable = [[SMetaDisposable alloc] init];
         
+        _placeholderItem = [[TGPasswordPlaceholderItem alloc] initWithIcon:TGImageNamed(@"PasswordPlaceholderIcon.png") title:TGLocalized(@"TwoStepAuth.AdditionalPassword") text:TGLocalized(@"TwoStepAuth.SetPasswordHelp")];
+        
         _setPasswordItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"TwoStepAuth.SetPassword") action:@selector(setPasswordPressed)];
+        _setPasswordItem.alignment = NSTextAlignmentCenter;
+        
         _setPasswordCommentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"TwoStepAuth.SetPasswordHelp")];
-        _withoutPasswordSection = [[TGCollectionMenuSection alloc] initWithItems:@[_setPasswordItem, _setPasswordCommentItem]];
+        _withoutPasswordSection = [[TGCollectionMenuSection alloc] initWithItems:@[_placeholderItem, _setPasswordItem, _setPasswordCommentItem]];
         _withoutPasswordSection.insets = UIEdgeInsetsMake(34.0f, 0.0f, 34.0f, 0.0f);
         
         _changePasswordItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"TwoStepAuth.ChangePassword") action:@selector(changePasswordPressed)];
@@ -88,6 +94,24 @@
 {
     [_configDisposable dispose];
     [_setPasswordDisposable dispose];
+}
+
+- (void)viewDidLoad
+{
+    _setPasswordCommentItem.hidden = self.view.frame.size.width < self.view.frame.size.height;
+    [_setPasswordCommentItem setAlpha:!_setPasswordCommentItem.hidden ? 1.0f : 0.0f];
+    [self.collectionView reloadData];
+}
+
+- (void)layoutControllerForSize:(CGSize)size duration:(NSTimeInterval)duration
+{
+    [super layoutControllerForSize:size duration:duration];
+    
+    _setPasswordCommentItem.hidden = size.width < size.height;
+    [UIView animateWithDuration:duration animations:^
+    {
+       [_setPasswordCommentItem setAlpha:!_setPasswordCommentItem.hidden ? 1.0f : 0.0f];
+    }];
 }
 
 - (void)willEnterForeground:(__unused id)notification
@@ -270,7 +294,7 @@
         });
     }] startWithNext:nil error:^(id error)
     {
-        NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+        NSString *errorText = TGLocalized(@"Login.UnknownError");
         if ([error respondsToSelector:@selector(hasPrefix:)] && [error hasPrefix:@"FLOOD_WAIT"])
             errorText = TGLocalized(@"TwoStepAuth.FloodError");
         [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
@@ -316,7 +340,7 @@
                         {
                             [progressWindow dismiss:true];
                             
-                            NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+                            NSString *errorText = TGLocalized(@"Login.UnknownError");
                             if ([error respondsToSelector:@selector(hasPrefix:)] && [error hasPrefix:@"FLOOD_WAIT"])
                                 errorText = TGLocalized(@"TwoStepAuth.FloodError");
                             [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
@@ -404,7 +428,7 @@
                 {
                     [progressWindow dismiss:true];
                     
-                    NSString *errorText = TGLocalized(@"TwoStepAuth.GenericError");
+                    NSString *errorText = TGLocalized(@"Login.UnknownError");
                     if ([error respondsToSelector:@selector(hasPrefix:)] && [error hasPrefix:@"FLOOD_WAIT"])
                         errorText = TGLocalized(@"TwoStepAuth.FloodError");
                     [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];

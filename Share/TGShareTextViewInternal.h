@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-#import "TGWeakDelegate.h"
+#import "TGShareWeakDelegate.h"
 
 @interface TGShareTextViewInternal : UITextView
 

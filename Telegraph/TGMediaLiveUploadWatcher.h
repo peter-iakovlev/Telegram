@@ -1,5 +1,6 @@
-#import "TGMediaVideoConverter.h"
+#import <LegacyComponents/TGMediaVideoConverter.h>
+#import <LegacyComponents/TGLiveUploadInterface.h>
 
-@interface TGMediaLiveUploadWatcher : TGMediaVideoFileWatcher
+@interface TGMediaLiveUploadWatcher : TGMediaVideoFileWatcher <TGLiveUploadInterface>
 
 @end

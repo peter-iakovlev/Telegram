@@ -5,8 +5,6 @@
 #import <CoreTelephony/CTCallCenter.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 
-#import "TGObserverProxy.h"
-
 # define AES_MAXNR 14
 # define AES_BLOCK_SIZE 16
 
@@ -356,14 +354,6 @@ void TGCallLoggingFunction(const char *msg)
     TGLog(@"%s", msg);
 }
 
-@interface TGObserverBlockProxy : TGObserverProxy
-
-@property (nonatomic, copy) void (^block)(void);
-
-- (instancetype)initWithName:(NSString *)name block:(void (^)(void))block;
-
-@end
-
 @implementation TGCallUtils
 
 + (bool)isOnPhoneCall
@@ -375,122 +365,6 @@ void TGCallLoggingFunction(const char *msg)
             return true;
     }
     return false;
-}
-
-+ (SSignal *)networkTypeSignal
-{
-    SSignal *reachabilitySignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-    {
-        Reachability *reachability = [Reachability reachabilityForInternetConnection];
-        [reachability startNotifier];
-        
-        [subscriber putNext:@(reachability.currentReachabilityStatus)];
-        reachability.reachabilityChanged = ^(NetworkStatus status)
-        {
-            [subscriber putNext:@(status)];
-        };
-        
-        return [[SBlockDisposable alloc] initWithBlock:^
-        {
-            __strong Reachability *strongReachability = reachability;
-            [strongReachability stopNotifier];
-        }];
-    }];
-    
-    
-    SSignal *cellNetworkSignal = [SSignal complete];
-    
-    if (iosMajorVersion() >= 7)
-    {
-        cellNetworkSignal = [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
-        {
-            CTTelephonyNetworkInfo *telephonyInfo = [CTTelephonyNetworkInfo new];
-            NSString *network = telephonyInfo.currentRadioAccessTechnology;
-            if (network == nil)
-                network = @"";
-            [subscriber putNext:network];
-
-            TGObserverBlockProxy *observer = [[TGObserverBlockProxy alloc] initWithName:CTRadioAccessTechnologyDidChangeNotification block:^
-            {
-                NSString *network = telephonyInfo.currentRadioAccessTechnology;
-                if (network == nil)
-                    network = @"";
-                [subscriber putNext:network];
-            }];
-            
-            return [[SBlockDisposable alloc] initWithBlock:^
-            {
-                [telephonyInfo description];
-                [observer description];
-            }];
-        }] map:^id(NSString *networkType)
-        {
-            if ([networkType isEqualToString:CTRadioAccessTechnologyGPRS])
-            {
-                return @(TGCallNetworkTypeGPRS);
-            }
-            else if ([networkType isEqualToString:CTRadioAccessTechnologyEdge] || [networkType isEqualToString:CTRadioAccessTechnologyCDMA1x])
-            {
-                return @(TGCallNetworkTypeEdge);
-            }
-            else if ([networkType isEqualToString:CTRadioAccessTechnologyLTE])
-            {
-                return @(TGCallNetworkTypeLTE);
-            }
-            else if ([networkType isEqualToString:CTRadioAccessTechnologyWCDMA]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyHSDPA]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyHSUPA]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyCDMAEVDORev0]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyCDMAEVDORevA]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyCDMAEVDORevB]
-                     || [networkType isEqualToString:CTRadioAccessTechnologyeHRPD])
-            {
-                return @(TGCallNetworkType3G);
-            }
-            
-            return @(TGCallNetworkTypeUnknown);
-        }];
-    }
-    else
-    {
-        cellNetworkSignal = [SSignal single:@(TGCallNetworkTypeEdge)];
-    }
-    
-    return [[SSignal combineSignals:@[reachabilitySignal, cellNetworkSignal]] map:^NSNumber *(NSArray *values)
-    {
-        NSInteger reachability = [values.firstObject integerValue];
-        NSNumber *networkType = values.lastObject;
-        
-        if (reachability == ReachableViaWWAN)
-            return networkType;
-        else if (reachability == ReachableViaWiFi)
-            return @(TGCallNetworkTypeWiFi);
-        else if (reachability == NotReachable)
-            return @(TGCallNetworkTypeNone);
-        
-        return @(TGCallNetworkTypeUnknown);
-    }];
-}
-
-@end
-
-
-@implementation TGObserverBlockProxy
-
-- (instancetype)initWithName:(NSString *)name block:(void (^)(void))block
-{
-    self = [self initWithTarget:self targetSelector:@selector(handleNotification) name:name];
-    if (self != nil)
-    {
-        self.block = block;
-    }
-    return self;
-}
-
-- (void)handleNotification
-{
-    if (self.block != nil)
-        self.block();
 }
 
 @end

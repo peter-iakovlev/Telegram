@@ -1,20 +1,13 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import <UIKit/UIKit.h>
+
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGDialogListCellAssetsSource.h"
 
-#import "ASWatcher.h"
-
-#import "TGMessage.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @class TGDatabaseMessageDraft;
+@class TGPresentation;
 
 @interface TGDialogListCell : UITableViewCell
 
@@ -25,6 +18,8 @@
 @property (nonatomic, copy) void (^togglePinConversation)(int64_t, bool);
 
 @property (nonatomic, strong) ASHandle *watcherHandle;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic) intptr_t reuseTag;
 @property (nonatomic) int64_t conversationId;
@@ -45,6 +40,7 @@
 @property (nonatomic) TGMessageDeliveryState deliveryState;
 @property (nonatomic) int unreadCount;
 @property (nonatomic) int serviceUnreadCount;
+@property (nonatomic) int unreadMentionCount;
 
 @property (nonatomic, strong) NSString *avatarUrl;
 @property (nonatomic) bool isOnline;
@@ -76,6 +72,8 @@
 
 @property (nonatomic) bool isLastCell;
 @property (nonatomic) bool disableActions;
+
+@property (nonatomic) int isSavedMessages;
 
 @property (nonatomic, strong) TGDatabaseMessageDraft *draft;
 

@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
-#import "TGOverlayController.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPickerSheetOverlayController : TGOverlayController
 

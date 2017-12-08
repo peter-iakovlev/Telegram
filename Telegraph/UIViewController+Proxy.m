@@ -1,6 +1,7 @@
 #import "UIViewController+Proxy.h"
 
-#import "TGHacks.h"
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <objc/runtime.h>
 
 static const void *TGProxyDismissControllerKey = &TGProxyDismissControllerKey;

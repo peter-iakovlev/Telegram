@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "WKInterface+TGInterface.h"
-#import "TGColor.h"
+#import "TGWatchColor.h"
 
 #define TGTick   NSDate *startTime = [NSDate date]
 #define TGTock   NSLog(@"%s Time: %f", __func__, -[startTime timeIntervalSinceNow])
@@ -31,7 +31,7 @@ static inline void TGDispatchAfter(double delay, dispatch_queue_t queue, dispatc
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)((delay) * NSEC_PER_SEC)), queue, block);
 }
 
-void TGSwizzleMethodImplementation(Class class, SEL originalMethod, SEL modifiedMethod);
+void TGSwizzleMethodImplementation(Class clazz, SEL originalMethod, SEL modifiedMethod);
 
 CGSize TGWatchScreenSize();
 

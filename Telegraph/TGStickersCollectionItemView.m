@@ -1,30 +1,28 @@
 #import "TGStickersCollectionItemView.h"
 
-#import <SSignalKit/SSignalKit.h>
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
-#import "TGTimerTarget.h"
+#import <SSignalKit/SSignalKit.h>
+#import "TGFavoriteStickersSignal.h"
+
+#import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGStickersCollectionCell.h"
+#import "TGForceTouchGestureRecognizer.h"
 
-#import "TGStickerPack.h"
-#import "TGDocumentMediaAttachment.h"
+#import <LegacyComponents/TGStickerPack.h>
 
-#import "TGMenuSheetController.h"
-#import "TGNavigationController.h"
+#import <LegacyComponents/TGMenuSheetController.h>
 
-#import "TGMenuView.h"
+#import <LegacyComponents/TGMenuView.h>
 
-#import "TGMenuSheetCollectionView.h"
+#import <LegacyComponents/TGMenuSheetCollectionView.h>
 #import "TGScrollIndicatorView.h"
 
-#import "TGItemPreviewController.h"
-#import "TGStickerItemPreviewView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGStickerItemPreviewView.h>
 
-#import "TGMessage.h"
-
-#import "TGTextCheckingResult.h"
+#import "TGLegacyComponentsContext.h"
 
 const UIEdgeInsets TGStickersCollectionInsets = { 58.0f, 20.0f, 12.0f, 20.0f };
 const CGFloat TGStickersCollectionLoadingHeight = 145.0f;
@@ -78,6 +76,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
 
     UILongPressGestureRecognizer *_longPressGestureRecognizer;
     UIPanGestureRecognizer *_panGestureRecognizer;
+    TGForceTouchGestureRecognizer *_forceTouchRecognizer;
     
     TGMenuContainerView *_menuContainerView;
     NSInteger _selectedSticker;
@@ -99,6 +98,10 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     CGFloat _itemViewWidth;
     
     bool _failed;
+    
+    __weak TGMenuSheetButtonItemView *_faveItem;
+    
+    NSTimer *_actionsTimer;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -125,6 +128,8 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         _collectionViewLayout.minimumLineSpacing = 10;
         
         _collectionView = [[TGStickersCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionViewLayout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.allowSimultaneousPan = true;
         _collectionView.backgroundColor = [UIColor clearColor];
         _collectionView.bounces = false;
@@ -193,6 +198,21 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     
     [_altTimer invalidate];
     _altTimer = nil;
+}
+
+- (void)didMoveToSuperview
+{
+    [super didMoveToSuperview];
+    
+    if (_forceTouchRecognizer == nil)
+    {
+        _forceTouchRecognizer = [[TGForceTouchGestureRecognizer alloc] initWithTarget:self action:@selector(handleForceTouch:)];
+        _forceTouchRecognizer.delegate = self;
+        [_collectionView addGestureRecognizer:_forceTouchRecognizer];
+        
+        if (![_forceTouchRecognizer forceTouchAvailable])
+            _forceTouchRecognizer.enabled = false;
+    }
 }
 
 #pragma mark -
@@ -275,31 +295,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         }];
     };
     
-    if (!_transitionedIn)
-    {
-        _transitionedIn = true;
-        if (iosMajorVersion() < 8 || self.sizeClass == UIUserInterfaceSizeClassRegular)
-        {
-            performMenuRelayout(nil);
-            return;
-        }
-        
-        [_collectionView layoutSubviews];
-        
-        CGRect targetFrame = _collectionView.frame;
-        _collectionView.frame = CGRectOffset(_collectionView.frame, 0, 35);
-        performMenuRelayout(^
-        {
-            _collectionView.frame = targetFrame;
-        });
-        
-        for (TGStickersCollectionCell *cell in _collectionView.visibleCells)
-            [cell performTransitionIn];
-    }
-    else
-    {
-        performMenuRelayout(nil);
-    }
+    performMenuRelayout(nil);
 }
 
 - (void)setFailed
@@ -371,6 +367,33 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     return nil;
 }
 
+- (void)startActionsTimer
+{
+    if (_actionsTimer != nil)
+    {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+    }
+    
+    _actionsTimer = [TGTimerTarget scheduledMainThreadTimerWithTarget:self action:@selector(presentActions) interval:0.9 repeat:false];
+}
+
+- (void)presentActions
+{
+    if (_previewController != nil)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
+        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+        
+        [previewView presentActions];
+    }
+    
+    [_actionsTimer invalidate];
+    _actionsTimer = nil;
+}
+
 - (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer
 {
     if (_collectionView.isDragging)
@@ -398,11 +421,62 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
             TGDocumentMediaAttachment *document = [self stickerAtPoint:[gestureRecognizer locationInView:_collectionView] stickerCell:&cell];
             if (document != nil && parentController != nil)
             {
-                TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithFrame:CGRectZero];
-                TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentController previewView:previewView];
-                _previewController = controller;
+                TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
                 
                 __weak TGStickersCollectionItemView *weakSelf = self;
+                __weak TGStickerItemPreviewView *weakPreviewView = previewView;
+                NSMutableArray *actions = [[NSMutableArray alloc] init];
+                
+                if (self.sendSticker != nil)
+                {
+                    TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        __strong TGStickersCollectionItemView *strongSelf = weakSelf;
+                        if (strongSelf == nil || strongPreviewView == nil)
+                            return;
+                        
+                        [strongPreviewView performCommit];
+                        
+                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                        {
+                            strongSelf.sendSticker(strongPreviewView.item);
+                        });
+                    }];
+                    [actions addObject:sendItem];
+                }
+                
+                if (!_stickerPack.isMask)
+                {
+                    TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                    {
+                        __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                        __strong TGStickersCollectionItemView *strongSelf = weakSelf;
+                        if (strongSelf == nil || strongPreviewView == nil)
+                            return;
+                        
+                        [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                        [strongPreviewView performDismissal];
+                    }];
+                    [actions addObject:faveItem];
+                    _faveItem = faveItem;
+                }
+                
+                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
+                {
+                    __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                    if (strongPreviewView == nil)
+                        return;
+                    
+                    [strongPreviewView performDismissal];
+                }];
+                [actions addObject:cancelItem];
+                
+                [previewView setupWithMainItemViews:nil actionItemViews:actions];
+                
+                TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentController previewView:previewView];
+                _previewController = controller;
+                
                 controller.sourcePointForItem = ^(id item)
                 {
                     __strong TGStickersCollectionItemView *strongSelf = weakSelf;
@@ -426,6 +500,9 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
                 [previewView setSticker:document associations:associations];
                 
                 [cell setHighlighted:true animated:true];
+                
+                if (!_forceTouchRecognizer.enabled)
+                    [self startActionsTimer];
             }
         }
             break;
@@ -433,13 +510,21 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled:
         {
+            [_actionsTimer invalidate];
+            _actionsTimer = nil;
+        
             TGItemPreviewController *controller = _previewController;
-            [controller dismiss];
+            TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
             
             _collectionView.allowSimultaneousPan = true;
             
             for (TGStickersCollectionCell *cell in _collectionView.visibleCells)
                 [cell setHighlighted:false animated:true];
+            
+            if (previewView.isLocked)
+                return;
+            
+            [controller dismiss];
         }
             break;
             
@@ -456,6 +541,11 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     if (gestureRecognizer.state == UIGestureRecognizerStateChanged)
     {
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        if (_actionsTimer != nil)
+            [self startActionsTimer];
         
         TGStickersCollectionCell *highlightedCell = nil;
         TGDocumentMediaAttachment *document = [self stickerAtPoint:[gestureRecognizer locationInView:_collectionView] stickerCell:&highlightedCell];
@@ -470,6 +560,22 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     }
 }
 
+- (void)handleForceTouch:(TGForceTouchGestureRecognizer *)gestureRecognizer
+{
+    if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        
+        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
+        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+        
+        [previewView presentActions];
+        
+        if (fabs(CFAbsoluteTimeGetCurrent() - previewView.lastFeedbackTime) > 0.6)
+            AudioServicesPlaySystemSound(1519);
+    }
+}
+
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer == _panGestureRecognizer)
@@ -481,6 +587,9 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)__unused gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)__unused otherGestureRecognizer
 {
     if ((gestureRecognizer == _longPressGestureRecognizer && otherGestureRecognizer == _panGestureRecognizer) || (gestureRecognizer == _panGestureRecognizer && otherGestureRecognizer == _longPressGestureRecognizer))
+        return true;
+    
+    if (gestureRecognizer == _forceTouchRecognizer || otherGestureRecognizer == _forceTouchRecognizer)
         return true;
     
     return false;
@@ -573,10 +682,25 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     _selectedSticker = indexPath.row;
     
     UIView *parentView = self.menuController.parentController.view;
+    if (TGIsPad())
+        parentView = parentView.window;
     _menuContainerView = [[TGMenuContainerView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, parentView.frame.size.width, parentView.frame.size.height)];
     [parentView addSubview:_menuContainerView];
     
-    NSArray *actions = @[ @{ @"title": TGLocalized(@"StickerPack.Send"), @"action": @"send" } ];
+    TGDocumentMediaAttachment *document = _stickerPack.documents[indexPath.row];
+    NSDictionary *faveAction = nil;
+    if ([TGFavoriteStickersSignal isFaved:document])
+    {
+        faveAction = [[NSDictionary alloc] initWithObjectsAndKeys:[UIImage imageNamed:@"StickersFaved"], @"image", @"unfaveSticker", @"action", nil];
+    }
+    else
+    {
+        faveAction = [[NSDictionary alloc] initWithObjectsAndKeys:[UIImage imageNamed:@"StickersFave"], @"image", @"faveSticker", @"action", nil];
+    }
+    
+    NSDictionary *sendAction = @{ @"title": TGLocalized(@"StickerPack.Send"), @"action": @"send" };
+    
+    NSArray *actions = @[faveAction, sendAction];
     [_menuContainerView.menuView setUserInfo:@{ @"index": @(indexPath.row) }];
     [_menuContainerView.menuView setButtonsAndActions:actions watcherHandle:_actionHandle];
     [_menuContainerView.menuView sizeToFit];
@@ -596,6 +720,12 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
             TGDocumentMediaAttachment *sticker = _stickerPack.documents[index];
             if (self.sendSticker != nil)
                 self.sendSticker(sticker);
+        }
+        else if ([menuAction isEqualToString:@"faveSticker"] || [menuAction isEqualToString:@"unfaveSticker"])
+        {
+            NSInteger index = [options[@"userInfo"][@"index"] integerValue];
+            TGDocumentMediaAttachment *sticker = _stickerPack.documents[index];
+            [TGFavoriteStickersSignal setSticker:sticker faved:[menuAction isEqualToString:@"faveSticker"]];
         }
     }
     else if ([action isEqualToString:@"menuWillHide"])
@@ -752,7 +882,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         CGFloat expandedHeight = TGStickersCollectionInsets.top + rows * (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) + TGStickersCollectionInsets.bottom;
 
         CGFloat buttonsHeight = self.collapseInLandscape ? 2 * TGMenuSheetButtonItemViewHeight : TGMenuSheetButtonItemViewHeight;
-        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight);
+        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight - self.menuController.safeAreaInset.bottom);
         
         CGFloat maxCollapsedHeight = TGStickersCollectionInsets.top + (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) * ((CGFloat)TGStickersCollectionNumberOfCollapsedRows - 0.5f) + 20.0f;
 

@@ -2,7 +2,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "TGModernMediaListItem.h"
+#import <LegacyComponents/TGModernMediaListItem.h>
 #import "TGWebSearchListItem.h"
 
 #import "TGExternalGifSearchResult.h"

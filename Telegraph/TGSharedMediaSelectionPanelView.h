@@ -10,4 +10,6 @@
 @property (nonatomic) bool deleteEnabled;
 @property (nonatomic) bool shareEnabled;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 @end

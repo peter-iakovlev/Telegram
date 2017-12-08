@@ -1,7 +1,6 @@
 #import "TGSharedMediaMusicEmptyView.h"
 
-#import "TGFont.h"
-#import "TGImageUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGSharedMediaMusicEmptyView () {
     UIImageView *_iconView;

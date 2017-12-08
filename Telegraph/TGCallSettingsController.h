@@ -1,6 +1,6 @@
 #import "TGCollectionMenuController.h"
 
-#import "ASWatcher.h"
+#import <LegacyComponents/ASWatcher.h>
 
 @interface TGCallSettingsController : TGCollectionMenuController <ASWatcher>
 

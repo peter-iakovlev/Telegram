@@ -8,9 +8,9 @@
 
 #import "TGNativeAudioPlayer.h"
 
-#import "ASQueue.h"
+#import <LegacyComponents/ASQueue.h>
 
-#import "TGObserverProxy.h"
+#import <LegacyComponents/TGObserverProxy.h>
 
 @interface TGNativeAudioPlayer ()
 {

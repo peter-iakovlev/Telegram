@@ -1,18 +1,19 @@
 #import "TGGroupsInCommonController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGUserSignal.h"
 
 #import "TGConversationCollectionItem.h"
 #import "TGInterfaceManager.h"
 
-#import "TGPeerIdAdapter.h"
 #import "TGChannelManagementSignals.h"
 #import "TGGroupManagementSignals.h"
 #import "TGModernConversationController.h"
 #import "TGGenericModernConversationCompanion.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 static NSArray<TGConversation *> *sortedConversations(NSArray<TGConversation *> *conversations) {
     return conversations;

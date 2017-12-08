@@ -1,5 +1,6 @@
 #import "TGBridgeWebPageMediaAttachment.h"
-#import "TGWebPageMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeWebPageMediaAttachment (TGWebPageMediaAttachment)
 

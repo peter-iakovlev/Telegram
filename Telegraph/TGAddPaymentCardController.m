@@ -1,5 +1,7 @@
 #import "TGAddPaymentCardController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGCommentCollectionItem.h"
 #import "TGCreditCardNumberCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
@@ -7,7 +9,7 @@
 #import "TGUsernameCollectionItem.h"
 #import "TGVariantCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "Stripe.h"
 
@@ -15,14 +17,19 @@
 #import "TGPaymentForm.h"
 
 #import "TGAlertView.h"
-#import "TGNavigationController.h"
 
 #import "TGLoginCountriesController.h"
 
 #import "NSString+Stripe_CardBrands.h"
 
+#import "TGFastTwoStepVerificationSetupController.h"
+#import "TGTwoStepConfigSignal.h"
+
+#import "TGPresentation.h"
+
 @interface TGAddPaymentCardController () {
     UIBarButtonItem *_doneItem;
+    bool _allowSaving;
     
     TGCreditCardNumberCollectionItem *_cardItem;
     TGSwitchCollectionItem *_saveItem;
@@ -34,6 +41,8 @@
     NSString *_publishableKey;
     bool _alreadyDidAppear;
     STPAPIClient *_apiClient;
+    
+    SVariable *_twoStepConfig;
 }
 
 @end
@@ -43,7 +52,11 @@
 - (instancetype)initWithCanSave:(bool)canSave allowSaving:(bool)allowSaving requestCountry:(bool)requestCountry requestPostcode:(bool)requestPostcode requestName:(bool)requestName publishableKey:(NSString *)publishableKey {
     self = [super init];
     if (self != nil) {
+        _twoStepConfig = [[SVariable alloc] init];
+        [_twoStepConfig set:[TGTwoStepConfigSignal twoStepConfig]];
+        
         _publishableKey = publishableKey;
+        _allowSaving = allowSaving;
         
         self.title = TGLocalized(@"Checkout.NewCard.Title");
         self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)];
@@ -83,7 +96,7 @@
         if (requestName) {
             _nameItem = [[TGUsernameCollectionItem alloc] init];
             _nameItem.title = @"";
-            _nameItem.autoCapitalize = true;
+            _nameItem.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
             _nameItem.placeholder = TGLocalized(@"Checkout.NewCard.CardholderNamePlaceholder");
             //_nameItem.minimalInset = minimalInset;
             _nameItem.usernameChanged = ^(__unused NSString *text) {
@@ -114,7 +127,7 @@
             if (requestCountry) {
                 _countryItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"CheckoutInfo.ShippingInfoCountry") variant:@"" action:@selector(countryPressed)];
                 //_countryItem.minLeftPadding = minimalInset + 20.0f;
-                _countryItem.variantColor = [UIColor blackColor];
+                _countryItem.variantColor = TGPresentation.current.pallete.collectionMenuTextColor;
                 [postcodeItems addObject:_countryItem];
             }
             
@@ -138,9 +151,17 @@
         if (canSave) {
             NSMutableArray *saveItems = [[NSMutableArray alloc] init];
             _saveItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Checkout.NewCard.SaveInfo") isOn:false];
-            _saveItem.isEnabled = allowSaving;
+            _saveItem.toggled = ^(bool value, TGSwitchCollectionItem *item) {
+                __strong TGAddPaymentCardController *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    if (value && !strongSelf->_allowSaving) {
+                        [item setIsOn:false animated:true];
+                        [strongSelf setupTwoStepAuth];
+                    }
+                }
+            };
             [saveItems addObject:_saveItem];
-            if (!allowSaving) {
+            /*if (!allowSaving) {
                 TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Checkout.NewCard.SaveInfoEnableHelp") paragraphSpacing:0.0 clearFormatting:true];
                 commentItem.action = ^{
                     __strong TGAddPaymentCardController *strongSelf = weakSelf;
@@ -149,9 +170,9 @@
                     }
                 };
                 [saveItems addObject:commentItem];
-            } else {
+            } else {*/
                 [saveItems addObject:[[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Checkout.NewCard.SaveInfoHelp")]];
-            }
+            //}
             TGCollectionMenuSection *saveSection = [[TGCollectionMenuSection alloc] initWithItems:saveItems];
             [self.menuSections addSection:saveSection];
         }
@@ -246,6 +267,37 @@
     };
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:countriesController];
+    [self presentViewController:navigationController animated:true completion:nil];
+}
+
+- (void)setupTwoStepAuth {
+    __block bool completed = false;
+    __weak TGAddPaymentCardController *weakSelf = self;
+    TGFastTwoStepVerificationSetupController *controller = [[TGFastTwoStepVerificationSetupController alloc] initWithTwoStepConfig:[_twoStepConfig signal] completion:^(bool success) {
+        __strong TGAddPaymentCardController *strongSelf = weakSelf;
+        if (strongSelf != nil && success && !completed) {
+            completed = true;
+            
+            [strongSelf dismissViewControllerAnimated:true completion:nil];
+            
+            strongSelf->_allowSaving = true;
+            if (strongSelf->_canSaveUpdated) {
+                strongSelf->_canSaveUpdated(true);
+            }
+            [strongSelf->_saveItem setIsOn:true animated:true];
+        }
+    }];
+    controller.twoStepConfigUpdated = ^(TGTwoStepConfig *value) {
+        __strong TGAddPaymentCardController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf->_twoStepConfig set:[SSignal single:value]];
+        }
+    };
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:controller];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        navigationController.presentationStyle = TGNavigationControllerPresentationStyleDefault;
+        navigationController.modalPresentationStyle = UIModalPresentationFullScreen;
+    }
     [self presentViewController:navigationController animated:true completion:nil];
 }
 

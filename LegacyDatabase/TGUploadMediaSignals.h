@@ -8,6 +8,6 @@
 
 + (SSignal *)uploadPhotoWithContext:(TGShareContext *)context data:(NSData *)data;
 + (SSignal *)uploadFileWithContext:(TGShareContext *)context data:(NSData *)data name:(NSString *)name mimeType:(NSString *)mimeType attributes:(NSArray *)attributes;
-+ (SSignal *)uploadVideoWithContext:(TGShareContext *)context data:(NSData *)data thumbData:(NSData *)thumbData duration:(int32_t)duration width:(int32_t)width height:(int32_t)height mimeType:(NSString *)mimeType;
++ (SSignal *)uploadVideoWithContext:(TGShareContext *)context data:(NSData *)data thumbData:(NSData *)thumbData duration:(int32_t)duration width:(int32_t)width height:(int32_t)height mimeType:(NSString *)mimeType roundMessage:(bool)roundMessage;
 
 @end

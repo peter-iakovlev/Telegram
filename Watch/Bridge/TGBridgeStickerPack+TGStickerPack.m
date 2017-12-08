@@ -1,5 +1,5 @@
 #import "TGBridgeStickerPack+TGStickerPack.h"
-#import "TGStickerPack.h"
+#import <LegacyComponents/TGStickerPack.h>
 #import "TGBridgeDocumentMediaAttachment+TGDocumentMediaAttachment.h"
 
 @implementation TGBridgeStickerPack (TGStickerPack)

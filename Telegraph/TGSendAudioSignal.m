@@ -1,14 +1,16 @@
 #import "TGSendAudioSignal.h"
+
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSendMessageSignals.h"
 
 #import "TGAppDelegate.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 #import "TGLiveUploadActor.h"
 
 #import "TGDataItem.h"
 
-#import "TGDocumentMediaAttachment.h"
 #import "TLInputMedia.h"
 
 #import "TLDocumentAttribute$documentAttributeAudio.h"

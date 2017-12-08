@@ -18,6 +18,7 @@
 #import "SecretLayer23.h"
 #import "SecretLayer46.h"
 #import "SecretLayer66.h"
+#import "SecretLayer73.h"
 
 @class TGStoredOutgoingMessageFileInfo;
 
@@ -25,7 +26,7 @@
 
 + (NSUInteger)currentLayer;
 
-+ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key;
++ (MTMessageEncryptionKey *)generateMessageKeyData:(NSData *)messageKey incoming:(bool)incoming key:(NSData *)key v2:(bool)v2;
 + (int32_t)enqueueOutgoingMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer keyId:(int64_t)keyId randomId:(int64_t)randomId messageData:(NSData *)messageData storedFileInfo:(TGStoredOutgoingMessageFileInfo *)storedFileInfo watcher:(id)watcher;
 + (int32_t)enqueueOutgoingServiceMessageForPeerId:(int64_t)peerId layer:(NSUInteger)layer keyId:(int64_t)keyId randomId:(int64_t)randomId messageData:(NSData *)messageData;
 + (void)enqueueOutgoingResendMessagesForPeerId:(int64_t)peerId fromSeq:(int32_t)fromSeq toSeq:(int32_t)toSeq;
@@ -35,7 +36,7 @@
 + (void)beginOutgoingQueueProcessingIfNeeded:(int64_t)peerId;
 + (void)maybeRekeyPeerId:(int64_t)peerId;
 
-+ (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId;
++ (NSData *)encryptMessage:(NSData *)serializedMessage key:(NSData *)key keyId:(int64_t)keyId currentClientIsCreator:(bool)currentClientIsCreator v2:(bool)v2;
 
 + (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer setTTL:(int32_t)ttl randomId:(int64_t)randomId;
 + (NSData *)decryptedServiceMessageActionWithLayer:(NSUInteger)layer deleteMessagesWithRandomIds:(NSArray *)randomIds randomId:(int64_t)randomId;

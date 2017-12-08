@@ -8,7 +8,7 @@
 
 #import "TGDialogListCompanion.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @class TGDialogListController;
 

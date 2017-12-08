@@ -1,14 +1,15 @@
 #import "TGModernGalleryVideoPlayerView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <AVFoundation/AVFoundation.h>
 #import <AVKit/AVKit.h>
 
-#import "TGImageUtils.h"
-#import "TGObserverProxy.h"
-#import "TGTimerTarget.h"
+#import <LegacyComponents/TGObserverProxy.h>
+#import <LegacyComponents/TGTimerTarget.h>
 
-#import "TGImageView.h"
-#import "TGModernGalleryVideoView.h"
+#import <LegacyComponents/TGImageView.h>
+#import <LegacyComponents/TGModernGalleryVideoView.h>
 
 #import "TGAudioSessionManager.h"
 #import "TGEmbedPIPController.h"
@@ -23,6 +24,7 @@
     NSString *_videoPath;
     AVPlayer *_player;
     TGModernGalleryVideoView *_videoView;
+    NSUInteger _currentLoopCount;
     
     NSTimer *_positionTimer;
     NSTimer *_videoFlickerTimer;
@@ -261,15 +263,27 @@
 
 - (void)playerItemDidPlayToEndTime:(NSNotification *)__unused notification
 {
-    [_player pause];
+    bool shouldLoop = false;
+    if (self.shouldLoop != nil)
+        shouldLoop = self.shouldLoop(_currentLoopCount);
     
-    AVPlayerItem *p = [notification object];
-    [p seekToTime:kCMTimeZero];
-    
-    [_positionTimer invalidate];
-    _positionTimer = nil;
-    
-    [self updateState:[TGModernGalleryVideoPlayerState stateWithPlaying:false duration:self.state.duration position:0.0]];
+    if (shouldLoop)
+    {
+        AVPlayerItem *p = [notification object];
+        [p seekToTime:kCMTimeZero];
+    }
+    else
+    {
+        [_player pause];
+        
+        AVPlayerItem *p = [notification object];
+        [p seekToTime:kCMTimeZero];
+        
+        [_positionTimer invalidate];
+        _positionTimer = nil;
+        
+        [self updateState:[TGModernGalleryVideoPlayerState stateWithPlaying:false duration:self.state.duration position:0.0]];
+    }
 }
 
 - (void)seekToPosition:(NSTimeInterval)position

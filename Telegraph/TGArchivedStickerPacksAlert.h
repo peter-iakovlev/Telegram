@@ -1,4 +1,4 @@
-#import "TGOverlayControllerWindow.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGArchivedStickerPacksAlertView.h"
 
@@ -6,6 +6,6 @@
 
 @property (nonatomic, strong, readonly) TGArchivedStickerPacksAlertView *view;
 
-- (instancetype)initWithParentController:(TGViewController *)parentController stickerPacks:(NSArray *)stickerPacks;
+- (instancetype)initWithManager:(id<LegacyComponentsOverlayWindowManager>)manager parentController:(TGViewController *)parentController stickerPacks:(NSArray *)stickerPacks;
 
 @end

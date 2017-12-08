@@ -7,6 +7,8 @@
 
 @property (nonatomic, readonly) UIButton *speakerButton;
 
+@property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+
 @property (nonatomic, copy) void (^backPressed)(void);
 @property (nonatomic, copy) void (^mutePressed)(void);
 @property (nonatomic, copy) void (^messagePressed)(void);

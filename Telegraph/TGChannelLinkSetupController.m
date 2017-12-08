@@ -1,10 +1,10 @@
 #import "TGChannelLinkSetupController.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGCollectionMenuSection.h"
 #import "TGCommentCollectionItem.h"
@@ -21,7 +21,7 @@
 
 #import "TGRevokeLinkConversationItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
 typedef enum {
     TGUsernameControllerUsernameStateNone,
@@ -103,7 +103,7 @@ typedef enum {
         [strongSelf usernameChanged:username];
     };
     
-    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.Help") : TGLocalized(@"Channel.Username.Help")];
+    TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"Channel.Username.Help")];
     commentItem.topInset = 1.0f;
     
     _invalidUsernameItem = [[TGCommentCollectionItem alloc] init];
@@ -334,7 +334,7 @@ typedef enum {
                  [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
                  break;
              case TGUsernameControllerUsernameStateTooManyUsernames:
-                 [_invalidUsernameItem setText:TGLocalized(@"Channel.Username.InvalidTooManyUsernames")];
+                 [_invalidUsernameItem setText:TGLocalized(@"Group.Username.RemoveExistingUsernamesInfo")];
                  _invalidUsernameItem.alpha = 1.0f;
                  _invalidUsernameItem.hidden = false;
                  _invalidUsernameItem.showProgress = false;
@@ -424,7 +424,7 @@ typedef enum {
     if (username.length == 0)
         _hintItem.text = nil;
     else
-        [_hintItem setFormattedText:[[NSString alloc] initWithFormat:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.LinkHint") : TGLocalized(@"Channel.Username.LinkHint"), username]];
+        [_hintItem setFormattedText:[[NSString alloc] initWithFormat:TGLocalized(@"Channel.Username.LinkHint"), username]];
 }
 
 - (void)updateCanCreateUsernames {

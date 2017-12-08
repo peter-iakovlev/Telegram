@@ -1,11 +1,10 @@
 #import "TGStickersCollectionCell.h"
-#import "TGImageView.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGDocumentMediaAttachment.h"
-#import "TGStickerAssociation.h"
+#import <LegacyComponents/TGImageView.h>
+
+#import <LegacyComponents/TGStickerAssociation.h>
 
 NSString *const TGStickersCollectionCellIdentifier = @"TGStickersCollectionCell";
 
@@ -48,7 +47,7 @@ NSString *const TGStickersCollectionCellIdentifier = @"TGStickersCollectionCell"
         _altLabel.backgroundColor = [UIColor clearColor];
         _altLabel.textColor = [UIColor blackColor];
         _altLabel.font = [UIFont systemFontOfSize:20.0f];
-        [_wrapperView addSubview:_altLabel];
+        //[_wrapperView addSubview:_altLabel];
         
         _wrapperView.layer.rasterizationScale = TGScreenScaling();
     }

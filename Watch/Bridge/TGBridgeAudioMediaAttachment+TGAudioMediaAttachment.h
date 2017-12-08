@@ -1,5 +1,6 @@
 #import "TGBridgeAudioMediaAttachment.h"
-#import "TGAudioMediaAttachment.h"
+
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGBridgeAudioMediaAttachment (TGAudioMediaAttachment)
 

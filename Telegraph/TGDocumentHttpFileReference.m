@@ -1,6 +1,6 @@
 #import "TGDocumentHttpFileReference.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGDocumentHttpFileReference
 

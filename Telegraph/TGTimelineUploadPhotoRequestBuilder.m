@@ -1,22 +1,22 @@
 #import "TGTimelineUploadPhotoRequestBuilder.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <UIKit/UIKit.h>
 
 #import <CommonCrypto/CommonDigest.h>
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGTelegraph.h"
 #import "TGUser+Telegraph.h"
 #import "TGTimelineItem.h"
 #import "TGImageMediaAttachment+Telegraph.h"
 
-#import "TGImageUtils.h"
-
 #import "TGUserDataRequestBuilder.h"
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGDatabase.h"
 

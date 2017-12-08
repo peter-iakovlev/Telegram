@@ -1,17 +1,8 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
-
 #import "TGSecretModernConversationAccessoryTimerView.h"
 
-#import "TGImageUtils.h"
-#import "TGStringUtils.h"
-#import "TGFont.h"
-#import "TGModernButton.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGModernButton.h>
 
 @interface TGSecretModernConversationAccessoryTimerView ()
 {
@@ -38,7 +29,7 @@
         [self addSubview:_timerButton];
         
         UIColor *modeIconColor = UIColorRGB(0xa0a7b0);
-        _timerIconView = [[UIImageView alloc] initWithImage:TGTintedImage([UIImage imageNamed:@"ModernConversationSecretAccessoryTimer.png"], modeIconColor)];
+        _timerIconView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"ModernConversationSecretAccessoryTimer.png"), modeIconColor)];
         _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f) - 6.0f - TGScreenPixel, 5.0f - TGScreenPixel);
         [_timerButton addSubview:_timerIconView];
         

@@ -1,8 +1,9 @@
 #import "TGChangePhoneNumberHelpController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
-#import "TGPhoneUtils.h"
 #import "TGAlertView.h"
 
 #import "TGChangePhoneNumberHelpView.h"

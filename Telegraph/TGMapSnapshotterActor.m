@@ -2,9 +2,9 @@
 
 #import <MapKit/MapKit.h>
 
-#import "TGModernCache.h"
+#import <LegacyComponents/TGModernCache.h>
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 @implementation TGMapSnapshotOptions
 

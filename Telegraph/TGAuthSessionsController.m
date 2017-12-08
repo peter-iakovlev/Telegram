@@ -1,6 +1,6 @@
 #import "TGAuthSessionsController.h"
 
-#import "ActionStage.h"
+#import <LegacyComponents/ActionStage.h>
 
 #import "TGAuthSession.h"
 #import "TGAuthSessionListSignals.h"
@@ -11,7 +11,7 @@
 
 #import "TGAuthSessionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 #import "TGActionSheet.h"
 
 #import "TGAuthSessionsEmptyView.h"

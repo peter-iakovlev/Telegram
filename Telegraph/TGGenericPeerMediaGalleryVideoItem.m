@@ -1,7 +1,6 @@
 #import "TGGenericPeerMediaGalleryVideoItem.h"
 
-#import "TGMessage.h"
-#import "TGImageInfo.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 #import "TGGenericPeerMediaGalleryVideoItemView.h"
 

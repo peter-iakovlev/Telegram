@@ -1,22 +1,17 @@
 #import "TGSearchChatMembersControllerView.h"
 
-#import "TGSearchBar.h"
-#import "TGListsTableView.h"
-#import "TGSearchDisplayMixin.h"
+#import <LegacyComponents/LegacyComponents.h>
 
-#import "TGUser.h"
+#import <LegacyComponents/TGSearchBar.h>
+#import <LegacyComponents/TGListsTableView.h>
+#import <LegacyComponents/TGSearchDisplayMixin.h>
 
 #import "TGContactCell.h"
-#import "TGFont.h"
-
-#import "TGDateUtils.h"
 
 #import "TGChannelManagementSignals.h"
 #import "TGGlobalMessageSearchSignals.h"
 
 #import "TGTelegraph.h"
-
-#import "TGImageUtils.h"
 
 #import "TGCachedConversationData.h"
 
@@ -151,10 +146,14 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         _includeContacts = includeContacts;
         
         _tableView = [[UITableView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         
         self.backgroundColor = [UIColor whiteColor];
         
         _tableView = [[TGListsTableView alloc] init];
+        if (iosMajorVersion() >= 11)
+            _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _tableView.dataSource = self;
         _tableView.delegate = self;
         _tableView.rowHeight = 51.0f;

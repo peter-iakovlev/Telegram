@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 
-#import "TGViewController.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPaymentWebController : TGViewController
 

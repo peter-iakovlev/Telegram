@@ -1,6 +1,6 @@
 #import "TGCachedUserData.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGCachedUserGroupsInCommon
 

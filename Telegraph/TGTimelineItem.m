@@ -1,10 +1,10 @@
 #import "TGTimelineItem.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGSchema.h"
 
 #import "TGImageInfo+Telegraph.h"
-
-#import "TGStringUtils.h"
 
 @implementation TGTimelineItem
 

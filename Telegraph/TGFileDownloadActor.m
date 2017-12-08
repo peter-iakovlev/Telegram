@@ -1,5 +1,7 @@
 #import "TGFileDownloadActor.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
 
 #import "TGTelegramNetworking.h"
@@ -7,12 +9,10 @@
 #import <MTProtoKit/MTRequestMessageService.h>
 #import <MTProtoKit/MTRequest.h>
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGImageInfo+Telegraph.h"
-
-#import "TGStringUtils.h"
 
 #import <MTProtoKit/MTEncryption.h>
 

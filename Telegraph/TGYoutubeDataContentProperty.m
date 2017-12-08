@@ -1,6 +1,6 @@
 #import "TGYoutubeDataContentProperty.h"
 
-#import "PSKeyValueCoder.h"
+#import <LegacyComponents/LegacyComponents.h>
 
 @implementation TGYoutubeDataContentProperty
 

@@ -1,8 +1,8 @@
 #import "TGGroupInviteSheetItemView.h"
 
-#import "TGLetteredAvatarView.h"
-#import "TGFont.h"
-#import "TGStringUtils.h"
+#import <LegacyComponents/LegacyComponents.h>
+
+#import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGShareSheetSharePeersLayout.h"
 #import "TGModernMediaCollectionView.h"
@@ -77,6 +77,8 @@
         _recentPeers = users;
         
         _collectionView = [[TGModernMediaCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_layout];
+        if (iosMajorVersion() >= 11)
+            _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.backgroundColor = nil;
         _collectionView.opaque = false;
         _collectionView.showsHorizontalScrollIndicator = false;

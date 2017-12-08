@@ -1,25 +1,24 @@
 #import "TGCacheController.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGButtonCollectionItem.h"
 #import "TGVariantCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
-#import "TGRemoteImageView.h"
+#import <LegacyComponents/TGRemoteImageView.h>
 
 #import "TGActionSheet.h"
 
 #import "TGDatabase.h"
-
-#import "TGStringUtils.h"
 
 #import "TGAlertView.h"
 
 #import "TGAppDelegate.h"
 
 #import "TGMediaCacheIndexData.h"
-#import "TGPeerIdAdapter.h"
 
 #import "TGCachePeerItem.h"
 
@@ -407,65 +406,34 @@
 
 - (void)clearCachePressed
 {
-    if (true) {
-        NSMutableDictionary *itemsByType = [[NSMutableDictionary alloc] init];
-        NSMutableDictionary *totalSizeByType = [[NSMutableDictionary alloc] init];
-        int64_t totalSize = 0;
-        
-        for (TGEvaluatedPeerMediaCacheIndexDataWithPeer *peerData in _sortedEvaluatedPeersAndData) {
-            [peerData.data.itemsByType enumerateKeysAndObjectsUsingBlock:^(NSNumber *nType, NSArray *items, __unused BOOL *stop) {
-                NSMutableArray *array = itemsByType[nType];
-                if (array == nil) {
-                    array = [[NSMutableArray alloc] init];
-                    itemsByType[nType] = array;
-                }
-                [array addObjectsFromArray:items];
-            }];
-            [peerData.data.totalSizeByType enumerateKeysAndObjectsUsingBlock:^(NSNumber *nType, NSNumber *nSize, __unused BOOL *stop) {
-                totalSizeByType[nType] = @([totalSizeByType[nType] longLongValue] + [nSize longLongValue]);
-            }];
-            totalSize += peerData.data.totalSize;
-        }
-        
-        TGEvaluatedPeerMediaCacheIndexData *data = [[TGEvaluatedPeerMediaCacheIndexData alloc] initWithPeerId:0 itemsByType:itemsByType totalSizeByType:totalSizeByType totalSize:totalSize];
-        
-        __weak TGCacheController *weakSelf = self;
-        [self showClearCacheSheet:totalSizeByType clear:^(NSArray *types) {
-            __strong TGCacheController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                [strongSelf clearPeerData:data types:types];
+    NSMutableDictionary *itemsByType = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *totalSizeByType = [[NSMutableDictionary alloc] init];
+    int64_t totalSize = 0;
+    
+    for (TGEvaluatedPeerMediaCacheIndexDataWithPeer *peerData in _sortedEvaluatedPeersAndData) {
+        [peerData.data.itemsByType enumerateKeysAndObjectsUsingBlock:^(NSNumber *nType, NSArray *items, __unused BOOL *stop) {
+            NSMutableArray *array = itemsByType[nType];
+            if (array == nil) {
+                array = [[NSMutableArray alloc] init];
+                itemsByType[nType] = array;
             }
+            [array addObjectsFromArray:items];
         }];
-        
-        return;
+        [peerData.data.totalSizeByType enumerateKeysAndObjectsUsingBlock:^(NSNumber *nType, NSNumber *nSize, __unused BOOL *stop) {
+            totalSizeByType[nType] = @([totalSizeByType[nType] longLongValue] + [nSize longLongValue]);
+        }];
+        totalSize += peerData.data.totalSize;
     }
     
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Cache.ClearCacheAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
-    {
-        if (okButtonPressed)
-        {
-            _progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-            [_progressWindow show:true];
-            
-            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
-            {
-                [TGDatabaseInstance() clearCachedMedia];
-                
-                [[TGRemoteImageView sharedCache] clearCache:TGCacheDisk];
-                
-                NSString *documentsDirectory = [TGAppDelegate documentsPath];
-                
-                [[NSFileManager defaultManager] removeItemAtPath:[documentsDirectory stringByAppendingPathComponent:@"files"] error:nil];
-                [[NSFileManager defaultManager] removeItemAtPath:[documentsDirectory stringByAppendingPathComponent:@"audio"] error:nil];
-                [[NSFileManager defaultManager] removeItemAtPath:[documentsDirectory stringByAppendingPathComponent:@"video"] error:nil];
-                
-                TGDispatchOnMainThread(^
-                {
-                    [_progressWindow dismissWithSuccess];
-                });
-            });
+    TGEvaluatedPeerMediaCacheIndexData *data = [[TGEvaluatedPeerMediaCacheIndexData alloc] initWithPeerId:0 itemsByType:itemsByType totalSizeByType:totalSizeByType totalSize:totalSize];
+    
+    __weak TGCacheController *weakSelf = self;
+    [self showClearCacheSheet:totalSizeByType clear:^(NSArray *types) {
+        __strong TGCacheController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf clearPeerData:data types:types];
         }
-    }] show];
+    }];
 }
 
 - (void)setSortedDataWithPeers:(NSArray *)sortedDataWithPeers totalSize:(int64_t)totalSize inProgress:(bool)inProgress {

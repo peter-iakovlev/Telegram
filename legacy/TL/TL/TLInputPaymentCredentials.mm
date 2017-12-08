@@ -114,3 +114,36 @@
 
 @end
 
+@implementation TLInputPaymentCredentials$inputPaymentCredentialsApplePay : TLInputPaymentCredentials
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xaa1c39f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xc3a14b22;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputPaymentCredentials$inputPaymentCredentialsApplePay *object = [[TLInputPaymentCredentials$inputPaymentCredentialsApplePay alloc] init];
+    object.payment_data = metaObject->getObject((int32_t)0x90a8fd6c);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.payment_data;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x90a8fd6c, value));
+    }
+}
+
+
+@end
+

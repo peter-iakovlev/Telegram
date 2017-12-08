@@ -1,28 +1,25 @@
 #import "TGPreviewMenu.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import <UIKit/UIGestureRecognizerSubclass.h>
 
 #import "TGAppDelegate.h"
 
-#import "TGImageUtils.h"
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
 
 #import "TGModernConversationController.h"
 #import "TGGenericModernConversationCompanion.h"
 
-#import "TGItemPreviewController.h"
-#import "TGItemMenuSheetPreviewView.h"
+#import <LegacyComponents/TGItemPreviewController.h>
+#import <LegacyComponents/TGItemMenuSheetPreviewView.h>
 
 #import "TGBotContextResults.h"
 #import "TGBotContextExternalResult.h"
 #import "TGBotContextMediaResult.h"
 #import "TGBotContextResultSendMessageText.h"
 #import "TGBotContextResultSendMessageGeo.h"
-
-#import "TGMessageEntityUrl.h"
-#import "TGWebPageMediaAttachment.h"
-#import "TGLocationMediaAttachment.h"
 
 #import "TGRecentGifsSignal.h"
 
@@ -35,16 +32,18 @@
 #import "TGPreviewWebPageItemView.h"
 #import "TGPreviewAudioItemView.h"
 #import "TGPreviewTextItemView.h"
-#import "TGMenuSheetButtonItemView.h"
+#import <LegacyComponents/TGMenuSheetButtonItemView.h>
 
 #import "TGStickersMenu.h"
 #import "TGOpenInMenu.h"
 
 #import "TGSendMessageSignals.h"
 
-#import "TGProgressWindow.h"
+#import <LegacyComponents/TGProgressWindow.h>
 
-@interface TGItemPreviewHandle ()
+#import "TGLegacyComponentsContext.h"
+
+@interface TGItemPreviewHandle () <UIGestureRecognizerDelegate>
 {
     UIView *_view;
     UILongPressGestureRecognizer *_gestureRecognizer;
@@ -80,7 +79,7 @@
     __block NSArray *mainItems = nil;
     __block NSArray *actions = nil;
     
-    TGItemMenuSheetPreviewView *previewView = [[TGItemMenuSheetPreviewView alloc] initWithFrame:CGRectZero];
+    TGItemMenuSheetPreviewView *previewView = [[TGItemMenuSheetPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
     previewView.presentActionsImmediately = expandImmediately;
     
     __weak TGItemMenuSheetPreviewView *weakPreviewView = previewView;
@@ -129,7 +128,7 @@
     
     [previewView setupWithMainItemViews:mainItems actionItemViews:finalActions];
     
-    TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithParentController:parentController previewView:previewView];
+    TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentController previewView:previewView];
     controller.sourcePointForItem = sourcePointForItem;
     
     return controller;
@@ -405,11 +404,16 @@
                     
                     saveGifItem.action = ^
                     {
-                        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                        progressWindow.skipMakeKeyWindowOnDismiss = true;
-                        [progressWindow show:true];
-                        [TGRecentGifsSignal addRecentGifFromDocument:document];
-                        [progressWindow dismissWithSuccess];
+                        dismissAction(false);
+                        
+                        TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                        {
+                            TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                            progressWindow.skipMakeKeyWindowOnDismiss = true;
+                            [progressWindow show:true];
+                            [TGRecentGifsSignal addRecentGifFromDocument:document];
+                            [progressWindow dismissWithSuccess];
+                        });
                     };
                     [actions addObject:saveGifItem];
                 }
@@ -626,10 +630,19 @@
         _view = view;
         
         _gestureRecognizer = [[TGItemPreviewPressGestureRecognizer alloc] initWithTarget:self action:@selector(handlePress:)];
+        _gestureRecognizer.delegate = self;
         _gestureRecognizer.minimumPressDuration = 0.17;
         [_view addGestureRecognizer:_gestureRecognizer];
     }
     return self;
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer
+{
+    if (self.shouldBegin != nil)
+        return self.shouldBegin([gestureRecognizer locationInView:gestureRecognizer.view]);
+    
+    return true;
 }
 
 - (void)dealloc

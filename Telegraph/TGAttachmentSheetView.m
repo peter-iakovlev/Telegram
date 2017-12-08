@@ -1,9 +1,10 @@
 #import "TGAttachmentSheetView.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGAttachmentSheetWindow.h"
 
 #import "TGAttachmentSheetItemView.h"
-#import "TGImageUtils.h"
 #import "TGVerticalSwipeDismissGestureRecognizer.h"
 #import "TGAttachmentSheetScrollView.h"
 

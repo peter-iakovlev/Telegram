@@ -6,6 +6,7 @@
 @interface TGInlineVideoView : UIView <TGModernView>
 
 @property (nonatomic) CGFloat cornerRadius;
+@property (nonatomic) int position;
 @property (nonatomic) UIEdgeInsets insets;
 @property (nonatomic) CGSize videoSize;
 

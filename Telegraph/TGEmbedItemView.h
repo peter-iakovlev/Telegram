@@ -1,8 +1,8 @@
-#import "TGMenuSheetItemView.h"
+#import <LegacyComponents/TGMenuSheetItemView.h>
 #import <SSignalKit/SSignalKit.h>
-#import "TGPIPAblePlayerView.h"
+#import <LegacyComponents/TGPIPAblePlayerView.h>
 #import "TGEmbedPlayerController.h"
-#import "TGEmbedPlayerView.h"
+#import <LegacyComponents/TGEmbedPlayerView.h>
 
 @class TGViewController;
 @class TGWebPageMediaAttachment;

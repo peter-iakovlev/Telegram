@@ -4,6 +4,8 @@
 
 @interface TGSignalImageViewModel : TGModernViewModel
 
+@property (nonatomic, assign) bool ignoresInvertColors;
+@property (nonatomic, assign) UIViewContentMode contentMode;
 @property (nonatomic) bool showProgress;
 @property (nonatomic) bool manualProgress;
 

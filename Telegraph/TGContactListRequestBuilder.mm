@@ -1,7 +1,8 @@
 #import "TGContactListRequestBuilder.h"
 
+#import <LegacyComponents/LegacyComponents.h>
+
 #import "TGTelegraph.h"
-#import "TGUser.h"
 
 #import "TGDatabase.h"
 
@@ -11,8 +12,8 @@
 
 #import "TGUser+Telegraph.h"
 
-#import "ActionStage.h"
-#import "SGraphObjectNode.h"
+#import <LegacyComponents/ActionStage.h>
+#import <LegacyComponents/SGraphObjectNode.h>
 
 #import "TGAppDelegate.h"
 
