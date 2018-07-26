@@ -4,6 +4,8 @@
 
 #import "TGCallDiscardReason.h"
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoCallView : UIView
 {
     UILabel *_timeLabel;
@@ -11,7 +13,7 @@
     UILabel *_durationLabel;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message;
+- (instancetype)initWithMessage:(TGMessage *)message presentation:(TGPresentation *)presentation;
 
 @end
 
@@ -45,6 +47,14 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _separatorLayer.backgroundColor = presentation.pallete.collectionMenuSeparatorColor.CGColor;
+    _dateLabel.textColor = presentation.pallete.collectionMenuTextColor;
+}
+
 - (void)setCallMessages:(NSArray *)callMessages
 {
     if (_callViews.count > 0)
@@ -61,7 +71,7 @@
     NSMutableArray *views = [[NSMutableArray alloc] init];
     for (TGMessage *message in callMessages)
     {
-        TGUserInfoCallView *callView = [[TGUserInfoCallView alloc] initWithMessage:message];
+        TGUserInfoCallView *callView = [[TGUserInfoCallView alloc] initWithMessage:message presentation:self.presentation];
         [self addSubview:callView];
         
         [views addObject:callView];
@@ -76,7 +86,7 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorLayer.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    _separatorLayer.frame = CGRectMake(15.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
     
     _dateLabel.frame = CGRectMake(36 + self.safeAreaInset.left, 0, _dateLabel.frame.size.width, _dateLabel.frame.size.height);
     
@@ -91,7 +101,7 @@
 
 @implementation TGUserInfoCallView
 
-- (instancetype)initWithMessage:(TGMessage *)message
+- (instancetype)initWithMessage:(TGMessage *)message presentation:(TGPresentation *)presentation
 {
     self = [super init];
     if (self != nil)
@@ -109,7 +119,7 @@
         _timeLabel.backgroundColor = [UIColor clearColor];
         _timeLabel.font = TGSystemFontOfSize(12.0f);
         _timeLabel.text = time;
-        _timeLabel.textColor = [UIColor blackColor];
+        _timeLabel.textColor = presentation.pallete.collectionMenuTextColor;
         [self addSubview:_timeLabel];
         [_timeLabel sizeToFit];
         
@@ -117,7 +127,7 @@
         _typeLabel.backgroundColor = [UIColor clearColor];
         _typeLabel.font = TGMediumSystemFontOfSize(12.0f);
         _typeLabel.text = type;
-        _typeLabel.textColor = [UIColor blackColor];
+        _typeLabel.textColor = presentation.pallete.collectionMenuTextColor;
         [self addSubview:_typeLabel];
         [_typeLabel sizeToFit];
         
@@ -127,7 +137,7 @@
             _durationLabel.backgroundColor = [UIColor clearColor];
             _durationLabel.font = TGSystemFontOfSize(12.0f);
             _durationLabel.text = duration;
-            _durationLabel.textColor = [UIColor blackColor];
+            _durationLabel.textColor = presentation.pallete.collectionMenuTextColor;
             [self addSubview:_durationLabel];
             [_durationLabel sizeToFit];
         }
@@ -140,7 +150,8 @@
     static CGFloat x1 = 0;
     static CGFloat x2 = 0;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    dispatch_once(&onceToken, ^
+    {
         CGSize screenSize = TGScreenSize();
         if ((int)screenSize.width == 320)
         {

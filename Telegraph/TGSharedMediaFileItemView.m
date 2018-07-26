@@ -15,6 +15,8 @@
 
 #import "TGSharedMediaCheckButton.h"
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaFileItemView ()
 {
     UIView *_separatorView;
@@ -100,6 +102,20 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (self.presentation == presentation)
+        return;
+    
+     [super setPresentation:presentation];
+    
+    _separatorView.backgroundColor = presentation.pallete.separatorColor;
+    _titleLabel.textColor = presentation.pallete.textColor;
+    _descriptionLabel.textColor = presentation.pallete.secondaryTextColor;
+    _progressView.backgroundColor = presentation.pallete.accentColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+}
+
 - (void)prepareForReuse
 {
     [super prepareForReuse];
@@ -109,30 +125,12 @@
 
 - (UIImage *)availabilityStateIconDownload
 {
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        image = [UIImage imageNamed:@"SharedMediaDocumentStatusDownload.png"];
-    });
-    return image;
+    return self.presentation.images.sharedMediaDownloadIcon;
 }
 
 - (UIImage *)availabilityStateIconPause
 {
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(11.0f, 11.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0x0080fc).CGColor);
-        CGContextFillRect(context, CGRectMake(2.0f, 0.0f, 2.0f, 11.0f - 1.0f));
-        CGContextFillRect(context, CGRectMake(2.0f + 2.0f + 2.0f, 0.0f, 2.0f, 11.0f - 1.0f));
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    return image;
+    return self.presentation.images.sharedMediaPauseIcon;
 }
 
 - (void)setDocumentMediaAttachment:(TGDocumentMediaAttachment *)documentMediaAttachment date:(int)date lastInSection:(bool)__unused lastInSection availabilityState:(TGSharedMediaAvailabilityState *)availabilityState thumbnailColors:(NSArray *)thumbnailColors

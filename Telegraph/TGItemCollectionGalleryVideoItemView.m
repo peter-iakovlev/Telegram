@@ -4,6 +4,7 @@
 
 #import "TGModernGalleryVideoPlayerView.h"
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
+#import "TGModernGalleryPIPHeaderView.h"
 
 #import "TGDatabase.h"
 
@@ -24,7 +25,7 @@
 
 - (void)cancelPIP
 {
-    [_scrubbingInterfaceView setPictureInPictureHidden:false];
+    [_pipHeaderView setPictureInPictureHidden:false];
     
     _placeholderView.hidden = true;
     
@@ -67,9 +68,9 @@
 {
     __weak TGItemCollectionGalleryVideoItemView *weakSelf = self;
     
-    [_scrubbingInterfaceView setPictureInPictureHidden:!_playerView.supportsPIP];
+    [_pipHeaderView setPictureInPictureHidden:!_playerView.supportsPIP];
     
-    _scrubbingInterfaceView.pipPressed = ^
+    _pipHeaderView.pipPressed = ^
     {
         __strong TGItemCollectionGalleryVideoItemView *strongSelf = weakSelf;
         if (strongSelf == nil)

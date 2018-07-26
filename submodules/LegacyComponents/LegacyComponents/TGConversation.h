@@ -1,10 +1,4 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
+
 
 #import <Foundation/Foundation.h>
 
@@ -205,6 +199,8 @@ typedef enum {
 @property (nonatomic, strong) NSData *mediaData;
 @property (nonatomic) int64_t messageFlags;
 
+@property (nonatomic) bool unreadMark;
+
 @property (nonatomic) int unreadCount;
 @property (nonatomic) int serviceUnreadCount;
 
@@ -212,6 +208,11 @@ typedef enum {
 @property (nonatomic, strong) NSString *chatPhotoSmall;
 @property (nonatomic, strong) NSString *chatPhotoMedium;
 @property (nonatomic, strong) NSString *chatPhotoBig;
+@property (nonatomic) NSData *chatPhotoFileReferenceSmall;
+@property (nonatomic) NSData *chatPhotoFileReferenceBig;
+
+@property (nonatomic, strong) NSString *chatPhotoFullSmall;
+@property (nonatomic, strong) NSString *chatPhotoFullBig;
 
 @property (nonatomic) int chatParticipantCount;
 
@@ -269,6 +270,9 @@ typedef enum {
 @property (nonatomic, strong) TGChannelAdminRights *channelAdminRights;
 @property (nonatomic, strong) TGChannelBannedRights *channelBannedRights;
 
+@property (nonatomic, strong) NSNumber *feedId;
+- (int64_t)conversationFeedId;
+
 - (id)initWithConversationId:(int64_t)conversationId unreadCount:(int)unreadCount serviceUnreadCount:(int)serviceUnreadCount;
 
 - (void)mergeMessage:(TGMessage *)message;
@@ -294,5 +298,7 @@ typedef enum {
 - (bool)isMessageUnread:(int32_t)messageId date:(int32_t)messageDate outgoing:(bool)outgoing;
 
 - (bool)pinnedToTop;
+
+- (int32_t)searchMessageId;
 
 @end

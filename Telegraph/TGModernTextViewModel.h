@@ -24,6 +24,8 @@
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic) CTFontRef font;
 @property (nonatomic, strong) UIColor *textColor;
+@property (nonatomic, strong) UIColor *linkColor;
+@property (nonatomic) bool underlineAllLinks;
 @property (nonatomic) NSUInteger maxNumberOfLines;
 @property (nonatomic, strong) NSArray *textCheckingResults;
 @property (nonatomic) NSTextAlignment alignment;

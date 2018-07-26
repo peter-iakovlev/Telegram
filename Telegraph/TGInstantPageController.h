@@ -5,6 +5,7 @@
 @interface TGInstantPageController : TGViewController
 
 @property (nonatomic, strong, readonly) TGWebPageMediaAttachment *webPage;
+@property (nonatomic, assign) bool disableActions;
 
 - (instancetype)initWithWebPage:(TGWebPageMediaAttachment *)webPage anchor:(NSString *)anchor peerId:(int64_t)peerId messageId:(int32_t)messageId;
 

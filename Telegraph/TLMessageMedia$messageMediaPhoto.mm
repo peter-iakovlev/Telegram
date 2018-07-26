@@ -31,10 +31,6 @@
         result.photo = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
     }
     
-    if (flags & (1 << 1)) {
-        result.caption = [is readString];
-    }
-    
     if (flags & (1 << 2)) {
         result.ttl_seconds = [is readInt32];
     }

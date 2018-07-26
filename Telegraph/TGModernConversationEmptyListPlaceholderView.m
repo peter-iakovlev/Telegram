@@ -10,6 +10,11 @@
 
 @implementation TGModernConversationEmptyListPlaceholderView
 
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGPresentation *)__unused presentation
+{
+    return [super initWithFrame:frame];
+}
+
 - (void)adjustLayoutForSuperview:(UIView *)__unused superview orientation:(UIInterfaceOrientation)__unused orientation
 {
 }

@@ -273,10 +273,9 @@ static ASQueue *taskManagementQueue()
         [[TGSharedMediaUtils inMemoryImageCache] setImageDataWithSize:image.size generator:^(uint8_t *memory, NSUInteger bytesPerRow)
         {
             CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-            CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+            CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little;
             
             CGContextRef context = CGBitmapContextCreate(memory, contextWidth, contextHeight, 8, bytesPerRow, colorSpace, bitmapInfo);
-            CGColorSpaceRelease(colorSpace);
             
             CGContextTranslateCTM(context, contextWidth / 2.0f, contextHeight / 2.0f);
             CGContextScaleCTM(context, 1.0f, -1.0f);
@@ -287,6 +286,7 @@ static ASQueue *taskManagementQueue()
             [image drawInRect:CGRectMake(0.0f, 0.0f, contextWidth, contextHeight) blendMode:kCGBlendModeCopy alpha:1.0f];
             
             UIGraphicsPopContext();
+            CGColorSpaceRelease(colorSpace);
             CGContextRelease(context);
         } forKey:uri];
         

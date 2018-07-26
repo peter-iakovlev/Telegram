@@ -12,15 +12,15 @@
 #include "opus.h"
 #include "threading.h"
 #include "BlockingQueue.h"
-#include "BufferPool.h"
+#include "Buffers.h"
 #include "EchoCanceller.h"
 
 #include <stdint.h>
 
 namespace tgvoip{
-class OpusEncoder : public MediaStreamItf{
+class OpusEncoder{
 public:
-	OpusEncoder(MediaStreamItf* source);
+	OpusEncoder(MediaStreamItf* source, bool needSecondary);
 	virtual ~OpusEncoder();
 	virtual void Start();
 	virtual void Stop();
@@ -30,18 +30,23 @@ public:
 	void SetPacketLoss(int percent);
 	int GetPacketLoss();
 	uint32_t GetBitrate();
+	void SetDTX(bool enable);
+	void SetLevelMeter(AudioLevelMeter* levelMeter);
+	void SetCallback(void (*f)(unsigned char*, size_t, unsigned char*, size_t, void*), void* param);
+	void SetSecondaryEncoderEnabled(bool enabled);
 
 private:
 	static size_t Callback(unsigned char* data, size_t len, void* param);
-	static void* StartThread(void* arg);
-	void RunThread();
+	void RunThread(void* arg);
 	void Encode(unsigned char* data, size_t len);
+	void InvokeCallback(unsigned char* data, size_t length, unsigned char* secondaryData, size_t secondaryLength);
 	MediaStreamItf* source;
 	::OpusEncoder* enc;
+	::OpusEncoder* secondaryEncoder;
 	unsigned char buffer[4096];
 	uint32_t requestedBitrate;
 	uint32_t currentBitrate;
-	tgvoip_thread_t thread;
+	Thread* thread;
 	BlockingQueue<unsigned char*> queue;
 	BufferPool bufferPool;
 	EchoCanceller* echoCanceller;
@@ -53,6 +58,11 @@ private:
 	uint32_t strongCorrectionBitrate;
 	double mediumCorrectionMultiplier;
 	double strongCorrectionMultiplier;
+	AudioLevelMeter* levelMeter;
+	bool secondaryEncoderEnabled;
+
+	void (*callback)(unsigned char*, size_t, unsigned char*, size_t, void*);
+	void* callbackParam;
 };
 }
 

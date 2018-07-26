@@ -8,7 +8,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return 0xe39621fd;
+    return 0x5b38c6c1;
 }
 
 - (int32_t)TLconstructorName
@@ -40,8 +40,6 @@
         }
     }
     
-    [os writeString:self.caption];
-    
     if ((self.flags & (1 << 0)) && self.stickers != nil) {
         int32_t vectorSignature = TL_UNIVERSAL_VECTOR_CONSTRUCTOR;
         [os writeInt32:vectorSignature];
@@ -60,6 +58,71 @@
 - (id<TLObject>)TLdeserialize:(NSInputStream *)__unused is signature:(int32_t)__unused signature environment:(id<TLSerializationEnvironment>)__unused environment context:(TLSerializationContext *)__unused context error:(__autoreleasing NSError **)__unused error
 {
     TLInputMediaUploadedDocument *result = [[TLInputMediaUploadedDocument alloc] init];
+    
+    return result;
+}
+
+@end
+
+
+@implementation TLInputMediaDocument
+
+- (int32_t)TLconstructorSignature
+{
+    return 0x23ab23d2;
+}
+
+- (int32_t)TLconstructorName
+{
+    return -1;
+}
+
+- (void)TLserialize:(NSOutputStream *)__unused os
+{
+    [os writeInt32:self.flags];
+    
+    TLMetaClassStore::serializeObject(os, self.n_id, true);
+    
+    if (self.flags & (1 << 0)) {
+        [os writeInt32:self.ttl_seconds];
+    }
+}
+
+- (id<TLObject>)TLdeserialize:(NSInputStream *)__unused is signature:(int32_t)__unused signature environment:(id<TLSerializationEnvironment>)__unused environment context:(TLSerializationContext *)__unused context error:(__autoreleasing NSError **)__unused error
+{
+    TLInputMediaDocument *result = [[TLInputMediaDocument alloc] init];
+    
+    return result;
+}
+
+@end
+
+@implementation TLInputMediaDocumentExternal
+
+- (int32_t)TLconstructorSignature
+{
+    return 0xfb52dc99;
+}
+
+- (int32_t)TLconstructorName
+{
+    return -1;
+}
+
+- (void)TLserialize:(NSOutputStream *)__unused os
+{
+    [os writeInt32:self.flags];
+    
+    [os writeString:self.url];
+    
+    if (self.flags & (1 << 0)) {
+        [os writeInt32:self.ttl_seconds];
+    }
+}
+
+- (id<TLObject>)TLdeserialize:(NSInputStream *)__unused is signature:(int32_t)__unused signature environment:(id<TLSerializationEnvironment>)__unused environment context:(TLSerializationContext *)__unused context error:(__autoreleasing NSError **)__unused error
+{
+    TLInputMediaDocumentExternal *result = [[TLInputMediaDocumentExternal alloc] init];
     
     return result;
 }

@@ -14,6 +14,7 @@ static const float luminanceThreshold = 0.8f;
     bool _textSizeInitialized;
     NSTextAlignment _textAlignment;
     UIColor *_timestampColor;
+    UIColor *_timestampTextColor;
 }
 
 @end
@@ -28,6 +29,7 @@ static const float luminanceThreshold = 0.8f;
         self.opaque = false;
         _textAlignment = NSTextAlignmentLeft;
         _timestampColor = UIColorRGBA(0x000000, 0.4f);
+        _timestampTextColor = [UIColor whiteColor];
     }
     return self;
 }
@@ -49,6 +51,18 @@ static const float luminanceThreshold = 0.8f;
     if (_timestampColor != timestampColor)
     {
         _timestampColor = timestampColor;
+        [self setNeedsDisplay];
+    }
+}
+
+- (void)setTimestampTextColor:(UIColor *)timestampTextColor
+{
+    if (timestampTextColor == nil)
+        timestampTextColor = [UIColor whiteColor];
+    
+    if (_timestampTextColor != timestampTextColor)
+    {
+        _timestampTextColor = timestampTextColor;
         [self setNeedsDisplay];
     }
 }
@@ -134,7 +148,7 @@ static const float luminanceThreshold = 0.8f;
         [_backdropArea drawRelativeToImageRect:CGRectMake(-position.x, -position.y, imageSize.width, imageSize.height)];
     }*/
 
-    UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : [UIColor whiteColor];
+    UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : _timestampTextColor;
     CGContextSetFillColorWithColor(context, textColor.CGColor);
     [_text drawInRect:CGRectMake(backgroundRect.origin.x + 6.0f, 2.5f, contentWidth - 11.0f, [self textSize].height) withFont:[self textFont] lineBreakMode:NSLineBreakByTruncatingTail];
 }

@@ -864,7 +864,7 @@ public:
             [ActionStageInstance() dispatchOnStageQueue:^{
                 __strong TGVideoDownloadActor *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    for (TLCdnFileHash$cdnFileHash *nHash in hashes) {
+                    for (TLFileHash$fileHash *nHash in hashes) {
                         dict[@(nHash.offset)] = nHash.n_hash;
                     }
                     

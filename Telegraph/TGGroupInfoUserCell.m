@@ -3,6 +3,8 @@
 #import "TGGroupInfoUserCollectionItem.h"
 #import "TGGroupInfoUserCollectionItemView.h"
 
+#import "TGPresentation.h"
+
 @interface TGGroupInfoUserCell () {
     TGCollectionItem *_item;
     TGGroupInfoUserCollectionItemView *_itemView;
@@ -15,9 +17,15 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self != nil) {
-        
+        self.selectedBackgroundView = [[UIView alloc] init];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
 }
 
 - (void)prepareForReuse {

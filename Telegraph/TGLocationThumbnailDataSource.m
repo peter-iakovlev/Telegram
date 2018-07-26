@@ -15,6 +15,8 @@
 #import "TGMapSnapshotterActor.h"
 #import "TGMediaStoreContext.h"
 
+#import "TGPresentation.h"
+
 static TGWorkerPool *workerPool()
 {
     static TGWorkerPool *instance = nil;
@@ -261,13 +263,6 @@ static ASQueue *taskManagementQueue()
             image = TGAverageColorAttachmentImage([UIColor whiteColor], !isFlat, 0);
         [image drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height) blendMode:kCGBlendModeCopy alpha:1.0f];
         
-        if (!noPin)
-        {
-            CGRect imageRect = CGRectMake(0.0f, 0.0f, size.width, size.height);
-            UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
-            [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
-        }
-        
         placeholder = UIGraphicsGetImageFromCurrentImageContext();
         if (placeholder != nil)
             placeholderBySize[sizeString] = placeholder;
@@ -326,11 +321,12 @@ static ASQueue *taskManagementQueue()
     CGRect imageRect = CGRectMake(0.0f, -12.0f, size.width + 1.0f, size.height + 24.0f);
     [image drawInRect:imageRect blendMode:kCGBlendModeCopy alpha:1.0f];
     
-    bool noPin = [args[@"noPin"] boolValue];
-    if (!noPin)
+    TGPresentation *presentation = TGPresentation.current;
+    if (presentation.pallete.isDark)
     {
-        UIImage *pinImage = [UIImage imageNamed:@"ModernMessageLocationPin.png"];
-        [pinImage drawInRect:CGRectMake(imageRect.origin.x + CGFloor((imageRect.size.width - pinImage.size.width) / 2.0f) + 1.0f, imageRect.origin.y + CGFloor((imageRect.size.height - pinImage.size.height) / 2.0f) + 6, pinImage.size.width, pinImage.size.height)];
+        [[UIColor colorWithWhite:0.0f alpha:0.3f] setFill];
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
     }
     
     image = UIGraphicsGetImageFromCurrentImageContext();

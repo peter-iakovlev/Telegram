@@ -7,7 +7,9 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
+
+#import "TGPresentation.h"
 
 @interface TGPasswordEmailController ()
 {
@@ -97,7 +99,7 @@
 {
     _skipButton = [[TGModernButton alloc] init];
     [_skipButton setTitle:TGLocalized(@"TwoStepAuth.EmailSkip") forState:UIControlStateNormal];
-    [_skipButton setTitleColor:UIColorRGB(0x9e9ea3)];
+    [_skipButton setTitleColor:self.presentation.pallete.collectionMenuCommentColor];
     _skipButton.titleLabel.font = TGSystemFontOfSize(14.0f);
     [_skipButton setContentEdgeInsets:UIEdgeInsetsMake(10.0f, 10.0f, 10.0f, 10.0f)];
     [_skipButton addTarget:self action:@selector(skipPressed) forControlEvents:UIControlEventTouchUpInside];
@@ -124,39 +126,16 @@
 
 - (void)skipPressed
 {
-    [[_emailItem boundView] endEditing:true];
-    
-    if (iosMajorVersion() >= 8)
+    __weak TGPasswordEmailController *weakSelf = self;
+    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") destructive:true completionBlock:^(bool okButtonPressed)
     {
-        UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") preferredStyle:UIAlertControllerStyleAlert];
-        UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:TGLocalized(@"Common.Cancel") style:UIAlertActionStyleCancel handler:nil];
-        
-        __weak TGPasswordEmailController *weakSelf = self;
-        UIAlertAction *okAction = [UIAlertAction actionWithTitle:TGLocalized(@"TwoStepAuth.EmailSkip") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action)
+        __strong TGPasswordEmailController *strongSelf = weakSelf;
+        if (strongSelf != nil)
         {
-            __strong TGPasswordEmailController *strongSelf = weakSelf;
-            if (strongSelf != nil)
+            if (okButtonPressed)
                 [strongSelf _skip];
-        }];
-        
-        [alertController addAction:cancelAction];
-        [alertController addAction:okAction];
-        [self presentViewController:alertController animated:true completion:nil];
-    }
-    else
-    {
-        __weak TGPasswordEmailController *weakSelf = self;
-        TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") completionBlock:^(bool okButtonPressed)
-        {
-            __strong TGPasswordEmailController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                if (okButtonPressed)
-                    [strongSelf _skip];
-            }
-        }];
-        [alertView show];
-    }
+        }
+    } disableKeyboardWorkaround:false];
 }
 
 - (void)_skip
@@ -169,7 +148,7 @@
 {
     [super controllerInsetUpdated:previousInset];
     
-    _skipButton.frame = CGRectMake(self.view.frame.size.width - _skipButton.frame.size.width, self.view.frame.size.height - self.controllerInset.bottom - _skipButton.frame.size.height, _skipButton.frame.size.width, _skipButton.frame.size.height);
+    _skipButton.frame = CGRectMake(self.view.frame.size.width - _skipButton.frame.size.width - self.controllerSafeAreaInset.right, self.view.frame.size.height - self.controllerInset.bottom - _skipButton.frame.size.height, _skipButton.frame.size.width, _skipButton.frame.size.height);
 }
 
 - (bool)willCaptureInputShortly

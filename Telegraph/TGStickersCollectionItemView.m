@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 #import <SSignalKit/SSignalKit.h>
 #import "TGFavoriteStickersSignal.h"
 
@@ -102,6 +104,8 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     __weak TGMenuSheetButtonItemView *_faveItem;
     
     NSTimer *_actionsTimer;
+    
+    TGMenuSheetPallete *_pallete;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -200,6 +204,23 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     _altTimer = nil;
 }
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    _pallete = pallete;
+    
+    _titleLabel.backgroundColor = pallete.backgroundColor;
+    _titleLabel.textColor = pallete.textColor;
+    _separator.backgroundColor = pallete.separatorColor;
+    _errorLabel.backgroundColor = pallete.backgroundColor;
+    _errorLabel.textColor = pallete.textColor;
+    _activityIndicator.color = pallete.spinnerColor;
+}
+
+- (void)setPresentation:(TGPresentation *)__unused presentation
+{
+}
+
 - (void)didMoveToSuperview
 {
     [super didMoveToSuperview];
@@ -231,12 +252,12 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     
     NSMutableArray<TGTextLabelLink *> *titleLinks = [[NSMutableArray alloc] init];
     NSArray *textResults = [TGMessage textCheckingResultsForText:stickerPack.title highlightMentionsAndTags:true highlightCommands:false entities:nil];
-    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:stickerPack.title attributes:@{NSFontAttributeName: _titleLabel.font, NSForegroundColorAttributeName: [UIColor blackColor]}];
+    NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithString:stickerPack.title attributes:@{NSFontAttributeName: _titleLabel.font, NSForegroundColorAttributeName: _pallete.textColor}];
     
     static UIImage *buttonImage = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        UIImage *rawImage = [UIImage imageNamed:@"LinkFull.png"];
+        UIImage *rawImage = TGImageNamed(@"LinkFull.png");
         buttonImage = [rawImage stretchableImageWithLeftCapWidth:(int)(rawImage.size.width / 2) topCapHeight:(int)(rawImage.size.height / 2)];
     });
     
@@ -244,7 +265,7 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
         if ([result isKindOfClass:[TGTextCheckingResult class]]) {
             TGTextCheckingResult *textResult = result;
             if (textResult.type == TGTextCheckingResultTypeMention) {
-                [string addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:textResult.range];
+                [string addAttribute:NSForegroundColorAttributeName value:_pallete.accentColor range:textResult.range];
                 UIButton *button = [[UIButton alloc] init];
                 [button setBackgroundImage:buttonImage forState:UIControlStateHighlighted];
                 [button addTarget:self action:@selector(titleLinkButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
@@ -290,8 +311,6 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
                 animation();
         } completion:^(__unused BOOL finished)
         {
-            if (_appeared && _altTimer == nil)
-                [self altTimerTick];
         }];
     };
     
@@ -636,6 +655,9 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     TGStickersCollectionCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:TGStickersCollectionCellIdentifier forIndexPath:indexPath];
     [cell setAltTick:_altTimerTick];
     
+    if (_pallete != nil)
+        [cell setBackgroundColor:_pallete.backgroundColor];
+    
     NSArray *associations = !_stickerPack.isMask ? _stickerPack.stickerAssociations : nil;
     [cell setSticker:_stickerPack.documents[indexPath.row] associations:associations mask:_stickerPack.isMask];
     
@@ -878,11 +900,11 @@ const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     }
     else
     {
-        CGFloat maxExpandedHeight = screenHeight - (self.hasShare ? 209.0f : 152.0f);
+        CGFloat maxExpandedHeight = screenHeight - (self.hasShare ? 209.0f : 152.0f) - (self.largerTopMargin ? 44.0f : 0.0f);
         CGFloat expandedHeight = TGStickersCollectionInsets.top + rows * (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) + TGStickersCollectionInsets.bottom;
 
         CGFloat buttonsHeight = self.collapseInLandscape ? 2 * TGMenuSheetButtonItemViewHeight : TGMenuSheetButtonItemViewHeight;
-        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight - self.menuController.safeAreaInset.bottom);
+        maxExpandedHeight = MIN(maxExpandedHeight, screenHeight - 75.0f - buttonsHeight - self.menuController.statusBarHeight - self.menuController.safeAreaInset.bottom - (self.largerTopMargin ? 44.0f : 0.0f));
         
         CGFloat maxCollapsedHeight = TGStickersCollectionInsets.top + (_collectionViewLayout.itemSize.height + _collectionViewLayout.minimumLineSpacing) * ((CGFloat)TGStickersCollectionNumberOfCollapsedRows - 0.5f) + 20.0f;
 

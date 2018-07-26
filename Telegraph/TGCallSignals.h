@@ -16,3 +16,5 @@
 + (SSignal *)saveCallDebug:(int64_t)callId accessHash:(int64_t)accessHash data:(NSString *)data;
 
 @end
+
+extern const int32_t TGCallMaxLayer;

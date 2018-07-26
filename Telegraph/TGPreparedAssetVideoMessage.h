@@ -19,7 +19,6 @@
 @property (nonatomic, readonly) bool useMediaCache;
 @property (nonatomic, readonly) bool liveUpload;
 @property (nonatomic, readonly) bool passthrough;
-@property (nonatomic, strong) NSString *caption;
 @property (nonatomic, strong) NSString *videoHash;
 @property (nonatomic, assign) bool isCloud;
 @property (nonatomic, strong) NSArray *stickerDocuments;
@@ -34,7 +33,7 @@
 
 @property (nonatomic, strong) TGLiveUploadActorData *liveData;
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough caption:(NSString *)caption isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage groupedId:(int64_t)groupedId;
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier assetURL:(NSURL *)assetURL localVideoId:(int64_t)localVideoId imageInfo:(TGImageInfo *)imageInfo duration:(NSTimeInterval)duration dimensions:(CGSize)dimensions adjustments:(NSDictionary *)adjustments useMediaCache:(bool)useMediaCache liveUpload:(bool)liveUpload passthrough:(bool)passthrough text:(NSString *)text entities:(NSArray *)entities isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup stickerDocuments:(NSArray *)stickerDocuments roundMessage:(bool)roundMessage groupedId:(int64_t)groupedId;
 
 - (void)setImageInfoWithThumbnailData:(NSData *)data thumbnailSize:(CGSize)thumbnailSize;
 

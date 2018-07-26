@@ -18,7 +18,7 @@
 
 #import "TGChannelManagementSignals.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGResolveDomainActor ()
 {
@@ -154,7 +154,7 @@
                 [progressWindow dismiss:true];
             });
         }] takeLast] startWithNext:^(TGConversation *next) {
-            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next performActions:@{} atMessage:@{@"mid": @([_arguments[@"messageId"] intValue])} clearStack:!_keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:conversation.conversationId conversation:next performActions:@{} atMessage:@{@"mid": @([_arguments[@"messageId"] intValue]), @"groupedSingle": @([_arguments[@"single"] boolValue])} clearStack:!_keepStack openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         }error:nil completed:nil];
     }
     
@@ -168,7 +168,7 @@
         [_progressWindow dismiss:true];
         _progressWindow = nil;
         
-        [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Resolve.ErrorNotFound") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Resolve.ErrorNotFound") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     });
 
     [ActionStageInstance() actionFailed:self.path reason:-1];

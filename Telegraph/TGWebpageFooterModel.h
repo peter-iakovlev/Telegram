@@ -34,8 +34,6 @@ typedef enum {
 - (bool)preferWebpageSize;
 - (bool)fitContentToWebpage;
 
-+ (UIColor *)colorForAccentText:(bool)incoming;
-
 - (TGWebpageFooterModelAction)webpageActionAtPoint:(CGPoint)point;
 - (bool)activateWebpageContents;
 - (bool)webpageContentsActivated;

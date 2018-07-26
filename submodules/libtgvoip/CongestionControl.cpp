@@ -8,6 +8,7 @@
 #include "VoIPController.h"
 #include "logging.h"
 #include "VoIPServerConfig.h"
+#include "PrivateDefines.h"
 #include <math.h>
 #include <assert.h>
 
@@ -30,11 +31,9 @@ CongestionControl::CongestionControl(){
 	inflightDataSize=0;
 	lossCount=0;
 	cwnd=(size_t) ServerConfig::GetSharedInstance()->GetInt("audio_congestion_window", 1024);
-	init_mutex(mutex);
 }
 
 CongestionControl::~CongestionControl(){
-	free_mutex(mutex);
 }
 
 size_t CongestionControl::GetAcknowledgedDataSize(){

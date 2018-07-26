@@ -6,6 +6,8 @@
 #import <LegacyComponents/TGModernButton.h>
 #import <LegacyComponents/UIControl+HitTestEdgeInsets.h>
 
+#import "TGPresentation.h"
+
 @interface TGShareSearchItemView () <TGSearchBarDelegate>
 {
     UIView *_headerWrapperView;
@@ -42,25 +44,24 @@
         _headerWrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [self addSubview:_headerWrapperView];
         
+        _subtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
+        _subtitleLabel.backgroundColor = [UIColor whiteColor];
+        _subtitleLabel.font = TGSystemFontOfSize(12);
+        _subtitleLabel.textAlignment = NSTextAlignmentCenter;
+        _subtitleLabel.textColor = UIColorRGB(0x8e8e93);
+        _subtitleLabel.userInteractionEnabled = false;
+        [_subtitleLabel sizeToFit];
+        [_headerWrapperView addSubview:_subtitleLabel];
+        
         _titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        _titleLabel.backgroundColor = [UIColor whiteColor];
-        _titleLabel.font = TGMediumSystemFontOfSize(20);
+        _titleLabel.backgroundColor = [UIColor clearColor];
+        _titleLabel.font = TGMediumSystemFontOfSize(18);
         _titleLabel.text = TGLocalized(@"ShareMenu.ShareTo");
         _titleLabel.textAlignment = NSTextAlignmentCenter;
         _titleLabel.textColor = [UIColor blackColor];
         _titleLabel.userInteractionEnabled = false;
         [_titleLabel sizeToFit];
         [_headerWrapperView addSubview:_titleLabel];
-        
-        _subtitleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        _subtitleLabel.backgroundColor = [UIColor whiteColor];
-        _subtitleLabel.font = TGSystemFontOfSize(11);
-        _subtitleLabel.text = TGLocalized(@"ShareMenu.SelectChats");
-        _subtitleLabel.textAlignment = NSTextAlignmentCenter;
-        _subtitleLabel.textColor = UIColorRGB(0x8e8e93);
-        _subtitleLabel.userInteractionEnabled = false;
-        [_subtitleLabel sizeToFit];
-        [_headerWrapperView addSubview:_subtitleLabel];
         
         _searchButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 52, 52)];
         _searchButton.adjustsImageWhenHighlighted = false;
@@ -76,6 +77,25 @@
         [_headerWrapperView addSubview:_externalButton];
     }
     return self;
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _titleLabel.textColor = pallete.textColor;
+    
+    _subtitleLabel.backgroundColor = pallete.backgroundColor;
+    _subtitleLabel.textColor = pallete.secondaryTextColor;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    [_searchBar setPallete:presentation.searchBarPallete];
+    [_searchButton setImage:presentation.images.shareSearchIcon forState:UIControlStateNormal];
+    [_externalButton setImage:presentation.images.shareExternalIcon forState:UIControlStateNormal];
 }
 
 - (void)searchButtonPressed
@@ -105,7 +125,7 @@
 
 - (void)setSelectedPeerIds:(NSArray *)selectedPeerIds peers:(NSDictionary *)peers
 {
-    NSString *subtitle = TGLocalized(@"ShareMenu.SelectChats");
+    NSString *subtitle = @"";
     
     if (selectedPeerIds.count > 0)
     {
@@ -131,7 +151,15 @@
         }
     }
     
-    _subtitleLabel.text = subtitle;
+    [UIView transitionWithView:_subtitleLabel duration:0.2 options:UIViewAnimationOptionTransitionCrossDissolve animations:^
+    {
+        _subtitleLabel.text = subtitle;
+    } completion:nil];
+    
+    [UIView animateWithDuration:0.2 animations:^
+    {
+        [self layoutSubviews];
+    }];
 }
 
 - (NSString *)_titleForPeer:(id)peer full:(bool)full
@@ -247,6 +275,10 @@
     _subtitleLabel.frame = CGRectMake(CGRectGetMaxX(_searchButton.frame), CGRectGetMaxY(_titleLabel.frame), self.frame.size.width - CGRectGetMaxX(_searchButton.frame) - _searchButton.frame.origin.x - _externalButton.frame.size.width, _subtitleLabel.frame.size.height);
     
     _searchBar.frame = CGRectMake(8.0f, 8.0f, self.bounds.size.width - 16.0f, [_searchBar baseHeight]);
+    
+    bool hasSubtitle = _subtitleLabel.text.length > 0;
+    _titleLabel.frame = CGRectMake(CGFloor((self.frame.size.width - _titleLabel.frame.size.width) / 2), 23.0f - (hasSubtitle ? 7.0f : 0.0f), _titleLabel.frame.size.width, _titleLabel.frame.size.height);
+    _subtitleLabel.frame = CGRectMake(CGRectGetMaxX(_searchButton.frame), 28.0f + (hasSubtitle ? 9.0f : 0.0f), self.frame.size.width - CGRectGetMaxX(_searchButton.frame) - _searchButton.frame.origin.x - _externalButton.frame.size.width, 14.0f);
 }
 
 @end

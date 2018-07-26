@@ -9,6 +9,7 @@
 #import "TGContactsController.h"
 
 @class TGAddToExistingContactController;
+@class TGContactMediaAttachment;
 
 @protocol TGAddToExistingContactControllerDelegate <NSObject>
 
@@ -22,6 +23,6 @@
 
 @property (nonatomic, weak) id<TGAddToExistingContactControllerDelegate> delegate;
 
-- (id)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber;
+- (id)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber attachment:(TGContactMediaAttachment *)attachment;
 
 @end

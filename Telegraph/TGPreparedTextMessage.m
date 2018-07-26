@@ -15,11 +15,11 @@
     self = [super init];
     if (self != nil)
     {
-        _text = text;
+        self.text = text;
         self.replyMessage = replyMessage;
         _disableLinkPreviews = disableLinkPreviews;
         _parsedWebpage = parsedWebpage;
-        _entities = entities;
+        self.entities = entities;
         self.botContextResult = botContextResult;
         self.replyMarkup = replyMarkup;
     }
@@ -29,7 +29,7 @@
 - (TGMessage *)message
 {
     TGMessage *message = [[TGMessage alloc] init];
-    message.text = _text;
+    message.text = self.text;
     message.mid = self.mid;
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
@@ -53,9 +53,9 @@
         message.contentProperties = @{@"linkPreviews": [[TGLinkPreviewsContentProperty alloc] initWithDisableLinkPreviews:_disableLinkPreviews]};
     }
     
-    if (_entities.count != 0) {
+    if (self.entities.count != 0) {
         TGMessageEntitiesAttachment *attachment = [[TGMessageEntitiesAttachment alloc] init];
-        attachment.entities = _entities;
+        attachment.entities = self.entities;
         [attachments addObject:attachment];
     }
     

@@ -18,8 +18,12 @@
 #import "TGReplyHeaderModel.h"
 #import "TGReplyHeaderActionModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGModenConcersationReplyAssociatedPanel ()
 {
+    TGMessage *_message;
+    
     CGFloat _sendAreaWidth;
     CGFloat _attachmentAreaWidth;
     
@@ -100,6 +104,15 @@
     return self;
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    [self setLargeDismissButton:_largeDismissButton];
+    _lineView.backgroundColor = pallete.accentColor;
+    [self updateMessage:_message];
+}
+
 - (void)handleTap:(UITapGestureRecognizer *)__unused gestureRecognizer {
     if (self.pressed != nil)
         self.pressed();
@@ -118,11 +131,11 @@
     _largeDismissButton = largeDismissButton;
     
     if (largeDismissButton) {
-        UIImage *closeImage = TGImageNamed(@"PinnedMessagePanelClose.png");
+        UIImage *closeImage = self.pallete.largeCloseIcon;
         _closeButton.frame = CGRectMake(0.0f, 0.0f, closeImage.size.width, closeImage.size.height);
         [_closeButton setBackgroundImage:closeImage forState:UIControlStateNormal];
     } else {
-        UIImage *closeImage = TGImageNamed(@"ReplyPanelClose.png");
+        UIImage *closeImage = self.pallete.closeIcon;
         _closeButton.frame = CGRectMake(0.0f, 0.0f, closeImage.size.width, closeImage.size.height);
         [_closeButton setBackgroundImage:closeImage forState:UIControlStateNormal];
     }
@@ -204,6 +217,8 @@
 }
 
 - (void)updateMessage:(TGMessage *)message {
+    _message = message;
+    
     [_imageView removeFromSuperview];
     _imageView = nil;
     
@@ -213,7 +228,7 @@
     _message = message;
     bool isSavedMessages = message.cid == TGTelegraphInstance.clientUserId;
     
-    UIColor *color = UIColorRGB(0x34a5ff);
+    UIColor *color = self.pallete.accentColor;
     
     NSString *title = @"";
     id author = nil;
@@ -285,18 +300,17 @@
     SSignal *imageSignal = nil;
     UIImage *imageIcon = nil;
     NSString *text = message.text;
-    UIColor *textColor = [UIColor blackColor];
+    UIColor *textColor = self.pallete.textColor;
     NSLineBreakMode lineBreakMode = NSLineBreakByTruncatingTail;
     
-    UIColor *mediaTextColor = UIColorRGB(0x8c8c92);
+    UIColor *mediaTextColor = self.pallete.secondaryTextColor;
     
     for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
         if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
         {
-            TGImageMediaAttachment *imageAttachment = (TGImageMediaAttachment *)attachment;
-            if (imageAttachment.caption.length > 0)
-                text = imageAttachment.caption;
+            if (message.caption.length > 0)
+                text = message.caption;
             else
                 text = TGLocalized(@"Message.Photo");
             textColor = mediaTextColor;
@@ -306,11 +320,11 @@
         else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
         {
             TGVideoMediaAttachment *videoAttachment = (TGVideoMediaAttachment *)attachment;
-            if (videoAttachment.caption.length > 0)
-                text = videoAttachment.caption;
+            if (message.caption.length > 0)
+                text = message.caption;
             else
                 text = videoAttachment.roundMessage ? TGLocalized(@"Message.VideoMessage") : TGLocalized(@"Message.Video");
-            CGFloat cornerRadius = videoAttachment.roundMessage ? 17.5f * TGScreenScaling() : [TGReplyHeaderModel thumbnailCornerRadius];
+            CGFloat cornerRadius = videoAttachment.roundMessage ? 17.5f : [TGReplyHeaderModel thumbnailCornerRadius];
             textColor = mediaTextColor;
             
             imageSignal = [TGSharedVideoSignals squareVideoThumbnail:(TGVideoMediaAttachment *)attachment ofSize:CGSizeMake(35.0f, 35.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:cornerRadius]];

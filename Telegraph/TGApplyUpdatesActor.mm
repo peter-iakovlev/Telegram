@@ -1199,26 +1199,41 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
         {
             if (applicationState != UIApplicationStateActive)
             {
+                NSNumber *globalMessageSoundIdVal = nil;
+                NSNumber *globalMessagePreviewTextVal = nil;
+                NSNumber *globalMessageMuteUntilVal = nil;
+                
                 int globalMessageSoundId = 1;
                 bool globalMessagePreviewText = true;
                 int globalMessageMuteUntil = 0;
                 bool notFound = false;
-                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundId muteUntil:&globalMessageMuteUntil previewText:&globalMessagePreviewText messagesMuted:NULL notFound:&notFound];
-                if (notFound)
-                {
+                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundIdVal muteUntil:&globalMessageMuteUntilVal previewText:&globalMessagePreviewTextVal messagesMuted:NULL notFound:&notFound];
+                if (notFound) {
                     globalMessageSoundId = 1;
                     globalMessagePreviewText = true;
                 }
+                else {
+                    globalMessageSoundId = globalMessageSoundIdVal ? globalMessageSoundIdVal.intValue : 1;
+                    globalMessagePreviewText = globalMessagePreviewTextVal ? globalMessagePreviewTextVal.boolValue : true;
+                    globalMessageMuteUntil = globalMessageMuteUntilVal ? globalMessageMuteUntilVal.intValue : 0;
+                }
+                
+                NSNumber *globalGroupSoundIdVal = nil;
+                NSNumber *globalGroupPreviewTextVal = nil;
+                NSNumber *globalGroupMuteUntilVal = nil;
                 
                 int globalGroupSoundId = 1;
                 bool globalGroupPreviewText = true;
                 int globalGroupMuteUntil = 0;
                 notFound = false;
-                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&globalGroupSoundId muteUntil:&globalGroupMuteUntil previewText:&globalGroupPreviewText messagesMuted:NULL notFound:&notFound];
-                if (notFound)
-                {
+                [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&globalGroupSoundIdVal muteUntil:&globalGroupMuteUntilVal previewText:&globalGroupPreviewTextVal messagesMuted:NULL notFound:&notFound];
+                if (notFound) {
                     globalGroupSoundId = 1;
                     globalGroupPreviewText = true;
+                } else {
+                    globalGroupSoundId = globalGroupSoundIdVal ? globalGroupSoundIdVal.intValue : 1;
+                    globalGroupPreviewText = globalGroupPreviewTextVal ? globalGroupPreviewTextVal.boolValue : true;
+                    globalGroupMuteUntil = globalGroupMuteUntilVal ? globalGroupMuteUntilVal.intValue : 0;
                 }
                 
                 @try
@@ -1394,30 +1409,14 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                         if ([TGDatabaseInstance() isPeerMuted:notificationPeerId])
                             continue;
                         
+                        NSNumber *soundIdVal = nil;
                         int soundId = 1;
-                        bool notFound = false;
-                        int muteUntil = 0;
-                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundId muteUntil:&muteUntil previewText:NULL messagesMuted:NULL notFound:&notFound];
-                        if (notFound)
-                        {
-                            soundId = 1;
-                        }
+                        [TGDatabaseInstance() loadPeerNotificationSettings:notificationPeerId soundId:&soundIdVal muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
                         
-                        if (soundId == 1) {
+                        if (soundIdVal != nil) {
+                            soundId = soundIdVal.intValue;
+                        } else {
                             soundId = (message.cid > 0 || message.cid <= INT_MIN) ? globalMessageSoundId : globalGroupSoundId;
-                        }
-                        
-                        if (true) {
-                            if (message.cid > 0 || message.cid <= INT_MIN)
-                            {
-                                if (globalMessageMuteUntil > 0)
-                                    continue;
-                            }
-                            else
-                            {
-                                if (globalGroupMuteUntil > 0)
-                                    continue;
-                            }
                         }
                         
                         NSString *text = nil;
@@ -1662,7 +1661,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             }
                             else if (attachment.type == TGImageMediaAttachmentType)
                             {
-                                if (globalMessagePreviewText && ((TGImageMediaAttachment *)attachment).caption.length != 0) {
+                                if (((globalMessagePreviewText && TGPeerIdIsUser(message.cid)) || (globalGroupPreviewText && !TGPeerIdIsUser(message.cid))) && ((TGImageMediaAttachment *)attachment).caption.length != 0) {
                                     if (message.cid > 0) {
                                         text = [[NSString alloc] initWithFormat:@"%@: 🖼 %@", user.displayName, ((TGImageMediaAttachment *)attachment).caption];
                                     } else {
@@ -1688,7 +1687,7 @@ static int64_t extractMessageConversationId(T concreteMessage, int &outFromUid)
                             {
                                 bool isRoundMessage = ((TGVideoMediaAttachment *)attachment).roundMessage;
                                 
-                                if (globalMessagePreviewText && ((TGVideoMediaAttachment *)attachment).caption.length != 0) {
+                                if (((globalMessagePreviewText && TGPeerIdIsUser(message.cid)) || (globalGroupPreviewText && !TGPeerIdIsUser(message.cid))) && ((TGVideoMediaAttachment *)attachment).caption.length != 0) {
                                     if (message.cid > 0) {
                                         text = [[NSString alloc] initWithFormat:@"%@: 📹 %@", user.displayName, ((TGVideoMediaAttachment *)attachment).caption];
                                     } else {

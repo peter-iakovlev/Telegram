@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
+
 @interface TGChannelModeratorCollectionItemView () {
     TGLetteredAvatarView *_avatarView;
     UILabel *_nameLabel;
@@ -35,6 +37,13 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _nameLabel.textColor = presentation.pallete.collectionMenuTextColor;
+}
+
 - (NSString *)_statusStringFromUserPresence:(TGUserPresence)presence active:(out bool *)active
 {
     if (presence.online)
@@ -60,31 +69,15 @@
     
     _statusLabel.text = status;
     if (active) {
-        _statusLabel.textColor = TGAccentColor();
+        _statusLabel.textColor = self.presentation.pallete.collectionMenuAccentColor;
     } else {
-        _statusLabel.textColor = UIColorRGB(0xb3b3b3);
+        _statusLabel.textColor = self.presentation.pallete.collectionMenuVariantColor;
     }
     
     NSString *avatarUri = user.photoUrlSmall;
     CGSize size = CGSizeMake(66.0f, 66.0f);
     
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:66.0f];
     
     if (avatarUri.length == 0)
         [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];

@@ -1,6 +1,7 @@
 #import "TGMenuSheetController.h"
 
 #import "LegacyComponentsInternal.h"
+#import "LegacyComponentsGlobals.h"
 #import "TGNavigationController.h"
 #import "TGOverlayController.h"
 #import "TGOverlayControllerWindow.h"
@@ -94,6 +95,9 @@ typedef enum
         _permittedArrowDirections = UIPopoverArrowDirectionDown;
         _requiuresDimView = true;
         
+        if (!dark && [[LegacyComponentsGlobals provider] respondsToSelector:@selector(menuSheetPallete)])
+            self.pallete = [[LegacyComponentsGlobals provider] menuSheetPallete];
+        
         self.wantsFullScreenLayout = true;
     }
     return self;
@@ -120,7 +124,7 @@ typedef enum
     [super loadView];
     self.view = [[TGMenuSheetContainerView alloc] initWithFrame:self.view.frame];
     
-    if ([_context currentSizeClass] == UIUserInterfaceSizeClassCompact)
+    if ([_context currentSizeClass] == UIUserInterfaceSizeClassCompact || _forceFullScreen)
     {
         self.view.frame = [_context fullscreenBounds];
         self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -225,7 +229,7 @@ typedef enum
         [strongSelf repositionMenuWithReferenceSize:[strongSelf->_context fullscreenBounds].size];
     };
     
-    if (animated && compact)
+    if (animated && (compact || _forceFullScreen))
     {
         TGMenuSheetView *sheetView = _sheetView;
         
@@ -255,7 +259,7 @@ typedef enum
             [UIView animateWithDuration:0.25 delay:0.0 options:UIViewAnimationOptionCurveEaseInOut animations:changeBlock completion:completionBlock];
         }
         
-        _sheetView = [[TGMenuSheetView alloc] initWithContext:_context itemViews:itemViews sizeClass:sizeClass dark:_dark];
+        _sheetView = [[TGMenuSheetView alloc] initWithContext:_context pallete:_pallete itemViews:itemViews sizeClass:sizeClass dark:_dark borderless:_borderless];
         _sheetView.menuRelayout = menuRelayout;
         _sheetView.menuWidth = sheetView.menuWidth;
         _sheetView.maxHeight = _maxHeight;
@@ -275,7 +279,7 @@ typedef enum
     {
         void (^configureBlock)(void) = ^
         {
-            _sheetView = [[TGMenuSheetView alloc] initWithContext:_context itemViews:itemViews sizeClass:sizeClass dark:_dark];
+            _sheetView = [[TGMenuSheetView alloc] initWithContext:_context pallete:_pallete itemViews:itemViews sizeClass:sizeClass dark:_dark borderless:_borderless];
             _sheetView.menuRelayout = menuRelayout;
             _sheetView.maxHeight = _maxHeight;
             if (self.isViewLoaded)
@@ -391,7 +395,8 @@ typedef enum
         if (self.popoverPresentationController == nil)
             return;
         
-        self.popoverPresentationController.backgroundColor = _dark ? UIColorRGB(0x161616) : [UIColor whiteColor];
+        UIColor *backgroundColor = self.pallete != nil ? self.pallete.backgroundColor : [UIColor whiteColor];
+        self.popoverPresentationController.backgroundColor = _dark ? UIColorRGB(0x161616) : backgroundColor;
         self.popoverPresentationController.delegate = self;
         self.popoverPresentationController.permittedArrowDirections = self.permittedArrowDirections;
         
@@ -411,6 +416,10 @@ typedef enum
     else
     {
         _popoverController = [[UIPopoverController alloc] initWithContentViewController:self];
+        
+        UIColor *backgroundColor = self.pallete != nil ? self.pallete.backgroundColor : [UIColor whiteColor];
+        if ([_popoverController respondsToSelector:@selector(setBackgroundColor:)])
+            _popoverController.backgroundColor = _dark ? UIColorRGB(0x161616) : backgroundColor;
         
         if (self.barButtonItem != nil)
         {
@@ -434,10 +443,11 @@ typedef enum
     UIUserInterfaceSizeClass sizeClass = [self sizeClass];
     
     bool compact = (sizeClass == UIUserInterfaceSizeClassCompact);
-    if (compact)
+    if (compact || _forceFullScreen)
         self.modalPresentationStyle = UIModalPresentationFullScreen;
-    else
+    else {
         self.modalPresentationStyle = UIModalPresentationPopover;
+    }
     
     if (!self.stickWithSpecifiedParentController && viewController.navigationController != nil)
         viewController = viewController.navigationController.parentViewController ?: viewController.navigationController;
@@ -468,7 +478,7 @@ typedef enum
             _sheetView.menuWidth = referenceSize.width;
     }
     
-    if (compact)
+    if (compact || _forceFullScreen)
     {
         [viewController addChildViewController:self];
         [viewController.view addSubview:self.view];
@@ -541,12 +551,18 @@ typedef enum
 
 - (void)dismissAnimated:(bool)animated manual:(bool)manual completion:(void (^)(void))completion
 {
+    if (_ignoreNextDismissal)
+    {
+        _ignoreNextDismissal = false;
+        return;
+    }
+    
     bool compact = ([self sizeClass] == UIUserInterfaceSizeClassCompact);
     
     if (self.willDismiss != nil)
         self.willDismiss(manual);
     
-    if (compact)
+    if (compact || _forceFullScreen)
     {
         if (iosMajorVersion() >= 7 && [self.parentViewController isKindOfClass:[TGNavigationController class]])
             ((TGNavigationController *)self.parentViewController).interactivePopGestureRecognizer.enabled = true;
@@ -633,9 +649,16 @@ typedef enum
     if (type == TGMenuSheetAnimationPresent)
     {
         UIViewAnimationOptions options = UIViewAnimationOptionAllowUserInteraction | UIViewAnimationOptionAllowAnimatedContent;
-        if (iosMajorVersion() >= 7)
-            options |= 7 << 16;
-        [UIView animateWithDuration:0.3 delay:0.0 options:options animations:changeBlock completion:completionBlock];
+        if (self.borderless && iosMajorVersion() >= 7)
+        {
+            [UIView animateWithDuration:0.45 delay:0.0 usingSpringWithDamping:0.8f initialSpringVelocity:0.2 options:options animations:changeBlock completion:completionBlock];
+        }
+        else
+        {
+            if (iosMajorVersion() >= 7)
+                options |= 7 << 16;
+            [UIView animateWithDuration:0.3 delay:0.0 options:options animations:changeBlock completion:completionBlock];
+        }
     }
     else
     {
@@ -675,7 +698,7 @@ typedef enum
     if (_sheetView == nil)
         return;
     
-    if (_hasSwipeGesture && [self sizeClass] != UIUserInterfaceSizeClassRegular)
+    if (_hasSwipeGesture && ([self sizeClass] != UIUserInterfaceSizeClassRegular || _forceFullScreen))
     {
         if (_gestureRecognizer != nil)
         {
@@ -782,7 +805,7 @@ typedef enum
             if (velocity > 200.0f && allowDismissal)
             {
                 [self setDimViewHidden:true animated:true];
-                [self animateSheetViewToPosition:_sheetView.menuHeight velocity:velocity type:TGMenuSheetAnimationDismiss completion:^
+                [self animateSheetViewToPosition:_sheetView.menuHeight + [self safeAreaInsetForOrientation:self.interfaceOrientation].bottom velocity:velocity type:TGMenuSheetAnimationDismiss completion:^
                 {
                     [self dismissAnimated:false];
                 }];
@@ -836,45 +859,36 @@ typedef enum
     UIUserInterfaceSizeClass previousClass = [self sizeClass];
     _sizeClass = sizeClass;
     
-    [_sheetView updateTraitsWithSizeClass:[self sizeClass]];
+    [_sheetView updateTraitsWithSizeClass:_forceFullScreen ? UIUserInterfaceSizeClassCompact : [self sizeClass]];
     
     if (_presented && previousClass != [self sizeClass])
     {
-        switch (sizeClass)
-        {
-            case UIUserInterfaceSizeClassRegular:
+        if (sizeClass == UIUserInterfaceSizeClassRegular && !_forceFullScreen) {
+            _dimView.hidden = true;
+            
+            self.modalPresentationStyle = UIModalPresentationPopover;
+            
+            [self.view removeFromSuperview];
+            [self removeFromParentViewController];
+            
+            [self _presentPopoverInController:_parentController];
+            
+            if (iosMajorVersion() >= 7 && [_parentController isKindOfClass:[TGNavigationController class]])
+                ((TGNavigationController *)_parentController).interactivePopGestureRecognizer.enabled = true;
+        } else {
+            _dimView.hidden = false;
+            
+            [self.presentingViewController dismissViewControllerAnimated:false completion:^
             {
-                _dimView.hidden = true;
+                self.modalPresentationStyle = UIModalPresentationFullScreen;
                 
-                self.modalPresentationStyle = UIModalPresentationPopover;
-                
-                [self.view removeFromSuperview];
-                [self removeFromParentViewController];
-                
-                [self _presentPopoverInController:_parentController];
+                [_parentController addChildViewController:self];
+                [_parentController.view addSubview:self.view];
+                [self.view setNeedsLayout];
                 
                 if (iosMajorVersion() >= 7 && [_parentController isKindOfClass:[TGNavigationController class]])
-                    ((TGNavigationController *)_parentController).interactivePopGestureRecognizer.enabled = true;
-            }
-                break;
-                
-            default:
-            {
-                _dimView.hidden = false;
-                
-                [self.presentingViewController dismissViewControllerAnimated:false completion:^
-                {
-                    self.modalPresentationStyle = UIModalPresentationFullScreen;
-                    
-                    [_parentController addChildViewController:self];
-                    [_parentController.view addSubview:self.view];
-                    [self.view setNeedsLayout];
-                    
-                    if (iosMajorVersion() >= 7 && [_parentController isKindOfClass:[TGNavigationController class]])
-                        ((TGNavigationController *)_parentController).interactivePopGestureRecognizer.enabled = false;
-                }];
-            }
-                break;
+                    ((TGNavigationController *)_parentController).interactivePopGestureRecognizer.enabled = false;
+            }];
         }
     }
     
@@ -885,7 +899,7 @@ typedef enum
 
 - (void)viewWillLayoutSubviews
 {
-    if ([self sizeClass] == UIUserInterfaceSizeClassRegular || [self isInPopover])
+    if (([self sizeClass] == UIUserInterfaceSizeClassRegular || [self isInPopover]) && !_forceFullScreen)
     {
         _sheetView.menuWidth = TGMenuSheetPadMenuWidth;
         
@@ -899,8 +913,13 @@ typedef enum
     else
     {
         CGSize referenceSize = TGIsPad() ? _parentController.view.bounds.size : [_context fullscreenBounds].size;
+        CGFloat viewWidth = self.view.frame.size.width;
+        
+        if ([self sizeClass] == UIUserInterfaceSizeClassRegular) {
+            referenceSize.width = TGMenuSheetPadMenuWidth;
+        }
     
-        _containerView.frame = CGRectMake(_containerView.frame.origin.x, _containerView.frame.origin.y, self.view.frame.size.width, self.view.frame.size.height);
+        _containerView.frame = CGRectMake(_containerView.frame.origin.x, _containerView.frame.origin.y, viewWidth, self.view.frame.size.height);
         _dimView.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
 
         _sheetView.safeAreaInset = [self safeAreaInsetForOrientation:self.interfaceOrientation];
@@ -936,7 +955,7 @@ typedef enum
 
 - (void)repositionMenuWithReferenceSize:(CGSize)referenceSize
 {
-    if ([self sizeClass] == UIUserInterfaceSizeClassRegular)
+    if ([self sizeClass] == UIUserInterfaceSizeClassRegular && !_forceFullScreen)
         return;
     
     UIEdgeInsets safeAreaInset = [self safeAreaInsetForOrientation:self.interfaceOrientation];
@@ -1152,3 +1171,27 @@ typedef enum
 }
 
 @end
+
+
+@implementation TGMenuSheetPallete
+
++ (instancetype)palleteWithDark:(bool)dark backgroundColor:(UIColor *)backgroundColor selectionColor:(UIColor *)selectionColor separatorColor:(UIColor *)separatorColor accentColor:(UIColor *)accentColor destructiveColor:(UIColor *)destructiveColor textColor:(UIColor *)textColor secondaryTextColor:(UIColor *)secondaryTextColor spinnerColor:(UIColor *)spinnerColor badgeTextColor:(UIColor *)badgeTextColor badgeImage:(UIImage *)badgeImage cornersImage:(UIImage *)cornersImage
+{
+    TGMenuSheetPallete *pallete = [[TGMenuSheetPallete alloc] init];
+    pallete->_isDark = dark;
+    pallete->_backgroundColor = backgroundColor;
+    pallete->_selectionColor = selectionColor;
+    pallete->_separatorColor = separatorColor;
+    pallete->_accentColor = accentColor;
+    pallete->_destructiveColor = destructiveColor;
+    pallete->_textColor = textColor;
+    pallete->_secondaryTextColor = secondaryTextColor;
+    pallete->_spinnerColor = spinnerColor;
+    pallete->_badgeTextColor = badgeTextColor;
+    pallete->_badgeImage = badgeImage;
+    pallete->_cornersImage = cornersImage;
+    return pallete;
+}
+
+@end
+

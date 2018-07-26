@@ -9,15 +9,12 @@
 #import <LegacyComponents/ActionStage.h>
 #import "TGTelegraph.h"
 
-@interface TGCollectionStaticMultilineTextItemViewTextView : UIButton {
-    NSArray *_currentLinkSelectionViews;
-    NSString *_currentLink;
+#import "TGPresentation.h"
+
+@interface TGCollectionStaticMultilineTextItemViewTextView ()
+{
+    UILongPressGestureRecognizer *_longPressGestureRecognizer;
 }
-
-@property (nonatomic, copy) void (^followLink)(NSString *);
-@property (nonatomic, readonly) bool trackingLink;
-@property (nonatomic, strong) TGModernTextViewModel *textModel;
-
 @end
 
 @implementation TGCollectionStaticMultilineTextItemViewTextView
@@ -27,8 +24,21 @@
     if (self != nil) {
         self.opaque = false;
         self.backgroundColor = [UIColor clearColor];
+        
+        _longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        [self addGestureRecognizer:_longPressGestureRecognizer];
     }
     return self;
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        _trackingLink = false;
+        
+        if (_holdLink) {
+            _holdLink(_currentLink);
+        }
+    }
 }
 
 - (void)setTextModel:(TGModernTextViewModel *)textModel {
@@ -68,7 +78,11 @@
     if (_trackingLink) {
         _trackingLink = false;
         
-        if (_currentLink.length != 0) {
+        CGPoint offset = CGPointZero;
+        CGPoint point = [[touches anyObject] locationInView:self];
+        NSArray *regionData = nil;
+        NSString *link = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x - offset.x, point.y - _textModel.frame.origin.y - offset.y) regionData:&regionData];
+        if (link.length != 0) {
             [self followLink:_currentLink];
         }
     }
@@ -304,6 +318,13 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _separatorView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+}
+
 - (void)setTextModel:(TGModernTextViewModel *)textModel
 {
     _textContentView.textModel = textModel;
@@ -321,7 +342,7 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    _separatorView.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 35.0f, separatorHeight);
+    _separatorView.frame = CGRectMake(35.0f, bounds.size.height - separatorHeight, bounds.size.width - 15.0f, separatorHeight);
     
     CGRect frame = CGRectMake(15.0f, 9.0f, _textContentView.textModel.frame.size.width + 2.0f, _textContentView.textModel.frame.size.height + 2.0f);
     
@@ -334,6 +355,10 @@
 
 - (void)setFollowLink:(void (^)(NSString *))followLink {
     _textContentView.followLink = followLink;
+}
+
+- (void)setHoldLink:(void (^)(NSString *))holdLink {
+    _textContentView.holdLink = holdLink;
 }
 
 @end

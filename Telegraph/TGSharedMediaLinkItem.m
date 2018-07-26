@@ -11,6 +11,8 @@
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaLinkItem ()
 {
     int32_t _messageId;
@@ -20,13 +22,15 @@
     TGModernTextViewModel *_textModel;
     TGWebPageMediaAttachment *_webPage;
     NSArray *_links;
+    
+    TGPresentation *_presentation;
 }
 
 @end
 
 @implementation TGSharedMediaLinkItem
 
-- (instancetype)initWithMessage:(TGMessage *)message messageId:(int32_t)messageId date:(NSTimeInterval)date incoming:(bool)incoming
+- (instancetype)initWithMessage:(TGMessage *)message messageId:(int32_t)messageId date:(NSTimeInterval)date incoming:(bool)incoming presentation:(TGPresentation *)presentation
 {
     self = [super init];
     if (self != nil)
@@ -35,7 +39,8 @@
         _messageId = messageId;
         _date = date;
         _incoming = incoming;
-        
+        _presentation = presentation;
+    
         for (id attachment in message.mediaAttachments)
         {
             if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
@@ -99,7 +104,7 @@
         _textModel.additionalLineSpacing = 2.0f;
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline;
         _textModel.maxNumberOfLines = 2;
-        _textModel.textColor = UIColorRGB(0x8d8e93);
+        _textModel.textColor = presentation.pallete.secondaryTextColor;
     }
     return self;
 }
@@ -146,7 +151,7 @@
 
 - (instancetype)copyWithZone:(NSZone *)__unused zone
 {
-    return [[TGSharedMediaLinkItem alloc] initWithMessage:_message messageId:_messageId date:_date incoming:_incoming];
+    return [[TGSharedMediaLinkItem alloc] initWithMessage:_message messageId:_messageId date:_date incoming:_incoming presentation:_presentation];
 }
 
 - (BOOL)isEqual:(id)object

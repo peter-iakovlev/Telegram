@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGTabletMainView ()
 {
     UIView *_stripeView;
@@ -58,6 +60,19 @@
         [self addSubview:_stripeView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _fakeNavigationBarView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _fakeNavigationBarSeparatorView.backgroundColor = presentation.pallete.barSeparatorColor;
+    
+    if (_blankLogoView != nil)
+        _blankLogoView.image = TGTintedImage(TGImageNamed(@"DetailLogoBlank.png"), presentation.pallete.barSeparatorColor);
+    
+    _stripeView.backgroundColor = presentation.pallete.padSeparatorColor;
 }
 
 - (void)updateBottomInset:(CGFloat)inset

@@ -7,10 +7,11 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGShareSendButtonItemView ()
 {
-    TGMenuSheetButtonItemView *_topActionButton;
-    TGMenuSheetButtonItemView *_bottomActionButton;
+    TGMenuSheetButtonItemView *_actionButton;
     UIView *_separator;
     
     TGModernButton *_sendButton;
@@ -29,7 +30,7 @@
 
 @dynamic didBeginEditingComment;
 
-- (instancetype)initWithTopActionTitle:(NSString *)topActionTitle topAction:(void (^)(void))topAction bottomActionTitle:(NSString *)bottomActionTitle bottomAction:(void (^)(void))bottomAction sendAction:(void (^)(NSString *caption))sendAction
+- (instancetype)initWithActionTitle:(NSString *)actionTitle action:(void (^)(void))action sendAction:(void (^)(NSString *))sendAction
 {
     self = [self initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
@@ -38,29 +39,17 @@
         
         _sendAction = sendAction;
         
-        if (topActionTitle.length > 0)
+        if (actionTitle.length > 0)
         {
-            _topActionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:topActionTitle type:TGMenuSheetButtonTypeDefault action:^
+            _actionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:actionTitle type:TGMenuSheetButtonTypeDefault action:^
             {
-                topAction();
+                action();
             }];
-            [self addSubview:_topActionButton];
-            
-            _separator = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
-            _separator.backgroundColor = TGSeparatorColor();
-            [self addSubview:_separator];
-        }
-        
-        if (bottomActionTitle.length > 0)
-        {
-            _bottomActionButton = [[TGMenuSheetButtonItemView alloc] initWithTitle:bottomActionTitle type:TGMenuSheetButtonTypeDefault action:^
-            {
-                bottomAction();
-            }];
-            [self addSubview:_bottomActionButton];
+            [self addSubview:_actionButton];
         }
         
         _sendButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
+        _sendButton.adjustsImageWhenHighlighted = false;
         [_sendButton setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 0, 35)];
         _sendButton.exclusiveTouch = true;
         _sendButton.titleLabel.font = TGMediumSystemFontOfSize(20);
@@ -70,20 +59,8 @@
         [_sendButton setTitle:TGLocalized(@"ShareMenu.Send") forState:UIControlStateNormal];
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
-        
-        static UIImage *countBadgeBackground = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0, 0, 22, 22));
-            countBadgeBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:11 topCapHeight:11];
-            UIGraphicsEndImageContext();
-        });
-        
-        _countBadge = [[UIImageView alloc] initWithImage:countBadgeBackground];
+                
+        _countBadge = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 22.0f, 22.0f)];
         _countBadge.alpha = 0.0f;
         
         _countLabel = [[UILabel alloc] init];
@@ -111,13 +88,29 @@
     return self;
 }
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    [_sendButton setTitleColor:pallete.accentColor];
+    _sendButton.alpha = 0.0f;
+    [_actionButton setPallete:pallete];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    _commentView.presentation = presentation;
+    _countLabel.textColor = presentation.pallete.accentContrastColor;
+    _countBadge.image = presentation.images.shareBadgeImage;
+}
 
 - (NSString *)caption
 {
     return _commentView.text;
 }
 
-- (void)setSelectedBadgeCount:(NSInteger)count animated:(bool)animated
+- (void)setSelectedBadgeCount:(NSInteger)count animated:(bool)__unused animated
 {
     bool incremented = true;
     
@@ -138,7 +131,7 @@
     if (count > 9)
         badgeWidth = MAX(22, _countLabel.frame.size.width + 14);
     _countBadge.transform = CGAffineTransformIdentity;
-    _countBadge.frame = CGRectMake(CGRectGetMaxX(_sendButton.titleLabel.frame) + 8.0f, (_sendButton.frame.size.height - 22) / 2.0f, badgeWidth, 22);
+    _countBadge.frame = CGRectMake(TGScreenPixelFloor(CGRectGetMaxX(_sendButton.titleLabel.frame) + 8.0f), TGScreenPixelFloor((_sendButton.frame.size.height - 22) / 2.0f), badgeWidth, 22);
     _countLabel.frame = CGRectMake((badgeWidth - _countLabel.frame.size.width) / 2.0f + xOffset, 2, _countLabel.frame.size.width, _countLabel.frame.size.height);
     
     if (animated)
@@ -234,7 +227,7 @@
             _sendButton.alpha = 1.0f;
             _separator.alpha = 0.0f;
         }];
-        [_bottomActionButton setHidden:true animated:true];
+        [_actionButton setHidden:true animated:true];
         
         [self setSelectedBadgeCount:count animated:animated];
     }
@@ -252,7 +245,7 @@
         {
             _commentView.alpha = 0.0f;
         }];
-        [_bottomActionButton setHidden:false animated:true];
+        [_actionButton setHidden:false animated:true];
     }
     
     if (wasExpanded != expanded)
@@ -273,7 +266,7 @@
         _commentView.maxHeight = 60.0f;
     
     CGFloat expandedHeight = MAX(TGMenuSheetButtonItemViewHeight * 2, TGMenuSheetButtonItemViewHeight + _textHeight + 17.0f);
-    CGFloat defaultHeight = (_topActionButton != nil ? TGMenuSheetButtonItemViewHeight : 0.0f) + (_bottomActionButton != nil ? TGMenuSheetButtonItemViewHeight : 0.0f);
+    CGFloat defaultHeight = (_actionButton != nil ? TGMenuSheetButtonItemViewHeight : 0.0f);
     return (_selectedCount == 0) ? defaultHeight : expandedHeight;
 }
 
@@ -281,8 +274,8 @@
 {
     _commentView.frame = CGRectMake(16.0f, 16.0f, self.frame.size.width - 16.0f * 2, _commentView.frame.size.height);
     _sendButton.frame = CGRectMake(0.0f, self.frame.size.height - TGMenuSheetButtonItemViewHeight, self.frame.size.width, TGMenuSheetButtonItemViewHeight);
-    _bottomActionButton.frame = _sendButton.frame;
-    _topActionButton.frame = CGRectMake(0.0f, self.frame.size.height - 2.0f * TGMenuSheetButtonItemViewHeight, self.frame.size.width, TGMenuSheetButtonItemViewHeight);
+    _actionButton.frame = _sendButton.frame;
+    //_topActionButton.frame = CGRectMake(0.0f, self.frame.size.height - 2.0f * TGMenuSheetButtonItemViewHeight, self.frame.size.width, TGMenuSheetButtonItemViewHeight);
     _separator.frame = CGRectMake(0.0f, TGMenuSheetButtonItemViewHeight, self.frame.size.width, _separator.frame.size.height);
 }
 

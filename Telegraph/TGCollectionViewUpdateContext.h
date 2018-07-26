@@ -14,6 +14,7 @@
 
 - (void)insertSectionAtIndex:(NSUInteger)index;
 - (void)deleteSectionAtIndex:(NSUInteger)index;
+- (void)replaceSectionAtIndex:(NSUInteger)index;
 - (void)insertItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section;
 - (void)deleteItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section;
 - (void)replaceItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section;

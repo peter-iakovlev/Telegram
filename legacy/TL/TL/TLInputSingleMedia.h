@@ -10,10 +10,13 @@
 
 @end
 
-@interface TLInputSingleMedia$inputSingleMedia : TLInputSingleMedia
+@interface TLInputSingleMedia$inputSingleMediaMeta : TLInputSingleMedia
 
 @property (nonatomic, retain) TLInputMedia *media;
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int64_t random_id;
+@property (nonatomic, retain) NSString *message;
+@property (nonatomic, retain) NSArray *entities;
 
 @end
 

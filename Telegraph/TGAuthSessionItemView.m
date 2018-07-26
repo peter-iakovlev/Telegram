@@ -4,6 +4,8 @@
 
 #import "TGAuthSession.h"
 
+#import "TGPresentation.h"
+
 @interface TGAuthSessionItemView ()
 {
     UILabel *_titleLabel;
@@ -53,6 +55,15 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _infoLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _subtitleLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+}
+
 - (void)setAuthSession:(TGAuthSession *)authSession
 {
     _titleLabel.text = [[NSString alloc] initWithFormat:@"%@ %@", authSession.appName, authSession.appVersion];
@@ -70,18 +81,18 @@
     if (authSession.systemVersion.length != 0)
         _infoLabel.text = [_infoLabel.text stringByAppendingFormat:@" %@", authSession.systemVersion];
     
-    NSString *locationString = [[NSString alloc] initWithFormat:@"%@ — %@", authSession.ip, authSession.country];
+    NSString *locationString = [[NSString alloc] initWithFormat:@"%@ • %@", authSession.ip, authSession.country];
     _subtitleLabel.text = locationString;
     
     if (authSession.sessionHash == 0)
     {
         _statusLabel.text = TGLocalized(@"Presence.online");
-        _statusLabel.textColor = TGAccentColor();
+        _statusLabel.textColor = self.presentation.pallete.collectionMenuAccentColor;
     }
     else
     {
         _statusLabel.text = [TGDateUtils stringForMessageListDate:authSession.dateActive];
-        _statusLabel.textColor = UIColorRGB(0x999999);
+        _statusLabel.textColor = self.presentation.pallete.collectionMenuVariantColor;
     }
     [self setNeedsLayout];
 }
@@ -100,7 +111,7 @@
     CGSize titleSize = [_titleLabel.text sizeWithFont:_titleLabel.font];
     titleSize.width = MIN(CGCeil(titleSize.width), _statusLabel.frame.origin.x - 10.0f - leftInset);
     titleSize.height = CGCeil(titleSize.height);
-    _titleLabel.frame = CGRectMake(leftInset, 8.0f + TGRetinaPixel, titleSize.width, titleSize.height);
+    _titleLabel.frame = CGRectMake(leftInset, 8.0f + TGScreenPixel, titleSize.width, titleSize.height);
     
     CGSize infoSize = [_infoLabel.text sizeWithFont:_subtitleLabel.font];
     infoSize.width = MIN(CGCeil(infoSize.width), self.editingContentView.frame.size.width - leftInset * 2.0f);

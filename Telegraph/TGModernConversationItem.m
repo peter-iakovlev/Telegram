@@ -3,8 +3,6 @@
 @interface TGModernConversationItem ()
 {
     NSString *_viewIdentifier;
-    
-    __weak TGModernCollectionCell *_cell;
 }
 
 @end
@@ -36,7 +34,7 @@
 
 - (void)bindCell:(TGModernCollectionCell *)cell viewStorage:(TGModernViewStorage *)__unused viewStorage
 {
-    if (cell.boundItem == self)
+    if (cell.boundItem != self)
         cell.boundItem = nil;
     _cell = cell;
     ((TGModernCollectionCell *)_cell).boundItem = self;
@@ -116,7 +114,11 @@
 {
 }
 
-- (void)updateMessageGroupedLayout:(TGMessageGroupedLayout *)__unused groupedLayout
+- (void)updateGroupedLayout:(TGMessageGroupedLayout *)__unused groupedLayout
+{
+}
+
+- (void)resetViewModel
 {
 }
 

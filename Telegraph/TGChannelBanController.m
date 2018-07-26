@@ -14,12 +14,14 @@
 
 #import "TGSwitchCollectionItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGTelegramNetworking.h"
 
 #import "TGPickerSheet.h"
 #import "TGAppDelegate.h"
+
+#import "TGPresentation.h"
 
 static NSArray *timeoutValues() {
     NSArray *values = @[@(1 * 60 * 60 * 24),
@@ -186,7 +188,7 @@ static NSString *stringForBanTimeout(int32_t value) {
     
     _unbanItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.BanUser.Unban") action:@selector(unbanPressed)];
     _unbanItem.deselectAutomatically = true;
-    _unbanItem.titleColor = TGDestructiveAccentColor();
+    _unbanItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
     TGCollectionMenuSection *unbanSection = [[TGCollectionMenuSection alloc] initWithItems:@[_unbanItem]];
     if (!_isPreview) {
         [self.menuSections addSection:unbanSection];
@@ -249,7 +251,7 @@ static NSString *stringForBanTimeout(int32_t value) {
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"MessageTimer.Custom") action:@"custom"]];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
     
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action) {
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action) {
         __strong TGChannelBanController *strongSelf = weakSelf;
         if (strongSelf != nil) {
             if ([action isEqualToString:@"custom"]) {

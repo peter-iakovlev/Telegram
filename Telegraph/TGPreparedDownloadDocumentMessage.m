@@ -55,6 +55,7 @@
     
     message.mediaAttachments = attachments;
     message.contentProperties = @{@"downloadDocumentUrl": [[TGDownloadDocumentUrl alloc] initWithGiphyId:_giphyId documentUrl:_documentUrl]};
+    message.entities = self.entities;
     
     return message;
 }

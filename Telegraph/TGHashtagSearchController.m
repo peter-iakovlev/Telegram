@@ -74,21 +74,23 @@ extern NSString *authorNameYou;
 - (void)loadView
 {
     [super loadView];
-    
-    self.view.backgroundColor = [UIColor whiteColor];
+
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
     _tableView = [[UITableView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.view.frame.size.height) style:UITableViewStylePlain];
     if (iosMajorVersion() >= 11)
         _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _tableView.backgroundColor = self.view.backgroundColor;
     _tableView.dataSource = self;
     _tableView.delegate = self;
     _tableView.rowHeight = 76.0f;
     _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableView.tableFooterView = [[UIView alloc] init];
     
     if (iosMajorVersion() >= 7) {
         _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
-        _tableView.separatorColor = TGSeparatorColor();
+        _tableView.separatorColor = self.presentation.pallete.separatorColor;
         _tableView.separatorInset = UIEdgeInsetsMake(0.0f, 80.0f, 0.0f, 0.0f);
     }
     
@@ -96,6 +98,20 @@ extern NSString *authorNameYou;
     
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.view.backgroundColor = presentation.pallete.backgroundColor;
+    _tableView.separatorColor = presentation.pallete.separatorColor;
+    _tableView.backgroundColor = self.view.backgroundColor;
+    
+    for (TGDialogListCell *cell in _tableView.visibleCells)
+    {
+        cell.presentation = presentation;
+    }
 }
 
 - (void)beginSearchWithQuery:(NSString *)query
@@ -355,7 +371,7 @@ extern NSString *authorNameYou;
         cell = [[TGDialogListCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TGDialogListSearchCell" assetsSource:[TGInterfaceAssets instance]];
     }
     
-    cell.presentation = TGPresentation.current;
+    cell.presentation = self.presentation;
     [self prepareCell:cell forConversation:_searchResults[indexPath.row] animated:false];
     
     return cell;

@@ -49,3 +49,26 @@
 }
 
 @end
+
+@implementation TLDraftMessage$draftMessageEmpty
+
+- (void)TLserialize:(NSOutputStream *)__unused os
+{
+    TGLog(@"***** TLDraftMessage$draftMessageEmpty serialization not supported");
+}
+
+- (id<TLObject>)TLdeserialize:(NSInputStream *)is signature:(int32_t)__unused signature environment:(id<TLSerializationEnvironment>)__unused environment context:(TLSerializationContext *)__unused context error:(__autoreleasing NSError **)__unused error
+{
+    TLDraftMessage$draftMessageEmpty *result = [[TLDraftMessage$draftMessageEmpty alloc] init];
+    
+    int32_t flags = [is readInt32];
+    result.flags = flags;
+    
+    if (flags & (1 << 0)) {
+        result.date = [is readInt32];
+    }
+    
+    return result;
+}
+
+@end

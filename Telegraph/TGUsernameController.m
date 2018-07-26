@@ -12,7 +12,9 @@
 
 #import "TGCollectionMenuLayout.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
+
+#import "TGPresentation.h"
 
 typedef enum {
     TGUsernameControllerUsernameStateNone,
@@ -83,7 +85,7 @@ typedef enum {
                 if (strongSelf->_usernameItem.username.length != 0)
                 {
                     [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"https://t.me/%@", strongSelf->_usernameItem.username]];
-                    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 }
             }
         };
@@ -126,16 +128,16 @@ typedef enum {
         unichar c = [_usernameItem.username characterAtIndex:0];
         if (c >= '0' && c <= '9')
         {
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
         }
         else
         {
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidCharacters") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+           [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidCharacters") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
         }
     }
     else if (_usernameItem.username.length != 0 && _usernameItem.username.length < 5)
     {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
     }
     else
     {
@@ -185,42 +187,42 @@ typedef enum {
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = false;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0x26972c)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.dialogEncryptedColor];
                 break;
             case TGUsernameControllerUsernameStateTooShort:
                 [_invalidUsernameItem setText:TGLocalized(@"Username.InvalidTooShort")];
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = false;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.destructiveColor];
                 break;
             case TGUsernameControllerUsernameStateInvalidCharacters:
                 [_invalidUsernameItem setText:TGLocalized(@"Username.InvalidCharacters")];
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = false;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.destructiveColor];
                 break;
             case TGUsernameControllerUsernameStateStartsWithNumber:
                 [_invalidUsernameItem setText:TGLocalized(@"Username.InvalidStartsWithNumber")];
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = false;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.destructiveColor];
                 break;
             case TGUsernameControllerUsernameStateTaken:
                 [_invalidUsernameItem setText:TGLocalized(@"Username.InvalidTaken")];
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = false;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0xcf3030)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.destructiveColor];
                 break;
             case TGUsernameControllerUsernameStateChecking:
                 [_invalidUsernameItem setText:[[NSString alloc] initWithFormat:@"       %@", TGLocalized(@"Username.CheckingUsername")]];
                 _invalidUsernameItem.alpha = 1.0f;
                 _invalidUsernameItem.hidden = false;
                 _invalidUsernameItem.showProgress = true;
-                [_invalidUsernameItem setTextColor:UIColorRGB(0x6d6d72)];
+                [_invalidUsernameItem setTextColor:self.presentation.pallete.collectionMenuCommentColor];
                 break;
         }
         
@@ -322,7 +324,7 @@ typedef enum {
             {
                 [_progressWindow dismiss:true];
                 
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidTaken") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidTaken") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         });
     }

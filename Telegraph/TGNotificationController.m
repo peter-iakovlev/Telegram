@@ -13,10 +13,12 @@
 #import "TGModernConversationController.h"
 #import "TGWebAppController.h"
 #import "TGGenericModernConversationCompanion.h"
+#import "TGFeedConversationCompanion.h"
 #import <SafariServices/SafariServices.h>
 
 #import "TGNotificationOverlayView.h"
 #import "TGNotificationView.h"
+#import "TGCustomAlertView.h"
 
 #import <LegacyComponents/ActionStage.h>
 
@@ -33,6 +35,7 @@
 #import "TGConversationSignals.h"
 #import "TGChatMessageListSignal.h"
 #import "TGStickersSignals.h"
+#import "TGBotSignals.h"
 #import <LegacyComponents/TGStickerAssociation.h>
 
 #import "TGMediaStoreContext.h"
@@ -44,6 +47,8 @@
 
 #import "TGGenericPeerPlaylistSignals.h"
 #import "TGInstantPageController.h"
+#import "TGGDPRNoticeController.h"
+#import "TGPassportRequestController.h"
 
 #import "TGAudioMediaAttachment+Telegraph.h"
 
@@ -71,9 +76,9 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
 @property (nonatomic, readonly) int32_t replyToMid;
 @property (nonatomic, readonly) NSTimeInterval duration;
 @property (nonatomic, readonly) bool isChannelGroup;
-@property (nonatomic, copy) void (^configure)(TGNotificationContentView *, bool *);
+@property (nonatomic, copy) void (^configure)(TGNotificationContentView *, bool *, TGBotReplyMarkup **);
 
-- (instancetype)initWithConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *, bool *))configure;
+- (instancetype)initWithConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *, bool *, TGBotReplyMarkup **))configure;
 
 @end
 
@@ -90,6 +95,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     TGNotificationWindow *_window;
     TGNotificationOverlayView *_overlayView;
+    
+    SMetaDisposable *_botCallbackDisposable;
 }
 
 @property (nonatomic, readonly) TGNotificationView *notificationView;
@@ -193,6 +200,14 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     __weak TGNotificationController *weakSelf = self;
     _notificationView = [[TGNotificationView alloc] initWithFrame:CGRectMake(0, 0, 0, TGNotificationDefaultHeight)];
     _notificationView.safeAreaInset = safeAreaInset;
+    _notificationView.activateCommand = ^(id action, NSInteger index)
+    {
+        __strong TGNotificationController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf activateCommand:action index:index peerId:strongSelf->_currentItem.conversationId messageId:strongSelf->_currentItem.identifier];
+    };
     _notificationView.sendTextMessage = ^(NSString *text)
     {
         __strong TGNotificationController *strongSelf = weakSelf;
@@ -324,8 +339,8 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     [_wrapperView addSubview:_notificationView];
 }
 
-- (void)displayNotificationForConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *view, bool *isRepliable))configure
-{    
+- (void)displayNotificationForConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *view, bool *isRepliable, TGBotReplyMarkup **replyMarkup))configure
+{
     if (_currentItem.identifier == identifier)
         return;
     
@@ -381,8 +396,6 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     bool hasOverlayController = false;
     bool hasPlayerController = false;
-    bool hasWebAppController = false;
-    bool hasInstanPageController = false;
     for (UIWindow *window in [UIApplication sharedApplication].windows)
     {
         if ([window isKindOfClass:[TGOverlayControllerWindow class]] && window != _window)
@@ -418,7 +431,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
                     hasPlayerController = true;
                     break;
                 }
-            }
+             }
         }
         else if (iosMajorVersion() <= 7)
         {
@@ -433,20 +446,25 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         }
     }
     
+    bool hasImportantController = false;
     for (TGViewController *controller in TGAppDelegateInstance.rootController.viewControllers)
     {
         if ([controller isKindOfClass:[TGWebAppController class]])
         {
-            hasWebAppController = true;
+            hasImportantController = true;
             break;
         }
         else if ([controller isKindOfClass:[TGInstantPageController class]]) {
-            hasInstanPageController = true;
+            hasImportantController = true;
+            break;
+        }
+        else if ([controller isKindOfClass:[TGPassportRequestController class]]) {
+            hasImportantController = true;
             break;
         }
     }
     
-    if (hasOverlayController || hasPlayerController || hasWebAppController || hasInstanPageController)
+    if (hasOverlayController || hasPlayerController || hasImportantController)
         return true;
     
     return false;
@@ -460,6 +478,11 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     TGModernConversationController *existingConversationController = nil;
     TGGenericModernConversationCompanion *existingConversationCompanion = nil;
     
+    if ([TGAppDelegateInstance.rootController.presentedViewController isKindOfClass:[TGGDPRNoticeController class]])
+    {
+        return false;
+    }
+    
     for (UIViewController *viewController in TGAppDelegateInstance.rootController.viewControllers)
     {
         if ([viewController isKindOfClass:[TGModernConversationController class]])
@@ -472,7 +495,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
             if ([lastController isKindOfClass:[TGMenuSheetController class]] && viewControllers.count > 2)
                 lastController = TGAppDelegateInstance.rootController.viewControllers[viewControllers.count - 2];
 
-            if (existingConversationCompanion.conversationId == conversation.conversationId && lastController == viewController)
+            if ((([existingConversationCompanion isKindOfClass:[TGFeedConversationCompanion class]] && TGPeerIdIsChannel(conversation.conversationId)) || existingConversationCompanion.conversationId == conversation.conversationId) && lastController == viewController)
             {
                 hasExistingConversationController = true;
                 break;
@@ -554,22 +577,24 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
     
     bool isRepliable = false;
     bool isPresented = _notificationView.isPresented;
+    TGBotReplyMarkup *replyMarkup = nil;
     if (!isPresented)
     {
         if (![self isViewLoaded])
             [self loadView];
         
-        item.configure(_notificationView.contentView, &isRepliable);
+        item.configure(_notificationView.contentView, &isRepliable, &replyMarkup);
         [self _presentNotificationView];
     }
     else
     {
         [_notificationView prepareInterItemTransitionView];
         [_notificationView.contentView reset];
-        item.configure(_notificationView.contentView, &isRepliable);
+        item.configure(_notificationView.contentView, &isRepliable, &replyMarkup);
         [_notificationView playInterItemTransition];
     }
     
+    _notificationView.replyMarkup = replyMarkup;
     _notificationView.isRepliable = isRepliable;
     _overlayView.isTransparent = !isRepliable;
     
@@ -886,6 +911,105 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         
         return [TGStickersSignals preloadedStickerPreviews:@{ @"documents": matchedDocuments, @"associations": associations } count:6];
     }] deliverOn:[SQueue mainQueue]];
+}
+
+#pragma mark - Commands
+
+- (void)activateCommand:(id)action index:(NSInteger)__unused index peerId:(int64_t)peerId messageId:(int32_t)messageId
+{
+    if (_botCallbackDisposable == nil)
+        _botCallbackDisposable = [[SMetaDisposable alloc] init];
+    
+    if ([action isKindOfClass:[TGBotReplyMarkupButtonActionUrl class]]) {
+        NSString *url = ((TGBotReplyMarkupButtonActionUrl *)action).url;
+        if (url.length != 0) {
+            bool hiddenLink = true;
+            if (TGPeerIdIsUser(peerId)) {
+                TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)peerId];
+                if (user.isVerified) {
+                    hiddenLink = false;
+                }
+            }
+            if (hiddenLink && ([url hasPrefix:@"http://telegram.me/"] || [url hasPrefix:@"http://t.me/"] || [url hasPrefix:@"https://telegram.me/"] || [url hasPrefix:@"https://t.me/"])) {
+                hiddenLink = false;
+            }
+            [self actionStageActionRequested:@"openLinkRequested" options:@{@"url": url, @"hidden": @(hiddenLink)}];
+        }
+    } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionCallback class]] || [action isKindOfClass:[TGBotReplyMarkupButtonActionGame class]]) {
+        int64_t accessHash = [TGDatabaseInstance() loadConversationWithId:peerId].accessHash;
+        if (messageId < TGMessageLocalMidBaseline) {
+            __weak TGNotificationController *weakSelf = self;
+            void (^accessAllowedBlock)() = ^{
+                __strong TGNotificationController *strongSelf = weakSelf;
+                if (strongSelf == nil) {
+                    return;
+                }
+                
+                NSData *actionData = nil;
+                bool isGame = false;
+                if ([action isKindOfClass:[TGBotReplyMarkupButtonActionCallback class]]) {
+                    actionData = ((TGBotReplyMarkupButtonActionCallback *)action).data;
+                } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionGame class]]) {
+                    isGame = true;
+                }
+                
+                SSignal *signal = [TGBotSignals botCallback:peerId accessHash:accessHash messageId:messageId data:actionData isGame:isGame];
+                [strongSelf->_botCallbackDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *result) {
+                    __strong TGNotificationController *strongSelf = weakSelf;
+                    if (strongSelf != nil) {
+                        NSString *url = result[@"url"];
+                        if (url.length != 0) {
+                            bool hiddenLink = true;
+                            if (TGPeerIdIsUser(peerId)) {
+                                TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)peerId];
+                                if (user.isVerified) {
+                                    hiddenLink = false;
+                                }
+                            }
+                            [strongSelf actionStageActionRequested:@"openLinkRequested" options:@{@"url": url, @"hidden": @(hiddenLink)}];
+                        } else {
+                            NSString *text = result[@"text"];
+                            if ([text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length != 0) {
+                                if ([result[@"alert"] boolValue]) {
+                                    [TGCustomAlertView presentAlertWithTitle:nil message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                                }
+                            }
+                        }
+                    }
+                } error:^(__unused id error) {
+                    
+                } completed:nil]];
+            };
+            
+            if ([action isKindOfClass:[TGBotReplyMarkupButtonActionGame class]]) {
+                TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:peerId];
+                int32_t userId = (int32_t)message.fromUid;
+                for (id attachment in message.mediaAttachments) {
+                    if ([attachment isKindOfClass:[TGViaUserAttachment class]]) {
+                        userId = ((TGViaUserAttachment *)attachment).userId;
+                        break;
+                    }
+                }
+                TGUser *author = [TGDatabaseInstance() loadUser:userId];
+                
+                NSData *data = [TGDatabaseInstance() conversationCustomPropertySync:userId name:murMurHash32(@"botWebAccessAllowed")];
+                
+                if (data.length != 0 || author.isVerified) {
+                    accessAllowedBlock();
+                } else {
+                    [TGCustomAlertView presentAlertWithTitle:nil message:[NSString stringWithFormat:TGLocalized(@"Conversation.BotInteractiveUrlAlert"), author.displayName] cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+                        if (okButtonPressed) {
+                            int8_t one = 1;
+                            [TGDatabaseInstance() setConversationCustomProperty:userId name:murMurHash32(@"botWebAccessAllowed") value:[NSData dataWithBytes:&one length:1]];
+                            accessAllowedBlock();
+                        }
+                    }];
+                }
+            } else {
+                accessAllowedBlock();
+            }
+        }
+    }
 }
 
 #pragma mark - Media
@@ -1330,7 +1454,7 @@ static id mediaIdForAttachment(TGMediaAttachment *attachment)
 
 @implementation TGNotificationItem
 
-- (instancetype)initWithConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *, bool *))configure
+- (instancetype)initWithConversation:(TGConversation *)conversation identifier:(int32_t)identifier replyToMid:(int32_t)replyToMid duration:(NSTimeInterval)duration configure:(void (^)(TGNotificationContentView *, bool *, TGBotReplyMarkup **))configure
 {
     self = [super init];
     if (self != nil)

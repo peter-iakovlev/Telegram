@@ -9,7 +9,7 @@ static void EMImageDataRelease(void *info, const void *data, size_t size)
         NSPurgeableData *data = (__bridge_transfer NSPurgeableData *)info;
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^
         {
-            [data endContentAccess]; 
+            [data endContentAccess];
         });
     }
 }
@@ -78,18 +78,18 @@ typedef struct {
         colorSpace = CGColorSpaceCreateDeviceRGB();
     });
     
-    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host;
+    CGBitmapInfo bitmapInfo = kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Little;
+
+    CGDataProviderRef dataProvider = CGDataProviderCreateWithData((__bridge_retained void *)_data, [_data bytes], _data.length, EMImageDataRelease);
     
-    CGDataProviderRef dataProvider = CGDataProviderCreateWithData((__bridge_retained void *)_data, [_data bytes], _bytesPerRow, EMImageDataRelease);
-    
-    CGImageRef image = CGImageCreate(_pixelSize.width, _pixelSize.height, 8, 32, _bytesPerRow, colorSpace, bitmapInfo, dataProvider, NULL, false, (CGColorRenderingIntent)0);
+    CGImageRef image = CGImageCreate(_pixelSize.width, _pixelSize.height, 8, 32, _bytesPerRow, colorSpace, bitmapInfo, dataProvider, NULL, false, kCGRenderingIntentDefault);
     
     CGDataProviderRelease(dataProvider);
     
     UIImage *result = [[UIImage alloc] initWithCGImage:image];
     
     CGImageRelease(image);
-    
+        
     return result;
 }
 

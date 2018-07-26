@@ -17,10 +17,14 @@
 
 #import "TLauth_SentCode$auth_sentCode.h"
 
-#import "../../config.h"
-
 #import "TGTLSerialization.h"
 #import "TLDcOption$modernDcOption.h"
+
+#import "TLRPCmessages_report.h"
+#import "TLRPChelp_getTermsOfServiceUpdate.h"
+#import "TLRPChelp_acceptTermsOfService.h"
+
+#import "TGTermsOfService.h"
 
 @interface TGFetchHttpHelper : NSObject <TGRawHttpActor> {
     void (^_completion)(NSData *);
@@ -54,10 +58,10 @@
 
 @implementation TGAccountSignals
 
-+ (SSignal *)deleteAccount
++ (SSignal *)deleteAccount:(NSString *)reason
 {
     TLRPCaccount_deleteAccount$account_deleteAccount *deleteAccount = [[TLRPCaccount_deleteAccount$account_deleteAccount alloc] init];
-    deleteAccount.reason = @"Forgot password";
+    deleteAccount.reason = reason;
     return [[[TGTelegramNetworking instance] requestSignal:deleteAccount requestClass:TGRequestClassIgnorePasswordEntryRequired] mapToSignal:^SSignal *(__unused id result)
     {
         [[[TGTelegramNetworking instance] context] updatePasswordInputRequiredForDatacenterWithId:[[TGTelegramNetworking instance] mtProto].datacenterId required:false];
@@ -78,6 +82,9 @@
             break;
         case TGReportPeerReasonPornography:
             reportPeer.reason = [[TLReportReason$inputReportReasonPornography alloc] init];
+            break;
+        case TGReportPeerReasonCopyright:
+            reportPeer.reason = [[TLReportReason$inputReportReasonCopyright alloc] init];
             break;
         case TGReportPeerReasonOther:
             reportPeer.reason = [[TLReportReason$inputReportReasonOther alloc] init];
@@ -152,11 +159,36 @@
     }
 }
 
-+ (SSignal *)termsOfService {
-    TLRPChelp_getTermsOfService$help_getTermsOfService *getTermsOfService = [[TLRPChelp_getTermsOfService$help_getTermsOfService alloc] init];
-    getTermsOfService.lang_code = [[NSLocale preferredLanguages] objectAtIndex:0];
-    return [[[TGTelegramNetworking instance] requestSignal:getTermsOfService] map:^id(TLhelp_TermsOfService *termsOfService) {
-        return termsOfService.text;
++ (SSignal *)termsOfServiceUpdate {
+    TLRPChelp_getTermsOfServiceUpdate *getTermsOfServiceUpdate = [[TLRPChelp_getTermsOfServiceUpdate alloc] init];
+    return [[[TGTelegramNetworking instance] requestSignal:getTermsOfServiceUpdate] mapToSignal:^id(TLhelp_TermsOfServiceUpdate *update)
+    {
+        SSignal *result = [SSignal single:nil];
+        if ([update isKindOfClass:[TLhelp_TermsOfServiceUpdate$help_termsOfServiceUpdate class]])
+        {
+            TLhelp_TermsOfServiceUpdate$help_termsOfServiceUpdate *termsUpdate = (TLhelp_TermsOfServiceUpdate$help_termsOfServiceUpdate *)update;
+            if (termsUpdate.terms_of_service != nil)
+                result = [SSignal single:[[TGTermsOfService alloc] initWithTL:termsUpdate.terms_of_service]];
+        }
+        
+        NSTimeInterval timeout = update.expires - [[TGTelegramNetworking instance] approximateRemoteTime];
+        if (timeout < 0)
+            timeout = 60.0 * 60.0;
+        
+        return [result then:[[SSignal defer:^SSignal *
+        {
+            return [self termsOfServiceUpdate];
+        }] delay:timeout onQueue:[SQueue concurrentDefaultQueue]]];
+    }];
+}
+
++ (SSignal *)acceptTermsOfService:(NSString *)identifier {
+    TLRPChelp_acceptTermsOfService *acceptTermsOfService = [[TLRPChelp_acceptTermsOfService alloc] init];
+    TLDataJSON$dataJSON *n_id = [[TLDataJSON$dataJSON alloc] init];
+    n_id.data = identifier;
+    acceptTermsOfService.n_id = n_id;
+    return [[[TGTelegramNetworking instance] requestSignal:acceptTermsOfService] mapToSignal:^SSignal *(__unused id next) {
+        return [SSignal complete];
     }];
 }
 
@@ -209,16 +241,11 @@
     TLRPCaccount_registerDevice$account_registerDevice *registerDevice = [[TLRPCaccount_registerDevice$account_registerDevice alloc] init];
     registerDevice.token_type = voip ? 9 : 1;
     registerDevice.token = deviceToken;
-    registerDevice.device_model = TGTelegraphInstance.currentDeviceModel;
-    registerDevice.system_version = [[UIDevice currentDevice] systemVersion];
-    NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
-    registerDevice.app_version = versionString;
 #ifdef DEBUG
     registerDevice.app_sandbox = true;
 #else
     registerDevice.app_sandbox = false;
 #endif
-    registerDevice.lang_code = TGTelegraphInstance.langCode;
     return [[TGTelegramNetworking instance] requestSignal:registerDevice];
 }
 
@@ -227,157 +254,6 @@
     unregisterDevice.token_type = voip ? 9 : 1;
     unregisterDevice.token = deviceToken;
     return [[TGTelegramNetworking instance] requestSignal:unregisterDevice];
-}
-
-+ (SSignal *)fetchBackupIpsGoogle:(bool)isTesting {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
-        NSDictionary *headers = @{@"Host": @"dns-telegram.appspot.com"};
-        
-        TGFetchHttpHelper *helper = [[TGFetchHttpHelper alloc] initWithCompletion:^(NSData *data) {
-            NSString *text = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            text = [text stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]];
-            NSData *result = [[NSData alloc] initWithBase64Encoding:text];
-            NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
-            [finalData setLength:256];
-            MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);
-            if (datacenterData != nil) {
-                [subscriber putNext:datacenterData];
-            }
-            [subscriber putCompletion];
-        }];
-        
-        id cancelToken = [TGTelegraphInstance doRequestRawHttp:isTesting ? @"https://google.com/test/" : @"https://google.com/" maxRetryCount:0 acceptCodes:@[@400, @403] httpHeaders:headers actor:helper];
-        
-        return [[SBlockDisposable alloc] initWithBlock:^{
-            [helper description];
-            [TGTelegraphInstance cancelRequestByToken:cancelToken];
-        }];
-    }];
-}
-
-+ (SSignal *)fetchBackupIpsResolveGoogle:(bool)isTesting {
-    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
-        NSDictionary *headers = @{@"Host": @"dns.google.com"};
-        
-        TGFetchHttpHelper *helper = [[TGFetchHttpHelper alloc] initWithCompletion:^(NSData *data) {
-            NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            if ([dict respondsToSelector:@selector(objectForKey:)]) {
-                NSArray *answer = dict[@"Answer"];
-                NSMutableArray *strings = [[NSMutableArray alloc] init];
-                if ([answer respondsToSelector:@selector(objectAtIndex:)]) {
-                    for (NSDictionary *value in answer) {
-                        if ([value respondsToSelector:@selector(objectForKey:)]) {
-                            NSString *part = value[@"data"];
-                            if ([part respondsToSelector:@selector(characterAtIndex:)]) {
-                                [strings addObject:part];
-                            }
-                        }
-                    }
-                    [strings sortUsingComparator:^NSComparisonResult(NSString *lhs, NSString *rhs) {
-                        if (lhs.length > rhs.length) {
-                            return NSOrderedAscending;
-                        } else {
-                            return NSOrderedDescending;
-                        }
-                    }];
-                    
-                    NSString *finalString = @"";
-                    for (NSString *string in strings) {
-                        finalString = [finalString stringByAppendingString:[string stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"="]]];
-                    }
-                    
-                    NSData *result = [[NSData alloc] initWithBase64Encoding:finalString];
-                    NSMutableData *finalData = [[NSMutableData alloc] initWithData:result];
-                    [finalData setLength:256];
-                    MTBackupDatacenterData *datacenterData = MTIPDataDecode(finalData);
-                    if (datacenterData != nil) {
-                        
-                        [subscriber putNext:datacenterData];
-                    }
-                }
-            }
-            [subscriber putCompletion];
-        }];
-        
-        id cancelToken = [TGTelegraphInstance doRequestRawHttp:[NSString stringWithFormat:@"https://google.com/resolve?name=%@&type=16", isTesting ? @"tap.stel.com" : @"ap.stel.com"] maxRetryCount:0 acceptCodes:@[@400, @403] httpHeaders:headers actor:helper];
-        
-        return [[SBlockDisposable alloc] initWithBlock:^{
-            [helper description];
-            [TGTelegraphInstance cancelRequestByToken:cancelToken];
-        }];
-    }];
-}
-
-+ (SSignal *)fetchBackupIps:(bool)isTestingEnvironment {
-    NSArray *signals = @[[self fetchBackupIpsGoogle:isTestingEnvironment], [self fetchBackupIpsResolveGoogle:isTestingEnvironment]];
-    
-    return [[[SSignal mergeSignals:signals] take:1] mapToSignal:^SSignal *(MTBackupDatacenterData *data) {
-        if (data != nil && data.addressList.count != 0) {
-            MTApiEnvironment *apiEnvironment = [[MTApiEnvironment alloc] init];
-            
-            NSMutableDictionary *datacenterAddressOverrides = [[NSMutableDictionary alloc] init];
-            
-            MTBackupDatacenterAddress *address = data.addressList[0];
-            datacenterAddressOverrides[@(data.datacenterId)] = [[MTDatacenterAddress alloc] initWithIp:address.ip port:(uint16_t)address.port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false];
-            apiEnvironment.datacenterAddressOverrides = datacenterAddressOverrides;
-            
-            int32_t apiId = 0;
-            NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
-            SETUP_API_ID(apiId)
-            
-            apiEnvironment.apiId = apiId;
-            
-            apiEnvironment.layer = @([[[TGTLSerialization alloc] init] currentLayer]);
-            apiEnvironment.disableUpdates = true;
-            
-            apiEnvironment = [apiEnvironment withUpdatedLangPackCode:currentNativeLocalization().code];
-
-            MTContext *context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment];
-            
-            if (data.datacenterId != 0) {
-                context.keychain = [TGTelegramNetworking instance].context.keychain;
-            }
-            
-            MTProto *mtProto = [[MTProto alloc] initWithContext:context datacenterId:data.datacenterId usageCalculationInfo:nil];
-            MTRequestMessageService *requestService = [[MTRequestMessageService alloc] initWithContext:context];
-            [mtProto addMessageService:requestService];
-            
-            [mtProto resume];
-            return [[[[self requestSignal:[[TLRPChelp_getConfig$help_getConfig alloc] init] requestService:requestService] onNext:^(TLConfig *config) {
-                NSMutableDictionary *addressListByDatacenterId = [[NSMutableDictionary alloc] init];
-                
-                for (TLDcOption$modernDcOption *dcOption in config.dc_options)
-                {
-                    MTDatacenterAddress *configAddress = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3) preferForProxy:dcOption.flags & (1 << 4)];
-                    
-                    NSMutableArray *array = addressListByDatacenterId[@(dcOption.n_id)];
-                    if (array == nil)
-                    {
-                        array = [[NSMutableArray alloc] init];
-                        addressListByDatacenterId[@(dcOption.n_id)] = array;
-                    }
-                    
-                    if (![array containsObject:configAddress])
-                        [array addObject:configAddress];
-                }
-                
-                [addressListByDatacenterId enumerateKeysAndObjectsUsingBlock:^(NSNumber *nDatacenterId, NSArray *addressList, __unused BOOL *stop) {
-                     MTDatacenterAddressSet *addressSet = [[MTDatacenterAddressSet alloc] initWithAddressList:addressList];
-                     
-                     MTDatacenterAddressSet *currentAddressSet = [context addressSetForDatacenterWithId:[nDatacenterId integerValue]];
-                     
-                     if (currentAddressSet == nil || ![addressSet isEqual:currentAddressSet])
-                     {
-                         TGLog(@"[Backup address fetch (%@): updating datacenter %d address set to %@]", isTestingEnvironment ? @"testing" : @"production", [nDatacenterId intValue], addressSet);
-                         [[TGTelegramNetworking instance].context updateAddressSetForDatacenterWithId:[nDatacenterId integerValue] addressSet:addressSet forceUpdateSchemes:true];
-                     }
-                 }];
-            }] onDispose:^{
-                [mtProto stop];
-            }] delay:9.0 onQueue:[SQueue concurrentDefaultQueue]];
-        }
-        return [SSignal complete];
-    }];
 }
 
 + (SSignal *)requestSignal:(TLMetaRpc *)rpc requestService:(MTRequestMessageService *)requestService
@@ -439,6 +315,34 @@
         SSignal *remote = [SSignal complete];
         return remote;
     }] switchToLatest];
+}
+
++ (SSignal *)reportMessages:(int64_t)peerId accessHash:(int64_t)accessHash messageIds:(NSArray *)messageIds reason:(TGReportPeerReason)reason otherText:(NSString *)otherText {
+    TLRPCmessages_report *report = [[TLRPCmessages_report alloc] init];
+    report.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
+    report.n_id = messageIds;
+    switch (reason) {
+        case TGReportPeerReasonSpam:
+            report.reason = [[TLReportReason$inputReportReasonSpam alloc] init];
+            break;
+        case TGReportPeerReasonViolence:
+            report.reason = [[TLReportReason$inputReportReasonViolence alloc] init];
+            break;
+        case TGReportPeerReasonPornography:
+            report.reason = [[TLReportReason$inputReportReasonPornography alloc] init];
+            break;
+        case TGReportPeerReasonCopyright:
+            report.reason = [[TLReportReason$inputReportReasonCopyright alloc] init];
+            break;
+        case TGReportPeerReasonOther:
+            report.reason = [[TLReportReason$inputReportReasonOther alloc] init];
+            ((TLReportReason$inputReportReasonOther *)report.reason).text = otherText;
+            break;
+    }
+    
+    return [[[TGTelegramNetworking instance] requestSignal:report] mapToSignal:^SSignal *(__unused id next) {
+        return [SSignal complete];
+    }];
 }
 
 @end

@@ -20,17 +20,21 @@
 @class TGViewController;
 @class TGUser;
 @class TGModernConversationInputMicButton;
+@class TLInputMedia;
+@class TGPreparedMessage;
 
 @interface TGMessageEditingContext: NSObject <NSCoding>
 
 @property (nonatomic, strong, readonly) NSString *text;
 @property (nonatomic, strong, readonly) NSArray *entities;
-@property (nonatomic, readonly) int32_t messageId;
 @property (nonatomic, readonly) bool isCaption;
+@property (nonatomic, readonly) bool hasMedia;
+@property (nonatomic, readonly) int64_t cid;
+@property (nonatomic, readonly) int32_t messageId;
 
-+ (NSAttributedString *)attributedStringForText:(NSString *)text entities:(NSArray *)entities;
++ (NSAttributedString *)attributedStringForText:(NSString *)text entities:(NSArray *)entities fontSize:(CGFloat)fontSize;
 
-- (instancetype)initWithText:(NSString *)text entities:(NSArray *)entities isCaption:(bool)isCaption messageId:(int32_t)messageId;
+- (instancetype)initWithText:(NSString *)text entities:(NSArray *)entities isCaption:(bool)isCaption hasMedia:(bool)hasMedia cid:(int64_t)cid messageId:(int32_t)messageId;
 
 @end
 
@@ -39,7 +43,7 @@
 - (void)inputTextPanelHasIndicatedTypingActivity:(TGModernConversationInputTextPanel *)inputTextPanel;
 - (void)inputTextPanelHasCancelledTypingActivity:(TGModernConversationInputTextPanel *)inputTextPanel;
 - (void)inputPanelRequestedSendMessage:(TGModernConversationInputTextPanel *)inputTextPanel text:(NSString *)text;
-- (void)inputPanelRequestedSendMessage:(TGModernConversationInputTextPanel *)inputTextPanel text:(NSString *)text entities:(NSArray *)entities;
+- (void)inputPanelRequestedSendMessage:(TGModernConversationInputTextPanel *)inputTextPanel text:(NSString *)text entities:(NSArray *)entities media:(TLInputMedia *)media preparedMessage:(TGPreparedMessage *)preparedMessage;
 - (void)inputPanelRequestedAttachmentsMenu:(TGModernConversationInputTextPanel *)inputTextPanel;
 - (void)inputPanelRequestedSendImages:(TGModernConversationInputTextPanel *)inputTextPanel images:(NSArray *)images;
 - (void)inputPanelRequestedSendData:(TGModernConversationInputTextPanel *)inputTextPanel data:(NSData *)data;
@@ -203,5 +207,7 @@
 - (NSInteger)textCaretPosition;
 
 - (UIView *)keyboardSnapshotView;
+
+- (CGFloat)fontSize;
 
 @end

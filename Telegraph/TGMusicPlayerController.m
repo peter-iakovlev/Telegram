@@ -46,7 +46,7 @@
     self.view.backgroundColor = [UIColor clearColor];
     
     __weak TGMusicPlayerController *weakSelf = self;
-    _view = [[TGMusicPlayerFullView alloc] initWithFrame:self.view.bounds context:[TGLegacyComponentsContext shared]];
+    _view = [[TGMusicPlayerFullView alloc] initWithFrame:self.view.bounds context:[TGLegacyComponentsContext shared] presentation:self.presentation];
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _view.actionsPressed = ^
     {
@@ -134,13 +134,13 @@
             return [strongSelf->_view.actionsButton convertRect:strongSelf->_view.actionsButton.bounds toView:strongSelf->_view];
         };
         
-        [TGShareMenu presentInParentController:self menuController:nil buttonTitle:status.item.peerId != 0 ? TGLocalized(@"SharedMedia.ViewInChat") : nil buttonAction:^
+        [TGShareMenu presentInParentController:self menuController:nil buttonTitle:status.item.conversationId != 0 ? TGLocalized(@"SharedMedia.ViewInChat") : nil buttonAction:^
         {
             if (![status.item.key isKindOfClass:[NSNumber class]])
                 return;
             
             int32_t messageId = [(NSNumber *)status.item.key int32Value];
-            [[TGInterfaceManager instance] navigateToConversationWithId:status.item.peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(messageId), @"useExisting": @true } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+            [[TGInterfaceManager instance] navigateToConversationWithId:status.item.conversationId conversation:nil performActions:nil atMessage:@{ @"mid": @(messageId), @"useExisting": @true } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
             
             __strong TGMusicPlayerController *strongSelf = weakSelf;
             if (strongSelf != nil)

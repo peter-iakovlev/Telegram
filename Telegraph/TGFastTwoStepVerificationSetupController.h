@@ -7,6 +7,6 @@
 
 @property (nonatomic, copy) void (^twoStepConfigUpdated)(TGTwoStepConfig *);
 
-- (instancetype)initWithTwoStepConfig:(SSignal *)twoStepConfig completion:(void (^)(bool))completion;
+- (instancetype)initWithTwoStepConfig:(SSignal *)twoStepConfig passport:(bool)passport completion:(void (^)(bool, TGTwoStepConfig *, NSString *))completion;
 
 @end

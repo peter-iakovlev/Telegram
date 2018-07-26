@@ -7,6 +7,8 @@
 
 #import "TGTelegraph.h"
 
+#import "TGPresentation.h"
+
 @interface TGLiveLocationTitlePanel () {
     UIImageView *_pinView;
     TGLocationWavesView *_wavesView;
@@ -15,6 +17,8 @@
     UILabel *_participantsLabel;
     TGModernButton *_closeButton;
     UIView *_separatorView;
+    
+    NSArray *_liveLocations;
 }
 
 @end
@@ -26,7 +30,7 @@
     if (self != nil) {
         self.backgroundColor = UIColorRGB(0xf7f7f7);
         
-        _pinView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"LiveLocationTitlePin"), TGAccentColor())];
+        _pinView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 30.0f, 21.0f)];
         _pinView.contentMode = UIViewContentModeCenter;
         _pinView.frame = CGRectMake(0.0f, 0.0f, 48.0f, 48.0f);
         [self addSubview:_pinView];
@@ -69,8 +73,30 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _wavesView.color = presentation.pallete.navigationButtonColor;
+    _pinView.image = _wavesView.hidden ? self.presentation.images.chatLiveLocationIcon : self.presentation.images.chatLiveLocationActiveIcon;
+    _titleLabel.textColor = presentation.pallete.navigationTitleColor;
+    if (_liveLocations != nil)
+        [self setLiveLocations:_liveLocations];
+    else
+        _participantsLabel.textColor = self.presentation.pallete.navigationSubtitleColor;
+    _separatorView.backgroundColor = presentation.pallete.barSeparatorColor;
+    
+    [_closeButton setImage:presentation.images.pinCloseIcon forState:UIControlStateNormal];
+}
+
 - (void)setLiveLocations:(NSArray *)liveLocations
 {
+    _liveLocations = liveLocations;
+ 
+    if (self.presentation == nil)
+        return;
+    
     bool selfSharing = false;
     TGUser *otherUser = nil;
     for (TGLiveLocation *liveLocation in liveLocations)
@@ -85,13 +111,13 @@
     NSAttributedString *string;
     if (selfSharing)
     {
-        _pinView.image = TGTintedImage(TGImageNamed(@"LiveLocationTitlePin"), TGAccentColor());
+        _pinView.image = self.presentation.images.chatLiveLocationActiveIcon;
         _wavesView.hidden = false;
         [_wavesView start];
         
         if (liveLocations.count == 1)
         {
-            string = [[NSAttributedString alloc] initWithString:TGLocalized(@"Conversation.LiveLocationYou") attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: TGAccentColor() }];
+            string = [[NSAttributedString alloc] initWithString:TGLocalized(@"Conversation.LiveLocationYou") attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: self.presentation.pallete.navigationButtonColor }];
         }
         else
         {
@@ -130,30 +156,31 @@
                 }
             }
             finalString = [finalString stringByReplacingOccurrencesOfString:@"*" withString:@""];
-            NSMutableAttributedString *mutableString = [[NSMutableAttributedString alloc] initWithString:finalString attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: UIColorRGB(0x8d8e93) }];
+            NSMutableAttributedString *mutableString = [[NSMutableAttributedString alloc] initWithString:finalString attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: self.presentation.pallete.navigationSubtitleColor }];
             if (youStart != -1 && youEnd != -1)
             {
                 NSRange youRange = NSMakeRange(youStart, youEnd - youStart - 1);
-                [mutableString addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:youRange];
+                [mutableString addAttribute:NSForegroundColorAttributeName value:self.presentation.pallete.navigationButtonColor range:youRange];
             }
             string = mutableString;
         }
     }
     else
     {
-        _pinView.image = TGTintedImage(TGImageNamed(@"LiveLocationTitleIcon"), TGAccentColor());
+        _pinView.image = self.presentation.images.chatLiveLocationIcon;
         [_wavesView stop];
         _wavesView.hidden = true;
         
         if (liveLocations.count == 1)
         {
-            string = [[NSAttributedString alloc] initWithString:[otherUser displayName] attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: UIColorRGB(0x8d8e93) }];
+            NSString *displayName = [otherUser displayName] ?: @"";
+            string = [[NSAttributedString alloc] initWithString:displayName attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: self.presentation.pallete.navigationSubtitleColor }];
         }
         else
         {
             NSString *formatPrefix = [TGStringUtils integerValueFormat:@"Conversation.LiveLocationMembersCount_" value:liveLocations.count];
             NSString *countString = [[NSString alloc] initWithFormat:TGLocalized(formatPrefix), [[NSString alloc] initWithFormat:@"%ld", liveLocations.count]];
-            string = [[NSAttributedString alloc] initWithString:countString attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: UIColorRGB(0x8d8e93) }];
+            string = [[NSAttributedString alloc] initWithString:countString attributes:@{ NSFontAttributeName: _participantsLabel.font, NSForegroundColorAttributeName: self.presentation.pallete.navigationSubtitleColor }];
         }
     }
     

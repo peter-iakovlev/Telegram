@@ -22,6 +22,9 @@ typedef enum {
 @interface TGModernConversationItem : NSObject
 {
     int _collapseFlags;
+    
+@protected
+    __weak TGModernCollectionCell *_cell;
 }
 
 @property (nonatomic) int collapseFlags;
@@ -40,6 +43,8 @@ typedef enum {
 - (TGModernViewModel *)viewModel;
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 - (void)drawInContext:(CGContextRef)context;
+
+- (void)resetViewModel;
 
 - (CGSize)sizeForContainerSize:(CGSize)containerSize viewStorage:(TGModernViewStorage *)viewStorage;
 

@@ -5,6 +5,6 @@
 
 @interface TGReplyHeaderStickerModel : TGReplyHeaderModel
 
-- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system;
+- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation;
 
 @end

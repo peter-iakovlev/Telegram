@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoEditingAboutCollectionItemView ()
 {
     CALayer *_separatorLayer;
@@ -20,6 +22,13 @@
         [self.backgroundView.layer addSublayer:_separatorLayer];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _separatorLayer.backgroundColor = presentation.pallete.collectionMenuSeparatorColor.CGColor;
 }
 
 - (void)layoutSubviews

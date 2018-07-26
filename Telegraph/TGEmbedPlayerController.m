@@ -57,6 +57,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     bool _dismissing;
     
     bool _aboveStatusBar;
+    bool _controlsHidden;
     
     MPVolumeView *_volumeOverlayFix;
 
@@ -361,7 +362,12 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     [_wrapperView addGestureRecognizer:_panGestureRecognizer];
     
     if (fromRotation && !_aboveStatusBar)
+    {
         [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
+        _controlsHidden = true;
+        if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+            [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+    }
 }
 
 #pragma mark -
@@ -437,6 +443,10 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     {
         [self dismiss];
     }];
+    
+    _controlsHidden = false;
+    if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
 }
 
 - (void)dismissFullscreen:(bool)fromRotation duration:(NSTimeInterval)duration
@@ -459,6 +469,10 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         _curtainView.hidden = true;
         if (!_aboveStatusBar)
             [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
+        
+        _controlsHidden = false;
+        if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+            [self setNeedsUpdateOfHomeIndicatorAutoHidden];
     }
     
     [UIView animateWithDuration:duration animations:^{
@@ -500,6 +514,10 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
     
     if (!_aboveStatusBar)
         [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:1.0f];
+    
+    _controlsHidden = false;
+    if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
 }
 
 - (void)animateView:(UIView *)view to:(CGRect)toFrame completion:(void (^)(bool))completion
@@ -609,6 +627,11 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 
 #pragma mark -
 
+- (bool)areControlsHidden
+{
+    return _controlsHidden;
+}
+
 - (void)setControlsHidden:(bool)hidden animated:(bool)animated
 {
     [self setControlsHidden:hidden animated:animated updateStatusBar:false];
@@ -616,11 +639,10 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
 
 - (void)setControlsHidden:(bool)hidden animated:(bool)animated updateStatusBar:(bool)updateStatusBar
 {
+    _controlsHidden = hidden;
+    
     if (animated)
     {
-        if (updateStatusBar && !_aboveStatusBar)
-            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
-        
         _scrubber.layer.rasterizationScale = TGScreenScaling();
         _scrubber.layer.shouldRasterize = true;
         
@@ -629,6 +651,13 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         
         _topPanelView.userInteractionEnabled = !hidden;
         _bottomPanelView.userInteractionEnabled = !hidden;
+        
+        if (updateStatusBar)
+        {
+            if (!_aboveStatusBar)
+                [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:hidden ? 0.0f : 1.0f];
+        }
+
         [UIView animateWithDuration:0.3 animations:^
         {
             _topPanelView.alpha = hidden ? 0.0f : 1.0f;
@@ -646,6 +675,9 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         _topPanelView.alpha = hidden ? 0.0f : 1.0f;
         _bottomPanelView.alpha = hidden ? 0.0f : 1.0f;
     }
+    
+    if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
 }
 
 - (void)updateState:(TGEmbedPlayerState *)state
@@ -675,7 +707,7 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         _scrubber.hidden = false;
     }
     
-    _positionLabel.hidden = (state.position < 0.0);
+    _positionLabel.hidden = [_playerView _controlsType] == TGEmbedPlayerControlsTypeSimple || (state.position < 0.0);
     
     if (!_scrubber.hidden)
     {
@@ -814,6 +846,11 @@ const CGFloat TGEmbedSwipeDistanceThreshold = 128.0f;
         return true;
     
     return [super prefersStatusBarHidden];
+}
+
+- (bool)prefersHomeIndicatorAutoHidden
+{
+    return [self areControlsHidden];
 }
 
 @end

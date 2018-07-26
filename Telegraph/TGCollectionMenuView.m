@@ -286,11 +286,15 @@
 
 - (void)setContentOffset:(CGPoint)contentOffset
 {
+    if (self.blockScrolling && fabs(-contentOffset.y - self.contentInset.top) > 1.0f)
+        return;
     [super setContentOffset:contentOffset];
 }
 
 - (void)setContentOffset:(CGPoint)contentOffset animated:(BOOL)animated
 {
+    if (self.blockScrolling && fabs(-contentOffset.y - self.contentInset.top) > 1.0f)
+        return;
     [super setContentOffset:contentOffset animated:animated];
 }
 

@@ -41,7 +41,14 @@
 {
     [super setPresentation:presentation];
     
+    if (_deleteIndicator != nil)
+    {
+        _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.images.collectionMenuPlusImage : self.presentation.images.collectionMenuMinusImage;
+    }
+    if (_actionButton != nil)
+    {
     _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.pallete.collectionMenuAccentColor : self.presentation.pallete.collectionMenuDestructiveColor;
+    }
 }
 
 - (void)prepareForReuse
@@ -190,10 +197,10 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     if (_indicatorMode != indicatorMode) {
         _indicatorMode = indicatorMode;
         if (_deleteIndicator != nil) {
-            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGImageNamed(@"ModernMenuAddIcon.png") : TGImageNamed(@"ModernMenuDeleteIcon.png");
+            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.images.collectionMenuPlusImage : self.presentation.images.collectionMenuMinusImage;
         }
         if (_actionButton != nil) {
-            _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGAccentColor() : TGDestructiveAccentColor();
+            _actionButton.backgroundColor = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.pallete.collectionMenuAccentColor : self.presentation.pallete.collectionMenuDestructiveColor;
         }
     }
 }
@@ -204,7 +211,8 @@ static TGCollectionMenuView *_findCollectionMenuView(UIView *baseView)
     {
         if (_deleteIndicator == nil)
         {
-            _deleteIndicator = [[UIImageView alloc] initWithImage:_indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? TGImageNamed(@"ModernMenuAddIcon.png") : TGImageNamed(@"ModernMenuDeleteIcon.png")];
+            _deleteIndicator = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 22.0f, 24.0f)];
+            _deleteIndicator.image = _indicatorMode == TGEditableCollectionItemViewIndicatorAdd ? self.presentation.images.collectionMenuPlusImage : self.presentation.images.collectionMenuMinusImage;
             _deleteIndicator.userInteractionEnabled = true;
             [_deleteIndicator addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(deleteIndicatorTapGesture:)]];
             

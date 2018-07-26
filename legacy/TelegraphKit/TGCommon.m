@@ -114,8 +114,11 @@ int iosMajorVersion()
             case 11:
                 version = 11;
                 break;
+            case 12:
+                version = 12;
+                break;
             default:
-                version = 9;
+                version = 11;
                 break;
         }
         
@@ -281,7 +284,12 @@ TGLocalization *currentNativeLocalization() {
             value = [NSKeyedUnarchiver unarchiveObjectWithData:data];
         }
         if (value == nil) {
-            value = [[TGLocalization alloc] initWithVersion:0 code:@"en" dict:@{} isActive:true];
+            NSString *nativeLanguage = @"en";
+            NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+            if ([bundleIdentifier isEqualToString:@"co.one.Teleapp"]) {
+                nativeLanguage = @"ru";
+            }
+            value = [[TGLocalization alloc] initWithVersion:0 code:nativeLanguage dict:@{} isActive:true];
         }
         if (value != nil) {
             pthread_mutex_lock(&_currentLocalizationMutex);

@@ -148,6 +148,12 @@
     return self;
 }
 
+- (void)dealloc
+{
+    [_actionHandle reset];
+    [ActionStageInstance() removeWatcher:self];
+}
+
 - (void)donePressed {
     [self.navigationController popViewControllerAnimated:true];
 }

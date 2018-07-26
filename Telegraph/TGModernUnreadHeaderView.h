@@ -8,9 +8,14 @@
 
 #import "TGModernView.h"
 
+@class TGPresentation;
+
 @interface TGModernUnreadHeaderView : UIView <TGModernView>
 
-+ (void)drawHeaderForContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position;
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGPresentation *)presentation;
+- (void)setPresentation:(TGPresentation *)presentation;
+
++ (void)drawHeaderForContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position presentation:(TGPresentation *)presentation;
 - (void)updateAssets;
 
 @end

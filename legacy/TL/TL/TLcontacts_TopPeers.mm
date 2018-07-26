@@ -106,3 +106,27 @@
 
 @end
 
+@implementation TLcontacts_TopPeers$contacts_topPeersDisabled : TLcontacts_TopPeers
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xb52c939d;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xc8e1bdfe;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLcontacts_TopPeers$contacts_topPeersDisabled *object = [[TLcontacts_TopPeers$contacts_topPeersDisabled alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+@end

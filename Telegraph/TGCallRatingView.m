@@ -1,6 +1,9 @@
 #import "TGCallRatingView.h"
 
+#import <LegacyComponents/TGImageUtils.h>
+
 #import "TGShareCommentView.h"
+#import "TGPresentation.h"
 
 @interface TGCallRatingView ()
 {
@@ -13,13 +16,16 @@
 
 @implementation TGCallRatingView
 
-- (instancetype)init
+- (instancetype)initWithPresentation:(TGPresentation *)presentation
 {
     self = [super initWithFrame:CGRectMake(0.0f, 0.0f, 246.0f, 38.0f)];
     if (self != nil)
     {
         _starsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 246.0f, 38.0f)];
         [self addSubview:_starsView];
+        
+        UIImage *starImage = TGTintedImage(TGImageNamed(@"CallStar"), presentation.pallete.accentColor);
+        UIImage *highlightedStarImage = TGTintedImage(TGImageNamed(@"CallStar_Highlighted"), presentation.pallete.accentColor);
         
         for (NSInteger i = 0; i < 5; i++)
         {
@@ -28,9 +34,9 @@
             starButton.adjustsImageWhenDisabled = false;
             starButton.adjustsImageWhenHighlighted = false;
             starButton.contentMode = UIViewContentModeCenter;
-            [starButton setImage:[UIImage imageNamed:@"CallStar"] forState:UIControlStateNormal];
-            [starButton setImage:[UIImage imageNamed:@"CallStar_Highlighted"] forState:UIControlStateSelected];
-            [starButton setImage:[UIImage imageNamed:@"CallStar_Highlighted"] forState:UIControlStateSelected | UIControlStateHighlighted];
+            [starButton setImage:starImage forState:UIControlStateNormal];
+            [starButton setImage:highlightedStarImage forState:UIControlStateSelected];
+            [starButton setImage:highlightedStarImage forState:UIControlStateSelected | UIControlStateHighlighted];
             [starButton addTarget:self action:@selector(starPressed:) forControlEvents:UIControlEventTouchUpInside];
             [_starsView addSubview:starButton];
         }
@@ -40,6 +46,7 @@
         
         __weak TGCallRatingView *weakSelf = self;
         _commentView = [[TGShareCommentView alloc] initWithFrame:CGRectZero];
+        _commentView.presentation = presentation;
         _commentView.alpha = 0.0f;
         _commentView.userInteractionEnabled = false;
         _commentView.placeholder = TGLocalized(@"Calls.RatingFeedback");

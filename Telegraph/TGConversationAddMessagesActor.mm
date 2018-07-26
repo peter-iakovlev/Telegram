@@ -398,7 +398,7 @@
         [TGRecentGifsSignal addRemoteRecentGifFromDocuments:remoteGifDocuments];
     }
     if (remoteStickerDocuments.count != 0) {
-        [TGRecentStickersSignal addRemoteRecentStickerFromDocuments:remoteStickerDocuments];
+        [TGRecentStickersSignal addRemoteRecentStickerFromDocuments:remoteStickerDocuments sync:false];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];

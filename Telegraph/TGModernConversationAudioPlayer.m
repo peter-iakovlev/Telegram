@@ -18,6 +18,8 @@
     bool _music;
     bool _controlAudioSession;
     
+    CGFloat _rate;
+    
     NSTimer *_timer;
     
     TGModernConversationAudioPlayerContext *_inlineMediaContext;
@@ -37,6 +39,7 @@
         _filePath = filePath;
         _music = music;
         _controlAudioSession = controlAudioSession;
+        _rate = 1.0f;
         
         _audioPlayer = [TGAudioPlayer audioPlayerForPath:filePath music:music controlAudioSession:controlAudioSession];
         _audioPlayer.delegate = self;
@@ -74,10 +77,19 @@
     return _inlineMediaContext;
 }
 
+- (void)setRate:(CGFloat)rate
+{
+    _rate = rate;
+    if (_audioPlayer != nil) {
+        [_audioPlayer setRate:_rate];
+    }
+}
+
 - (void)play
 {
     if (_audioPlayer == nil) {
         _audioPlayer = [TGAudioPlayer audioPlayerForPath:_filePath music:_music controlAudioSession:_controlAudioSession];
+        [_audioPlayer setRate:_rate];
         _audioPlayer.delegate = self;
     }
     

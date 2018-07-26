@@ -23,13 +23,11 @@
 @property (nonatomic, strong) TGDataItem *tempDataItem;
 @property (nonatomic, strong) TGLiveUploadActorData *liveUploadData;
 
-@property (nonatomic, strong) NSString *caption;
-
 - (NSString *)localDocumentDirectory;
 - (NSString *)localDocumentFileName;
 
-+ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
-+ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
++ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
 + (instancetype)messageByCopyingDataFromMessage:(TGPreparedLocalDocumentMessage *)source;
 + (instancetype)messageByCopyingDataFromMedia:(TGDocumentMediaAttachment *)media replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;
 + (instancetype)messageWithLocalDocumentId:(int64_t)localDocumentId size:(int32_t)size mimeType:(NSString *)mimeType localThumbnailDataPath:(NSString *)localThumbnailDataPath thumbnailSize:(CGSize)localThumbnailSize attributes:(NSArray *)attributes replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;

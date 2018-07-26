@@ -4,6 +4,8 @@
 
 #import "TGModenConcersationReplyAssociatedPanel.h"
 
+#import "TGPresentation.h"
+
 @interface TGPinnedMessageTitlePanel () {
     TGModenConcersationReplyAssociatedPanel *_replyPanel;
     UIView *_separatorView;
@@ -47,6 +49,15 @@
         [self addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)]];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _separatorView.backgroundColor = presentation.pallete.barSeparatorColor;
+    _replyPanel.pallete = presentation.associatedInputPanelPallete;
 }
 
 - (void)updateMessage:(TGMessage *)message {

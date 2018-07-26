@@ -17,7 +17,7 @@
 
 #import <LegacyComponents/TGProgressWindow.h>
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGChannelManagementSignals.h"
 #import "TGButtonCollectionItem.h"
@@ -35,7 +35,6 @@
 #import "TGSetupChannelAfterCreationController.h"
 
 #import <LegacyComponents/UIDevice+PlatformInfo.h>
-#import "TGActionSheet.h"
 
 #import <LegacyComponents/TGRemoteImageView.h>
 
@@ -348,7 +347,7 @@
                         errorText = TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelMultipleError");
                     }
                     
-                    [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 } completed:^{
                 }];
             }
@@ -471,7 +470,12 @@
         strongSelf->_avatarMixin = nil;
     };
     _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        __strong TGCreateGroupController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
         TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        searchController.presentation = strongSelf.presentation;
         
         __weak TGMediaAssetsController *weakAssetsController = assetsController;
         __weak TGWebSearchController *weakController = searchController;

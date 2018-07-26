@@ -144,3 +144,15 @@
 
 @end
 
+@interface TLMessageAction$messageActionBotAllowed : TLMessageAction
+
+@property (nonatomic, retain) NSString *domain;
+
+@end
+
+@interface TLMessageAction$messageActionSecureValuesSent : TLMessageAction
+
+@property (nonatomic, retain) NSArray *types;
+
+@end
+

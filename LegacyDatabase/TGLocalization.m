@@ -2,19 +2,30 @@
 
 #import "TGPluralization.h"
 
-static NSDictionary *fallbackDict() {
-    static NSDictionary *dict = nil;
+static NSDictionary *fallbackDict(NSString *code) {
+    if (code == nil) {
+        code = @"en";
+    }
+    static NSMutableDictionary *dicts = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"en" ofType:@"lproj"]];
+        dicts = [[NSMutableDictionary alloc] init];
+    });
+    NSDictionary *dict = dicts[@"code"];
+    if (dict == nil) {
+        NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:code ofType:@"lproj"]];
         NSString *path = [bundle pathForResource:@"Localizable" ofType:@"strings"];
         dict = [NSDictionary dictionaryWithContentsOfFile:path];
-    });
+        if (dict == nil) {
+            dict = @{};
+        }
+        dicts[code] = dict;
+    }
     return dict;
 }
 
-static NSString *fallbackString(NSString *key) {
-    NSString *value = fallbackDict()[key];
+static NSString *fallbackString(NSString *key, NSString *code) {
+    NSString *value = fallbackDict(code)[key];
     if (value == nil) {
         return key;
     } else {
@@ -83,7 +94,7 @@ static NSString *fallbackString(NSString *key) {
     if (value != nil && value.length != 0) {
         return value;
     } else {
-        return fallbackString(key);
+        return fallbackString(key, _code);
     }
 }
 

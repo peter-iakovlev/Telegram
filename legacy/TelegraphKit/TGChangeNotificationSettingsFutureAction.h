@@ -12,12 +12,12 @@
 
 @interface TGChangeNotificationSettingsFutureAction : TGFutureAction
 
-@property (nonatomic) int muteUntil;
-@property (nonatomic) int soundId;
-@property (nonatomic) bool previewText;
+@property (nonatomic) NSNumber *muteUntil;
+@property (nonatomic) NSNumber *soundId;
+@property (nonatomic) NSNumber *previewText;
 @property (nonatomic) bool photoNotificationsEnabled;
-@property (nonatomic) bool messagesMuted;
+@property (nonatomic) NSNumber *messagesMuted;
 
-- (id)initWithPeerId:(int64_t)peerId muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled messagesMuted:(bool)messagesMuted;
+- (id)initWithPeerId:(int64_t)peerId muteUntil:(NSNumber *)muteUntil soundId:(NSNumber *)soundId previewText:(NSNumber *)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled messagesMuted:(NSNumber *)messagesMuted;
 
 @end

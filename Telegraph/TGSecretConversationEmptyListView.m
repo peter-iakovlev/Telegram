@@ -6,9 +6,15 @@
 #import <LegacyComponents/TGWallpaperInfo.h>
 
 #import "TGPresentationAssets.h"
+#import "TGPresentation.h"
 
 @interface TGSecretConversationEmptyListView ()
 {
+    UIImageView *_backgroundImageView;
+    UILabel *_titleLabel;
+    UILabel *_secondTitleLabel;
+    NSMutableArray *_iconViews;
+    NSMutableArray *_labels;
     UIView *_containerView;
 }
 
@@ -16,43 +22,32 @@
 
 @implementation TGSecretConversationEmptyListView
 
-- (instancetype)initWithIncoming:(bool)incoming userName:(NSString *)userName
+@synthesize presentation = _presentation;
+
+- (instancetype)initWithIncoming:(bool)incoming userName:(NSString *)userName presentation:(TGPresentation *)presentation
 {
     static const CGFloat minWidth = 236.0f;
     
     self = [super initWithFrame:CGRectMake(0.0f, 0.0f, minWidth, 185.0f)];
     if (self)
     {
+        _presentation = presentation;
+        
         _containerView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, minWidth, 185.0f)];
         [self addSubview:_containerView];
         
-        static UIImage *backgroundImage = nil;
-        static int backgroundColor = -1;
+        _backgroundImageView = [[UIImageView alloc] initWithImage:presentation.images.chatPlaceholderBackground];
+        _backgroundImageView.frame = _containerView.bounds;
+        [_containerView addSubview:_backgroundImageView];
         
-        if (backgroundColor == -1 || backgroundColor != [[TGWallpaperManager instance] currentWallpaperInfo].tintColor)
-        {
-            backgroundColor = [[TGWallpaperManager instance] currentWallpaperInfo].tintColor;
-            
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(30.0f, 30.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGBA(backgroundColor, 0.35f).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 30.0f, 30.0f));
-            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:15 topCapHeight:15];
-            UIGraphicsEndImageContext();
-        }
-
-        UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:backgroundImage];
-        backgroundImageView.frame = _containerView.bounds;
-        [_containerView addSubview:backgroundImageView];
-        
-        UILabel *titleLabel = [[UILabel alloc] init];
-        titleLabel.backgroundColor = [UIColor clearColor];
-        titleLabel.textColor = [UIColor whiteColor];
-        titleLabel.font = TGMediumSystemFontOfSize(14.0f);
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.backgroundColor = [UIColor clearColor];
+        _titleLabel.textColor = presentation.pallete.chatSystemTextColor;
+        _titleLabel.font = TGMediumSystemFontOfSize(14.0f);
         
         NSString *titleText = [[NSString alloc] initWithFormat:incoming ? TGLocalized(@"Conversation.EncryptedPlaceholderTitleIncoming") : TGLocalized(@"Conversation.EncryptedPlaceholderTitleOutgoing"), userName];
         
-        if ([titleLabel respondsToSelector:@selector(setAttributedText:)])
+        if ([_titleLabel respondsToSelector:@selector(setAttributedText:)])
         {
             NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:titleText attributes:nil];
             
@@ -62,26 +57,31 @@
             style.alignment = NSTextAlignmentCenter;
             [attributedString addAttributes:@{NSParagraphStyleAttributeName: style} range:NSMakeRange(0, attributedString.length)];
             
-            titleLabel.attributedText = attributedString;
+            _titleLabel.attributedText = attributedString;
         }
         else
-            titleLabel.text = titleText;
+            _titleLabel.text = titleText;
         
-        titleLabel.numberOfLines = 0;
-        titleLabel.textAlignment = NSTextAlignmentCenter;
-        titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
-        CGSize labelSize = [titleLabel sizeThatFits:CGSizeMake(200.0f, CGFLOAT_MAX)];
-        titleLabel.frame = CGRectMake(CGFloor((_containerView.frame.size.width - labelSize.width) / 2.0f), 17.0f, labelSize.width, labelSize.height);
-        [_containerView addSubview:titleLabel];
+        _titleLabel.numberOfLines = 0;
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
+        _titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        CGSize labelSize = [_titleLabel sizeThatFits:CGSizeMake(200.0f, CGFLOAT_MAX)];
+        _titleLabel.frame = CGRectMake(CGFloor((_containerView.frame.size.width - labelSize.width) / 2.0f), 17.0f, labelSize.width, labelSize.height);
+        [_containerView addSubview:_titleLabel];
         
-        UILabel *secondTitleLabel = [[UILabel alloc] init];
-        secondTitleLabel.backgroundColor = [UIColor clearColor];
-        secondTitleLabel.textColor = [UIColor whiteColor];
-        secondTitleLabel.font = TGMediumSystemFontOfSize(14.0f);
-        secondTitleLabel.text = TGLocalized(@"Conversation.EncryptedDescriptionTitle");
-        [secondTitleLabel sizeToFit];
-        secondTitleLabel.frame = CGRectMake(TGIsRTL() ? minWidth - 16.0f - secondTitleLabel.frame.size.width : 16.0f, CGRectGetMaxY(titleLabel.frame) + 9.0f, secondTitleLabel.frame.size.width, secondTitleLabel.frame.size.height);
-        [_containerView addSubview:secondTitleLabel];
+        _secondTitleLabel = [[UILabel alloc] init];
+        _secondTitleLabel.backgroundColor = [UIColor clearColor];
+        _secondTitleLabel.textColor = presentation.pallete.chatSystemTextColor;
+        _secondTitleLabel.font = TGMediumSystemFontOfSize(14.0f);
+        _secondTitleLabel.text = TGLocalized(@"Conversation.EncryptedDescriptionTitle");
+        [_secondTitleLabel sizeToFit];
+        _secondTitleLabel.frame = CGRectMake(TGIsRTL() ? minWidth - 16.0f - _secondTitleLabel.frame.size.width : 16.0f, CGRectGetMaxY(_titleLabel.frame) + 9.0f, _secondTitleLabel.frame.size.width, _secondTitleLabel.frame.size.height);
+        [_containerView addSubview:_secondTitleLabel];
+        
+        UIImage *icon = TGTintedImage([TGPresentationAssets chatPlaceholderEncryptedIcon], presentation.pallete.chatSystemTextColor);
+        
+        _iconViews = [[NSMutableArray alloc] init];
+        _labels = [[NSMutableArray alloc] init];
         
         NSArray *titles = @[
             TGLocalized(@"Conversation.EncryptedDescription1"),
@@ -90,33 +90,55 @@
             TGLocalized(@"Conversation.EncryptedDescription4")
         ];
         int index = -1;
-        CGFloat currentLineY = CGRectGetMaxY(secondTitleLabel.frame) + 5.0f;
+        CGFloat currentLineY = CGRectGetMaxY(_secondTitleLabel.frame) + 5.0f;
         for (NSString *title in titles)
         {
             index++;
-            currentLineY += [self addTextLine:title offset:currentLineY] + 5;
+            currentLineY += [self addTextLine:title offset:currentLineY presentation:presentation icon:icon] + 5;
         }
 
         CGFloat height = currentLineY + 10.0f;
         
         self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.frame.size.width, height);
         _containerView.frame = self.bounds;
-        backgroundImageView.frame = _containerView.bounds;
+        _backgroundImageView.frame = _containerView.bounds;
         
         self.userInteractionEnabled = false;
     }
     return self;
 }
 
-- (CGFloat)addTextLine:(NSString *)text offset:(CGFloat)offset
+- (void)setPresentation:(TGPresentation *)presentation
 {
-    UIImageView *iconView = [[UIImageView alloc] initWithImage:[TGPresentationAssets chatPlaceholderEncryptedIcon]];
+    if (_presentation != presentation)
+    {
+        _backgroundImageView.image = presentation.images.chatPlaceholderBackground;
+        _titleLabel.textColor = presentation.pallete.chatSystemTextColor;
+        _secondTitleLabel.textColor = presentation.pallete.chatSystemTextColor;
+        
+        UIImage *icon = TGTintedImage([TGPresentationAssets chatPlaceholderEncryptedIcon], presentation.pallete.chatSystemTextColor);
+        for (UIImageView *iconView in _iconViews)
+        {
+            iconView.image = icon;
+        }
+        for (UILabel *label in _labels)
+        {
+            label.textColor = presentation.pallete.chatSystemTextColor;
+        }
+    }
+}
+
+- (CGFloat)addTextLine:(NSString *)text offset:(CGFloat)offset presentation:(TGPresentation *)presentation icon:(UIImage *)icon
+{
+    UIImageView *iconView = [[UIImageView alloc] initWithImage:icon];
     iconView.frame = CGRectOffset(iconView.frame, TGIsRTL() ? 236.0f - 16.0f - iconView.frame.size.width : 16.0f, offset + 2.0f);
     [_containerView addSubview:iconView];
     
+    [_iconViews addObject:iconView];
+    
     UILabel *label = [[UILabel alloc] init];
     label.backgroundColor = [UIColor clearColor];
-    label.textColor = [UIColor whiteColor];
+    label.textColor = presentation.pallete.chatSystemTextColor;
     label.font = TGSystemFontOfSize(14.0f);
     label.text = text;
     label.numberOfLines = 0;
@@ -124,6 +146,8 @@
     CGSize labelSize = [label sizeThatFits:CGSizeMake(200.0f, FLT_MAX)];
     label.frame = CGRectMake(TGIsRTL() ? 236.0f - 33.0f - labelSize.width : 33.0f, offset, labelSize.width, labelSize.height);
     [_containerView addSubview:label];
+    
+    [_labels addObject:label];
     
     return labelSize.height;
 }

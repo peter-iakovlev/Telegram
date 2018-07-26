@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGTextField.h>
 
+#import "TGPresentation.h"
+
 @interface TGPasswordSetupView () <UITextFieldDelegate>
 {
     UIEdgeInsets _contentInsets;
@@ -53,6 +55,19 @@
         [self addSubview:_titleLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _topSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    _bottomSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    
+    _textFieldBackground.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
+    _textField.textColor = presentation.pallete.collectionMenuTextColor;
+    _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _titleLabel.textColor = presentation.pallete.collectionMenuCommentColor;
 }
 
 - (void)setSecureEntry:(bool)secureEntry

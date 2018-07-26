@@ -11,6 +11,8 @@
 
 #import <LegacyComponents/TGMenuView.h>
 
+#import "TGPresentation.h"
+
 @interface TGEncryptionKeyViewController ()
 {
     TGMenuContainerView *_tooltipContainerView;
@@ -54,13 +56,13 @@
 {
     [super loadView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
     _keyImageView = [[UIImageView alloc] init];
     [self.view addSubview:_keyImageView];
     
     _fingerprintLabel = [[UILabel alloc] init];
-    _fingerprintLabel.textColor = [UIColor blackColor];
+    _fingerprintLabel.textColor = self.presentation.pallete.textColor;
     _fingerprintLabel.backgroundColor = [UIColor clearColor];
     NSString *fontName = @"CourierNew-Bold";
     if (iosMajorVersion() >= 7) {
@@ -85,7 +87,7 @@
 //    [_emojiLabel addGestureRecognizer:gestureRecognizer];
     
     _descriptionLabel = [[UILabel alloc] init];
-    _descriptionLabel.textColor = [UIColor blackColor];
+    _descriptionLabel.textColor = self.presentation.pallete.textColor;
     _descriptionLabel.backgroundColor = [UIColor clearColor];
     _descriptionLabel.font = [UIFont systemFontOfSize:14];
     _descriptionLabel.textAlignment = NSTextAlignmentCenter;
@@ -106,7 +108,7 @@
     {
         NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:_descriptionLabel.font, NSFontAttributeName, nil];
         NSDictionary *subAttrs = [NSDictionary dictionaryWithObjectsAndKeys:[UIFont boldSystemFontOfSize:_descriptionLabel.font.pointSize], NSFontAttributeName, nil];
-        NSDictionary *linkAtts = @{NSForegroundColorAttributeName: TGAccentColor()};
+        NSDictionary *linkAtts = @{NSForegroundColorAttributeName: self.presentation.pallete.accentColor};
         
         NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:baseText attributes:attrs];
         
@@ -145,7 +147,7 @@
                 style.lineBreakMode = NSLineBreakByWordWrapping;
                 style.alignment = NSTextAlignmentCenter;
                 
-                NSAttributedString *fingerprintString = [[NSAttributedString alloc] initWithString:text attributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: _fingerprintLabel.font, NSForegroundColorAttributeName: UIColorRGB(0x222222)}];
+                NSAttributedString *fingerprintString = [[NSAttributedString alloc] initWithString:text attributes:@{NSParagraphStyleAttributeName: style, NSFontAttributeName: _fingerprintLabel.font, NSForegroundColorAttributeName: self.presentation.pallete.textColor}];
                 
                 _fingerprintLabel.attributedText = fingerprintString;
                 

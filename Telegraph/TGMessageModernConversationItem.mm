@@ -33,7 +33,9 @@
 
 #import "TGModernViewContext.h"
 
-#import "TGAnimationUtils.h"
+#import <LegacyComponents/TGAnimationUtils.h>
+
+#import "TGPresentation.h"
 
 typedef enum {
     TGCachedMessageTypeUnknown = 0,
@@ -265,6 +267,8 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         }
     }
     
+    _message = message;
+    
     if (_viewModel == nil) {
         _viewModel = [self createMessageViewModel:_message containerSize:containerSize];
         if (sizeUpdated) {
@@ -283,6 +287,9 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
             }
         }
     } else {
+        if (sizeUpdated) {
+            *sizeUpdated = true;
+        }
         [_viewModel updateMessage:message viewStorage:viewStorage sizeUpdated:sizeUpdated];
     }
 }
@@ -367,6 +374,17 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     [_viewModel updateReplySwipeInteraction:[[self boundCell] contentViewForBinding] viewStorage:viewStorage ended:ended];
 }
 
+- (void)resetViewModel
+{
+    TGDispatchOnMainThread(^
+    {
+        if ([self boundCell] != nil)
+            [self unbindCell:nil];
+        
+        _viewModel = nil;
+    });
+}
+
 - (TGModernViewModel *)viewModel
 {
     return _viewModel;
@@ -409,6 +427,37 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
                 [self unbindCell:viewStorage];
             }
             _viewModel = nil;
+        }
+    }
+    else if (_viewModel != nil)
+    {
+        if ([_viewModel isKindOfClass:[TGImageMessageViewModel class]]) {
+            bool replaceModel = false;
+            for (id media in _message.mediaAttachments) {
+                if ([media isKindOfClass:[TGImageMediaAttachment class]] && ![_viewModel isMemberOfClass:[TGPhotoMessageViewModel class]]) {
+                    replaceModel = true;
+                    break;
+                } else if ([media isKindOfClass:[TGVideoMediaAttachment class]] && !((TGVideoMediaAttachment *)media).roundMessage && ![_viewModel isMemberOfClass:[TGVideoMessageViewModel class]]) {
+                    replaceModel = true;
+                    break;
+                } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                    if ([_viewModel isKindOfClass:[TGAnimatedImageMessageViewModel class]] && !((TGDocumentMediaAttachment *)media).isAnimated) {
+                        replaceModel = true;
+                        break;
+                    } else if ([_viewModel isKindOfClass:[TGDocumentMessageViewModel class]] && ((TGDocumentMediaAttachment *)media).isAnimated) {
+                        replaceModel = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (replaceModel) {
+                if ([self boundCell] != nil) {
+                    rebindCell = [self boundCell];
+                    [self unbindCell:viewStorage];
+                }
+                _viewModel = nil;
+            }
         }
     }
     
@@ -587,13 +636,18 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     return nil;
 }
 
+- (bool)isFeedItem
+{
+    return _context.isFeed;
+}
+
 - (void)_setupMessageAuthor:(TGMessageViewModel *)model {
     id author = [self currentAuthorPeer];
     if ([author isKindOfClass:[TGConversation class]]) {
         TGConversation *conversation = author;
         [model setAuthorAvatarUrl:conversation.chatPhotoSmall groupId:conversation.conversationId];
-        [model setAuthorNameColor:UIColorRGB(0x3ca5ec)];
-        if (_author != nil) {
+        [model setAuthorNameColor:_context.presentation.pallete.chatIncomingAccentColor];
+        if (_author != nil && [_author isKindOfClass:[TGUser class]]) {
             [model setAuthorSignature:[_author displayName]];
         } else {
             [model setAuthorSignature:_message.authorSignature];
@@ -969,7 +1023,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
                         
                         if ((isAnimated || [documentAttachment.mimeType isEqualToString:@"image/gif"]) && ((imageSize.width > FLT_EPSILON && imageSize.height > FLT_EPSILON) || (documentAttachment.thumbnailInfo != nil && ![documentAttachment.thumbnailInfo empty])))
                         {
-                            TGAnimatedImageMessageViewModel *model = [[TGAnimatedImageMessageViewModel alloc] initWithMessage:_message imageInfo:documentAttachment.thumbnailInfo document:documentAttachment authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyMessage replyAuthor:replyPeer viaUser:viaUser caption:documentAttachment.caption textCheckingResults:documentAttachment.textCheckingResults];
+                            TGAnimatedImageMessageViewModel *model = [[TGAnimatedImageMessageViewModel alloc] initWithMessage:_message imageInfo:documentAttachment.thumbnailInfo document:documentAttachment authorPeer:useAuthor ? [self currentAuthorPeer] : nil context:_context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyMessage replyAuthor:replyPeer viaUser:viaUser caption:_message.caption textCheckingResults:documentAttachment.textCheckingResults];
                             if (useAuthor) {
                                 [self _setupMessageAuthor:model];
                             }

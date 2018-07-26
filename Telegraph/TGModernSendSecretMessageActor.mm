@@ -13,6 +13,7 @@
 
 #import "TGPreparedTextMessage.h"
 #import "TGPreparedMapMessage.h"
+#import "TGPreparedContactMessage.h"
 #import "TGPreparedLocalImageMessage.h"
 #import "TGPreparedLocalVideoMessage.h"
 #import "TGPreparedLocalDocumentMessage.h"
@@ -210,6 +211,28 @@
             return [Secret66_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
         case 73:
             return [Secret73_DecryptedMessageMedia decryptedMessageMediaVideoWithThumb: thumbnailData == nil ? [NSData data] : thumbnailData thumbW:@((int)thumbnailSize.width) thumbH:@((int)thumbnailSize.height) duration:@(duration) mimeType:mimeType w:@((int)dimensions.width) h:@((int)dimensions.height) size:@(size) key:key iv:iv caption:caption == nil ? @"" : caption];
+    }
+    
+    return nil;
+}
+
+- (id)decryptedContactWithLayer:(NSUInteger)layer phoneNumber:(NSString *)phoneNumber firstName:(NSString *)firstName lastName:(NSString *)lastName userId:(int32_t)userId {
+    switch (layer)
+    {
+        case 1:
+            return [Secret1_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 17:
+            return [Secret17_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 20:
+            return [Secret20_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 23:
+            return [Secret23_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 46:
+            return [Secret46_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 66:
+            return [Secret66_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];
+        case 73:
+            return [Secret73_DecryptedMessageMedia decryptedMessageMediaContactWithPhoneNumber:phoneNumber firstName:firstName lastName:lastName userId:@(userId)];;
     }
     
     return nil;
@@ -826,6 +849,20 @@
             TGPreparedMapMessage *mapMessage = (TGPreparedMapMessage *)self.preparedMessage;
             
             id media = [self decryptedGeoPointWithLayer:[self currentPeerLayer] latitude:mapMessage.latitude longitude:mapMessage.longitude venue:mapMessage.venue];
+            
+            int64_t randomId = self.preparedMessage.randomId;
+            if (randomId == 0)
+                arc4random_buf(&randomId, 8);
+            
+            _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
+        }
+        else if ([self.preparedMessage isKindOfClass:[TGPreparedContactMessage class]])
+        {
+            [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+            
+            TGPreparedContactMessage *contactMessage = (TGPreparedContactMessage *)self.preparedMessage;;
+            
+            id media = [self decryptedContactWithLayer:[self currentPeerLayer] phoneNumber:contactMessage.phoneNumber firstName:contactMessage.firstName lastName:contactMessage.lastName userId:contactMessage.uid];
             
             int64_t randomId = self.preparedMessage.randomId;
             if (randomId == 0)
@@ -1707,6 +1744,8 @@
             media = attachment;
         else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]])
             media = attachment;
+        else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
+            media = attachment;
     }
     
     return media;
@@ -1750,6 +1789,8 @@
     }
     else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]])
         return true;
+    else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
+        return true;
     
     return false;
 }
@@ -1765,6 +1806,8 @@
     else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
         return true;
     else if ([attachment isKindOfClass:[TGLocationMediaAttachment class]])
+        return false;
+    else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
         return false;
     
     return false;
@@ -2099,6 +2142,20 @@
         _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
         return true;
     }
+    else if ([attachment isKindOfClass:[TGContactMediaAttachment class]])
+    {
+        [self setupFailTimeout:[TGModernSendMessageActor defaultTimeoutInterval]];
+        
+        TGContactMediaAttachment *contactAttachment = attachment;
+        
+        id media = [self decryptedContactWithLayer:[self currentPeerLayer] phoneNumber:contactAttachment.phoneNumber firstName:contactAttachment.firstName lastName:contactAttachment.lastName userId:contactAttachment.uid];
+        
+        int64_t randomId = self.preparedMessage.randomId;
+        if (randomId == 0)
+            arc4random_buf(&randomId, 8);
+        
+        _actionId = [TGModernSendSecretMessageActor enqueueOutgoingMessageForPeerId:[self peerId] layer:[self currentPeerLayer] keyId:0 randomId:randomId messageData:[TGModernSendSecretMessageActor prepareDecryptedMessageWithLayer:[self currentPeerLayer] text:nil media:media entities:nil viaBotName:[self viaBotName] lifetime:self.preparedMessage.messageLifetime replyToRandomId:[self replyToRandomId] randomId:randomId groupedId:[self groupedId]] storedFileInfo:nil watcher:self];
+    }
     
     return false;
 }
@@ -2192,7 +2249,7 @@
             CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
             NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
             
-            id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:localImageMessage.imageSize caption:localImageMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:localImageMessage.imageSize caption:localImageMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
             _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
             _sendDecryptedPhotoKey = fileInfo[@"key"];
@@ -2227,7 +2284,7 @@
             CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
             NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
             
-            id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)localVideoMessage.duration dimensions:localVideoMessage.videoSize mimeType:@"video/mp4" caption:localVideoMessage.caption size:localVideoMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)localVideoMessage.duration dimensions:localVideoMessage.videoSize mimeType:@"video/mp4" caption:localVideoMessage.text size:localVideoMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
             int64_t randomId = self.preparedMessage.randomId;
             if (randomId == 0)
@@ -2337,7 +2394,7 @@
                 CGSize thumbnailSize = TGFitSize(image.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, thumbnailSize), 0.6f);
                 
-                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:imageSize caption:downloadImageMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:imageSize caption:downloadImageMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedPhotoKey = fileInfo[@"key"];
@@ -2368,7 +2425,7 @@
                 CGSize thumbnailSize = TGFitSize(image.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(image, thumbnailSize), 0.6f);
                 
-                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:imageSize caption:downloadImageMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:imageSize caption:downloadImageMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedPhotoKey = fileInfo[@"key"];
@@ -2492,7 +2549,7 @@
                     filename = ((TGDocumentAttributeFilename *)attribute).filename;
             }
             
-            id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:remoteDocumentMessage.attributes mimeType:remoteDocumentMessage.mimeType caption:remoteDocumentMessage.caption size:remoteDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:remoteDocumentMessage.attributes mimeType:remoteDocumentMessage.mimeType caption:remoteDocumentMessage.text size:remoteDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
             _sentDecryptedDocumentSize = remoteDocumentMessage.size;
             _sendDecryptedDocumentKey = fileInfo[@"key"];
@@ -2545,7 +2602,7 @@
                     thumbnailSize = thumbSize;
             }
             
-            id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int32_t)remoteVideoMessage.duration dimensions:remoteVideoMessage.videoSize mimeType:@"video/mp4" caption:remoteVideoMessage.caption size:remoteVideoMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int32_t)remoteVideoMessage.duration dimensions:remoteVideoMessage.videoSize mimeType:@"video/mp4" caption:remoteVideoMessage.text size:remoteVideoMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
             _sentDecryptedDocumentSize = remoteVideoMessage.size;
             _sendDecryptedDocumentKey = fileInfo[@"key"];
@@ -2615,7 +2672,7 @@
                 }
             }
             
-            id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:downloadDocumentMessage.attributes mimeType:downloadDocumentMessage.mimeType caption:downloadDocumentMessage.caption size:downloadDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+            id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:downloadDocumentMessage.attributes mimeType:downloadDocumentMessage.mimeType caption:downloadDocumentMessage.text size:downloadDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
             
             _sentDecryptedDocumentSize = downloadDocumentMessage.size;
@@ -2687,7 +2744,6 @@
             
             id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:downloadDocumentMessage.attributes mimeType:downloadDocumentMessage.mimeType caption:downloadDocumentMessage.caption size:downloadDocumentMessage.size key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
             
-            
             _sentDecryptedDocumentSize = downloadDocumentMessage.size;
             _sendDecryptedDocumentKey = fileInfo[@"key"];
             _sendDecryptedDocumentIv = fileInfo[@"iv"];
@@ -2714,7 +2770,7 @@
                 CGSize thumbnailSize = TGFitSize(thumbnailImage.size, CGSizeMake(90, 90));
                 NSData *thumbnailData = UIImageJPEGRepresentation(TGScaleImageToPixelSize(thumbnailImage, thumbnailSize), 0.6f);
                 
-                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:assetImageMessage.imageSize caption:assetImageMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedPhotoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize imageSize:assetImageMessage.imageSize caption:assetImageMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedPhotoSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedPhotoKey = fileInfo[@"key"];
@@ -2766,7 +2822,7 @@
                         filename = ((TGDocumentAttributeFilename *)attribute).filename;
                 }
                 
-                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetImageMessage.attributes mimeType:assetImageMessage.mimeType caption:assetImageMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetImageMessage.attributes mimeType:assetImageMessage.mimeType caption:assetImageMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedDocumentSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedDocumentKey = fileInfo[@"key"];
@@ -2798,9 +2854,9 @@
                 id media = nil;
                 if (assetVideoMessage.roundMessage) {
                     NSArray *attributes = @[[[TGDocumentAttributeVideo alloc] initWithRoundMessage:true size:assetVideoMessage.dimensions duration:(int32_t)assetVideoMessage.duration], [[TGDocumentAttributeFilename alloc] initWithFilename:@"video.mp4"]];
-                    media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:attributes mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                    media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:attributes mimeType:@"video/mp4" caption:assetVideoMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 } else {
-                    media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)assetVideoMessage.duration dimensions:assetVideoMessage.dimensions mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                    media = [self decryptedVideoWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize duration:(int)assetVideoMessage.duration dimensions:assetVideoMessage.dimensions mimeType:@"video/mp4" caption:assetVideoMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 }
                 
                 int64_t randomId = self.preparedMessage.randomId;
@@ -2849,7 +2905,7 @@
                         filename = ((TGDocumentAttributeFilename *)attribute).filename;
                 }
                 
-                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetVideoMessage.attributes mimeType:@"video/mp4" caption:assetVideoMessage.caption size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
+                id media = [self decryptedDocumentWithLayer:[self currentPeerLayer] thumbnailData:thumbnailData thumbnailSize:thumbnailSize attributes:assetVideoMessage.attributes mimeType:@"video/mp4" caption:assetVideoMessage.text size:(int32_t)[fileInfo[@"fileSize"] intValue] key:fileInfo[@"key"] iv:fileInfo[@"iv"]];
                 
                 _sentDecryptedDocumentSize = (int32_t)[fileInfo[@"fileSize"] intValue];
                 _sendDecryptedDocumentKey = fileInfo[@"key"];
@@ -2927,7 +2983,6 @@
             [imageInfo addImageWithSize:localImageMessage.thumbnailSize url:thumbnailUrl];
             [imageInfo addImageWithSize:localImageMessage.imageSize url:imageUrl fileSize:_sentDecryptedPhotoSize];
             imageAttachment.imageInfo = imageInfo;
-            imageAttachment.caption = localImageMessage.caption;
             [messageMedia addObject:imageAttachment];
             
             [TGDatabaseInstance() updateLastUseDateForMediaType:2 mediaId:imageAttachment.imageId messageId:self.preparedMessage.mid];
@@ -2984,7 +3039,6 @@
             //[imageInfo addImageWithSize:localImageMessage.thumbnailSize url:thumbnailUrl];
             [imageInfo addImageWithSize:imageSize url:imageUrl fileSize:_sentDecryptedPhotoSize];
             imageAttachment.imageInfo = imageInfo;
-            imageAttachment.caption = downloadImageMessage.caption;
             [messageMedia addObject:imageAttachment];
             
             NSString *localImageUrl = [downloadImageMessage.imageInfo imageUrlForLargestSize:NULL];
@@ -3015,7 +3069,6 @@
             //[imageInfo addImageWithSize:localImageMessage.thumbnailSize url:thumbnailUrl];
             [imageInfo addImageWithSize:imageSize url:imageUrl fileSize:_sentDecryptedPhotoSize];
             imageAttachment.imageInfo = imageInfo;
-            imageAttachment.caption = downloadImageMessage.caption;
             [messageMedia addObject:imageAttachment];
             
             NSString *localImageUrl = [downloadImageMessage.imageInfo imageUrlForLargestSize:NULL];

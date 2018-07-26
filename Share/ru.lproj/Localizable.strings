@@ -1,0 +1,44 @@
+"Share.Cancel" = "Отмена";
+"Share.Next" = "Далее";
+"Share.OK" = "OK";
+"Share.Search" = "Поиск";
+"Share.Send" = "Отправить";
+
+"Share.Title" = "Поделиться";
+"Share.ShareWithPerson" = "Share with %@?";
+"Share.ShareWithGroup" = "Share with %@?";
+"Share.ShareWithMultiple" = "Share with %@ recipients?";
+"Share.Sharing" = "Отправка...";
+
+"Share.PasscodeTitle" = "Код-пароль";
+"Share.EnterPasscode" = "Введите код-пароль";
+"Share.ErrorInvalidPasscode" = "Неверный код";
+
+"Share.Select" = "Выбрать";
+"Share.Done" = "Готово";
+
+"Share.AuthTitle" = "Войдите в Telegram";
+"Share.AuthText" = "Откройте приложение Telegram и авторизуйтесь";
+
+"Share.ChoosePhoneNumber" = "Choose a phone number to share";
+
+"Share.RecentSection" = "Недавние";
+"Share.RecentSectionClear" = "Очистить";
+
+"Share.PeopleSection" = "Люди";
+
+"Share.TouchId" = "Введите код-пароль";
+
+"Share.AddCaption" = "Оставьте комментарий...";
+
+"Share.PasscodeFailedAttempts_1" = "%@ неудачная попытка входа";
+"Share.PasscodeFailedAttempts_2" = "%@ неудачные попытки входа";
+"Share.PasscodeFailedAttempts_3_10" = "%@ неудачных попыток входа";
+"Share.PasscodeFailedAttempts_any" = "Неудачных попыток входа: %@";
+"Share.PasscodeTryAgainIn1Minute" = "Повторите попытку через минуту";
+
+"Share.SavedMessages" = "Избранное";
+
+"Share.ContactInfo" = "Контактная информация";
+"Share.ContactJob" = "работа";
+"Share.ContactBirthday" = "дата рождения";

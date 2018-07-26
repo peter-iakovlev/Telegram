@@ -8,6 +8,8 @@
 
 #import <CoreText/CoreText.h>
 
+#import "TGPresentation.h"
+
 @interface TGReplyHeaderTextModel ()
 {
 }
@@ -16,9 +18,9 @@
 
 @implementation TGReplyHeaderTextModel
 
-- (instancetype)initWithPeer:(id)peer text:(NSString *)text incoming:(bool)incoming system:(bool)system
+- (instancetype)initWithPeer:(id)peer text:(NSString *)text incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation
 {
-    self = [super initWithPeer:peer incoming:incoming text:text truncateTextInTheMiddle:false textColor:[UIColor blackColor] leftInset:0.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:text truncateTextInTheMiddle:false textColor:incoming ? presentation.pallete.chatIncomingTextColor : presentation.pallete.chatOutgoingTextColor leftInset:0.0f system:system presentation:presentation];
     if (self != nil)
     {
     }

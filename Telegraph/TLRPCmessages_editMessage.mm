@@ -9,7 +9,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return 0x5d1b8dd;
+    return 0xc000e4c8;
 }
 
 - (int32_t)TLconstructorName
@@ -29,7 +29,7 @@
 
 - (int)layerVersion
 {
-    return 48;
+    return 78;
 }
 
 - (void)setNo_webpage:(bool)no_webpage {
@@ -55,6 +55,10 @@
     
     if (realFlags & (1 << 11)) {
         [os writeString:_message];
+    }
+    
+    if (realFlags & (1 << 14)) {
+        TLMetaClassStore::serializeObject(os, _media, true);
     }
     
     if (realFlags & (1 << 3)) {

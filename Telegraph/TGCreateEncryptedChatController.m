@@ -8,7 +8,7 @@
 
 #import "TGInterfaceManager.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGCreateEncryptedChatController ()
 {
@@ -59,7 +59,7 @@
             }
             else
             {
-                [[[TGAlertView alloc] initWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Login.UnknownError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:status == -2 ? [[NSString alloc] initWithFormat:TGLocalized(@"Login.UnknownError"), _user.displayFirstName, _user.displayFirstName] : TGLocalized(@"Profile.CreateEncryptedChatError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         });
     }

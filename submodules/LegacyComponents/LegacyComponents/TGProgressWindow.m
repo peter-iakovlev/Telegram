@@ -4,6 +4,8 @@
 
 #import "TGProgressSpinnerView.h"
 
+static bool TGProgressWindowIsLight = true;
+
 @interface TGProgressWindowController ()
 {
     bool _light;
@@ -19,7 +21,11 @@
 
 @implementation TGProgressWindowController
 
-- (instancetype)init:(bool)light
+- (instancetype)init {
+    return [self initWithLight:TGProgressWindowIsLight];
+}
+
+- (instancetype)initWithLight:(bool)light
 {
     self = [super init];
     if (self != nil)
@@ -56,12 +62,17 @@
     else
     {
         _backgroundView = [[UIView alloc] initWithFrame:_containerView.bounds];
-        _backgroundView.backgroundColor = UIColorRGBA(0xeaeaea, 0.92f);
+        _backgroundView.backgroundColor = _light ? UIColorRGBA(0xeaeaea, 0.92f) : UIColorRGBA(0x000000, 0.9f);
         [_containerView addSubview:_backgroundView];
     }
     
     _spinner = [[TGProgressSpinnerView alloc] initWithFrame:CGRectMake((_containerView.frame.size.width - 48.0f) / 2.0f, (_containerView.frame.size.height - 48.0f) / 2.0f, 48.0f, 48.0f) light:_light];
     [_containerView addSubview:_spinner];
+}
+
+- (void)updateLayout {
+    _containerView.frame = CGRectMake(CGFloor(self.view.frame.size.width - 100) / 2, CGFloor(self.view.frame.size.height - 100) / 2, 100, 100);
+    _spinner.frame = CGRectMake((_containerView.frame.size.width - 48.0f) / 2.0f, (_containerView.frame.size.height - 48.0f) / 2.0f, 48.0f, 48.0f);
 }
 
 - (void)show:(bool)animated
@@ -117,7 +128,7 @@
             {
                 window.hidden = true;
                 
-                if (window.skipMakeKeyWindowOnDismiss)
+                if (window == nil || window.skipMakeKeyWindowOnDismiss)
                     return;
                 
                 NSArray *windows = [[LegacyComponentsGlobals provider] applicationWindows];
@@ -135,8 +146,11 @@
         _containerView.alpha = 0.0f;
         window.hidden = true;
         
-        if (window.skipMakeKeyWindowOnDismiss)
-            return;
+        if (window == nil || window.skipMakeKeyWindowOnDismiss) {
+            if (completion) {
+                completion();
+            }
+        }
         
         NSArray *windows = [[LegacyComponentsGlobals provider] applicationWindows];
         for (int i = (int)windows.count - 1; i >= 0; i--)
@@ -152,7 +166,7 @@
     }
 }
 
-- (void)dismissWithSuccess
+- (void)dismissWithSuccess:(void (^)(void))completion
 {
     TGProgressWindow *window = (TGProgressWindow *)_weakWindow;
     
@@ -167,9 +181,12 @@
         {
             if (finished)
             {
+                if (completion) {
+                    completion();
+                }
                 window.hidden = true;
                 
-                if (window.skipMakeKeyWindowOnDismiss)
+                if (window == nil || window.skipMakeKeyWindowOnDismiss)
                     return;
                 
                 NSArray *windows = [[LegacyComponentsGlobals provider] applicationWindows];
@@ -183,7 +200,7 @@
         }];
     };
     
-    if (window.hidden)
+    if (window.hidden || window == nil)
     {
         window.hidden = false;
         _containerView.transform = CGAffineTransformMakeScale(0.6f, 0.6f);
@@ -230,8 +247,6 @@
 
 @end
 
-static bool TGProgressWindowIsLight = true;
-
 @implementation TGProgressWindow
 
 - (instancetype)init {
@@ -246,7 +261,7 @@ static bool TGProgressWindowIsLight = true;
         self.windowLevel = UIWindowLevelStatusBar;
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
-        TGProgressWindowController *controller = [[TGProgressWindowController alloc] init:TGProgressWindowIsLight];
+        TGProgressWindowController *controller = [[TGProgressWindowController alloc] init];
         controller.weakWindow = self;
         self.rootViewController = controller;
         
@@ -290,13 +305,13 @@ static bool TGProgressWindowIsLight = true;
 {
     if (!_dismissed) {
         _dismissed = true;
-        [((TGProgressWindowController *)self.rootViewController) dismissWithSuccess];
+        [((TGProgressWindowController *)self.rootViewController) dismissWithSuccess:nil];
     }
 }
 
-+ (void)changeStyle
++ (void)setDarkStyle:(bool)dark
 {
-    TGProgressWindowIsLight = !TGProgressWindowIsLight;
+    TGProgressWindowIsLight = !dark;
 }
 
 @end

@@ -24,8 +24,10 @@
     
     bool _everyMessageNeedsAuthor;
     bool _manualMessageManagement;
-    
+
+    int64_t _preferredInitialPositionedPeerId;
     int32_t _preferredInitialPositionedMessageId;
+    bool _preferredInitialGroupedSingle;
     TGConversationScrollState *_initialScrollState;
     TGPIPSourceLocation *_openPIPLocation;
 }
@@ -36,7 +38,7 @@
 - (instancetype)initWithConversation:(TGConversation *)conversation mayHaveUnreadMessages:(bool)mayHaveUnreadMessages;
 
 - (void)setOthersUnreadCount:(int)unreadCount;
-- (void)setPreferredInitialMessagePositioning:(int32_t)messageId pipLocation:(TGPIPSourceLocation *)pipLocation;
+- (void)setPreferredInitialMessagePositioning:(int32_t)messageId peerId:(int64_t)peerId groupedSingle:(bool)groupedSingle pipLocation:(TGPIPSourceLocation *)pipLocation;
 - (void)setInitialMessagePayloadWithForwardMessages:(NSArray *)initialForwardMessagePayload initialCompleteGroups:(NSSet *)initialCompleteGroups sendMessages:(NSArray *)initialSendMessagePayload sendFiles:(NSArray *)initialSendFilePayload;
 
 - (int64_t)conversationId;

@@ -23,7 +23,7 @@
 
 #import "TGTelegramNetworking.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGPresentation.h"
 
@@ -335,7 +335,7 @@
         } else if ([errorType isEqualToString:@"REQ_INFO_PHONE_INVALID"]) {
             alertText = TGLocalized(@"CheckoutInfo.ErrorPhoneInvalid");
         }
-        [TGAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+        [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     } completed:nil]];
 }
 
@@ -387,6 +387,7 @@
 
 - (void)countryPressed {
     TGLoginCountriesController *countriesController = [[TGLoginCountriesController alloc] initWithCodes:false];
+    countriesController.presentation = self.presentation;
     __weak TGPaymentCheckoutInfoController *weakSelf = self;
     countriesController.countrySelected = ^(__unused int code, __unused NSString *name, NSString *countryId) {
         __strong TGPaymentCheckoutInfoController *strongSelf = weakSelf;

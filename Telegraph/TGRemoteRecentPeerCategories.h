@@ -22,7 +22,8 @@ typedef enum {
 
 @property (nonatomic, readonly) NSTimeInterval lastRefreshTimestamp;
 @property (nonatomic, strong, readonly) NSDictionary<NSNumber *, TGRemoteRecentPeerSet *> *categories;
+@property (nonatomic, readonly) bool disabled;
 
-- (instancetype)initWithLastRefreshTimestamp:(NSTimeInterval)lastRefreshTimestamp categories:(NSDictionary<NSNumber *, TGRemoteRecentPeerSet *> *)categories;
+- (instancetype)initWithLastRefreshTimestamp:(NSTimeInterval)lastRefreshTimestamp categories:(NSDictionary<NSNumber *, TGRemoteRecentPeerSet *> *)categories disabled:(bool)disabled;
 
 @end

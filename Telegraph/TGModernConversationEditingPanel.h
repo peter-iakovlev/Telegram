@@ -12,6 +12,7 @@
 
 @protocol TGModernConversationEditingPanelDelegate <TGModernConversationInputPanelDelegate>
 
+- (void)editingPanelRequestedReportMessages:(TGModernConversationEditingPanel *)editingPanel;
 - (void)editingPanelRequestedDeleteMessages:(TGModernConversationEditingPanel *)editingPanel;
 - (void)editingPanelRequestedForwardMessages:(TGModernConversationEditingPanel *)editingPanel;
 - (void)editingPanelRequestedShareMessages:(TGModernConversationEditingPanel *)editingPanel;
@@ -20,6 +21,7 @@
 
 @interface TGModernConversationEditingPanel : TGModernConversationInputPanel
 
+- (void)setReportingEnabled:(bool)reportingEnabled;
 - (void)setForwardingEnabled:(bool)forwardingEnabled;
 - (void)setDeleteEnabled:(bool)deleteEnabled;
 - (void)setShareEnabled:(bool)shareEnabled;

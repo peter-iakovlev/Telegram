@@ -125,6 +125,7 @@ FOUNDATION_EXPORT const unsigned char LegacyComponentsVersionString[];
 #import <LegacyComponents/TGImageMediaAttachment.h>
 #import <LegacyComponents/TGMediaAttachment.h>
 #import <LegacyComponents/TGImageInfo.h>
+#import <LegacyComponents/TGMediaOriginInfo.h>
 #import <LegacyComponents/TGMessage.h>
 #import <LegacyComponents/TGStickerPack.h>
 #import <LegacyComponents/TGStickerAssociation.h>
@@ -268,6 +269,9 @@ FOUNDATION_EXPORT const unsigned char LegacyComponentsVersionString[];
 #import <LegacyComponents/TGCameraZoomView.h>
 #import <LegacyComponents/TGCameraPhotoPreviewController.h>
 #import <LegacyComponents/TGCameraController.h>
+#import <LegacyComponents/TGCameraCapturedPhoto.h>
+#import <LegacyComponents/TGCameraCapturedVideo.h>
+#import <LegacyComponents/TGPhotoVideoEditor.h>
 
 #import <LegacyComponents/TGModernConversationTitleActivityIndicator.h>
 #import <LegacyComponents/TGEmbedPIPButton.h>
@@ -275,6 +279,10 @@ FOUNDATION_EXPORT const unsigned char LegacyComponentsVersionString[];
 #import <LegacyComponents/TGEmbedPlayerState.h>
 #import <LegacyComponents/TGAttachmentCameraView.h>
 #import <LegacyComponents/TGMediaAvatarMenuMixin.h>
+#import <LegacyComponents/TGPassportAttachMenu.h>
+#import <LegacyComponents/TGPassportScanView.h>
+#import <LegacyComponents/TGPassportOCR.h>
+#import <LegacyComponents/TGPassportMRZ.h>
 #import <LegacyComponents/TGPasscodeEntryController.h>
 #import <LegacyComponents/TGEmbedPlayerView.h>
 #import <LegacyComponents/TGWallpaperInfo.h>
@@ -285,6 +293,7 @@ FOUNDATION_EXPORT const unsigned char LegacyComponentsVersionString[];
 #import <LegacyComponents/TGAttachmentCarouselItemView.h>
 #import <LegacyComponents/TGMediaAssetsController.h>
 
+#import <LegacyComponents/TGLocationVenue.h>
 #import <LegacyComponents/TGLocationMapViewController.h>
 #import <LegacyComponents/TGLocationPickerController.h>
 #import <LegacyComponents/TGLocationViewController.h>
@@ -305,3 +314,14 @@ FOUNDATION_EXPORT const unsigned char LegacyComponentsVersionString[];
 #import <LegacyComponents/TGLocationLiveSessionItemView.h>
 
 #import <LegacyComponents/TGTooltipView.h>
+
+#import <LegacyComponents/TGCheckButtonView.h>
+#import <LegacyComponents/TGBuiltinWallpaperInfo.h>
+#import <LegacyComponents/TGColorWallpaperInfo.h>
+#import <LegacyComponents/TGCustomImageWallpaperInfo.h>
+#import <LegacyComponents/TGClipboardMenu.h>
+#import <LegacyComponents/TGImagePickerController.h>
+#import <LegacyComponents/TGLegacyCameraController.h>
+#import <LegacyComponents/TGWallpaperController.h>
+
+#import <LegacyComponents/TGIconSwitchView.h>

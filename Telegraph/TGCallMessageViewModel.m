@@ -39,16 +39,18 @@
         static UIImage *incomingRedIcon = nil;
         static UIImage *outgoingGreenIcon = nil;
         static UIImage *outgoingRedIcon = nil;
+        static int32_t presentationId;
         
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
+        if (presentationId != context.presentation.currentId)
         {
-            incomingGreenIcon = TGTintedImage(TGImageNamed(@"MessageCallIncomingIcon"), UIColorRGB(0x36c033));
-            incomingRedIcon = TGTintedImage(TGImageNamed(@"MessageCallIncomingIcon"), UIColorRGB(0xff4747));
+            presentationId = context.presentation.currentId;
             
-            outgoingGreenIcon = TGTintedImage(TGImageNamed(@"MessageCallOutgoingIcon"), UIColorRGB(0x36c033));
-            outgoingRedIcon = TGTintedImage(TGImageNamed(@"MessageCallOutgoingIcon"), UIColorRGB(0xff4747));
-        });
+            incomingGreenIcon = TGTintedWithAlphaImage(TGImageNamed(@"MessageCallIncomingIcon"), context.presentation.pallete.chatIncomingCallSuccessfulColor);
+            incomingRedIcon = TGTintedWithAlphaImage(TGImageNamed(@"MessageCallIncomingIcon"), context.presentation.pallete.chatIncomingCallFailedColor);
+            
+            outgoingGreenIcon = TGTintedWithAlphaImage(TGImageNamed(@"MessageCallOutgoingIcon"), context.presentation.pallete.chatOutgoingCallSuccessfulColor);
+            outgoingRedIcon = TGTintedWithAlphaImage(TGImageNamed(@"MessageCallOutgoingIcon"), context.presentation.pallete.chatOutgoingCallFailedColor);
+        }
         
         bool outgoing = message.outgoing;
         int reason = [actionMedia.actionData[@"reason"] intValue];
@@ -65,7 +67,7 @@
         
         _typeModel = [[TGModernTextViewModel alloc] initWithText:type font:TGCoreTextMediumFontOfSize(16.0f)];
         _typeModel.maxNumberOfLines = 1;
-        _typeModel.textColor = [UIColor blackColor];
+        _typeModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingTextColor : _context.presentation.pallete.chatOutgoingTextColor;
         [_contentModel addSubmodel:_typeModel];
         
         _timeModel = [[TGModernTextViewModel alloc] initWithText:time font:TGCoreTextSystemFontOfSize(13.0f)];

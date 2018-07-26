@@ -47,6 +47,8 @@ typedef enum {
 
 @property (nonatomic, strong) ASHandle *actionHandle;
 
+@property (nonatomic, strong) void (^onViewDidAppear)(void);
+
 @property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, strong) TGModernConversationCompanion *companion;
 @property (nonatomic) bool shouldIgnoreAppearAnimationOnce;
@@ -61,8 +63,8 @@ typedef enum {
 - (NSArray *)visibleMessageIds;
 - (NSArray *)_currentItems;
 - (void)replaceItems:(NSArray *)newItems messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection;
-- (void)replaceItems:(NSArray *)newItems positionAtMessageId:(int32_t)positionAtMessageId expandAt:(int32_t)expandMessageId jump:(bool)jump top:(bool)top messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
-- (void)replaceItemsWithFastScroll:(NSArray *)newItems intent:(TGModernConversationInsertItemIntent)intent scrollToMessageId:(int32_t)scrollToMessageId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
+- (void)replaceItems:(NSArray *)newItems positionAtMessageId:(int32_t)positionAtMessageId peerId:(int64_t)positionAtPeerId expandAt:(int32_t)expandMessageId jump:(bool)jump top:(bool)top messageIdForVisibleHoleDirection:(int32_t)messageIdForVisibleHoleDirection scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
+- (void)replaceItemsWithFastScroll:(NSArray *)newItems intent:(TGModernConversationInsertItemIntent)intent scrollToMessageId:(int32_t)scrollToMessageId peerId:(int64_t)scrollToPeerId scrollBackMessageId:(int32_t)scrollBackMessageId animated:(bool)animated;
 - (void)replaceItems:(NSArray *)items atIndices:(NSIndexSet *)indices;
 - (void)insertItems:(NSArray *)insertItems atIndices:(NSIndexSet *)indices animated:(bool)animated intent:(TGModernConversationInsertItemIntent)intent;
 - (void)insertItems:(NSArray *)itemsArray atIndices:(NSIndexSet *)indexSet animated:(bool)animated intent:(TGModernConversationInsertItemIntent)intent removeAtIndices:(NSIndexSet *)removeIndexSet;
@@ -79,17 +81,18 @@ typedef enum {
 - (void)setHasUnseenMessagesBelow:(bool)hasUnseenMessagesBelow;
 - (void)setUnreadMessageRangeIfAppropriate:(TGMessageRange)unreadMessageRange;
 
-- (void)scrollToMessage:(int32_t)messageId sourceMessageId:(int32_t)sourceMessageId animated:(bool)animated;
-- (void)openMediaFromMessage:(int32_t)messageId cancelPIP:(bool)cancelPIP;
-- (void)openMediaFromMessage:(int32_t)messageId instant:(bool)instant;
-- (void)closeMediaFromMessage:(int32_t)messageId instant:(bool)instant;
+- (void)scrollToMessage:(int32_t)messageId peerId:(int64_t)peerId sourceMessageId:(int32_t)sourceMessageId animated:(bool)animated;
+- (void)openMediaFromMessage:(int32_t)messageId peerId:(int64_t)peerId cancelPIP:(bool)cancelPIP;
+- (void)openMediaFromMessage:(int32_t)messageId peerId:(int64_t)peerId instant:(bool)instant;
+- (void)closeMediaFromMessage:(int32_t)messageId peerId:(int64_t)peerId instant:(bool)instant;
 - (void)stopInlineMedia:(int32_t)excludeMid;
 - (void)resumeInlineMedia;
 - (void)openBrowserFromMessage:(int32_t)messageId url:(NSString *)url;
 - (void)openLocationFromMessage:(TGMessage *)message previewMode:(bool)previewMode zoomToFitAll:(bool)zoomToFitAll;
-- (void)showActionsMenuForUnsentMessage:(int32_t)messageId;
-- (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId groupedId:(int64_t)groupedId;
+- (void)showActionsMenuForUnsentMessage:(int32_t)messageId edit:(bool)edit;
+- (void)highlightAndShowActionsMenuForMessage:(int32_t)messageId peerId:(int64_t)peerId groupedId:(int64_t)groupedId;
 - (void)temporaryHighlightMessage:(int32_t)messageId automatically:(bool)automatically;
+- (void)temporaryHighlightMessage:(int32_t)messageId grouped:(bool)grouped automatically:(bool)automatically;
 - (void)showActionsMenuForLink:(NSString *)url webPage:(TGWebPageMediaAttachment *)webPage;
 - (void)showActionsMenuForContact:(TGUser *)contact isContact:(bool)isContact;
 - (void)showAddContactMenu:(TGUser *)contact;
@@ -113,10 +116,12 @@ typedef enum {
 - (void)setInlineStickerList:(NSDictionary *)inlineStickerList;
 - (void)setTitle:(NSString *)title;
 - (void)setAvatarConversationId:(int64_t)conversationId title:(NSString *)title icon:(UIImage *)icon;
+- (void)setAvatarConversationIds:(NSArray *)conversationIds titles:(NSArray *)titles;
 - (void)setAvatarConversationId:(int64_t)conversationId firstName:(NSString *)firstName lastName:(NSString *)lastName;
 - (void)setTitleIcons:(NSArray *)titleIcons;
 - (void)setTitleModalProgressStatus:(NSString *)titleModalProgressStatus;
 - (void)setAvatarUrl:(NSString *)avatarUrl;
+- (void)setAvatarUrls:(NSArray *)avatarUrls;
 - (void)setStatus:(NSString *)status accentColored:(bool)accentColored allowAnimation:(bool)allowAnimation toggleMode:(TGModernConversationControllerTitleToggle)toggleMode;
 - (void)setAttributedStatus:(NSAttributedString *)status allowAnimation:(bool)allowAnimation;
 - (void)setTypingStatus:(NSString *)typingStatus activity:(int)activity;
@@ -157,16 +162,16 @@ typedef enum {
 - (void)setIsChannel:(bool)isChannel;
 - (void)updateControllerShouldHideInputTextByDefault;
 
-- (void)openEmbed:(TGWebPageMediaAttachment *)webPage forMessageId:(int32_t)messageId;
-- (void)openEmbedFromMessageId:(int32_t)messageId cancelPIP:(bool)cancelPIP;
+- (void)openEmbed:(TGWebPageMediaAttachment *)webPage forMessageId:(int32_t)messageId peerId:(int64_t)peerId;
+- (void)openEmbedFromMessageId:(int32_t)messageId peerId:(int64_t)peerId cancelPIP:(bool)cancelPIP;
 
 - (bool)openPIPSourceLocation:(TGPIPSourceLocation *)location;
 
 - (void)openStickerPackForReference:(id<TGStickerPackReference>)packReference;
-- (void)openStickerPackForMessageId:(int32_t)messageId;
+- (void)openStickerPackForMessageId:(int32_t)messageId peerId:(int64_t)peerId;
 
 - (void)activateSearch;
-- (void)forwardMessages:(NSArray *)messageIds fastForward:(bool)fastForward grouped:(bool)grouped;
+- (void)forwardMessages:(NSArray *)messageIndices fastForward:(bool)fastForward grouped:(bool)grouped;
 
 - (void)setExclusiveSearchQuery:(NSString *)query;
 
@@ -180,7 +185,7 @@ typedef enum {
 - (bool)maybeShowDiscardRecordingAlert;
 - (void)updateFeaturesAvailability;
 
-- (SSignal *)messageVisiblitySignalForMessageId:(int32_t)messageId;
+- (SSignal *)messageVisiblitySignalForMessageId:(int32_t)messageId peerId:(int64_t)peerId;
 
 - (void)setBannedStickers:(bool)bannedStickers;
 - (void)setBannedMedia:(bool)bannedMedia;
@@ -191,5 +196,9 @@ typedef enum {
 - (void)_displayLocationPicker;
 
 - (CGFloat)initialUnreadOffset;
+
+- (void)setSecondaryController:(TGViewController *)secondaryController;
+
+- (void)showNext;
 
 @end

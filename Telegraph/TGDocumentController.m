@@ -10,7 +10,6 @@
 
 #import "TGLegacyComponentsContext.h"
 
-
 @interface TGFilePreviewItem : NSObject <QLPreviewItem>
 
 @property (nonatomic, strong) NSURL *previewItemURL;
@@ -68,7 +67,7 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    
+        
     [self.navigationController setNavigationBarHidden:false animated:animated];
     
     if (_previewMode)
@@ -132,6 +131,11 @@
 - (BOOL)prefersStatusBarHidden
 {
     return true;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    return [[TGLegacyComponentsContext shared] prefersLightStatusBar] ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
 }
 
 @end

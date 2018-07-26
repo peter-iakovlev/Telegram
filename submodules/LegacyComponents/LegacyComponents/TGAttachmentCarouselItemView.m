@@ -66,6 +66,7 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     SMetaDisposable *_assetsDisposable;
     TGMediaAssetFetchResult *_fetchResult;
     
+    bool _document;
     bool _forProfilePhoto;
     
     SMetaDisposable *_selectionChangedDisposable;
@@ -104,6 +105,8 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     
     id<LegacyComponentsContext> _context;
     bool _saveEditedPhotos;
+    
+    TGMenuSheetPallete *_pallete;
 }
 @end
 
@@ -114,6 +117,11 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
 }
 
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context camera:(bool)hasCamera selfPortrait:(bool)selfPortrait forProfilePhoto:(bool)forProfilePhoto assetType:(TGMediaAssetType)assetType saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping
+{
+    return [self initWithContext:context camera:hasCamera selfPortrait:selfPortrait forProfilePhoto:forProfilePhoto assetType:assetType saveEditedPhotos:saveEditedPhotos allowGrouping:allowGrouping allowSelection:true allowEditing:!selfPortrait document:false];
+}
+
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context camera:(bool)hasCamera selfPortrait:(bool)selfPortrait forProfilePhoto:(bool)forProfilePhoto assetType:(TGMediaAssetType)assetType saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping allowSelection:(bool)allowSelection allowEditing:(bool)allowEditing document:(bool)document
 {
     self = [super initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
@@ -126,12 +134,13 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
 #endif
         
         __weak TGAttachmentCarouselItemView *weakSelf = self;
+        _document = document;
         _forProfilePhoto = forProfilePhoto;
         
         _assetsLibrary = [TGMediaAssetsLibrary libraryForAssetType:assetType];
         _assetsDisposable = [[SMetaDisposable alloc] init];
         
-        if (!forProfilePhoto)
+        if (!forProfilePhoto && allowSelection)
         {
             _selectionContext = [[TGMediaSelectionContext alloc] initWithGroupingAllowed:allowGrouping];
             if (allowGrouping)
@@ -165,7 +174,10 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
                 
                 [strongSelf updateSelectionIndexes];
             }]];
-            
+        }
+        
+        if (allowEditing)
+        {
             _editingContext = [[TGMediaEditingContext alloc] init];
             
             _itemsSizeChangedDisposable = [[SMetaDisposable alloc] init];
@@ -229,6 +241,8 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
         [_collectionView registerClass:[TGAttachmentPhotoCell class] forCellWithReuseIdentifier:TGAttachmentPhotoCellIdentifier];
         [_collectionView registerClass:[TGAttachmentVideoCell class] forCellWithReuseIdentifier:TGAttachmentVideoCellIdentifier];
         [_collectionView registerClass:[TGAttachmentGifCell class] forCellWithReuseIdentifier:TGAttachmentGifCellIdentifier];
+        if (iosMajorVersion() >= 9)
+            _collectionView.semanticContentAttribute = UISemanticContentAttributeForceLeftToRight;
         [self addSubview:_collectionView];
         
         if (_cameraView)
@@ -239,22 +253,26 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
             __strong TGAttachmentCarouselItemView *strongSelf = weakSelf;
             if (strongSelf != nil && strongSelf.sendPressed != nil)
             {
-                [[NSUserDefaults standardUserDefaults] setObject:@(!strongSelf->_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
+                if (strongSelf->_selectionContext.allowGrouping)
+                    [[NSUserDefaults standardUserDefaults] setObject:@(!strongSelf->_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
                 strongSelf.sendPressed(nil, false);
             }
         }];
         [_sendMediaItemView setHidden:true animated:false];
         [self addSubview:_sendMediaItemView];
         
-        _sendFileItemView = [[TGMenuSheetButtonItemView alloc] initWithTitle:nil type:TGMenuSheetButtonTypeDefault action:^
+        if (!_document)
         {
-            __strong TGAttachmentCarouselItemView *strongSelf = weakSelf;
-            if (strongSelf != nil && strongSelf.sendPressed != nil)
-                strongSelf.sendPressed(nil, true);
-        }];
-        _sendFileItemView.requiresDivider = false;
-        [_sendFileItemView setHidden:true animated:false];
-        [self addSubview:_sendFileItemView];
+            _sendFileItemView = [[TGMenuSheetButtonItemView alloc] initWithTitle:nil type:TGMenuSheetButtonTypeDefault action:^
+            {
+                __strong TGAttachmentCarouselItemView *strongSelf = weakSelf;
+                if (strongSelf != nil && strongSelf.sendPressed != nil)
+                    strongSelf.sendPressed(nil, true);
+            }];
+            _sendFileItemView.requiresDivider = false;
+            [_sendFileItemView setHidden:true animated:false];
+            [self addSubview:_sendFileItemView];
+        }
         
         [self setSignal:[[TGMediaAssetsLibrary authorizationStatusSignal] mapToSignal:^SSignal *(NSNumber *statusValue)
         {
@@ -311,6 +329,15 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     [_assetsDisposable dispose];
     [_selectionChangedDisposable dispose];
     [_itemsSizeChangedDisposable dispose];
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _pallete = pallete;
+    
+    _cameraView.pallete = pallete;
+    [_sendMediaItemView setPallete:pallete];
+    [_sendFileItemView setPallete:pallete];
 }
 
 - (void)setRemainingHeight:(CGFloat)remainingHeight
@@ -533,6 +560,12 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     else
         [self setSelectedMode:activated animated:true];
     
+    if (_document)
+    {
+        _sendMediaItemView.title = TGLocalized(@"Common.Done");
+        return;
+    }
+    
     if (totalCount == 0)
         return;
     
@@ -608,12 +641,17 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
 {
     progress = zoomedIn ? progress : 1.0f - progress;
 
-    CGFloat correction = self.remainingHeight - 2 * TGMenuSheetButtonItemViewHeight;
+    CGFloat correction = self.remainingHeight - (_document ? 1 : 2) * TGMenuSheetButtonItemViewHeight;
     return -(correction * progress);
 }
 
 - (CGFloat)preferredHeightForWidth:(CGFloat)__unused width screenHeight:(CGFloat)screenHeight
 {
+    if (_collapsed) {
+        self.alpha = 0.0f;
+        return 0.0f;
+    }
+    
     CGFloat progress = _zoomingIn ? _zoomingProgress : 1.0f;
     return [self _preferredHeightForZoomedIn:_zoomedIn progress:progress screenHeight:screenHeight];
 }
@@ -645,7 +683,10 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
         if (cell.isZoomed != _zoomedIn)
         {
             cell.isZoomed = _zoomedIn;
-            [cell setSignal:[self _signalForItem:asset refresh:true onlyThumbnail:false]];
+            if (cell.asset == nil)
+                [cell setAsset:asset signal:[self _signalForItem:asset refresh:true onlyThumbnail:false]];
+            else
+                [cell setSignal:[self _signalForItem:asset refresh:true onlyThumbnail:false]];
         }
     }
 }
@@ -729,8 +770,9 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
         __strong TGAttachmentCarouselItemView *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf.sendPressed != nil)
         {
-            [[NSUserDefaults standardUserDefaults] setObject:@(!strongSelf->_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
-            strongSelf.sendPressed(item.asset, false);
+            if (strongSelf->_selectionContext.allowGrouping)
+                [[NSUserDefaults standardUserDefaults] setObject:@(!strongSelf->_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
+            strongSelf.sendPressed(item.asset, strongSelf.asFile);
         }
     };
     
@@ -750,7 +792,7 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     if ([cell isKindOfClass:[TGAttachmentAssetCell class]])
         thumbnailImage = cell.imageView.image;
     
-    TGMediaPickerModernGalleryMixin *mixin = [[TGMediaPickerModernGalleryMixin alloc] initWithContext:_context item:asset fetchResult:_fetchResult parentController:self.parentController thumbnailImage:thumbnailImage selectionContext:_selectionContext editingContext:_editingContext suggestionContext:self.suggestionContext hasCaptions:(_allowCaptions && !_forProfilePhoto) hasTimer:self.hasTimer inhibitDocumentCaptions:_inhibitDocumentCaptions asFile:false itemsLimit:TGAttachmentDisplayedAssetLimit recipientName:self.recipientName];
+    TGMediaPickerModernGalleryMixin *mixin = [[TGMediaPickerModernGalleryMixin alloc] initWithContext:_context item:asset fetchResult:_fetchResult parentController:self.parentController thumbnailImage:thumbnailImage selectionContext:_selectionContext editingContext:_editingContext suggestionContext:self.suggestionContext hasCaptions:(_allowCaptions && !_forProfilePhoto) allowCaptionEntities:self.allowCaptionEntities hasTimer:self.hasTimer onlyCrop:self.onlyCrop inhibitDocumentCaptions:_inhibitDocumentCaptions inhibitMute:self.inhibitMute asFile:self.asFile itemsLimit:TGAttachmentDisplayedAssetLimit recipientName:self.recipientName];
     
     __weak TGAttachmentCarouselItemView *weakSelf = self;
     mixin.thumbnailSignalForItem = ^SSignal *(id item)
@@ -943,6 +985,7 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
     }
     
     TGAttachmentAssetCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:cellIdentifier forIndexPath:indexPath];
+    cell.pallete = _pallete;
     NSInteger pivotIndex = NSNotFound;
     NSInteger limit = 0;
     if (_pivotInItemIndex != NSNotFound)
@@ -959,16 +1002,16 @@ const NSUInteger TGAttachmentDisplayedAssetLimit = 500;
         pivotIndex = _pivotOutItemIndex;
 
         if (self.frame.size.width <= 320)
-            limit = 3;
+            limit = 4;
         else
-            limit = 5;
+            limit = 6;
     }
+    
+    cell.selectionContext = _selectionContext;
+    cell.editingContext = _editingContext;
     
     if (!(pivotIndex != NSNotFound && (indexPath.row < pivotIndex - limit || indexPath.row > pivotIndex + limit)))
     {
-        cell.selectionContext = _selectionContext;
-        cell.editingContext = _editingContext;
-        
         if (![asset isEqual:cell.asset] || cell.isZoomed != _zoomedIn)
         {
             cell.isZoomed = _zoomedIn;

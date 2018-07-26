@@ -16,6 +16,7 @@
 - (void)_putContent:(TGAnimatedMediaContextResultCellContents *)content;
 - (bool)hasContent;
 
+- (void)setSelectionColor:(UIColor *)color;
 - (void)setHighlighted:(bool)highlighted animated:(bool)animated;
 
 @end

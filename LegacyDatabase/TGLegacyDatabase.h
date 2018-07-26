@@ -13,8 +13,11 @@
 - (NSArray<TGLegacyUser *> *)topUsers;
 - (NSDictionary<NSNumber *, NSNumber *> *)unreadCountsForUsers:(NSArray<TGLegacyUser *> *)users;
 
+- (TGLegacyUser *)userWithIdSync:(int32_t)userId;
 - (TGChatModel *)conversationWithIdSync:(int64_t)conversationId;
 
 - (NSData *)customPropertySync:(NSString *)name;
+
++ (NSString *)cleanPhone:(NSString *)phone clip:(bool)clip;
 
 @end

@@ -6,12 +6,15 @@
 
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
 
 @interface TGCachePeerItemView () {
     TGLetteredAvatarView *_avatarView;
     UILabel *_titleLabel;
     UILabel *_sizeLabel;
     UIImageView *_disclosureIndicator;
+    
+    bool _isSecret;
 }
 
 @end
@@ -40,50 +43,43 @@
         
         self.separatorInset = 65.0f;
         
-        _disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
+        _disclosureIndicator = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 8.0f, 14.0f)];
         [self.contentView addSubview:_disclosureIndicator];
     }
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = _isSecret ? self.presentation.pallete.dialogEncryptedColor : self.presentation.pallete.collectionMenuTextColor;
+    _sizeLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+    _disclosureIndicator.image = presentation.images.collectionMenuDisclosureIcon;
+}
+
 - (void)setPeer:(id)peer totalSize:(int64_t)totalSize {
     CGSize size = CGSizeMake(40.0f, 40.0f);
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:size.width];
     
     int64_t peerId = 0;
-    bool isSecret = false;
     
     if ([peer isKindOfClass:[TGConversation class]]) {
         TGConversation *conversation = peer;
         peerId = conversation.conversationId;
-        isSecret = conversation.isEncrypted;
+        _isSecret = conversation.isEncrypted;
         if (conversation.additionalProperties[@"user"] != nil) {
             TGUser *user = conversation.additionalProperties[@"user"];
             
             if (user.photoUrlSmall.length != 0) {
-                [_avatarView loadImage:user.photoUrlSmall filter:@"circle:60x60" placeholder:placeholder];
+                [_avatarView loadImage:user.photoUrlSmall filter:@"circle:40x40" placeholder:placeholder];
             } else {
                 [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
             }
             _titleLabel.text = user.displayName;
         } else {
             if (conversation.chatPhotoSmall.length != 0) {
-                [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:60x60" placeholder:placeholder];
+                [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:40x40" placeholder:placeholder];
             } else {
                 [_avatarView loadGroupPlaceholderWithSize:size conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
             }
@@ -94,16 +90,16 @@
         
         peerId = user.uid;
         if ( peerId == TGTelegraphInstance.clientUserId) {
-            [_avatarView loadSavedMessagesWithSize:CGSizeMake(60.0f, 60.0f) placeholder:placeholder];
+            [_avatarView loadSavedMessagesWithSize:CGSizeMake(40.0f, 40.0f) placeholder:placeholder];
         } else if (user.photoUrlSmall.length != 0) {
-            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:60x60" placeholder:placeholder];
+            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:40x40" placeholder:placeholder];
         } else {
             [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
         }
         _titleLabel.text = peerId == TGTelegraphInstance.clientUserId ? TGLocalized(@"DialogList.SavedMessages") : user.displayName;
     }
     
-    _titleLabel.textColor = isSecret ? UIColorRGB(0x00a629) : [UIColor blackColor];
+    _titleLabel.textColor = _isSecret ? self.presentation.pallete.dialogEncryptedColor : self.presentation.pallete.collectionMenuTextColor;
     _sizeLabel.text = [TGStringUtils stringForFileSize:totalSize];
     
     //_peerId = peerId;

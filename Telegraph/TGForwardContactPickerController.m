@@ -10,9 +10,15 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import <AddressBook/AddressBook.h>
+
 #import "TGDatabase.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
+
+#import "TGVCardUserInfoController.h"
+
+#import "TGPresentation.h"
 
 @interface TGForwardContactPickerController ()
 
@@ -22,9 +28,10 @@
 
 - (instancetype)init
 {
-    self = [super initWithContactsMode:TGContactsModeRegistered | TGContactsModePhonebook | TGContactsModeCombineSections | TGContactsModeShowSelf];
+    self = [super initWithContactsMode:TGContactsModeRegistered | TGContactsModePhonebook | TGContactsModeCombineSections | TGContactsModeShowSelf | TGContactsModeShare];
     if (self != nil)
     {
+        self.presentation = TGPresentation.current;
         [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
     }
     return self;
@@ -41,68 +48,71 @@
     
     TGPhonebookContact *contact = nil;
     
+    int nativeId = -1;
     if (user.uid < 0)
-        contact = [TGDatabaseInstance() phonebookContactByNativeId:-user.uid];
-    else
-        contact = [TGDatabaseInstance() phonebookContactByPhoneId:phoneMatchHash(user.phoneNumber)];
-    
-    if (contact != nil && contact.phoneNumbers.count != 0)
     {
-        if (contact.phoneNumbers.count == 1)
+        nativeId = -user.uid;
+        contact = [TGDatabaseInstance() phonebookContactByNativeId:nativeId];
+    }
+    else
+    {
+        contact = [TGDatabaseInstance() phonebookContactByPhoneId:phoneMatchHash(user.phoneNumber)];
+        nativeId = [TGDatabaseInstance() phonebookContactNativeIdByPhoneId:phoneMatchHash(user.phoneNumber)];
+    }
+    
+    NSString *vcardString = nil;
+    if (nativeId != -1)
+    {
+        ABAddressBookRef book = ABAddressBookCreate();
+        ABRecordRef ref = ABAddressBookGetPersonWithRecordID(book, nativeId);
+        
+        if (ref != NULL)
         {
-            TGUser *contactUser = [user copy];
-            contactUser.phoneNumber = ((TGPhoneNumber *)contact.phoneNumbers[0]).number;
+            ABRecordRef people[1] = {
+                CFRetain(ref)
+            };
             
-            [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+            CFArrayRef peopleArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&people, 1, NULL);
             
-            id<TGForwardContactPickerControllerDelegate> delegate = _delegate;
-            if ([delegate respondsToSelector:@selector(forwardContactPickerController:didSelectContact:)])
-                [delegate forwardContactPickerController:self didSelectContact:contactUser];
+            NSData *vCardData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople(peopleArray));
+            vcardString = [[NSString alloc] initWithData:vCardData encoding:NSUTF8StringEncoding];
+            
+            CFRelease(peopleArray);
+            CFRelease(ref);
         }
-        else
-        {
-            NSMutableArray *actions = [[NSMutableArray alloc] init];
-            for (TGPhoneNumber *number in contact.phoneNumbers)
-            {
-                if (number.number.length != 0)
-                {
-                    NSString *title = number.label.length == 0 ? number.number : [[NSString alloc] initWithFormat:@"%@: %@", number.label, number.number];
-                    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:title action:number.number]];
-                }
-            }
-            
-            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
-            
-            __weak TGForwardContactPickerController *weakSelf = self;
-            [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
-            {
-                TGForwardContactPickerController *strongSelf = weakSelf;
-                if (![action isEqualToString:@"cancel"])
-                {
-                    TGUser *contactUser = [[TGUser alloc] init];
-                    contactUser.firstName = contact.firstName;
-                    contactUser.lastName = contact.lastName;
-                    contactUser.phoneNumber = action;
-                    
-                    if (phoneMatchHash(contactUser.phoneNumber) == phoneMatchHash(user.phoneNumber))
-                        contactUser.uid = user.uid;
-                    
-                    void (^finishBlock)(void) = ^
-                    {
-                        [strongSelf.presentingViewController dismissViewControllerAnimated:true completion:nil];
-                        
-                        id<TGForwardContactPickerControllerDelegate> delegate = strongSelf.delegate;
-                        if ([delegate respondsToSelector:@selector(forwardContactPickerController:didSelectContact:)])
-                            [delegate forwardContactPickerController:self didSelectContact:contactUser];
-                    };
-                    
-                    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
-                        dispatch_async(dispatch_get_main_queue(), finishBlock);
-                    else
-                        finishBlock();
-                }
-            } target:self] showInView:self.view];
-        }
+        
+        CFRelease(book);
+    }
+    
+    TGUser *contactUser = [[TGUser alloc] init];
+    contactUser.firstName = contact.firstName;
+    contactUser.lastName = contact.lastName;
+    contactUser.phoneNumber =  user.phoneNumber.length > 0 ? user.phoneNumber : ((TGPhoneNumber *)contact.phoneNumbers.firstObject).number;
+    if (user.uid > 0) {
+        contactUser.uid = user.uid;
+        contactUser.photoUrlSmall = user.photoUrlSmall;
+    }
+    
+    __weak TGForwardContactPickerController *weakSelf = self;
+    void (^completionWithUser)(TGUser *) = ^(TGUser *user) {
+        __strong TGForwardContactPickerController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        [strongSelf.presentingViewController dismissViewControllerAnimated:true completion:nil];
+        
+        id<TGForwardContactPickerControllerDelegate> delegate = _delegate;
+        if ([delegate respondsToSelector:@selector(forwardContactPickerController:didSelectContact:)])
+            [delegate forwardContactPickerController:strongSelf didSelectContact:user];
+    };
+    
+    TGVCard *vcard = [[TGVCard alloc] initWithString:vcardString];
+    if (vcard.isPrimitive || self.sendImmediately) {
+        completionWithUser(contactUser);
+        [self.view endEditing:true];
+    } else {
+        TGVCardUserInfoController *vcardController = [[TGVCardUserInfoController alloc] initWithUser:contactUser vcard:vcard forwardWithCompletion:completionWithUser];
+        [self.navigationController pushViewController:vcardController animated:true];
     }
 }
 

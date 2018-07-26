@@ -41,8 +41,8 @@
 
 #import "TGMessageModernConversationItem.h"
 
-#import "TGActionSheet.h"
-#import "TGAlertView.h"
+#import "TGCustomActionSheet.h"
+#import "TGCustomAlertView.h"
 
 #import "TGRecentContextBotsSignal.h"
 
@@ -61,7 +61,7 @@
 
 #import "TGLiveLocationManager.h"
 
-#import "TGPresentationAssets.h"
+#import "TGPresentation.h"
 #import <LegacyComponents/TGLocationViewController.h>
 
 #import <LegacyComponents/TGMenuSheetController.h>
@@ -102,6 +102,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     bool _isContact; // Main Thread
     
     bool _isMuted; // Main Thread
+    
+    NSMutableDictionary *_defaultNotificationSettings;
+    NSMutableDictionary *_userNotificationSettings;
     
     NSArray *_additionalTitleIcons; // Main Thread
     
@@ -179,7 +182,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         
         if ([self supportsLiveLocations])
         {
-            _liveLocationDisposable = [combinedSignal startWithNext:^(NSArray *next)
+            _liveLocationDisposable = [[combinedSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *next)
             {
                 __strong TGPrivateModernConversationCompanion *strongSelf = weakSelf;
                 if (strongSelf != nil) {
@@ -244,7 +247,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             muteIcon.offsetWeight = 0.5f;
             muteIcon.imageOffset = CGPointMake(4.0f, 7.0f);
             
-            muteIcon.image = [TGPresentationAssets chatTitleMutedIcon];
+            muteIcon.image = self.controller.presentation.images.chatTitleMutedIcon;
             muteIcon.iconPosition = TGModernConversationTitleIconPositionAfterTitle;
             
             [icons addObject:muteIcon];
@@ -494,7 +497,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     TGModernConversationController *controller = self.controller;
     
     int64_t conversationId = _conversationId;
-    TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:TGLocalized(@"Conversation.ReportSpamConfirmation") actions:@[[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.ReportSpam") action:@"reportSpam" type:TGActionSheetActionTypeDestructive],
+    TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"Conversation.ReportSpamConfirmation") actions:@[[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.ReportSpam") action:@"reportSpam" type:TGActionSheetActionTypeDestructive],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
     ] actionBlock:^(TGModernConversationController *controller, NSString *action) {
         if ([action isEqualToString:@"reportSpam"]) {
@@ -815,7 +818,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         return nil;
     } else {
         if (_conversationId == TGTelegraphInstance.clientUserId) {
-            return [[TGCloudStorageConversationEmptyView alloc] init];
+            return [[TGCloudStorageConversationEmptyView alloc] initWithFrame:CGRectZero presentation:self.viewContext.presentation];
         } else {
             return [super _conversationEmptyListPlaceholder];
         }
@@ -833,7 +836,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         {
             TGModernConversationController *controller = self.controller;
             _botStartPanel = [[TGModernConversationActionInputPanel alloc] init];
-            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:TGAccentColor()];
+            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:self.controller.presentation.pallete.accentColor];
             _botStartPanel.companionHandle = self.actionHandle;
             _botStartPanel.delegate = controller;
         }
@@ -854,7 +857,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         {
             TGModernConversationController *controller = self.controller;
             _botStartPanel = [[TGModernConversationActionInputPanel alloc] init];
-            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:TGAccentColor()];
+            [_botStartPanel setActionWithTitle:TGLocalized(@"Bot.Start") action:@"botstart" color:self.controller.presentation.pallete.accentColor];
             _botStartPanel.companionHandle = self.actionHandle;
             _botStartPanel.delegate = controller;
         }
@@ -940,11 +943,13 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         [[NSString alloc] initWithFormat:@"/tg/userLink/(%" PRId32 ")", _uid],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/messageFlagChanges", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/messageViewDateChanges"],
+        [[NSString alloc] initWithFormat:@"/tg/peerSettings/(%" PRId32 ")", INT_MAX - 1],
         @"/tg/blockedUsers"
     ] watcher:self];
 
     [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 ")", _uid] watcher:self];
     [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 ",cachedOnly)", _uid] options:@{@"peerId": @(_uid)} watcher:self];
+    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%d,cachedOnly)", INT_MAX - 1] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:INT_MAX - 1] forKey:@"peerId"] watcher:self];
     
     [super subscribeToUpdates];
 }
@@ -970,17 +975,19 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     }
     
     NSMutableArray *actions = [[NSMutableArray alloc] init];
-    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [TGPresentationAssets chatTitleSearchIcon], @"action": @"search"}];
+    TGPresentation *presentation = self.controller.presentation;
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": presentation.images.chatTitleSearchIcon, @"action": @"search"}];
     if (_isMuted)
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": [TGPresentationAssets chatTitleUnmuteIcon], @"action": @"unmute"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": presentation.images.chatTitleUnmuteIcon, @"action": @"unmute"}];
     else
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": [TGPresentationAssets chatTitleMuteIcon], @"action": @"mute"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": presentation.images.chatTitleMuteIcon, @"action": @"mute"}];
     
     if (_supportsCalls) {
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Call"), @"icon": [TGPresentationAssets chatTitleCallIcon], @"action": @"call"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Call"), @"icon": presentation.images.chatTitleCallIcon, @"action": @"call"}];
     }
     
-    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [TGPresentationAssets chatTitleInfoIcon], @"action": @"info"}];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": presentation.images.chatTitleInfoIcon, @"action": @"info"}];
+    [privateTitlePanel setPresentation:presentation];
     [privateTitlePanel setButtonsWithTitlesAndActions:actions];
 
     [controller setPrimaryTitlePanel:privateTitlePanel];
@@ -1073,6 +1080,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
                     [strongSelf _updateInputPanel];
                 }
             }]];
+            
+            _botAutostartPayload = nil;
         });
     }
     else
@@ -1132,12 +1141,15 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 
 - (void)requestUserMute:(bool)mute
 {
-    [self _updateUserMute:mute];
+    NSNumber *muteUntil = mute ? @(INT32_MAX) : @0;
+    _userNotificationSettings[@"muteUntil"] = muteUntil;
+    
+    [self _updateNotifcationSettings];
     
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         static int actionId = 0;
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(conversationController%d)", _conversationId, actionId++] options:@{@"peerId": @(_conversationId), @"muteUntil": @(mute ? INT_MAX : 0)} watcher:TGTelegraphInstance];
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(conversationController%d)", _conversationId, actionId++] options:@{@"peerId": @(_conversationId), @"muteUntil": muteUntil} watcher:TGTelegraphInstance];
     }];
 }
 
@@ -1152,7 +1164,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
             [self requestUserBlocked:false];
         else if ([panelAction isEqualToString:@"botstart"])
             [self requestBotStart];
-
+        
+        [TGAppDelegateInstance.rootController.dialogListController maybeDismissSearchResults];
     }
     else if ([action isEqualToString:@"titlePanelAction"])
     {
@@ -1176,6 +1189,8 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         else if ([panelAction isEqualToString:@"call"]) {
             [self startVoiceCall];
             [self.controller hideTitlePanel];
+            
+            [TGAppDelegateInstance.rootController.dialogListController maybeDismissSearchResults];
         }
         else if ([panelAction isEqualToString:@"mute"]) {
             [self requestUserMute:true];
@@ -1323,13 +1338,37 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         
         [self updateUserBlocked:blocked];
     }
+    else if ([path hasPrefix:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 "", INT_MAX - 1]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            _defaultNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+            [self _updateNotifcationSettings];
+        });
+    }
     else if ([path hasPrefix:@"/tg/peerSettings/"])
     {
-        bool isMuted = [[((SGraphObjectNode *)result).object objectForKey:@"muteUntil"] intValue] != 0;
-        [self _updateUserMute:isMuted];
+        TGDispatchOnMainThread(^
+        {
+            _userNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+            [self _updateNotifcationSettings];
+        });
     }
     
     [super actorCompleted:status path:path result:result];
+}
+
+- (void)_updateNotifcationSettings
+{
+    NSNumber *muteUntil = _userNotificationSettings[@"muteUntil"];
+    if (muteUntil == nil)
+        muteUntil = _defaultNotificationSettings[@"muteUntil"];
+    
+    bool isMuted = true;
+    if (muteUntil.intValue <= [[TGTelegramNetworking instance] approximateRemoteTime])
+        isMuted = false;
+    
+    [self _updateUserMute:isMuted];
 }
 
 - (bool)allowReplies
@@ -1440,6 +1479,9 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     
     if (self.botContextPeerId != nil) {
         for (TGMessage *message in messages) {
+            if (message.mid >= TGMessageLocalMidEditBaseline && message.date == INT32_MAX)
+                continue;
+            
             TGBotReplyMarkup *replyMarkup = message.replyMarkup;
             if (replyMarkup.isInline) {
                 for (TGBotReplyMarkupRow *row in replyMarkup.rows) {
@@ -1488,7 +1530,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
 - (void)startVoiceCall {
     if (_callsPrivate) {
         TGUser *user = [TGDatabaseInstance() loadUser:_uid];
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:[NSString stringWithFormat:TGLocalized(@"Call.PrivacyErrorMessage"), user.displayFirstName] cancelButtonTitle:TGLocalized(@"OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:[NSString stringWithFormat:TGLocalized(@"Call.PrivacyErrorMessage"), user.displayFirstName] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     }
     else {
         [[TGInterfaceManager instance] callPeerWithId:_uid];
@@ -1582,6 +1624,25 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     if (_botAutostartPayload != nil) {
         [self requestBotStart];
     }
+}
+
+- (bool)canReportMessage:(TGMessage *)message {
+    if (!_isBot) {
+        return false;
+    }
+    
+    if (message.cid != _conversationId) {
+        return false;
+    }
+    
+    if (message.actionInfo != nil) {
+        return false;
+    }
+    
+    if (!message.outgoing) {
+        return true;
+    }
+    return false;
 }
 
 @end

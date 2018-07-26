@@ -6,6 +6,7 @@
     SMetaDisposable *_selectionChangedDisposable;
     
     NSMutableArray *_items;
+    bool _keepItems;
 }
 @end
 
@@ -13,29 +14,49 @@
 
 - (instancetype)initWithSelectionContext:(TGMediaSelectionContext *)selectionContext
 {
+    return [self initWithSelectionContext:selectionContext items:nil];
+}
+
+- (instancetype)initWithSelectionContext:(TGMediaSelectionContext *)selectionContext items:(NSArray *)items
+{
     self = [super init];
     if (self != nil)
     {
-        _items = [selectionContext.selectedItems mutableCopy];
-        
+        if (items == nil)
+        {
+            _items = [selectionContext.selectedItems mutableCopy];
+        }
+        else
+        {
+            _items = [items mutableCopy];
+            _keepItems = true;
+        }
         _selectionContext = selectionContext;
         
-        __weak TGMediaPickerGallerySelectedItemsModel *weakSelf = self;
-        _selectionChangedDisposable = [[SMetaDisposable alloc] init];
-        [_selectionChangedDisposable setDisposable:[[selectionContext selectionChangedSignal] startWithNext:^(TGMediaSelectionChange *next)
+        if (_selectionContext != nil)
         {
-            __strong TGMediaPickerGallerySelectedItemsModel *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            if (next.sender == strongSelf)
-                return;
-            
-            if (next.selected)
-                [strongSelf addSelectedItem:next.item];
-            else
-                [strongSelf removeSelectedItem:next.item];
-        }]];
+            __weak TGMediaPickerGallerySelectedItemsModel *weakSelf = self;
+            _selectionChangedDisposable = [[SMetaDisposable alloc] init];
+            [_selectionChangedDisposable setDisposable:[[selectionContext selectionChangedSignal] startWithNext:^(TGMediaSelectionChange *next)
+            {
+                __strong TGMediaPickerGallerySelectedItemsModel *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return;
+                
+                if (strongSelf.selectionUpdated != nil)
+                    strongSelf.selectionUpdated(false, false, false, strongSelf.selectedCount);
+                
+                if (next.sender == strongSelf)
+                    return;
+                
+                if (next.selected)
+                {
+                    [strongSelf addSelectedItem:next.item];
+                }
+                else if (!strongSelf->_keepItems)
+                    [strongSelf removeSelectedItem:next.item];
+            }]];
+        }
     }
     return self;
 }
@@ -74,6 +95,19 @@
         if (self.selectionUpdated != nil)
             self.selectionUpdated(true, true, false, index);
     }
+}
+
+- (void)clear
+{
+    NSInteger index = 0;
+    
+    [_items enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(id<TGMediaSelectableItem> item, NSUInteger index, __unused BOOL *stop)
+    {
+        if (self.selectionUpdated != nil)
+            self.selectionUpdated(true, false, false, index);
+    }];
+    
+    [_items removeAllObjects];
 }
 
 - (NSInteger)selectedCount

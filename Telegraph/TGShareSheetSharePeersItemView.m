@@ -75,7 +75,7 @@
         [_button setTitleColor:UIColorRGB(0x8e8e93) forState:UIControlStateDisabled];
         _button.titleLabel.font = TGSystemFontOfSize(20.0f + TGRetinaPixel);
         [_button addTarget:self action:@selector(_buttonPressed) forControlEvents:UIControlEventTouchUpInside];
-        [_button setHighlightImage:[TGShareSheetView selectionBackgroundWithFirst:false last:true]];
+        //[_button setHighlightImage:[TGShareSheetView selectionBackgroundWithFirst:false last:true]];
         _button.stretchHighlightImage = true;
         _button.highlighted = false;
         [self addSubview:_button];

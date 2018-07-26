@@ -20,7 +20,9 @@
 
 #import "TGEmbedPIPController.h"
 
-#import <thirdparty/AFNetworking/AFNetworking.h>
+#import "TGPresentation.h"
+
+#import <MTProtoKit/AFHTTPRequestOperation.h>
 
 @interface AFHTTPRequestOperation (TG) <LegacyHTTPRequestOperation>
 
@@ -274,6 +276,31 @@ static __strong NSTimer *userInteractionEnableTimer = nil;
 
 - (void)maybeReleaseVolumeOverlay {
     [TGEmbedPIPController maybeReleaseVolumeOverlay];
+}
+
+- (TGNavigationBarPallete *)navigationBarPallete
+{
+    return TGPresentation.current.navigationBarPallete;
+}
+
+- (TGMenuSheetPallete *)menuSheetPallete
+{
+    return TGPresentation.current.menuSheetPallete;
+}
+
+- (TGMediaAssetsPallete *)mediaAssetsPallete
+{
+    return TGPresentation.current.mediaAssetsPallete;
+}
+
+- (TGImageBorderPallete *)imageBorderPallete
+{
+    return TGPresentation.current.imageBorderPallete;
+}
+
+- (TGCheckButtonPallete *)checkButtonPallete
+{
+    return TGPresentation.current.checkButtonPallete;
 }
 
 @end

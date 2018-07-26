@@ -7,6 +7,9 @@
 @interface TLaccount_PasswordSettings : NSObject <TLObject>
 
 @property (nonatomic, retain) NSString *email;
+@property (nonatomic, retain) NSData *secure_salt;
+@property (nonatomic, retain) NSData *secure_secret;
+@property (nonatomic) int64_t secure_secret_id;
 
 @end
 

@@ -11,6 +11,6 @@
     TGModernImageViewModel *_iconModel;
 }
 
-- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text imageSignalGenerator:(SSignal *(^)())imageSignalGenerator imageSignalIdentifier:(NSString *)imageSignalIdentifier icon:(UIImage *)icon truncateTextInTheMiddle:(bool)truncateTextInTheMiddle system:(bool)system;
+- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text imageSignalGenerator:(SSignal *(^)())imageSignalGenerator imageSignalIdentifier:(NSString *)imageSignalIdentifier icon:(UIImage *)icon truncateTextInTheMiddle:(bool)truncateTextInTheMiddle system:(bool)system presentation:(TGPresentation *)presentation;
 
 @end

@@ -26,6 +26,8 @@
     UIView *_headerBackgroundView;
     
     id<SDisposable> _presentationDisposable;
+    
+    __weak TGNavigationController *_weakNavController;
 }
 
 @end
@@ -56,6 +58,9 @@
     _collectionView.dataSource = nil;
     
     [_presentationDisposable dispose];
+    
+    if (iosMajorVersion() >= 7)
+        _weakNavController.interactivePopGestureRecognizer.enabled = true;
 }
 
 - (void)enterEditingMode:(bool)animated
@@ -67,6 +72,9 @@
         [_collectionView setEditing:true animated:animated];
         
         [self didEnterEditingMode:animated];
+        
+        if (iosMajorVersion() >= 7)
+            self.navigationController.interactivePopGestureRecognizer.enabled = false;
     }
 }
 
@@ -79,6 +87,9 @@
         [_collectionView setEditing:false animated:animated];
         
         [self didLeaveEditingMode:animated];
+        
+        if (iosMajorVersion() >= 7)
+            self.navigationController.interactivePopGestureRecognizer.enabled = true;
     }
 }
 
@@ -143,6 +154,21 @@
         for (TGCollectionItem *listItem in section.items)
         {
             [listItem setPresentation:presentation];
+        }
+    }
+}
+
+- (void)_ensureBinding
+{
+    for (NSIndexPath *indexPath in _collectionView.indexPathsForVisibleItems)
+    {
+        TGCollectionItem *item = indexPath.section < (NSInteger)_menuSections.sections.count && indexPath.row < (NSInteger)((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items.count ? ((TGCollectionMenuSection *)_menuSections.sections[indexPath.section]).items[indexPath.item] : nil;
+        
+        if (item != nil)
+        {
+            TGCollectionItemView *itemView = (TGCollectionItemView *)[_collectionView cellForItemAtIndexPath:indexPath];
+            if (itemView.boundItem == nil)
+                [item bindView:itemView];
         }
     }
 }
@@ -216,7 +242,7 @@
     self.view.backgroundColor = _presentation.pallete.collectionMenuBackgroundColor;
     
     _headerBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.view.frame.size.width, self.controllerInset.top)];
-    _headerBackgroundView.backgroundColor = [UIColor whiteColor];
+    _headerBackgroundView.backgroundColor = self.view.backgroundColor;
     [self.view addSubview:_headerBackgroundView];
     
     [self _resetCollectionView];
@@ -242,21 +268,43 @@
     }
 }
 
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    _weakNavController = (TGNavigationController *)self.navigationController;
+    
+    if (_editingMode)
+    {
+        if (iosMajorVersion() >= 7)
+            _weakNavController.interactivePopGestureRecognizer.enabled = false;
+    }
+}
+
 - (void)viewWillAppear:(BOOL)animated
 {
     for (NSIndexPath *indexPath in [_collectionView indexPathsForSelectedItems])
     {
         [_collectionView deselectItemAtIndexPath:indexPath animated:animated];
     }
-    
+
     [super viewWillAppear:animated];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
-    [_collectionView stopScrollingAnimation];
+    if (!self.disableStopScrolling)
+        [_collectionView stopScrollingAnimation];
     
     [super viewWillDisappear:animated];
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+    if (iosMajorVersion() >= 7)
+        _weakNavController.interactivePopGestureRecognizer.enabled = true;
+    
+    [super viewDidDisappear:animated];
 }
 
 /*- (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration

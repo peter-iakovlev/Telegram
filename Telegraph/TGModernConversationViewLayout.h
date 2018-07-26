@@ -36,6 +36,7 @@ struct TGDecorationViewAttrubutesComparator
 
 @interface TGModernConversationViewLayout : UICollectionViewLayout
 
+@property (nonatomic) bool inhibitDateHeaders;
 @property (nonatomic) bool animateLayout;
 @property (nonatomic, strong) TGModernViewStorage *viewStorage;
 

@@ -42,6 +42,8 @@
 #import <MTProtoKit/MTProtoKit.h>
 #import "TGTelegramNetworking.h"
 
+#import "TGCustomActionSheet.h"
+
 #import "TGDatabase.h"
 
 @interface TGChatSettingsController () <TGTextSizeControllerDelegate>
@@ -82,16 +84,6 @@
         [self setTitleText:TGLocalized(@"ChatSettings.Title")];
         
         _textSizeItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.TextSize") variant:[[NSString alloc] initWithFormat:@"%d%@", TGBaseFontSize, TGLocalized(@"ChatSettings.TextSizeUnits")] action:@selector(textSizePressed)];
-        
-        TGCollectionMenuSection *appearanceSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.Appearance")],
-            _textSizeItem
-        ]];
-        UIEdgeInsets topSectionInsets = appearanceSection.insets;
-        topSectionInsets.top = 32.0f;
-        appearanceSection.insets = topSectionInsets;
-        if (iosMajorVersion() < 7 && [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
-            [self.menuSections addSection:appearanceSection];
         
         _autosavePhotosItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.SaveIncomingPhotos") action:@selector(autosavePhotosPressed)];
         
@@ -164,8 +156,15 @@
         [self.menuSections addSection:otherSection];
         
         _proxySettings = [[TGTelegramNetworking instance] context].apiEnvironment.socksProxySettings;
-        
-        _useProxyItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ConnectionType.UseProxy") variant:_proxySettings != nil ? TGLocalized(@"ChatSettings.ConnectionType.UseSocks5") : TGLocalized(@"GroupInfo.SharedMediaNone") action:@selector(useProxyPressed)];
+        NSString *proxyType = TGLocalized(@"GroupInfo.SharedMediaNone");
+        if (_proxySettings != nil)
+        {
+            if (_proxySettings.secret != nil)
+                proxyType = TGLocalized(@"SocksProxySetup.ProxyTelegram");
+            else
+                proxyType = TGLocalized(@"SocksProxySetup.ProxySocks5");
+        }
+        _useProxyItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ConnectionType.UseProxy") variant:proxyType action:@selector(useProxyPressed)];
         _useProxyItem.deselectAutomatically = true;
         TGCollectionMenuSection *proxySection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"ChatSettings.ConnectionType.Title")],
@@ -342,40 +341,25 @@
 }
 
 - (void)autoDownloadResetPressed {
-    TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-    controller.dismissesByOutsideTap = true;
     
     __weak TGChatSettingsController *weakSelf = self;
-    __weak TGMenuSheetController *weakController = controller;
-    TGMenuSheetTitleItemView *titleItem = [[TGMenuSheetTitleItemView alloc] initWithTitle:nil subtitle:TGLocalized(@"AutoDownloadSettings.ResetHelp")];
-    TGMenuSheetButtonItemView *resetItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"AutoDownloadSettings.Reset") type:TGMenuSheetButtonTypeDestructive action:^
-    {
-        __strong TGMenuSheetController *strongController = weakController;
-        if (strongController != nil)
-            [strongController dismissAnimated:true];
-        
+    [[[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"AutoDownloadSettings.ResetHelp") actions:@[
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"AutoDownloadSettings.Reset") action:@"reset" type:TGActionSheetActionTypeDestructive],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
+    ] actionBlock:^(__unused id target, NSString *action) {
         __strong TGChatSettingsController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        TGAppDelegateInstance.autoDownloadPreferences = [TGAutoDownloadPreferences defaultPreferences];
-        strongSelf->_autoDownloadEnabledItem.isOn = true;
-        strongSelf->_autoDownloadPhotosItem.enabled = true;
-        strongSelf->_autoDownloadVideosItem.enabled = true;
-        strongSelf->_autoDownloadDocumentsItem.enabled = true;
-        strongSelf->_autoDownloadVoiceMessagesItem.enabled = true;
-        strongSelf->_autoDownloadVideoMessagesItem.enabled = true;
-        strongSelf->_autoDownloadResetItem.enabled = false;
-    }];
-    TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-    {
-        __strong TGMenuSheetController *strongController = weakController;
-        if (strongController != nil)
-            [strongController dismissAnimated:true];
-    }];
-    
-    [controller setItemViews:@[titleItem, resetItem, cancelItem]];
-    [controller presentInViewController:self sourceView:self.view animated:true];
+        if (strongSelf != nil && [action isEqualToString:@"reset"])
+        {
+            TGAppDelegateInstance.autoDownloadPreferences = [TGAutoDownloadPreferences defaultPreferences];
+            strongSelf->_autoDownloadEnabledItem.isOn = true;
+            strongSelf->_autoDownloadPhotosItem.enabled = true;
+            strongSelf->_autoDownloadVideosItem.enabled = true;
+            strongSelf->_autoDownloadDocumentsItem.enabled = true;
+            strongSelf->_autoDownloadVoiceMessagesItem.enabled = true;
+            strongSelf->_autoDownloadVideoMessagesItem.enabled = true;
+            strongSelf->_autoDownloadResetItem.enabled = false;
+        }
+    } target:self] showInView:self.view];
 }
 
 - (void)updateAutoDownloadReset {
@@ -387,40 +371,27 @@
 }
 
 - (void)useProxyPressed {
-    TGProxySetupController *controller = [[TGProxySetupController alloc] initWithCurrentSettings];
+    TGProxySetupController *controller = [[TGProxySetupController alloc] init];
     __weak TGChatSettingsController *weakSelf = self;
     controller.completion = ^(MTSocksProxySettings *updatedSettings, bool inactive) {
         __strong TGChatSettingsController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            NSData *data = nil;
-            if (updatedSettings != nil) {
-                NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                if (updatedSettings.ip != nil && updatedSettings.port != 0) {
-                    dict[@"ip"] = updatedSettings.ip;
-                    dict[@"port"] = @(updatedSettings.port);
-                }
-                if (updatedSettings.username.length != 0) {
-                    dict[@"username"] = updatedSettings.username;
-                }
-                if (updatedSettings.password.length != 0) {
-                    dict[@"password"] = updatedSettings.password;
-                }
-                dict[@"inactive"] = @(inactive);
-                data = [NSKeyedArchiver archivedDataWithRootObject:dict];
-            } else {
-                data = [NSData data];
-            }
-            [TGDatabaseInstance() setCustomProperty:@"socksProxyData" value:data];
             strongSelf->_proxySettings = inactive ? nil : updatedSettings;
-            strongSelf->_useProxyItem.variant = (!inactive && updatedSettings != nil) ? TGLocalized(@"ChatSettings.ConnectionType.UseSocks5") : TGLocalized(@"GroupInfo.SharedMediaNone");
             
-            [[[TGTelegramNetworking instance] context] updateApiEnvironment:^MTApiEnvironment *(MTApiEnvironment *apiEnvironment) {
-                return [apiEnvironment withUpdatedSocksProxySettings:inactive ? nil : updatedSettings];
-            }];
+            NSString *proxyType = TGLocalized(@"GroupInfo.SharedMediaNone");
+            if (strongSelf->_proxySettings != nil)
+            {
+                if (_proxySettings.secret != nil)
+                    proxyType = TGLocalized(@"SocksProxySetup.ProxyTelegram");
+                else
+                    proxyType = TGLocalized(@"SocksProxySetup.ProxySocks5");
+            }
+            
+            strongSelf->_useProxyItem.variant = proxyType;
         }
     };
-    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
-    [self presentViewController:navigationController animated:true completion:nil];
+    
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 @end

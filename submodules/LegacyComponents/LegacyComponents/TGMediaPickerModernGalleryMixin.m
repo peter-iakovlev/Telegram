@@ -37,17 +37,17 @@
 
 @implementation TGMediaPickerModernGalleryMixin
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions hasTimer:(bool)hasTimer inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit recipientName:(NSString *)recipientName
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions allowCaptionEntities:(bool)allowCaptionEntities hasTimer:(bool)hasTimer onlyCrop:(bool)onlyCrop inhibitDocumentCaptions:(bool)inhibitDocumentCaptions inhibitMute:(bool)inhibitMute asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit recipientName:(NSString *)recipientName
 {
-    return [self initWithContext:context item:item fetchResult:fetchResult momentList:nil parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions hasTimer:hasTimer inhibitDocumentCaptions:inhibitDocumentCaptions asFile:asFile itemsLimit:itemsLimit recipientName:recipientName];
+    return [self initWithContext:context item:item fetchResult:fetchResult momentList:nil parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions allowCaptionEntities:allowCaptionEntities hasTimer:hasTimer onlyCrop:onlyCrop inhibitDocumentCaptions:inhibitDocumentCaptions inhibitMute:inhibitMute asFile:asFile itemsLimit:itemsLimit recipientName:recipientName];
 }
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions hasTimer:(bool)hasTimer inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions allowCaptionEntities:(bool)allowCaptionEntities hasTimer:(bool)hasTimer onlyCrop:(bool)onlyCrop inhibitDocumentCaptions:(bool)inhibitDocumentCaptions inhibitMute:(bool)inhibitMute asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit
 {
-    return [self initWithContext:context item:item fetchResult:nil momentList:momentList parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions hasTimer:hasTimer inhibitDocumentCaptions:inhibitDocumentCaptions asFile:asFile itemsLimit:itemsLimit recipientName:nil];
+    return [self initWithContext:context item:item fetchResult:nil momentList:momentList parentController:parentController thumbnailImage:thumbnailImage selectionContext:selectionContext editingContext:editingContext suggestionContext:suggestionContext hasCaptions:hasCaptions allowCaptionEntities:allowCaptionEntities hasTimer:hasTimer onlyCrop:onlyCrop inhibitDocumentCaptions:inhibitDocumentCaptions inhibitMute:inhibitMute asFile:asFile itemsLimit:itemsLimit recipientName:nil];
 }
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions hasTimer:(bool)hasTimer inhibitDocumentCaptions:(bool)inhibitDocumentCaptions asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit recipientName:(NSString *)recipientName
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context item:(id)item fetchResult:(TGMediaAssetFetchResult *)fetchResult momentList:(TGMediaAssetMomentList *)momentList parentController:(TGViewController *)parentController thumbnailImage:(UIImage *)thumbnailImage selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext suggestionContext:(TGSuggestionContext *)suggestionContext hasCaptions:(bool)hasCaptions allowCaptionEntities:(bool)allowCaptionEntities hasTimer:(bool)hasTimer onlyCrop:(bool)onlyCrop inhibitDocumentCaptions:(bool)inhibitDocumentCaptions inhibitMute:(bool)inhibitMute asFile:(bool)asFile itemsLimit:(NSUInteger)itemsLimit recipientName:(NSString *)recipientName
 {
     self = [super init];
     if (self != nil)
@@ -79,8 +79,9 @@
         
         NSArray *galleryItems = fetchResult != nil ? [self prepareGalleryItemsForFetchResult:fetchResult selectionContext:selectionContext editingContext:editingContext asFile:asFile enumerationBlock:enumerationBlock] : [self prepareGalleryItemsForMomentList:momentList selectionContext:selectionContext editingContext:editingContext asFile:asFile enumerationBlock:enumerationBlock];
         
-        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:[_windowManager context] items:galleryItems focusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasCaptions:hasCaptions hasTimer:hasTimer inhibitDocumentCaptions:inhibitDocumentCaptions hasSelectionPanel:true recipientName:recipientName];
+        TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:[_windowManager context] items:galleryItems focusItem:focusItem selectionContext:selectionContext editingContext:editingContext hasCaptions:hasCaptions allowCaptionEntities:allowCaptionEntities hasTimer:hasTimer onlyCrop:onlyCrop inhibitDocumentCaptions:inhibitDocumentCaptions hasSelectionPanel:true hasCamera:false recipientName:recipientName];
         _galleryModel = model;
+        model.inhibitMute = inhibitMute;
         model.controller = modernGallery;
         model.suggestionContext = suggestionContext;
         model.willFinishEditingItem = ^(id<TGMediaEditableItem> editableItem, id<TGMediaEditAdjustments> adjustments, id representation, bool hasChanges)
@@ -109,9 +110,9 @@
             [editingContext setFullSizeImage:resultImage forItem:editableItem];
         };
         
-        model.saveItemCaption = ^(id<TGMediaEditableItem> editableItem, NSString *caption)
+        model.saveItemCaption = ^(id<TGMediaEditableItem> editableItem, NSString *caption, NSArray *entities)
         {
-            [editingContext setCaption:caption forItem:editableItem];
+            [editingContext setCaption:caption entities:entities forItem:editableItem];
             
             if (selectionContext != nil && caption.length > 0 && [editableItem conformsToProtocol:@protocol(TGMediaSelectableItem)])
                 [selectionContext setItem:(id<TGMediaSelectableItem>)editableItem selected:true];
@@ -262,39 +263,33 @@
     {
         TGMediaAsset *asset = [fetchResult assetAtIndex:i];
         
-        TGMediaPickerGalleryItem *galleryItem = nil;
+        TGMediaPickerGalleryItem<TGModernGallerySelectableItem, TGModernGalleryEditableItem> *galleryItem = nil;
         switch (asset.type)
         {
             case TGMediaAssetVideoType:
             {
-                TGMediaPickerGalleryVideoItem *videoItem = [[TGMediaPickerGalleryVideoItem alloc] initWithAsset:asset];
-                videoItem.selectionContext = selectionContext;
-                videoItem.editingContext = editingContext;
-                
-                galleryItem = videoItem;
+                galleryItem = [[TGMediaPickerGalleryVideoItem alloc] initWithAsset:asset];
             }
                 break;
                 
             case TGMediaAssetGifType:
             {
-                TGMediaPickerGalleryGifItem *gifItem = [[TGMediaPickerGalleryGifItem alloc] initWithAsset:asset];
-                gifItem.selectionContext = selectionContext;
-                gifItem.editingContext = editingContext;
-                
-                galleryItem = gifItem;
+                galleryItem = [[TGMediaPickerGalleryGifItem alloc] initWithAsset:asset];
             }
                 break;
                 
             default:
             {
-                TGMediaPickerGalleryPhotoItem *photoItem = [[TGMediaPickerGalleryPhotoItem alloc] initWithAsset:asset];
-                photoItem.selectionContext = selectionContext;
-                photoItem.editingContext = editingContext;
-                
-                galleryItem = photoItem;
+                if (false && asset.subtypes & TGMediaAssetSubtypePhotoLive)
+                    galleryItem = [[TGMediaPickerGalleryVideoItem alloc] initWithAsset:asset];
+                else
+                    galleryItem = [[TGMediaPickerGalleryPhotoItem alloc] initWithAsset:asset];
             }
                 break;
         }
+        
+        galleryItem.selectionContext = selectionContext;
+        galleryItem.editingContext = editingContext;
         
         if (enumerationBlock != nil)
             enumerationBlock(galleryItem);

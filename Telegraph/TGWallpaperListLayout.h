@@ -8,6 +8,10 @@
 
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGWallpaperListLayout : UICollectionViewFlowLayout
+
+@property (nonatomic, strong ) TGPresentation *presentation;
 
 @end

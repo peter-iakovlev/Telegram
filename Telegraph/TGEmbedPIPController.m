@@ -336,7 +336,7 @@ void freedomPIPInit();
     }
     else
     {
-        [[TGInterfaceManager instance] navigateToConversationWithId:_location.peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(_location.messageId), @"openMedia": @true, @"embed": @(_location.embed), @"cancelPIP": @true, @"pipLocation": _location } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+        [[TGInterfaceManager instance] navigateToConversationWithId:_location.conversationId conversation:nil performActions:nil atMessage:@{ @"mid": @(_location.messageId), @"openMedia": @true, @"embed": @(_location.embed), @"cancelPIP": @true, @"pipLocation": _location } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
     }
 }
 
@@ -787,7 +787,7 @@ static TGEmbedPIPCorner defaultCorner = TGEmbedPIPCornerTopRight;
 
 + (void)startPictureInPictureWithPlayerView:(UIView<TGPIPAblePlayerView> *)playerView location:(TGPIPSourceLocation *)location corner:(TGEmbedPIPCorner)corner onTransitionBegin:(void (^)(void))onTransitionBegin onTransitionFinished:(void (^)(void))onTransitionFinished
 {
-    if (location == nil || location.peerId == 0)
+    if (location == nil || location.conversationId == 0)
         return;
     
     if (activePIPController != nil && (activePIPController->_closing || [activePIPController->_location isEqual:location]))
@@ -1010,7 +1010,7 @@ static MPVolumeView *volumeOverlayFixView;
     {
         pipCompletion = [completion copy];
      
-        [[TGInterfaceManager instance] navigateToConversationWithId:pipLocation.peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(pipLocation.messageId), @"openMedia": @true, @"embed": @(pipLocation.embed), @"cancelPIP": @true, @"pipLocation": pipLocation } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+        [[TGInterfaceManager instance] navigateToConversationWithId:pipLocation.conversationId conversation:nil performActions:nil atMessage:@{ @"mid": @(pipLocation.messageId), @"openMedia": @true, @"embed": @(pipLocation.embed), @"cancelPIP": @true, @"pipLocation": pipLocation } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
     }
 }
 
@@ -1153,13 +1153,13 @@ void freedomPIPInit()
 
 @implementation TGPIPSourceLocation
 
-- (instancetype)initWithEmbed:(bool)embed peerId:(int64_t)peerId messageId:(int32_t)messageId localId:(int32_t)localId webPage:(TGWebPageMediaAttachment *)webPage
+- (instancetype)initWithEmbed:(bool)embed conversationId:(int64_t)conversationId messageId:(int32_t)messageId localId:(int32_t)localId webPage:(TGWebPageMediaAttachment *)webPage
 {
     self = [super init];
     if (self != nil)
     {
         _embed = embed;
-        _peerId = peerId;
+        _conversationId = conversationId;
         _messageId = messageId;
         _localId = localId;
         _webPage = webPage;
@@ -1176,7 +1176,7 @@ void freedomPIPInit()
         return false;
     
     TGPIPSourceLocation *location = (TGPIPSourceLocation *)object;
-    return _embed == location.embed && _peerId == location.peerId && _messageId == location.messageId && _localId == location.localId;
+    return _embed == location.embed && _conversationId == location.conversationId && _messageId == location.messageId && _localId == location.localId;
 }
 
 @end

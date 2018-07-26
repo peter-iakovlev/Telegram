@@ -1,8 +1,9 @@
 #import "TGPhonebookUserInfoController.h"
 
 #import <LegacyComponents/LegacyComponents.h>
-
 #import <LegacyComponents/ActionStage.h>
+
+#import <MessageUI/MessageUI.h>
 
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
@@ -11,13 +12,16 @@
 #import "TGUserInfoPhoneCollectionItem.h"
 #import "TGUserInfoButtonCollectionItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
-#import <MessageUI/MessageUI.h>
+#import "TGPresentation.h"
+
+#import "TGContactsController.h"
 
 @interface TGPhonebookUserInfoController () <MFMessageComposeViewControllerDelegate>
 {
     TGPhonebookContact *_phonebookInfo;
+    TGUserInfoButtonCollectionItem *_inviteItem;
 }
 
 @end
@@ -44,7 +48,7 @@
             
             for (TGPhoneNumber *phoneNumber in _phonebookInfo.phoneNumbers)
             {
-                TGUserInfoPhoneCollectionItem *phoneItem = [[TGUserInfoPhoneCollectionItem alloc] initWithLabel:phoneNumber.label phone:phoneNumber.number phoneColor:[UIColor blackColor] action:@selector(phonePressed:)];
+                TGUserInfoPhoneCollectionItem *phoneItem = [[TGUserInfoPhoneCollectionItem alloc] initWithLabel:phoneNumber.label phone:phoneNumber.number phoneColor:self.presentation.pallete.collectionMenuAccentColor action:@selector(phonePressed:)];
                 
                 if (phonesSectionIndex != NSNotFound)
                     [self.menuSections insertItem:phoneItem toSection:phonesSectionIndex atIndex:self.phonesSection.items.count];
@@ -54,15 +58,22 @@
             {
                 NSUInteger actionsSectionIndex = [self indexForSection:self.actionsSection];
                 
-                TGUserInfoButtonCollectionItem *inviteItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.Invite") action:@selector(invitePressed)];
-                inviteItem.deselectAutomatically = true;
-                inviteItem.titleColor = UIColorRGB(0x12b200);
+                _inviteItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"UserInfo.Invite") action:@selector(invitePressed)];
+                _inviteItem.deselectAutomatically = true;
+                _inviteItem.titleColor = self.presentation.pallete.dialogEncryptedColor;
                 if (actionsSectionIndex != NSNotFound)
-                    [self.menuSections insertItem:inviteItem toSection:actionsSectionIndex atIndex:self.actionsSection.items.count];
+                    [self.menuSections insertItem:_inviteItem toSection:actionsSectionIndex atIndex:self.actionsSection.items.count];
             }
         }
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _inviteItem.titleColor = presentation.pallete.dialogEncryptedColor;
 }
 
 - (void)phonePressed:(id)__unused sender {
@@ -88,7 +99,7 @@
         
         [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
         
-        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGPhonebookUserInfoController *controller, NSString *action)
+        [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGPhonebookUserInfoController *controller, NSString *action)
         {
             if (![action isEqualToString:@"cancel"])
                 [controller _inviteWithPhoneNumber:action];
@@ -107,12 +118,7 @@
             messageComposer.recipients = [[NSArray alloc] initWithObjects:phoneNumber, nil];
             messageComposer.messageComposeDelegate = self;
             
-            NSString *body = [[NSUserDefaults standardUserDefaults] objectForKey:@"TG_inviteText"];
-            if (body.length == 0)
-            {
-                body = @"Hey, let's switch to Telegram http://telegram.org/dl";
-            }
-            
+            NSString *body = [NSString stringWithFormat:TGLocalized(@"InviteText.SingleContact"), [TGContactsController downloadLink]];
             messageComposer.body = body;
             
             [self presentViewController:messageComposer animated:true completion:nil];

@@ -16,7 +16,7 @@
 #include "logging.h"
 #include "VoIPServerConfig.h"
 #include "VoIPController.h"
-#include "BufferInputStream.h"
+#include "Buffers.h"
 
 #define MIN_UDP_PORT 16384
 #define MAX_UDP_PORT 32768
@@ -110,7 +110,7 @@ void NetworkSocket::EncryptForTCPO2(unsigned char *buffer, size_t len, TCPO2Stat
 }
 
 size_t NetworkSocket::Receive(unsigned char *buffer, size_t len){
-	NetworkPacket pkt;
+	NetworkPacket pkt={0};
 	pkt.data=buffer;
 	pkt.length=len;
 	Receive(&pkt);
@@ -118,7 +118,7 @@ size_t NetworkSocket::Receive(unsigned char *buffer, size_t len){
 }
 
 size_t NetworkSocket::Send(unsigned char *buffer, size_t len){
-	NetworkPacket pkt;
+	NetworkPacket pkt={0};
 	pkt.data=buffer;
 	pkt.length=len;
 	Send(&pkt);
@@ -180,6 +180,10 @@ uint32_t IPv4Address::GetAddress(){
 	return address;
 }
 
+bool IPv4Address::IsEmpty(){
+	return address==0;
+}
+
 IPv6Address::IPv6Address(std::string addr){
 #ifndef _WIN32
 	NetworkSocketPosix::StringToV6Address(addr, this->address);
@@ -188,7 +192,7 @@ IPv6Address::IPv6Address(std::string addr){
 #endif
 }
 
-IPv6Address::IPv6Address(uint8_t addr[16]){
+IPv6Address::IPv6Address(const uint8_t* addr){
 	memcpy(address, addr, 16);
 }
 
@@ -197,7 +201,16 @@ IPv6Address::IPv6Address(){
 }
 
 std::string IPv6Address::ToString(){
-	return "";
+#ifndef _WIN32
+	return NetworkSocketPosix::V6AddressToString(address);
+#else
+	return NetworkSocketWinsock::V6AddressToString(address);
+#endif
+}
+
+bool IPv6Address::IsEmpty(){
+	uint64_t* a=reinterpret_cast<uint64_t*>(address);
+	return a[0]==0LL && a[1]==0LL;
 }
 
 /*sockaddr &IPv6Address::ToSockAddr(uint16_t port){
@@ -361,7 +374,7 @@ void NetworkSocketSOCKS5Proxy::Send(NetworkPacket *packet){
 		}
 		out.WriteInt16(htons(packet->port));
 		out.WriteBytes(packet->data, packet->length);
-		NetworkPacket p;
+		NetworkPacket p={0};
 		p.data=buf;
 		p.length=out.GetLength();
 		p.address=connectedAddress;
@@ -376,7 +389,7 @@ void NetworkSocketSOCKS5Proxy::Receive(NetworkPacket *packet){
 		tcp->Receive(packet);
 	}else if(protocol==PROTO_UDP){
 		unsigned char buf[1500];
-		NetworkPacket p;
+		NetworkPacket p={0};
 		p.data=buf;
 		p.length=sizeof(buf);
 		udp->Receive(&p);
@@ -587,6 +600,7 @@ void NetworkSocketSOCKS5Proxy::InitConnection(){
 			failed=true;
 			return;
 		}
+		LOGV("socks5: authentication succeeded");
 	}else{
 		LOGW("socks5: unsupported auth method");
 		failed=true;

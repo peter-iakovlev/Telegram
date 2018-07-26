@@ -3,10 +3,14 @@
 #import "LegacyComponentsInternal.h"
 #import "TGFont.h"
 
+#import "TGMenuSheetController.h"
+
 @interface TGMenuSheetTitleItemView ()
 {
     UILabel *_titleLabel;
     UILabel *_subtitleLabel;
+    
+    bool _solidSubtitle;
 }
 @end
 
@@ -14,9 +18,16 @@
 
 - (instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle
 {
+    return [self initWithTitle:title subtitle:subtitle solidSubtitle:false];
+}
+
+- (instancetype)initWithTitle:(NSString *)title subtitle:(NSString *)subtitle solidSubtitle:(bool)solidSubtitle
+{
     self = [super initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
     {
+        _solidSubtitle = solidSubtitle;
+        
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor whiteColor];
         _titleLabel.font = TGMediumSystemFontOfSize(13);
@@ -48,6 +59,15 @@
     
     if (iosMajorVersion() >= 11)
         self.accessibilityIgnoresInvertColors = true;
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _titleLabel.backgroundColor = [UIColor clearColor];
+    _titleLabel.textColor = pallete.textColor;
+    
+    _subtitleLabel.backgroundColor = [UIColor clearColor];
+    _subtitleLabel.textColor = _solidSubtitle ? pallete.textColor : pallete.secondaryTextColor;
 }
 
 - (CGFloat)preferredHeightForWidth:(CGFloat)width screenHeight:(CGFloat)__unused screenHeight

@@ -133,7 +133,7 @@ static TGVideoMessagePIPCorner defaultCorner = TGVideoMessagePIPCornerTopRight;
     if (status != nil)
     {
         bool changed = true;
-        if (_currentItem.peerId == status.item.peerId && [_currentItem.key isEqual:status.item.key])
+        if (_currentItem.conversationId == status.item.conversationId && [_currentItem.key isEqual:status.item.key])
             changed = false;
         
         if (changed)
@@ -152,7 +152,7 @@ static TGVideoMessagePIPCorner defaultCorner = TGVideoMessagePIPCornerTopRight;
             {
                 int32_t messageId = [(NSNumber *)item.key int32Value];
                 __weak TGVideoMessagePIPController *weakSelf = self;
-                [_messageDisposable setDisposable:[self.messageVisibilitySignal(status.item.peerId, messageId) startWithNext:^(NSNumber *next)
+                [_messageDisposable setDisposable:[self.messageVisibilitySignal(item.conversationId, messageId, item.peerId) startWithNext:^(NSNumber *next)
                 {
                     __strong TGVideoMessagePIPController *strongSelf = weakSelf;
                     if (strongSelf == nil)
@@ -188,7 +188,7 @@ static TGVideoMessagePIPCorner defaultCorner = TGVideoMessagePIPCornerTopRight;
  
     TGMusicPlayerItem *item = status.item;
     bool isSwitch = false;
-    if (_visible && (_pipView.item.peerId != item.peerId || ![_pipView.item.key isEqual:item.key]))
+    if (_visible && (_pipView.item.conversationId != item.conversationId || ![_pipView.item.key isEqual:item.key]))
         isSwitch = true;
     
     bool wasHidden = !_visible;
@@ -579,7 +579,7 @@ static TGVideoMessagePIPCorner defaultCorner = TGVideoMessagePIPCornerTopRight;
     if (player == nil)
         return nil;
     
-    NSString *key = [NSString stringWithFormat:@"%lld_%@", item.peerId, item.key];
+    NSString *key = [NSString stringWithFormat:@"%lld_%@", item.conversationId, item.key];
     TGModernGalleryVideoView *videoView = [[self videoViews] objectForKey:key];
     if (videoView.player != player)
     {

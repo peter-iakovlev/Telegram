@@ -10,6 +10,7 @@
 
 @property (nonatomic, strong, readonly) id<NSObject, NSCopying> key;
 @property (nonatomic, strong, readonly) id media;
+@property (nonatomic, readonly) int64_t conversationId;
 @property (nonatomic, readonly) int64_t peerId;
 @property (nonatomic, strong, readonly) TGUser *author;
 @property (nonatomic, readonly) int32_t date;

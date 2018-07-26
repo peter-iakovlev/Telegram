@@ -53,7 +53,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x446c712c;
+    return (int32_t)0x1389cc;
 }
 
 - (int32_t)TLconstructorName
@@ -66,11 +66,8 @@
     TLRPCaccount_registerDevice$account_registerDevice *object = [[TLRPCaccount_registerDevice$account_registerDevice alloc] init];
     object.token_type = metaObject->getInt32((int32_t)0xb5f2fc25);
     object.token = metaObject->getString((int32_t)0x1e8aa3f5);
-    object.device_model = metaObject->getString((int32_t)0x7baba117);
-    object.system_version = metaObject->getString((int32_t)0x18665337);
-    object.app_version = metaObject->getString((int32_t)0xe92d4c10);
     object.app_sandbox = metaObject->getBool((int32_t)0xee0a6d3);
-    object.lang_code = metaObject->getString((int32_t)0x2ccfcaf3);
+    object.other_uids = metaObject->getArray((int32_t)0xec1da239);
     return object;
 }
 
@@ -90,33 +87,15 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.device_model;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7baba117, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.system_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18665337, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.app_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe92d4c10, value));
-    }
-    {
-        TLConstructedValue value;
         value.type = TLConstructedValueTypePrimitiveBool;
         value.primitive.boolValue = self.app_sandbox;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xee0a6d3, value));
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.lang_code;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x2ccfcaf3, value));
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.other_uids;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xec1da239, value));
     }
 }
 

@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGTextField.h>
 
+#import "TGPresentation.h"
+
 @interface TGPasswordInputItemView () <UITextFieldDelegate>
 {
     TGTextField *_textField;
@@ -37,6 +39,15 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _textField.textColor = presentation.pallete.collectionMenuTextColor;
+    _textField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+}
+
 - (void)setPlaceholder:(NSString *)placeholder
 {
     _textField.placeholder = placeholder;
@@ -51,7 +62,7 @@
 {
     [super layoutSubviews];
     
-    _textField.frame = CGRectMake(0.0f, 4.0f, self.contentView.frame.size.width, self.contentView.frame.size.height - 8);
+    _textField.frame = CGRectMake(self.safeAreaInset.left, 4.0f, self.contentView.frame.size.width - self.safeAreaInset.left - self.safeAreaInset.right, self.contentView.frame.size.height - 8);
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string

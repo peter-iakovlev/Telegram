@@ -34,7 +34,7 @@
 
 @end
 
-@implementation TLInputSingleMedia$inputSingleMedia : TLInputSingleMedia
+@implementation TLInputSingleMedia$inputSingleMediaMeta : TLInputSingleMedia
 
 
 - (int32_t)TLconstructorSignature
@@ -49,7 +49,7 @@
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
-    TLInputSingleMedia$inputSingleMedia *object = [[TLInputSingleMedia$inputSingleMedia alloc] init];
+    TLInputSingleMedia$inputSingleMediaMeta *object = [[TLInputSingleMedia$inputSingleMediaMeta alloc] init];
     object.media = metaObject->getObject((int32_t)0x598de2e7);
     object.random_id = metaObject->getInt64((int32_t)0xca5a160a);
     return object;

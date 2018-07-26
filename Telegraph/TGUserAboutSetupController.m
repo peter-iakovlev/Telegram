@@ -8,7 +8,7 @@
 #import "TGCommentCollectionItem.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGDatabase.h"
 
@@ -117,7 +117,7 @@
     [_updateAboutDisposable setDisposable:[[[[TGAccountSignals updateAbout:text] deliverOn:[SQueue mainQueue]] onDispose:^{
         [progressWindow dismiss:true];
     }] startWithNext:nil error:^(__unused id error) {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     } completed:^{
         __strong TGUserAboutSetupController *strongSelf = weakSelf;
         if (strongSelf != nil) {

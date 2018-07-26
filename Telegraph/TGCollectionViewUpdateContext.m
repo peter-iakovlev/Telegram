@@ -3,9 +3,10 @@
 typedef enum {
     TGCollectionViewUpdateContextUpdateInsertSection = 0,
     TGCollectionViewUpdateContextUpdateDeleteSection = 1,
-    TGCollectionViewUpdateContextUpdateInsertItem = 2,
-    TGCollectionViewUpdateContextUpdateDeleteItem = 3,
-    TGCollectionViewUpdateContextUpdateReplaceItem = 4
+    TGCollectionViewUpdateContextUpdateReplaceSection = 2,
+    TGCollectionViewUpdateContextUpdateInsertItem = 3,
+    TGCollectionViewUpdateContextUpdateDeleteItem = 4,
+    TGCollectionViewUpdateContextUpdateReplaceItem = 5
 } TGCollectionViewUpdateContextUpdateType;
 
 typedef struct
@@ -46,6 +47,12 @@ typedef struct
     [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
 }
 
+- (void)replaceSectionAtIndex:(NSUInteger)index
+{
+    TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateReplaceSection, .section = (int)index, .index = 0};
+    [_updates addObject:[NSValue valueWithBytes:&update objCType:@encode(TGCollectionViewUpdateContextUpdate)]];
+}
+
 - (void)insertItemAtIndex:(NSUInteger)index inSection:(NSUInteger)section
 {
     TGCollectionViewUpdateContextUpdate update = {.type = TGCollectionViewUpdateContextUpdateInsertItem, .section = (int)section, .index = (int)index};
@@ -78,6 +85,9 @@ typedef struct
                 break;
             case TGCollectionViewUpdateContextUpdateDeleteSection:
                 [collectionView deleteSections:[NSIndexSet indexSetWithIndex:update.section]];
+                break;
+            case TGCollectionViewUpdateContextUpdateReplaceSection:
+                [collectionView reloadSections:[NSIndexSet indexSetWithIndex:update.section]];
                 break;
             case TGCollectionViewUpdateContextUpdateInsertItem:
                 [collectionView insertItemsAtIndexPaths:@[[NSIndexPath indexPathForItem:update.index inSection:update.section]]];

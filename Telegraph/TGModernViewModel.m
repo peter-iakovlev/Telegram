@@ -117,7 +117,12 @@
         if (!_modelFlags.hasNoView)
         {
             [container addSubview:_view];
-        
+            
+            if (isnan(_frame.origin.x))
+                _frame.origin.x = 0;
+            if (isnan(_frame.origin.y))
+                _frame.origin.y = 0;
+            
             [_view setFrame:CGRectOffset(_frame, _parentOffset.x, _parentOffset.y)];
             [_view setAlpha:_alpha];
             [_view setHidden:_hidden];

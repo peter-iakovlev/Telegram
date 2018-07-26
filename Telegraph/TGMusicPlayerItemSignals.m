@@ -152,14 +152,14 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
             if (documentAttachment.documentId != 0 || documentAttachment.documentUri.length != 0)
             {
                 id mediaId = [[TGMediaId alloc] initWithType:3 itemId:documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId];
-                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassDocument];
+                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item conversationId] itemClass:TGDownloadItemClassDocument];
             }
         } else if ([_item.media isKindOfClass:[TGAudioMediaAttachment class]]) {
             TGAudioMediaAttachment *audio = _item.media;
             if (audio.audioId != 0 || audio.audioUri.length != 0) {
                 id mediaId = [[TGMediaId alloc] initWithType:4 itemId:audio.audioId != 0 ? audio.audioId : audio.localAudioId];
                 
-                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audio.datacenterId, audio.audioId, audio.audioUri.length != 0 ? audio.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audio, @"audioAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId] itemClass:TGDownloadItemClassAudio];
+                [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audio.datacenterId, audio.audioId, audio.audioUri.length != 0 ? audio.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audio, @"audioAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item conversationId] itemClass:TGDownloadItemClassAudio];
             }
         } else if ([_item.media isKindOfClass:[TGVideoMediaAttachment class]]) {
             TGVideoMediaAttachment *video = _item.media;
@@ -169,7 +169,7 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
                 NSString *videoUri = [video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL];
                 if (videoUri != nil)
                 {
-                    [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/as/media/video/(%@)", videoUri] options:[[NSDictionary alloc] initWithObjectsAndKeys:video, @"videoAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item peerId]  itemClass:TGDownloadItemClassVideo];
+                    [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/as/media/video/(%@)", videoUri] options:[[NSDictionary alloc] initWithObjectsAndKeys:video, @"videoAttachment", nil] changePriority:priority messageId:[(NSNumber *)_item.key intValue] itemId:mediaId groupId:[_item conversationId]  itemClass:TGDownloadItemClassVideo];
                 }
             }
         }

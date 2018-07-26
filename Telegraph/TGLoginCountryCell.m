@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGLoginCountryCell ()
 
 @property (nonatomic, strong) UILabel *titleLabel;
@@ -41,6 +43,16 @@
         [self setUseIndex:false];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    _titleLabel.backgroundColor = self.backgroundColor;
+    _titleLabel.textColor = presentation.pallete.textColor;
+    _codeLabel.textColor = presentation.pallete.textColor;
+    _codeLabel.backgroundColor = self.backgroundColor;
 }
 
 - (void)setTitle:(NSString *)title

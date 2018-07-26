@@ -131,6 +131,32 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
     [_searchDisposable dispose];
 }
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _separator.backgroundColor = pallete.backgroundColor;
+    _fadeView.backgroundColor = [pallete.backgroundColor colorWithAlphaComponent:0.8f];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    for (UICollectionViewCell *cell in _collectionView.visibleCells)
+    {
+        if ([cell isKindOfClass:[TGShareCollectionRecentPeersCell class]])
+        {
+            ((TGShareCollectionRecentPeersCell *)cell).presentation = self.presentation;
+            
+        }
+        else if ([cell isKindOfClass:[TGShareCollectionItemView class]])
+        {
+            ((TGShareCollectionItemView *)cell).presentation = self.presentation;
+        }
+    }
+}
+
 - (void)menuView:(TGMenuSheetView *)__unused menuView willAppearAnimated:(bool)__unused animated
 {
     _appearanceTime = CFAbsoluteTimeGetCurrent();
@@ -407,7 +433,6 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
                 [searchResultsSections addObject:@{@"title": TGLocalized(@"DialogList.SearchSectionRecent"), @"items": genericResuts, @"type": @"recent"}];
             }
         }
-
         
         strongSelf->_recentSearchPeers = searchResultsSections;
         strongSelf->_searchPeers = searchResultsSections;
@@ -541,7 +566,6 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
         return true;
     
     CGFloat currentHeight = _collapsedHeight + _expandOffset;
-    
     CGFloat bottomContentOffset = (_collectionView.contentSize.height - _collectionView.frame.size.height);
     
     bool atTop = (_collectionView.contentOffset.y < FLT_EPSILON);
@@ -595,7 +619,7 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
     if ([[peersSection[@"items"] firstObject] isKindOfClass:[TGDialogListRecentPeers class]])
     {
         TGShareCollectionRecentPeersCell *cell = (TGShareCollectionRecentPeersCell *)[collectionView dequeueReusableCellWithReuseIdentifier:TGShareCollectionRecentPeersCellIdentifier forIndexPath:indexPath];
-        
+        cell.presentation = self.presentation;
         [cell setRecentPeers:[peersSection[@"items"] firstObject]];
         
         __weak TGShareCollectionItemView *weakSelf = self;
@@ -634,7 +658,7 @@ const CGFloat TGShareCollectionRegularSizeClassHeight = 360.0f;
     else
     {
         TGShareCollectionCell *cell = (TGShareCollectionCell *)[collectionView dequeueReusableCellWithReuseIdentifier:TGShareCollectionCellIdentifier forIndexPath:indexPath];
-        
+        cell.presentation = self.presentation;
         id peer = (_searchPeers != nil) ? peersSection[@"items"][indexPath.row] : [self currentPeers][indexPath.row];
         int64_t peerId = [TGShareCollectionItemView _peerIdForPeer:peer];
         [cell setPeer:peer];

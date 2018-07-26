@@ -16,11 +16,13 @@
 #import <LegacyComponents/TGPasscodeEntryController.h>
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGTelegramNetworking.h"
 
 #import "TGLegacyComponentsContext.h"
+
+#import "TGPresentation.h"
 
 @interface TGPasscodeSettingsController ()
 {
@@ -67,17 +69,17 @@
         
         _turnPasscodeOnItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.TurnPasscodeOn") action:@selector(turnPasscodeOnPressed)];
         _turnPasscodeOnItem.deselectAutomatically = true;
-        _turnPasscodeOnItem.titleColor = TGAccentColor();
+        _turnPasscodeOnItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
         _turnPasscodeOnItem.alignment = NSTextAlignmentCenter;
         
         _turnPasscodeOffItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.TurnPasscodeOff") action:@selector(turnPasscodeOffPressed)];
         _turnPasscodeOffItem.deselectAutomatically = true;
-        _turnPasscodeOffItem.titleColor = TGAccentColor();
+        _turnPasscodeOffItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
         _turnPasscodeOffItem.alignment = NSTextAlignmentLeft;
 
         _changePasscodeItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.ChangePasscode") action:@selector(changePasscodePressed)];
         _changePasscodeItem.deselectAutomatically = true;
-        _changePasscodeItem.titleColor = TGAccentColor();
+        _changePasscodeItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
         _changePasscodeItem.alignment = NSTextAlignmentLeft;
         
         _timeoutIntervalItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PasscodeSettings.AutoLock") variant:@"" action:@selector(autoLockPressed)];
@@ -526,7 +528,7 @@
     
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"_cancel" type:TGActionSheetActionTypeCancel]];
     __weak TGPasscodeSettingsController *weakSelf = self;
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
     {
         if (![action isEqualToString:@"_cancel"])
         {

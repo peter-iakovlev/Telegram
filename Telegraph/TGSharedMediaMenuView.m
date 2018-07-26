@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaMenuView ()
 {
     UIView *_backgroundView;
@@ -31,13 +33,20 @@
         _backgroundView.backgroundColor = UIColorRGB(0xfafafa);
         [self addSubview:_backgroundView];
         
-        _highlightedItemCheckView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _highlightedItemCheckView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
         [_backgroundView addSubview:_highlightedItemCheckView];
         
         _dimView.hidden = true;
         _backgroundView.hidden = true;
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    _backgroundView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _highlightedItemCheckView.image = presentation.images.collectionMenuCheckImage;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
@@ -77,7 +86,7 @@
     for (__unused NSString *item in items)
     {
         UIView *separatorView = [[UIView alloc] init];
-        separatorView.backgroundColor = TGSeparatorColor();
+        separatorView.backgroundColor = self.presentation.pallete.barSeparatorColor;
         [_backgroundView addSubview:separatorView];
         [separatorViews addObject:separatorView];
     }
@@ -93,7 +102,7 @@
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
 
         button.backgroundSelectionInsets = UIEdgeInsetsMake(separatorHeight, 0.0f, 0.0f, 0.0f);
-        button.highlightBackgroundColor = TGSelectionColor();
+        button.highlightBackgroundColor = self.presentation.pallete.selectionColor;
         button.highlighted = false;
         [button addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
         
@@ -198,10 +207,10 @@
     {
         if (index == _selectedItemIndex)
         {
-            [button setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+            [button setTitleColor:self.presentation.pallete.navigationButtonColor forState:UIControlStateNormal];
         }
         else
-            [button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+            [button setTitleColor:self.presentation.pallete.navigationTitleColor forState:UIControlStateNormal];
         index++;
     }
     

@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGWallpaperItemsBackgroundDecorationView ()
 {
     UIView *_topSeparatorView;
@@ -37,6 +39,20 @@
     return self;
 }
 
+- (void)applyLayoutAttributes:(TGWallpaperItemsBackgroundDecorationAttributes *)layoutAttributes
+{
+    [super applyLayoutAttributes:layoutAttributes];
+    
+    [self setPresentation:layoutAttributes.presentation];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{    
+    self.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
+    _topSeparatorView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+    _bottomSeparatorView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
@@ -50,3 +66,9 @@
 }
 
 @end
+
+
+@implementation TGWallpaperItemsBackgroundDecorationAttributes
+
+@end
+

@@ -25,6 +25,7 @@
     int32_t _messageId;
     
     TGObserverProxy *_screenshotObserver;
+    TGObserverProxy *_inactiveObserver;
     NSString *_footerMessage;
 }
 
@@ -45,6 +46,7 @@
         {
             _screenshotObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(somethingChanged:) name:UIApplicationUserDidTakeScreenshotNotification];
         }
+        _inactiveObserver = [[TGObserverProxy alloc] initWithTarget:self targetSelector:@selector(somethingOtherChanged:) name:UIApplicationWillResignActiveNotification];
         
         _peerId = peerId;
         _messageId = messageId;
@@ -192,6 +194,12 @@
             }
         }
     } synchronous:false];
+}
+
+- (void)somethingOtherChanged:(id)__unused notification {
+    if (self.dismiss) {
+        self.dismiss(false, false);
+    }
 }
 
 @end

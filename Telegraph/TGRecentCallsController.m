@@ -122,14 +122,26 @@
     _presentation = presentation;
     
     self.view.backgroundColor = _presentation.pallete.backgroundColor;
+    _tableView.backgroundColor = self.view.backgroundColor;
     _tableView.separatorColor = _presentation.pallete.separatorColor;
     _placeholderLabel.textColor = _presentation.pallete.collectionMenuCommentColor;
+    
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlBackgroundImage forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlHighlightedImage forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setDividerImage:self.presentation.images.segmentedControlDividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_presentation.pallete.navigationButtonColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_presentation.pallete.accentContrastColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
     
     for (UITableViewCell *cell in _tableView.visibleCells)
     {
         if ([cell isKindOfClass:[TGCallCell class]])
             [(TGCallCell *)cell setPresentation:presentation];
     }
+    
+    [self updateBarButtonItemsAnimated:false];
 }
 
 - (void)loadView
@@ -142,12 +154,11 @@
     _segmentedControl = [[UISegmentedControl alloc] initWithItems:items];
     if (iosMajorVersion() >= 11)
         _segmentedControl.translatesAutoresizingMaskIntoConstraints = false;
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    UIImage *dividerImage = TGImageNamed(@"ModernSegmentedControlDivider.png");
-    [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlBackgroundImage forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:self.presentation.images.segmentedControlHighlightedImage forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setDividerImage:self.presentation.images.segmentedControlDividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
     
     CGFloat width = 0.0f;
     for (NSString *itemName in items)
@@ -161,8 +172,8 @@
     _segmentedControl.frame = CGRectMake((self.view.frame.size.width - width) / 2.0f, 8.0f, width, 29.0f);
     _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
     
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_presentation.pallete.navigationButtonColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_presentation.pallete.accentContrastColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
     
     [_segmentedControl setSelectedSegmentIndex:0];
     [_segmentedControl addTarget:self action:@selector(segmentedControlChanged) forControlEvents:UIControlEventValueChanged];
@@ -252,11 +263,16 @@
         }
     }
     
+    NSMutableArray *requests = [[NSMutableArray alloc] init];
+    for (NSNumber *peerId in peerIds) {
+        [requests addObject:[[TGReadPeerMessagesRequest alloc] initWithPeerId:peerId.int64Value maxMessageIndex:nil date:0 length:0 unread:false]];
+    }
+    
     if (peerIds.count > 0)
     {
         [TGDatabaseInstance() dispatchOnDatabaseThread:^
         {
-            [TGDatabaseInstance() transactionReadHistoryForPeerIds:peerIds];
+            [TGDatabaseInstance() transactionReadHistoryForPeerIds:requests];
         } synchronous:false];
     }
 }
@@ -491,7 +507,8 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    TGCallGroup *callGroup = [self listModel][indexPath.row];
+    NSArray *listModel = [self listModel];
+    TGCallGroup *callGroup = indexPath.row < listModel.count ? listModel[indexPath.row] : nil;
     
     static NSString *CallCellIdentifier = @"CC";
     TGCallCell *cell = [tableView dequeueReusableCellWithIdentifier:CallCellIdentifier];
@@ -499,6 +516,7 @@
     {
         __weak TGRecentCallsController *weakSelf = self;
         cell = [[TGCallCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CallCellIdentifier];
+        cell.inSettings = _inSettings;
         
         __weak TGCallCell *weakCell = cell;
         cell.infoPressed = ^
@@ -534,6 +552,12 @@
     [cell setupWithCallGroup:callGroup];
     
     return cell;
+}
+
+- (void)tableView:(UITableView *)__unused tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)__unused indexPath
+{
+    if (iosMajorVersion() < 7 && [cell isKindOfClass:[TGCallCell class]])
+        cell.backgroundColor = _inSettings ? self.presentation.pallete.collectionMenuCellBackgroundColor : self.presentation.pallete.backgroundColor;
 }
 
 - (CGFloat)tableView:(UITableView *)__unused tableView heightForRowAtIndexPath:(NSIndexPath *)__unused indexPath
@@ -1009,7 +1033,10 @@
             if (_lastMissedCount == 0)
                 return;
             
-            NSSet *peerIds = ((SGraphObjectNode *)resource).object;
+            NSMutableSet *peerIds = [[NSMutableSet alloc] init];;
+            for (TGReadPeerMessagesRequest *request in ((SGraphObjectNode *)resource).object) {
+                [peerIds addObject:@(request.peerId)];
+            }
             
             NSArray *listModel = [_listModel copy];
             
@@ -1076,7 +1103,9 @@
     __block bool gotItems = false;
     
     SSignal *signal = [[TGDatabaseInstance() modify:^id{ return nil; }] mapToSignal:^SSignal *(__unused id value) {
-        [TGTelegramNetworking instance];
+        if (TGTelegraphInstance.clientUserId != 0) {
+            [TGTelegramNetworking instance];
+        }
         
         return [[[SSignal single:nil] deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] mapToSignal:^SSignal *(__unused id value)
         {

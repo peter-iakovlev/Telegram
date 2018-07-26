@@ -2,33 +2,12 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
-#define TGTextMessageBackgroundImageDef(name, incoming, filePhone, filePad) \
-    static UIImage *name() \
-    { \
-        static UIImage *image = nil; \
-        static dispatch_once_t onceToken; \
-        dispatch_once(&onceToken, ^ \
-        { \
-            CGSize screenSize = TGScreenSize(); \
-            CGFloat screenSide = MAX(screenSize.width, screenSize.height); \
-            bool isLarge = (TGIsPad() || (screenSide >= 667.0f - FLT_EPSILON)); \
-            image = [TGImageNamed(!isLarge ? filePhone : filePad) stretchableImageWithLeftCapWidth:incoming ? 23 : (40 - 23) topCapHeight:16]; \
-        }); \
-        return image; \
-    }
-
-TGTextMessageBackgroundImageDef(incomingImage, true, @"ModernBubbleIncomingFull.png", @"ModernBubbleIncomingFullPad.png")
-TGTextMessageBackgroundImageDef(incomingImageHighlighted, true, @"ModernBubbleIncomingFullHighlighted.png", @"ModernBubbleIncomingFullHighlightedPad.png")
-TGTextMessageBackgroundImageDef(incomingPartialImage, true, @"ModernBubbleIncomingPartial.png", @"ModernBubbleIncomingPartialPad.png")
-TGTextMessageBackgroundImageDef(incomingPartialImageHighlighted, true, @"ModernBubbleIncomingPartialHighlighted.png", @"ModernBubbleIncomingPartialHighlightedPad.png")
-
-TGTextMessageBackgroundImageDef(outgoingImage, false, @"ModernBubbleOutgoingFull.png", @"ModernBubbleOutgoingFullPad.png")
-TGTextMessageBackgroundImageDef(outgoingImageHighlighted, false, @"ModernBubbleOutgoingFullHighlighted.png", @"ModernBubbleOutgoingFullHighlightedPad.png")
-TGTextMessageBackgroundImageDef(outgoingPartialImage, false, @"ModernBubbleOutgoingPartial.png", @"ModernBubbleOutgoingPartialPad.png")
-TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"ModernBubbleOutgoingPartialHighlighted.png", @"ModernBubbleOutgoingPartialHighlightedPad.png")
+#import "TGModernConversationViewContext.h"
+#import "TGPresentation.h"
 
 @interface TGTextMessageBackgroundViewModel ()
 {
+    TGModernViewContext *_context;
     TGTextMessageBackgroundType _type;
     bool _imageIsValid;
     
@@ -40,12 +19,13 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
 
 @implementation TGTextMessageBackgroundViewModel
 
-- (instancetype)initWithType:(TGTextMessageBackgroundType)type
+- (instancetype)initWithType:(TGTextMessageBackgroundType)type context:(TGModernViewContext *)context
 {
     self = [super initWithImage:nil];
     if (self != nil)
     {
         _type = type;
+        _context = context;
     }
     return self;
 }
@@ -57,7 +37,7 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
     if (!_imageIsValid)
     {
         _imageIsValid = true;
-        self.image = _type == TGTextMessageBackgroundIncoming ? (_partialMode ? incomingPartialImage() : incomingImage()) : (_partialMode ? outgoingPartialImage() : outgoingImage());
+        self.image = [self currentImage]; //_type == TGTextMessageBackgroundIncoming ? (_partialMode ? incomingPartialImage() : incomingImage()) : (_partialMode ? outgoingPartialImage() : outgoingImage());
     }
     
     [super bindViewToContainer:container viewStorage:viewStorage];
@@ -120,16 +100,16 @@ TGTextMessageBackgroundImageDef(outgoingPartialImageHighlighted, false, @"Modern
     if (_type == TGTextMessageBackgroundIncoming)
     {
         if (_partialMode)
-            newImage = _highlighted ? incomingPartialImageHighlighted() : incomingPartialImage();
+            newImage = _highlighted ? _context.presentation.images.chatBubbleIncomingPartialHighlightedImage : _context.presentation.images.chatBubbleIncomingPartialImage; // incomingPartialImageHighlighted() : incomingPartialImage();
         else
-            newImage = _highlighted ? incomingImageHighlighted() : incomingImage();
+            newImage = _highlighted ? _context.presentation.images.chatBubbleIncomingFullHighlightedImage : _context.presentation.images.chatBubbleIncomingFullImage;
     }
     else
     {
         if (_partialMode)
-            newImage = _highlighted ? outgoingPartialImageHighlighted() : outgoingPartialImage();
+            newImage = _highlighted ? _context.presentation.images.chatBubbleOutgoingPartialHighlightedImage : _context.presentation.images.chatBubbleOutgoingPartialImage;
         else
-            newImage = _highlighted ? outgoingImageHighlighted() : outgoingImage();
+            newImage = _highlighted ? _context.presentation.images.chatBubbleOutgoingFullHighlightedImage : _context.presentation.images.chatBubbleOutgoingFullImage;
     }
     
     return newImage;

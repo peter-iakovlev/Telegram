@@ -8,6 +8,8 @@
 #import "TGMusicPlayerItem.h"
 #import "TGMusicPlayerItemSignals.h"
 
+#import "TGPresentation.h"
+
 NSString *const TGMusicPlaylistCellKind = @"TGMusicPlaylistCell";
 const CGFloat TGMusicPlaylistCellHeight = 56.0f;
 
@@ -89,6 +91,20 @@ const CGFloat TGMusicPlaylistCellHeight = 56.0f;
         [self.contentView addSubview:_separatorView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.menuBackgroundColor;
+    self.contentView.backgroundColor = presentation.pallete.menuBackgroundColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    
+    _titleLabel.textColor = presentation.pallete.menuTextColor;
+    _performerLabel.textColor = presentation.pallete.menuSecondaryTextColor;
+    _durationLabel.textColor = presentation.pallete.secondaryTextColor;
+    _separatorView.backgroundColor = presentation.pallete.menuSeparatorColor;
 }
 
 - (void)prepareForReuse

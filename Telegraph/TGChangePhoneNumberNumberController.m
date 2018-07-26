@@ -11,7 +11,7 @@
 #import "TGChangePhoneNumberCodeController.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGVerifyChangePhoneActor.h"
 
@@ -155,16 +155,11 @@
                 
                 if (occupied)
                 {
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:TGLocalized(@"Generic.ErrorMoreInfo") completionBlock:^(__unused bool okButtonPressed)
-                    {
-                        
-                    }];
-                    [alertView show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:TGLocalized(@"Generic.ErrorMoreInfo") completionBlock:nil];
                 }
                 else
                 {
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                    [alertView show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 }
             }
         });

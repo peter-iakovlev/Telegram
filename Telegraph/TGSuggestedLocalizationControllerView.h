@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 
 @class TGSuggestedLocalization;
+@class TGPresentation;
 
 @interface TGSuggestedLocalizationControllerView : UIView
 
@@ -10,7 +11,7 @@
 
 @property (nonatomic) UIEdgeInsets insets;
 
-- (instancetype)initWithSuggestedLocalization:(TGSuggestedLocalization *)suggestedLocalization;
+- (instancetype)initWithSuggestedLocalization:(TGSuggestedLocalization *)suggestedLocalization presentation:(TGPresentation *)presentation;
 
 - (void)animateIn;
 - (void)animateOut:(void (^)())completion;

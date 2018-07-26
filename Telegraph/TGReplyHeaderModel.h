@@ -3,6 +3,7 @@
 @class TGUser;
 @class TGModernColorViewModel;
 @class TGModernTextViewModel;
+@class TGPresentation;
 
 @interface TGReplyHeaderModel : TGModernViewModel
 {
@@ -14,11 +15,10 @@
     CGFloat _leftInset;
 }
 
-- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text truncateTextInTheMiddle:(bool)truncateTextInTheMiddle textColor:(UIColor *)textColor leftInset:(CGFloat)leftInset system:(bool)system;
+- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text truncateTextInTheMiddle:(bool)truncateTextInTheMiddle textColor:(UIColor *)textColor leftInset:(CGFloat)leftInset system:(bool)system presentation:(TGPresentation *)presentation;
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition;
 
-+ (UIColor *)colorForMediaText:(bool)incoming;
 + (CGFloat)thumbnailCornerRadius;
 
 - (void)layoutForContainerSize:(CGSize)containerSize updateContent:(bool *)updateContent;

@@ -17,6 +17,8 @@
 @interface TGSearchBar () <UITextFieldDelegate>
 {
     CGFloat _cancelButtonWidth;
+    
+    TGSearchBarPallete *_pallete;
 }
 
 @property (nonatomic, strong) UIView *wrappingClip;
@@ -51,11 +53,17 @@
 - (CGFloat)baseHeight {
     if (self.showsScopeBar)
         return 44.0f;
+    if (_style == TGSearchBarStyleKeyboard) {
+        return [self inputHeight] + 17.0f;
+    }
     return [self inputHeight] + 12.0f;
 }
 
 - (CGFloat)inputContentOffset {
-    return _style == TGSearchBarStyleLightAlwaysPlain ? 5.0f : 0.0f;
+    if (_style == TGSearchBarStyleKeyboard) {
+        return 3.0f;
+    }
+    return _style == TGSearchBarStyleLightAlwaysPlain ? 3.0f : 0.0f;
 }
 
 - (CGFloat)searchIconOffset {
@@ -63,7 +71,11 @@
 }
 
 - (CGFloat)inputHeight {
-    return _style == TGSearchBarStyleLightAlwaysPlain ? 40.0f : 28.0f;
+    if (_style == TGSearchBarStyleKeyboard) {
+        return 33.0f;
+    } else {
+        return _style == TGSearchBarStyleLightAlwaysPlain ? 36.0f : 28.0f;
+    }
 }
 
 + (CGFloat)searchBarScopeHeight
@@ -73,7 +85,18 @@
 
 - (CGFloat)topPadding
 {
+    if (_style == TGSearchBarStyleKeyboard)
+        return 4.0f;
+    
     return -1.0f;
+}
+
+- (CGFloat)cancelButtonPadding
+{
+    if (_style == TGSearchBarStyleKeyboard)
+        return -2.0f;
+    
+    return 0.0f;
 }
 
 - (id)initWithFrame:(CGRect)frame
@@ -226,9 +249,9 @@
         }
         else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleHeader)
         {
-            iconImage = [TGSearchBar searchBarIcon];
+            iconImage = [TGSearchBar searchBarIcon:UIColorRGB(0x8e8e93)];
         }
-        else if (_style == TGSearchBarStyleLightAlwaysPlain)
+        else if (_style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleKeyboard)
         {
             iconImage = TGImageNamed(@"SearchBarIconLightLarge.png");
         }
@@ -240,11 +263,14 @@
     return self;
 }
 
-+ (UIImage *)searchBarIcon
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    return [super hitTest:point withEvent:event];
+}
+
++ (UIImage *)searchBarIcon:(UIColor *)color
 {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(13, 13), false, 0.0f);
-    
-    UIColor *color = UIColorRGB(0x8e8e93);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
     
@@ -312,21 +338,99 @@
     return _showsCustomCancelButton;
 }
 
+- (void)setPallete:(TGSearchBarPallete *)pallete
+{
+    _pallete = pallete;
+    
+    _customSearchActivityIndicator.color = _pallete.placeholderColor;
+    
+    _customTextField.textColor = pallete.textColor;
+    _prefixLabel.textColor = pallete.placeholderColor;
+    _placeholderLabel.textColor = pallete.placeholderColor;
+    
+    [UIView performWithoutAnimation:^
+    {
+        bool shouldFlip = _customTextField.isFirstResponder;
+        if (shouldFlip)
+            [_customTextField resignFirstResponder];
+        _customTextField.keyboardAppearance = _style == TGSearchBarStyleDark || _pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+        if (shouldFlip)
+            [_customTextField becomeFirstResponder];
+    }];
+    _customSearchIcon.image = [TGSearchBar searchBarIcon:pallete.placeholderColor];
+    [_customClearButton setBackgroundImage:_pallete.clearIcon forState:UIControlStateNormal];
+    
+    _normalTextFieldBackgroundImage = nil;
+    _activeTextFieldBackgroundImage = nil;
+    _textFieldBackground.image = _showsCustomCancelButton ? self.activeTextFieldBackgroundImage : self.normalTextFieldBackgroundImage;
+    
+    UIImage *backgroundManualImage = nil;
+    UIImage *backgroundManualActiveImage = nil;
+    
+    if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader || _style == TGSearchBarStyleKeyboard)
+    {
+        [(TGModernButton *)_customCancelButton setTitleColor:_pallete.accentColor];
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 3.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
+        UIImage *imagePlain = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+        CGContextSetFillColorWithColor(context, _style == TGSearchBarStyleLightAlwaysPlain ? pallete.menuBackgroundColor.CGColor : pallete.plainBackgroundColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
+        UIImage *imagePlainForced = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+        
+        CGContextSetFillColorWithColor(context, pallete.barSeparatorColor.CGColor);
+        CGFloat separatorHeight = TGScreenPixel;
+        CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
+        
+        UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+        UIGraphicsEndImageContext();
+        
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 3.0f), true, 0.0f);
+        context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, pallete.barBackgroundColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 3.0f));
+        
+        CGContextSetFillColorWithColor(context, pallete.barSeparatorColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 3.0f - separatorHeight, 1.0f, separatorHeight));
+        
+        UIImage *imageHeader = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:0 topCapHeight:1];
+        
+        UIGraphicsEndImageContext();
+        
+        if (_style == TGSearchBarStyleHeader)
+        {
+            backgroundManualImage = imageHeader;
+            backgroundManualActiveImage = imageHeader;
+        }
+        else
+        {
+            backgroundManualImage = _style == TGSearchBarStyleLight ? image : imagePlain;
+            backgroundManualActiveImage = _style == TGSearchBarStyleLightAlwaysPlain ? imagePlainForced : image;
+        }
+        
+        if (backgroundManualImage != nil)
+            _customBackgroundView.image = backgroundManualImage;
+        
+        if (backgroundManualActiveImage != nil)
+            _customActiveBackgroundView.image = backgroundManualActiveImage;
+    }
+}
+
 - (UIImage *)normalTextFieldBackgroundImage
 {
     if (_highContrast) {
-        static UIImage *image = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            CGFloat diameter = 14.0f;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xe5e5e5).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-            image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
-            UIGraphicsEndImageContext();
-        });
+        UIColor *highContrastColor = _pallete != nil ? _pallete.highContrastBackgroundColor : UIColorRGB(0xe5e5e5);
+        CGFloat diameter = 14.0f;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, highContrastColor.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+        UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+        UIGraphicsEndImageContext();
+        
         return image;
     } else if (_normalTextFieldBackgroundImage == nil) {
         NSString *fileName = nil;
@@ -337,9 +441,10 @@
             fileName = @"SearchInputFieldDark.png";
         else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
         {
+            UIColor *color = _pallete != nil ? _pallete.backgroundColor : UIColorRGB(0xf1f1f1);
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(14.0f, 14.0f), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xf1f1f1).CGColor);
+            CGContextSetFillColorWithColor(context, color.CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 14.0f, 14.0f));
             UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
             image = [image stretchableImageWithLeftCapWidth:(int)(image.size.width / 2) topCapHeight:(int)(image.size.height / 2)];
@@ -350,10 +455,23 @@
         }
         else if (_style == TGSearchBarStyleLightAlwaysPlain)
         {
-            CGFloat diameter = 10.0f;
+            CGFloat diameter = 16.0f;
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xe8e8e8).CGColor);
+            CGContextSetFillColorWithColor(context, (_pallete != nil ? _pallete.highContrastBackgroundColor : UIColorRGB(0xe4e4e4)).CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+            UIGraphicsEndImageContext();
+            
+            _normalTextFieldBackgroundImage = image;
+            return _normalTextFieldBackgroundImage;
+        }
+        else if (_style == TGSearchBarStyleKeyboard)
+        {
+            CGFloat diameter = 33.0;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, (_pallete != nil ? _pallete.highContrastBackgroundColor : UIColorRGB(0xe4e4e4)).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
             UIGraphicsEndImageContext();
@@ -366,7 +484,7 @@
             CGFloat diameter = 10.0f;
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xe4e4e4).CGColor);
+            CGContextSetFillColorWithColor(context, (_pallete != nil ? _pallete.highContrastBackgroundColor : UIColorRGB(0xe4e4e4)).CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
             UIImage *headerImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
             UIGraphicsEndImageContext();
@@ -394,9 +512,10 @@
             fileName = @"SearchInputFieldDark.png";
         else if (_style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain)
         {
+            UIColor *color = _pallete != nil ? _pallete.backgroundColor : UIColorRGB(0xf1f1f1);
             UIGraphicsBeginImageContextWithOptions(CGSizeMake(14.0f, 14.0f), false, 0.0f);
             CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xf1f1f1).CGColor);
+            CGContextSetFillColorWithColor(context, color.CGColor);
             CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 14.0f, 14.0f));
             UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
             image = [image stretchableImageWithLeftCapWidth:(int)(image.size.width / 2) topCapHeight:(int)(image.size.height / 2)];
@@ -405,7 +524,7 @@
             _activeTextFieldBackgroundImage = image;
             return _activeTextFieldBackgroundImage;
         }
-        else if (_style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader) {
+        else if (_style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader || _style == TGSearchBarStyleKeyboard) {
             _activeTextFieldBackgroundImage = [self normalTextFieldBackgroundImage];
             return _activeTextFieldBackgroundImage;
         }
@@ -447,9 +566,9 @@
         UIColor *textColor = nil;
         UIImage *clearImage = nil;
         
-        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
+        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader || _style == TGSearchBarStyleKeyboard)
         {
-            textColor = [UIColor blackColor];
+            textColor = _pallete != nil ? _pallete.textColor : [UIColor blackColor];
             clearImage = TGImageNamed(@"SearchBarClearIcon.png");
         }
         else if (_style == TGSearchBarStyleDark)
@@ -462,12 +581,12 @@
         
         _customTextField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         _customTextField.returnKeyType = UIReturnKeySearch;
-        _customTextField.keyboardAppearance = _style == TGSearchBarStyleDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+        _customTextField.keyboardAppearance = _style == TGSearchBarStyleDark || _pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
         _customTextField.delegate = self;
         [_customTextField addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
         
         _customClearButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, clearImage.size.width, clearImage.size.height)];
-        [_customClearButton setBackgroundImage:clearImage forState:UIControlStateNormal];
+        [_customClearButton setBackgroundImage:_pallete != nil ? _pallete.clearIcon : clearImage forState:UIControlStateNormal];
         [_customClearButton addTarget:self action:@selector(customClearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         _customClearButton.hidden = true;
         
@@ -492,8 +611,8 @@
         
         UIColor *buttonColor = nil;
         
-        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader)
-            buttonColor = TGAccentColor();
+        if (_style == TGSearchBarStyleDefault || _style == TGSearchBarStyleLight || _style == TGSearchBarStyleLightPlain || _style == TGSearchBarStyleLightAlwaysPlain || _style == TGSearchBarStyleHeader || _style == TGSearchBarStyleKeyboard)
+            buttonColor = _pallete != nil ? _pallete.accentColor : TGAccentColor();
         else if (_style == TGSearchBarStyleDark)
             buttonColor = [UIColor whiteColor];
         
@@ -670,12 +789,12 @@
         
         _customTextField.frame = frame;
         
-        _customClearButton.frame = CGRectMake(CGRectGetMaxX(_textFieldBackground.frame) - 22, [self inputContentOffset] + 16 + [self topPadding], _customClearButton.frame.size.width, _customClearButton.frame.size.height);
+        _customClearButton.frame = CGRectMake(CGRectGetMaxX(_textFieldBackground.frame) - 22, [self inputContentOffset] + 16 + [self topPadding] + (_style == TGSearchBarStyleLightAlwaysPlain ? 1.0f : 0.0f), _customClearButton.frame.size.width, _customClearButton.frame.size.height);
     }
     
     if (_customCancelButton != nil)
     {
-        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9 - self.safeAreaInset.right) : 9), [self topPadding] + 2.0f, _cancelButtonWidth, [self baseHeight]);
+        _customCancelButton.frame = CGRectMake(self.frame.size.width + (_showsCustomCancelButton ? (-_customCancelButton.frame.size.width - 9 - self.safeAreaInset.right) : 9), [self topPadding] + 2.0f + [self cancelButtonPadding], _cancelButtonWidth, [self baseHeight]);
     }
     
     if (_customScopeButtonContainer != nil)
@@ -812,15 +931,14 @@
         
         _customSegmentedControl = [[UISegmentedControl alloc] initWithItems:self.customScopeButtonTitles];
         
-        [_customSegmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-        [_customSegmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-        [_customSegmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        [_customSegmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        UIImage *dividerImage = TGComponentsImageNamed(@"ModernSegmentedControlDivider.png");
-        [_customSegmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_customSegmentedControl setBackgroundImage:_pallete != nil ? _pallete.segmentedControlBackgroundImage : TGComponentsImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_customSegmentedControl setBackgroundImage:_pallete != nil ? _pallete.segmentedControlSelectedImage : TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+        [_customSegmentedControl setBackgroundImage:_pallete != nil ? _pallete.segmentedControlSelectedImage : TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_customSegmentedControl setBackgroundImage:_pallete != nil ? _pallete.segmentedControlHighlightedImage : TGComponentsImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_customSegmentedControl setDividerImage:_pallete != nil ? _pallete.segmentedControlDividerImage : TGComponentsImageNamed(@"ModernSegmentedControlDivider.png") forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
         
-        [_customSegmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
-        [_customSegmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
+        [_customSegmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_pallete != nil ? _pallete.accentColor : TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+        [_customSegmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:_pallete != nil ? _pallete.accentContrastColor : [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
         
         _customSegmentedControl.frame = CGRectMake(0, _customScopeButtonContainer.frame.size.height - 29.0f, _customScopeButtonContainer.frame.size.width, 29.0f);
         _customSegmentedControl.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
@@ -980,7 +1098,7 @@
     _cancelButtonWidth = [TGLocalized(@"Common.Cancel") sizeWithFont:TGSystemFontOfSize(17.0f)].width + 11.0f;
     
     CGRect textFieldBackgroundFrame = _textFieldBackground.frame;
-    _customCancelButton.frame = CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, 0, _cancelButtonWidth, [self baseHeight]);
+    _customCancelButton.frame = CGRectMake(textFieldBackgroundFrame.origin.x + textFieldBackgroundFrame.size.width + 10, _customCancelButton.frame.origin.y, _cancelButtonWidth, [self baseHeight]);
     [_customCancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
     
     [_customSegmentedControl removeAllSegments];
@@ -1021,7 +1139,8 @@
         if (indicator == nil)
         {
             indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:4];
-            indicator.alpha = 0.4f;
+            if (_pallete != nil)
+                indicator.color = _pallete.placeholderColor;
             indicator.userInteractionEnabled = false;
             indicator.hidden = true;
             [_wrappingView addSubview:indicator];
@@ -1046,6 +1165,33 @@
     _customClearButton.hidden = !_placeholderLabel.hidden && _prefixText.length == 0;
     
     [self setNeedsLayout];
+}
+
+@end
+
+
+@implementation TGSearchBarPallete
+
++ (instancetype)palleteWithDark:(bool)dark backgroundColor:(UIColor *)backgroundColor highContrastBackgroundColor:(UIColor *)highContrastBackgroundColor textColor:(UIColor *)textColor placeholderColor:(UIColor *)placeholderColor clearIcon:(UIImage *)clearIcon barBackgroundColor:(UIColor *)barBackgroundColor barSeparatorColor:(UIColor *)barSeparatorColor plainBackgroundColor:(UIColor *)plainBackgroundColor accentColor:(UIColor *)accentColor accentContrastColor:(UIColor *)accentContrastColor menuBackgroundColor:(UIColor *)menuBackgroundColor segmentedControlBackgroundImage:(UIImage *)segmentedControlBackgroundImage segmentedControlSelectedImage:(UIImage *)segmentedControlSelectedImage segmentedControlHighlightedImage:(UIImage *)segmentedControlHighlightedImage segmentedControlDividerImage:(UIImage *)segmentedControlDividerImage
+{
+    TGSearchBarPallete *pallete = [[TGSearchBarPallete alloc] init];
+    pallete->_isDark = dark;
+    pallete->_backgroundColor = backgroundColor;
+    pallete->_highContrastBackgroundColor = highContrastBackgroundColor;
+    pallete->_textColor = textColor;
+    pallete->_placeholderColor = placeholderColor;
+    pallete->_clearIcon = clearIcon;
+    pallete->_barBackgroundColor = barBackgroundColor;
+    pallete->_barSeparatorColor = barSeparatorColor;
+    pallete->_plainBackgroundColor = plainBackgroundColor;
+    pallete->_accentColor = accentColor;
+    pallete->_accentContrastColor = accentContrastColor;
+    pallete->_menuBackgroundColor = menuBackgroundColor;
+    pallete->_segmentedControlBackgroundImage = segmentedControlBackgroundImage;
+    pallete->_segmentedControlSelectedImage = segmentedControlSelectedImage;
+    pallete->_segmentedControlHighlightedImage = segmentedControlHighlightedImage;
+    pallete->_segmentedControlDividerImage = segmentedControlDividerImage;
+    return pallete;
 }
 
 @end

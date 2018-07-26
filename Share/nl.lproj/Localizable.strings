@@ -38,3 +38,7 @@
 "Share.PasscodeTryAgainIn1Minute" = "Probeer het over 1 minuut nog eens";
 
 "Share.SavedMessages" = "Bewaarde berichten";
+
+"Share.ContactInfo" = "Contactgegevens";
+"Share.ContactJob" = "baan";
+"Share.ContactBirthday" = "verjaardag";

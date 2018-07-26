@@ -623,7 +623,7 @@ const CGFloat TGShareBottomInset = 0.0f;
 {
     CGFloat height = MAX([UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height);
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad || (int)height != 812)
-        return UIEdgeInsetsZero;
+        return UIEdgeInsetsMake(20.0f, 0.0f, 0.0f, 0.0f);
     
     switch (orientation)
     {
@@ -729,6 +729,12 @@ const CGFloat TGShareBottomInset = 0.0f;
         
         strongSelf->_topModels = next[@"top"];
         strongSelf->_recentModels = next[@"recent"];
+        
+        NSMutableDictionary *mergedUsers = [strongSelf->_userModels mutableCopy];
+        if (mergedUsers == nil)
+            mergedUsers = [[NSMutableDictionary alloc] init];
+        [mergedUsers addEntriesFromDictionary:next[@"users"]];
+        strongSelf->_userModels = mergedUsers;
         [strongSelf updateRecents];
     }]];
 }
@@ -766,10 +772,27 @@ const CGFloat TGShareBottomInset = 0.0f;
             if (strongSelf != nil)
             {
                 NSMutableArray *sections = [[NSMutableArray alloc] init];
+                NSMutableDictionary *existingPeerIds = [[NSMutableDictionary alloc] init];
+                existingPeerIds[@(TGPeerIdPrivate)] = [[NSMutableSet alloc] init];
+                existingPeerIds[@(TGPeerIdGroup)] = [[NSMutableSet alloc] init];
+                existingPeerIds[@(TGPeerIdChannel)] = [[NSMutableSet alloc] init];
+                
+                for (TGChatModel *model in results[1][@"chats"])
+                {
+                    [existingPeerIds[@(model.peerId.namespaceId)] addObject:@(model.peerId.peerId)];
+                }
+                
+                NSMutableArray *filteredRemoteResults = [[NSMutableArray alloc] init];
+                for (TGChatModel *model in results[0][@"chats"])
+                {
+                    if (![existingPeerIds[@(model.peerId.namespaceId)] containsObject:@(model.peerId.peerId)])
+                        [filteredRemoteResults addObject:model];
+                }
+        
                 if (((NSArray *)results[1][@"chats"]).count != 0)
                     [sections addObject:@{@"chats": results[1][@"chats"], @"users": results[1][@"users"]}];
                 if (((NSArray *)results[0][@"chats"]).count != 0)
-                    [sections addObject:@{@"chats": results[0][@"chats"], @"users": results[0][@"users"]}];
+                    [sections addObject:@{@"chats": filteredRemoteResults, @"users": results[0][@"users"]}];
                 
                 [strongSelf setSearchResultsSections:sections];
             }

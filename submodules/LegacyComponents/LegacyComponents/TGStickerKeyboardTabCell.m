@@ -25,6 +25,8 @@ static void setViewFrame(UIView *view, CGRect frame)
     TGStickerKeyboardViewStyle _style;
     bool _favorite;
     bool _recent;
+    
+    TGStickerKeyboardPallete *_pallete;
 }
 
 @end
@@ -40,13 +42,21 @@ static void setViewFrame(UIView *view, CGRect frame)
         
         self.clipsToBounds = true;
         self.selectedBackgroundView = [[UIView alloc] init];
-        self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e6e6);
         
         _imageView = [[TGImageView alloc] init];
         _imageView.contentMode = UIViewContentModeScaleAspectFit;
         [self.contentView addSubview:_imageView];
     }
     return self;
+}
+
+- (void)setPallete:(TGStickerKeyboardPallete *)pallete
+{
+    if (pallete == nil || _pallete == pallete)
+        return;
+    
+    _pallete = pallete;
+    self.selectedBackgroundView.backgroundColor = pallete.selectionColor;
 }
 
 - (void)prepareForReuse
@@ -79,10 +89,20 @@ static void setViewFrame(UIView *view, CGRect frame)
 {
     [super setSelected:selected];
     
-    if (_recent)
-         [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardRecentTab.png")];
-    else if (_favorite)
-         [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardFavoriteTab.png")];
+    if (_pallete != nil)
+    {
+        if (_recent)
+            [self _updateIcon:_pallete.recentIcon];
+        else if (_favorite)
+            [self _updateIcon:_pallete.favoritesIcon];
+    }
+    else
+    {
+        if (_recent)
+            [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardRecentTab.png")];
+        else if (_favorite)
+            [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardFavoriteTab.png")];
+    }
 }
 
 - (void)setFavorite
@@ -96,7 +116,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     [_imageView reset];
     _imageView.contentMode = UIViewContentModeCenter;
     
-    [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardFavoriteTab.png")];
+    [self _updateIcon:_pallete != nil ? _pallete.favoritesIcon : TGComponentsImageNamed(@"StickerKeyboardFavoriteTab.png")];
 }
 
 - (void)setRecent
@@ -110,7 +130,7 @@ static void setViewFrame(UIView *view, CGRect frame)
     [_imageView reset];
     _imageView.contentMode = UIViewContentModeCenter;
     
-    [self _updateIcon:TGComponentsImageNamed(@"StickerKeyboardRecentTab.png")];
+    [self _updateIcon:_pallete != nil ? _pallete.recentIcon : TGComponentsImageNamed(@"StickerKeyboardRecentTab.png")];
 }
 
 - (void)setNone
@@ -136,9 +156,16 @@ static void setViewFrame(UIView *view, CGRect frame)
     
     NSMutableString *uri = [[NSMutableString alloc] initWithString:@"sticker-preview://?"];
     if (documentMedia.documentId != 0)
+    {
         [uri appendFormat:@"documentId=%" PRId64 "", documentMedia.documentId];
+        
+        if (documentMedia.originInfo != nil)
+            [uri appendFormat:@"&origin_info=%@", [documentMedia.originInfo stringRepresentation]];
+    }
     else
+    {
         [uri appendFormat:@"localDocumentId=%" PRId64 "", documentMedia.localDocumentId];
+    }
     [uri appendFormat:@"&accessHash=%" PRId64 "", documentMedia.accessHash];
     [uri appendFormat:@"&datacenterId=%" PRId32 "", (int32_t)documentMedia.datacenterId];
     
@@ -239,7 +266,7 @@ static void setViewFrame(UIView *view, CGRect frame)
             
         default:
         {
-            self.selectedBackgroundView.backgroundColor = UIColorRGB(0xe6e7e9);
+            self.selectedBackgroundView.backgroundColor = _pallete != nil ? _pallete.selectionColor : UIColorRGB(0xe6e7e9);
             self.selectedBackgroundView.layer.cornerRadius = 8.0f;
             self.selectedBackgroundView.clipsToBounds = true;
         }

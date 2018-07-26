@@ -93,6 +93,11 @@
     }
 }
 
+
+- (void)setRate:(CGFloat)__unused rate {
+    
+}
+
 - (void)play
 {
     [self playFromPosition:-1.0];

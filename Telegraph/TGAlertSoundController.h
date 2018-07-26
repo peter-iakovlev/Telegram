@@ -22,6 +22,8 @@
 
 @property (nonatomic, weak) id<TGAlertSoundControllerDelegate> delegate;
 
-- (id)initWithTitle:(NSString *)title soundInfoList:(NSArray *)soundInfoList;
+- (id)initWithTitle:(NSString *)title soundInfoList:(NSArray *)soundInfoList defaultId:(NSNumber *)defaultId;
+
++ (NSString *)soundNameFromId:(int)soundId;
 
 @end

@@ -5,6 +5,8 @@
 #import "TGModernFlatteningViewModel.h"
 #import "TGModernColorViewModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGWebpageFooterModel ()
 {
     TGModernColorViewModel *_lineModel;
@@ -15,17 +17,9 @@
 
 @implementation TGWebpageFooterModel
 
-static UIColor *colorForLine(bool incoming)
+static UIColor *colorForLine(bool incoming, TGPresentation *presentation)
 {
-    static UIColor *incomingColor = nil;
-    static UIColor *outgoingColor = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingColor = UIColorRGB(0x3ca7fe);
-        outgoingColor = UIColorRGB(0x29cc10);
-    });
-    return incoming ? incomingColor : outgoingColor;
+    return incoming ? presentation.pallete.chatIncomingLineColor : presentation.pallete.chatOutgoingLineColor;
 }
 
 - (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webpage:(TGWebPageMediaAttachment *)webpage
@@ -34,7 +28,7 @@ static UIColor *colorForLine(bool incoming)
     if (self != nil)
     {
         _context = context;
-        _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming) cornerRadius:1.0f];
+        _lineModel = [[TGModernColorViewModel alloc] initWithColor:colorForLine(incoming, context.presentation) cornerRadius:1.0f];
         if ([webpage.pageType isEqualToString:@"invoice"]) {
             _isInvoice = true;
         } else {
@@ -113,19 +107,6 @@ static UIColor *colorForLine(bool incoming)
 
 - (void)setMediaVisible:(bool)__unused mediaVisible
 {
-}
-
-+ (UIColor *)colorForAccentText:(bool)incoming
-{
-    static UIColor *incomingColor = nil;
-    static UIColor *outgoingColor = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        incomingColor = UIColorRGB(0x3ca7fe);
-        outgoingColor = UIColorRGB(0x00a700);
-    });
-    return incoming ? incomingColor : outgoingColor;
 }
 
 - (void)updateMediaProgressVisible:(bool)mediaProgressVisible mediaProgress:(float)mediaProgress animated:(bool)__unused animated {

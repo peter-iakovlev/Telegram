@@ -13,6 +13,8 @@
 
 #import "TGUserInfoCollectionItem.h"
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoController ()
 {
     TGUser *_user;
@@ -82,14 +84,25 @@
     [ActionStageInstance() removeWatcher:self];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    if ([self isViewLoaded])
+    {
+        self.view.backgroundColor = presentation.pallete.backgroundColor;
+        self.collectionView.backgroundColor = presentation.pallete.backgroundColor;
+    }
+}
+
 #pragma mark -
 
 - (void)_resetCollectionView
 {
     [super _resetCollectionView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
-    self.collectionView.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
+    self.collectionView.backgroundColor = self.presentation.pallete.backgroundColor;
 }
 
 #pragma mark -

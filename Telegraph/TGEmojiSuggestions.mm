@@ -37,7 +37,6 @@ void test() {
     
     for (auto &item : values) {
         NSString *emoji = convertFromUtf16(item.emoji());
-        NSString *label = convertFromUtf16(item.label());
         NSString *replacement = convertFromUtf16(item.replacement());
         
         [array addObject:[[TGAlphacodeEntry alloc] initWithEmoji:emoji code:replacement]];

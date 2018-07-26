@@ -13,11 +13,22 @@
 
 #import "TGLegacyComponentsContext.h"
 
+#import "TGPresentation.h"
+#import "TGPresentationAssets.h"
+
+@interface TGVolumeIndicatorView : UIView
+
+@property (nonatomic, strong) TGPresentation *presentation;
+@property (nonatomic, assign) CGFloat value;
+
+@end
+
 @interface TGVolumeBarView ()
 {
     id _notificationObserver;
     
     UIView *_wrapperView;
+    UIImageView *_iconView;
     UIProgressView *_progressView;
     UIWindow *_volumeWindow;
     
@@ -38,7 +49,14 @@
         self.backgroundColor = [UIColor clearColor];
         self.userInteractionEnabled = false;
         
-        _wrapperView = [[UIView alloc] initWithFrame:CGRectOffset(self.bounds, 0.0f, -self.bounds.size.height)];
+        if (false && [TGViewController hasTallScreen])
+        {
+            _iconView = [[UIImageView alloc] init];
+            [_wrapperView addSubview:_iconView];
+        }
+        
+        _wrapperView = [[UIView alloc] initWithFrame:CGRectOffset(self.bounds, 0.0f, _iconView == nil ? -self.bounds.size.height : 0.0f)];
+        _wrapperView.alpha = _iconView != nil ? 0.0f : 1.0f;
         _wrapperView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _wrapperView.backgroundColor = UIColorRGB(0xf7f7f7);
         [self addSubview:_wrapperView];
@@ -52,6 +70,15 @@
         [self subscribe];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _wrapperView.backgroundColor = _iconView == nil ? presentation.pallete.barBackgroundColor : [UIColor clearColor];
+    _progressView.trackTintColor = presentation.pallete.volumeIndicatorBackgroundColor;
+    _progressView.progressTintColor = presentation.pallete.volumeIndicatorForegroundColor;
 }
 
 - (void)setVolume:(CGFloat)volume
@@ -136,9 +163,30 @@
     
     [UIView animateWithDuration:0.25 animations:^
     {
-        _wrapperView.frame = self.bounds;
+        if (_iconView == nil)
+            _wrapperView.frame = self.bounds;
+        else
+            _wrapperView.alpha = 1.0f;
         [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:0.0f];
     }];
+}
+
+- (void)hide
+{
+    [UIView animateWithDuration:0.25 animations:^
+     {
+         if (_iconView == nil)
+             _wrapperView.frame = CGRectOffset(self.bounds, 0.0f, -self.bounds.size.height);
+         else
+             _wrapperView.alpha = 0.0f;
+         
+         if ([[TGLegacyComponentsContext shared] applicationStatusBarAlpha] < FLT_EPSILON)
+             [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:_initialStatusBarAlpha];
+     } completion:^(BOOL finished)
+     {
+         if (finished && _wrapperView.layer.animationKeys.count == 0)
+             [self _destroyWindow];
+     }];
 }
 
 - (void)setSafeAreaInset:(UIEdgeInsets)safeAreaInset
@@ -151,22 +199,14 @@
 {
     [super layoutSubviews];
     
-    _progressView.frame = CGRectMake(5.0f + _safeAreaInset.left, self.frame.size.height - 2.0f - 7.0f, self.frame.size.width - 10.0f - _safeAreaInset.left - _safeAreaInset.right, _progressView.frame.size.height);
-}
-
-- (void)hide
-{
-    [UIView animateWithDuration:0.25 animations:^
+    if (_iconView == nil)
     {
-        _wrapperView.frame = CGRectOffset(self.bounds, 0.0f, -self.bounds.size.height);
-        
-        if ([[TGLegacyComponentsContext shared] applicationStatusBarAlpha] < FLT_EPSILON)
-            [[TGLegacyComponentsContext shared] setApplicationStatusBarAlpha:_initialStatusBarAlpha];
-    } completion:^(BOOL finished)
+        _progressView.frame = CGRectMake(5.0f + _safeAreaInset.left, self.frame.size.height - 2.0f - 7.0f, self.frame.size.width - 10.0f - _safeAreaInset.left - _safeAreaInset.right, _progressView.frame.size.height);
+    }
+    else
     {
-        if (finished && _wrapperView.layer.animationKeys.count == 0)
-            [self _destroyWindow];
-    }];
+        _progressView.frame = CGRectMake(38.0f, 22.0f, 38.0f, _progressView.frame.size.height);
+    }
 }
 
 - (void)_setupWindow
@@ -204,5 +244,12 @@
 {
     _progressView.progress = (float)volume;
 }
+
+@end
+
+
+@implementation TGVolumeIndicatorView
+
+
 
 @end

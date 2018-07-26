@@ -57,6 +57,7 @@
         _ignoresInvertColors = true;
         
         _overlayDiameter = 50.0f;
+        _timestampTextColor = [UIColor whiteColor];
         
         _uri = uri;
         [self _updateViewStateIdentifier];
@@ -83,6 +84,7 @@
     if (iosMajorVersion() >= 11)
         ((TGMessageImageViewContainer *)self.boundView).imageView.accessibilityIgnoresInvertColors = _ignoresInvertColors;
 
+    [((TGMessageImageViewContainer *)self.boundView).timestampView setPresentation:_presentation];
     [((TGMessageImageViewContainer *)self.boundView).imageView setExpectExtendedEdges:_expectExtendedEdges];
     [((TGMessageImageViewContainer *)self.boundView).imageView setFlexibleTimestamp:_flexibleTimestamp];
     
@@ -100,7 +102,9 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setProgress:_progress animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setOverlayType:_overlayType animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampPosition:(int)_timestampPosition];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampTextColor:_timestampTextColor];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampColor:_timestampColor];
+    [((TGMessageImageViewContainer *)self.boundView).imageView setServiceTimestampStyle:_serviceTimestampStyle];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampHidden:_timestampHidden];
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampString:_timestampString signatureString:_signatureString displayCheckmarks:_displayCheckmarks checkmarkValue:_checkmarkValue displayViews:_displayViews viewsValue:_viewsValue animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setDisplayTimestampProgress:_displayTimestampProgress];
@@ -112,8 +116,6 @@
     [((TGMessageImageViewContainer *)self.boundView).imageView setDetailStrings:_detailStrings detailStringsEdgeInsets:_detailStringsInsets animated:false];
     [((TGMessageImageViewContainer *)self.boundView).imageView setCompletionBlock:_completionBlock];
     [((TGMessageImageViewContainer *)self.boundView).imageView setProgressBlock:_progressBlock];
-    
-    [((TGMessageImageViewContainer *)self.boundView).timestampView setPresentation:_presentation];
     
     //((TGMessageImageViewContainer *)self.boundView).imageView.alpha = _mediaVisible ? 1.0f : 0.0f;
     ((TGMessageImageViewContainer *)self.boundView).alpha = _mediaVisible ? 1.0f : 0.0f;
@@ -223,6 +225,20 @@
     _timestampColor = color;
     
     [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampColor:_timestampColor];
+}
+
+- (void)setTimestampTextColor:(UIColor *)timestampTextColor
+{
+    _timestampTextColor = timestampTextColor;
+    
+    [((TGMessageImageViewContainer *)self.boundView).imageView setTimestampTextColor:_timestampTextColor];
+}
+
+- (void)setServiceTimestampStyle:(bool)serviceTimestampStyle
+{
+    _serviceTimestampStyle = serviceTimestampStyle;
+    
+    [((TGMessageImageViewContainer *)self.boundView).imageView setServiceTimestampStyle:_serviceTimestampStyle];
 }
 
 - (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated

@@ -2,9 +2,13 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernGalleryVideoFooterView ()
 {
     TGModernButton *_playPauseButton;
+    TGModernButton *_backwardButton;
+    TGModernButton *_forwardButton;
 }
 
 @end
@@ -18,69 +22,43 @@
     {
         _playPauseButton = [[TGModernButton alloc] init];
         _playPauseButton.exclusiveTouch = true;
-        [_playPauseButton setImage:[self playImage] forState:UIControlStateNormal];
+        [_playPauseButton setImage:TGPresentation.current.images.videoPlayerPlayIcon forState:UIControlStateNormal];
         _playPauseButton.modernHighlight = true;
         [_playPauseButton addTarget:self action:@selector(playPauseButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_playPauseButton];
+        
+        _backwardButton = [[TGModernButton alloc] init];
+        _backwardButton.exclusiveTouch = true;
+        [_backwardButton setImage:TGPresentation.current.images.videoPlayerBackwardIcon forState:UIControlStateNormal];
+        _backwardButton.modernHighlight = true;
+        [_backwardButton addTarget:self action:@selector(backwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_backwardButton];
+        
+        _forwardButton = [[TGModernButton alloc] init];
+        _forwardButton.exclusiveTouch = true;
+        [_forwardButton setImage:TGPresentation.current.images.videoPlayerForwardIcon forState:UIControlStateNormal];
+        _forwardButton.modernHighlight = true;
+        [_forwardButton addTarget:self action:@selector(forwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_forwardButton];
     }
     return self;
 }
 
-- (UIImage *)playImage
+- (void)setDuration:(NSTimeInterval)duration
 {
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(23.0f, 23.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        CGContextBeginPath(context);
-        
-        CGContextMoveToPoint(context, 3.0f, 0.0f);
-        CGContextAddLineToPoint(context, 23.5f, 11.25f);
-        CGContextAddLineToPoint(context, 3.0f, 22.5f);
-        CGContextClosePath(context);
-        
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillPath(context);
-        
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    _duration = duration;
     
-    return image;
-}
-
-- (UIImage *)pauseImage
-{
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(21.0f, 23.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        CGFloat width = 4.0f;
-        CGFloat spacing = 6.0f;
-        CGFloat spacingTop = 1.0f;
-        
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f), spacingTop, width, 22.5f - spacingTop * 2.0f));
-        CGContextFillRect(context, CGRectMake(CGFloor((21.0f - spacing - width * 2.0f) / 2.0f) + width + spacing, spacingTop, width, 22.5f - spacingTop * 2.0f));
-        
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
-    return image;
+    bool controlsHidden = duration < 45.0;
+    _backwardButton.hidden = controlsHidden;
+    _forwardButton.hidden = controlsHidden;
 }
 
 - (void)setIsPlaying:(bool)isPlaying
 {
     _isPlaying = isPlaying;
     
-    [_playPauseButton setImage:_isPlaying ? [self pauseImage] : [self playImage] forState:UIControlStateNormal];
+    UIImage *image = isPlaying ? TGPresentation.current.images.videoPlayerPauseIcon : TGPresentation.current.images.videoPlayerPlayIcon;
+    [_playPauseButton setImage:image forState:UIControlStateNormal];
 }
 
 - (void)playPauseButtonPressed
@@ -97,10 +75,22 @@
     }
 }
 
+- (void)backwardButtonPressed
+{
+    if (_backwardPressed != nil)
+        _backwardPressed();
+}
+
+- (void)forwardButtonPressed
+{
+    if (_forwardPressed != nil)
+        _forwardPressed();
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
     UIView *view = [super hitTest:point withEvent:event];
-    if (view == _playPauseButton)
+    if (view == _playPauseButton || view == _backwardButton || view == _forwardButton)
         return view;
     
     return nil;
@@ -109,7 +99,11 @@
 - (void)layoutSubviews
 {
     CGSize buttonSize = {60.0f, 44.0f};
+    
     _playPauseButton.frame = (CGRect){{CGFloor((self.frame.size.width - buttonSize.width) / 2.0f), CGFloor((self.frame.size.height - buttonSize.height) / 2.0f)}, buttonSize};
+    
+    _backwardButton.frame = (CGRect){{CGRectGetMinX(_playPauseButton.frame) - buttonSize.width - 3.0f, CGFloor((self.frame.size.height - buttonSize.height) / 2.0f)}, buttonSize};
+    _forwardButton.frame = (CGRect){{CGRectGetMaxX(_playPauseButton.frame) + 3.0f, CGFloor((self.frame.size.height - buttonSize.height) / 2.0f)}, buttonSize};
 }
 
 @end

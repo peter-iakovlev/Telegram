@@ -4,10 +4,13 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationEditingPanel ()
 {
     UIEdgeInsets _safeAreaInset;
-    
+ 
+    UIButton *_reportButton;
     UIButton *_deleteButton;
     UIButton *_forwardButton;
     UIButton *_shareButton;
@@ -42,39 +45,56 @@
         _stripeLayer.backgroundColor = UIColorRGB(0xb2b2b2).CGColor;
         [self.layer addSublayer:_stripeLayer];
         
-        UIImage *deleteImage = TGImageNamed(@"ModernConversationActionDelete.png");
-        UIImage *deleteDisabledImage = TGImageNamed(@"ModernConversationActionDelete_Disabled.png");
-        UIImage *forwardImage = TGImageNamed(@"ModernConversationActionForward.png");
-        UIImage *forwardDisabledImage = TGImageNamed(@"ModernConversationActionForward_Disabled.png");
-        
-        UIImage *shareImage = TGTintedImage(TGImageNamed(@"ActionsWhiteIcon"), TGAccentColor());
-        UIImage *shareDisabledImage = TGTintedImage(TGImageNamed(@"ActionsWhiteIcon"), UIColorRGB(0xd0d0d0));
-        
         _deleteButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 52.0f, [self baseHeight])];
-        [_deleteButton setImage:deleteImage forState:UIControlStateNormal];
-        [_deleteButton setImage:deleteDisabledImage forState:UIControlStateDisabled];
         _deleteButton.adjustsImageWhenDisabled = false;
         _deleteButton.adjustsImageWhenHighlighted = false;
         [_deleteButton addTarget:self action:@selector(deleteButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_deleteButton];
         
+        _reportButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 52.0f, [self baseHeight])];
+        _reportButton.adjustsImageWhenDisabled = false;
+        _reportButton.adjustsImageWhenHighlighted = false;
+        [_reportButton addTarget:self action:@selector(reportButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_reportButton];
+        
         _forwardButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 56.0f, [self baseHeight])];
-        [_forwardButton setImage:forwardImage forState:UIControlStateNormal];
-        [_forwardButton setImage:forwardDisabledImage forState:UIControlStateDisabled];
         _forwardButton.adjustsImageWhenDisabled = false;
         _forwardButton.adjustsImageWhenHighlighted = false;
         [_forwardButton addTarget:self action:@selector(forwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_forwardButton];
         
         _shareButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 56.0f, [self baseHeight])];
-        [_shareButton setImage:shareImage forState:UIControlStateNormal];
-        [_shareButton setImage:shareDisabledImage forState:UIControlStateDisabled];
         _shareButton.adjustsImageWhenDisabled = false;
         _shareButton.adjustsImageWhenHighlighted = false;
         [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_shareButton];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    
+    [_reportButton setImage:presentation.images.chatTitleReportIcon forState:UIControlStateNormal];
+    
+    [_deleteButton setImage:presentation.images.chatEditDeleteIcon forState:UIControlStateNormal];
+    [_deleteButton setImage:presentation.images.chatEditDeleteDisabledIcon forState:UIControlStateDisabled];
+    
+    [_forwardButton setImage:presentation.images.chatEditForwardIcon forState:UIControlStateNormal];
+    [_forwardButton setImage:presentation.images.chatEditForwardDisabledIcon forState:UIControlStateDisabled];
+    
+    [_shareButton setImage:presentation.images.chatEditShareIcon forState:UIControlStateNormal];
+    [_shareButton setImage:presentation.images.chatEditShareDisabledIcon forState:UIControlStateDisabled];
+}
+
+- (void)setReportingEnabled:(bool)reportingEnabled
+{
+    _reportButton.hidden = !reportingEnabled;
+    [self setNeedsLayout];
 }
 
 - (void)setForwardingEnabled:(bool)forwardingEnabled
@@ -94,6 +114,7 @@
 - (void)setActionsEnabled:(bool)actionsEnabled
 {
     _deleteButton.enabled = actionsEnabled;
+    _reportButton.enabled = actionsEnabled;
     _forwardButton.enabled = actionsEnabled;
     _shareButton.enabled = actionsEnabled;
 }
@@ -132,9 +153,30 @@
     
     _stripeLayer.frame = CGRectMake(0.0f, -TGRetinaPixel, self.frame.size.width, TGRetinaPixel);
     
-    _deleteButton.frame = CGRectMake(_safeAreaInset.left, 0.0f, 52.0f, [self baseHeight]);
-    _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, [self baseHeight]);
-    _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f - _safeAreaInset.right, 0.0f, 56.0f, [self baseHeight]);
+    if (_deleteButton.hidden && !_reportButton.hidden)
+    {
+        _reportButton.frame = CGRectMake(_safeAreaInset.left, 0.0f, 56.0f, [self baseHeight]);
+        _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, [self baseHeight]);
+        _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f - _safeAreaInset.right, 0.0f, 56.0f, [self baseHeight]);
+    }
+    else
+    {
+        if (_reportButton.hidden)
+        {
+            _deleteButton.frame = CGRectMake(_safeAreaInset.left, 0.0f, 56.0f, [self baseHeight]);
+            _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f), 0.0f, 56.0f, [self baseHeight]);
+            _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f - _safeAreaInset.right, 0.0f, 56.0f, [self baseHeight]);
+        }
+        else
+        {
+            CGFloat spacing = (self.frame.size.width - _safeAreaInset.left - _safeAreaInset.right - 56.0f) / 5.0f;
+            
+            _deleteButton.frame = CGRectMake(_safeAreaInset.left, 0.0f, 56.0f, [self baseHeight]);
+            _reportButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f) - spacing, 0.0f, 56.0f, [self baseHeight]);
+            _shareButton.frame = CGRectMake(floor((self.frame.size.width - 56.0f) / 2.0f) + spacing, 0.0f, 56.0f, [self baseHeight]);
+            _forwardButton.frame = CGRectMake(self.frame.size.width - 56.0f - _safeAreaInset.right, 0.0f, 56.0f, [self baseHeight]);
+        }
+    }
 }
 
 #pragma mark -
@@ -144,6 +186,13 @@
     id<TGModernConversationEditingPanelDelegate> delegate = (id<TGModernConversationEditingPanelDelegate>)self.delegate;
     if ([delegate respondsToSelector:@selector(editingPanelRequestedDeleteMessages:)])
         [delegate editingPanelRequestedDeleteMessages:self];
+}
+
+- (void)reportButtonPressed
+{
+    id<TGModernConversationEditingPanelDelegate> delegate = (id<TGModernConversationEditingPanelDelegate>)self.delegate;
+    if ([delegate respondsToSelector:@selector(editingPanelRequestedReportMessages:)])
+        [delegate editingPanelRequestedReportMessages:self];
 }
 
 - (void)forwardButtonPressed

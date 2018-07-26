@@ -2,7 +2,7 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
-#import "TGIconSwitchView.h"
+#import <LegacyComponents/TGIconSwitchView.h>
 
 #import "TGPresentation.h"
 
@@ -48,6 +48,8 @@
     if ([_switchView isKindOfClass:[UISwitch class]] && [_switchView respondsToSelector:@selector(setOnTintColor:)])
     {
         _switchView.onTintColor = presentation.pallete.collectionMenuSwitchColor;
+        if ([_switchView isKindOfClass:[TGIconSwitchView class]])
+            _switchView.backgroundColor = presentation.pallete.collectionMenuDestructiveColor;
         if (presentation.pallete.collectionMenuSwitchColor != nil)
             _switchView.tintColor = presentation.pallete.collectionMenuAccessoryColor;
         else
@@ -72,6 +74,7 @@
 - (void)setIsEnabled:(bool)isEnabled {
     _titleLabel.alpha = isEnabled ? 1.0f : 0.5f;
     _switchView.userInteractionEnabled = isEnabled;
+    _switchView.layer.allowsGroupOpacity = !isEnabled;
     _switchView.alpha = isEnabled ? 1.0f : 0.5f;
 }
 

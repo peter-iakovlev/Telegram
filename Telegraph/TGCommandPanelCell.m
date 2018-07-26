@@ -6,7 +6,7 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
-static UIImage *arrowImage() {
+static UIImage *arrowImage(UIColor *color) {
     static UIImage *image = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -19,7 +19,7 @@ static UIImage *arrowImage() {
         CGContextScaleCTM(context, 1.0f, 1.0f);
         CGContextTranslateCTM(context, -size.width / 2.0f, -size.height / 2.0f);
         
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xC7CCD0).CGColor);
+        CGContextSetStrokeColorWithColor(context, color.CGColor);
         CGContextSetLineCap(context, kCGLineCapRound);
         CGContextSetLineWidth(context, 2.0f);
         CGContextSetLineJoin(context, kCGLineJoinRound);
@@ -93,11 +93,27 @@ static UIImage *arrowImage() {
         
         _arrowButton = [[TGModernButton alloc] init];
         _arrowButton.modernHighlight = true;
-        [_arrowButton setImage:arrowImage() forState:UIControlStateNormal];
         [self.contentView addSubview:_arrowButton];
         [_arrowButton addTarget:self action:@selector(arrowButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     }
     return self;
+}
+
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    if (pallete == nil || _pallete == pallete)
+        return;
+    
+    _pallete = pallete;
+    
+    _titleLabel.textColor = pallete.textColor;
+    _descriptionLabel.textColor = pallete.textColor;
+    
+    [_arrowButton setImage:arrowImage(pallete.secondaryTextColor) forState:UIControlStateNormal];
+    
+    self.backgroundColor = pallete.backgroundColor;
+    self.backgroundView.backgroundColor = self.backgroundColor;
+    self.selectedBackgroundView.backgroundColor = pallete.selectionColor;
 }
 
 - (void)setCommandInfo:(TGBotComandInfo *)commandInfo user:(TGUser *)user
@@ -112,7 +128,7 @@ static UIImage *arrowImage() {
         
         CGFloat diameter = 32.0f;
         
-        static UIImage *placeholder = nil;
+        static UIImage *staticPlaceholder = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
@@ -126,9 +142,13 @@ static UIImage *arrowImage() {
             CGContextSetLineWidth(context, 1.0f);
             CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
             
-            placeholder = UIGraphicsGetImageFromCurrentImageContext();
+            staticPlaceholder = UIGraphicsGetImageFromCurrentImageContext();
             UIGraphicsEndImageContext();
         });
+        
+        UIImage *placeholder = staticPlaceholder;
+        if (self.pallete != nil)
+            placeholder = self.pallete.avatarPlaceholder;
         
         if (avatarUrl.length != 0)
         {

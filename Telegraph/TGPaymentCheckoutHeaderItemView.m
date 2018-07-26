@@ -8,6 +8,8 @@
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
 
+#import "TGPresentation.h"
+
 @interface TGPaymentCheckoutHeaderItemView () {
     TGSignalImageView *_imageView;
     UILabel *_titleLabel;
@@ -55,6 +57,16 @@
         [self.contentView addSubview:_separatorView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.textColor;
+    _textLabel.textColor = presentation.pallete.textColor;
+    _labelLabel.textColor = presentation.pallete.secondaryTextColor;
+    _separatorView.backgroundColor = presentation.pallete.separatorColor;
 }
 
 - (void)setPhoto:(TGImageMediaAttachment *)photo title:(NSString *)title text:(NSString *)text label:(NSString *)label {

@@ -12,9 +12,10 @@
 @property (nonatomic, weak) id<TGMediaPickerCaptionInputPanelDelegate> delegate;
 
 @property (nonatomic, strong) NSString *caption;
-- (void)setCaption:(NSString *)caption animated:(bool)animated;
+- (void)setCaption:(NSString *)caption entities:(NSArray *)entities animated:(bool)animated;
 
 @property (nonatomic, readonly) HPGrowingTextView *inputField;
+@property (nonatomic, assign) bool allowEntities;
 
 @property (nonatomic, assign) CGFloat bottomMargin;
 @property (nonatomic, assign, getter=isCollapsed) bool collapsed;
@@ -44,7 +45,7 @@
 
 - (bool)inputPanelShouldBecomeFirstResponder:(TGMediaPickerCaptionInputPanel *)inputPanel;
 - (void)inputPanelFocused:(TGMediaPickerCaptionInputPanel *)inputPanel;
-- (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)inputPanel text:(NSString *)text;
+- (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)inputPanel text:(NSString *)text entities:(NSArray *)entities;
 - (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel mention:(NSString *)mention startOfLine:(bool)startOfLine;
 - (void)inputPanelHashtagEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel hashtag:(NSString *)hashtag;
 - (void)inputPanelAlphacodeEntered:(TGMediaPickerCaptionInputPanel *)inputTextPanel alphacode:(NSString *)alphacode;

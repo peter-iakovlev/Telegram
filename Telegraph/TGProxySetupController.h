@@ -6,6 +6,6 @@
 
 @property (nonatomic, copy) void (^completion)(MTSocksProxySettings *settings, bool inactive);
 
-- (instancetype)initWithCurrentSettings;
+- (instancetype)initModal:(bool)modal;
 
 @end

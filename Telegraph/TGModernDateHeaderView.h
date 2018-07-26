@@ -8,9 +8,14 @@
 
 #import "TGModernView.h"
 
+@class TGPresentation;
+
 @interface TGModernDateHeaderView : UIView <TGModernView>
 
-+ (void)drawDate:(int)date forContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position;
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGPresentation *)presentation;
+- (void)setPresentation:(TGPresentation *)presentation;
+
++ (void)drawDate:(int)date forContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position presentation:(TGPresentation *)presentation;
 
 - (void)setDate:(int)date;
 - (int)date;

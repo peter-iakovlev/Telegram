@@ -10,6 +10,6 @@
 
 @interface TGChannelAdminLogEmptyView : TGModernConversationEmptyListPlaceholderView
 
-- (instancetype)initWithFilter:(TGChannelAdminLogEmptyFilter *)filter group:(bool)group;
+- (instancetype)initWithFilter:(TGChannelAdminLogEmptyFilter *)filter group:(bool)group presentation:(TGPresentation *)presentation;
 
 @end

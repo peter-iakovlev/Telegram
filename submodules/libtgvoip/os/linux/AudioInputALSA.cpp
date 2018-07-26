@@ -15,7 +15,7 @@
 using namespace tgvoip::audio;
 
 #define BUFFER_SIZE 960
-#define CHECK_ERROR(res, msg) if(res<0){LOGE(msg ": %s", _snd_strerror(res));}
+#define CHECK_ERROR(res, msg) if(res<0){LOGE(msg ": %s", _snd_strerror(res)); failed=true; return;}
 #define CHECK_DL_ERROR(res, msg) if(!res){LOGE(msg ": %s", dlerror()); failed=true; return;}
 #define LOAD_FUNCTION(lib, name, ref) {ref=(typeof(ref))dlsym(lib, name); CHECK_DL_ERROR(ref, "Error getting entry point for " name);}
 
@@ -58,7 +58,9 @@ void AudioInputALSA::Start(){
 		return;
 
 	isRecording=true;
-	start_thread(thread, AudioInputALSA::StartThread, this);
+	thread=new Thread(new MethodPointer<AudioInputALSA>(&AudioInputALSA::RunThread, this), NULL);
+	thread->SetName("AudioInputALSA");
+	thread->Start();
 }
 
 void AudioInputALSA::Stop(){
@@ -66,14 +68,12 @@ void AudioInputALSA::Stop(){
 		return;
 
 	isRecording=false;
-	join_thread(thread);
+	thread->Join();
+	delete thread;
+	thread=NULL;
 }
 
-void* AudioInputALSA::StartThread(void* arg){
-	((AudioInputALSA*)arg)->RunThread();
-}
-
-void AudioInputALSA::RunThread(){
+void AudioInputALSA::RunThread(void* arg){
 	unsigned char buffer[BUFFER_SIZE*2];
 	snd_pcm_sframes_t frames;
 	while(isRecording){
@@ -93,7 +93,7 @@ void AudioInputALSA::SetCurrentDevice(std::string devID){
 	bool wasRecording=isRecording;
 	isRecording=false;
 	if(handle){
-		join_thread(thread);
+		thread->Join();
 		_snd_pcm_close(handle);
 	}
 	currentDevice=devID;
@@ -108,7 +108,7 @@ void AudioInputALSA::SetCurrentDevice(std::string devID){
 
 	if(wasRecording){
 		isRecording=true;
-		start_thread(thread, AudioInputALSA::StartThread, this);
+		thread->Start();
 	}
 }
 

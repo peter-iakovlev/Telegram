@@ -18,7 +18,27 @@
     int32_t flags = [is readInt32];
     result.flags = flags;
     
-    result.caption = [is readString];
+    result.message = [is readString];
+    
+    if (flags & (1 << 1))
+    {
+        [is readInt32];
+        
+        NSMutableArray *items = [[NSMutableArray alloc] init];
+        int32_t count = [is readInt32];
+        for (int32_t i = 0; i < count; i++) {
+            int32_t signature = [is readInt32];
+            id item = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+            if (error != nil && *error != nil) {
+                return nil;
+            }
+            if (item != nil) {
+                [items addObject:item];
+            }
+        }
+        
+        result.entities = items;
+    }
     
     if (flags & (1 << 2))
     {

@@ -1,7 +1,5 @@
 /* Localized versions of Info.plist keys */
 
-"CFBundleDisplayName" = "Telegram";
-
 "NSContactsUsageDescription" = "Telegram caricherà continuamente i tuoi contatti sui suoi server cloud altamente criptati per farti connettere con i tuoi amici da tutti i tuoi dispositivi.";
 "NSLocationWhenInUseUsageDescription" = "Quando invii la tua posizione ai tuoi amici, Telegram ha bisogno di accedere per mostrare loro la mappa.";
 "NSLocationAlwaysUsageDescription" = "Quando invii la tua posizione ai tuoi amici, Telegram ha bisogno di accedere per mostrare loro la mappa. Ti serve anche per inviare posizioni da Apple Watch.";

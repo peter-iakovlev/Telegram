@@ -1,5 +1,7 @@
 #import "TGModernViewModel.h"
 
+@class TGPresentation;
+
 typedef enum {
     TGMessageViewsViewTypeIncoming,
     TGMessageViewsViewTypeOutgoing,
@@ -10,5 +12,6 @@ typedef enum {
 
 @property (nonatomic) int32_t count;
 @property (nonatomic) TGMessageViewsViewType type;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @end

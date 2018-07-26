@@ -21,8 +21,12 @@
 @property (nonatomic, readonly) TGMediaEditingContext *editingContext;
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 @property (nonatomic) bool allowCaptions;
+@property (nonatomic) bool allowCaptionEntities;
 @property (nonatomic) bool inhibitDocumentCaptions;
 @property (nonatomic) bool hasTimer;
+@property (nonatomic) bool onlyCrop;
+@property (nonatomic) bool asFile;
+@property (nonatomic) bool inhibitMute;
 
 @property (nonatomic, strong) NSArray *underlyingViews;
 @property (nonatomic, assign) bool openEditor;
@@ -36,9 +40,12 @@
 
 @property (nonatomic, assign) CGFloat remainingHeight;
 @property (nonatomic, assign) bool condensed;
+@property (nonatomic, assign) bool collapsed;
 
 @property (nonatomic, strong) NSString *recipientName;
 
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context camera:(bool)hasCamera selfPortrait:(bool)selfPortrait forProfilePhoto:(bool)forProfilePhoto assetType:(TGMediaAssetType)assetType saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping;
+
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context camera:(bool)hasCamera selfPortrait:(bool)selfPortrait forProfilePhoto:(bool)forProfilePhoto assetType:(TGMediaAssetType)assetType saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping allowSelection:(bool)allowSelection allowEditing:(bool)allowEditing document:(bool)document;
 
 @end

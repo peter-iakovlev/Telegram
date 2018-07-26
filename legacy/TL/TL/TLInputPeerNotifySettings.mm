@@ -33,7 +33,7 @@
 
 @end
 
-@implementation TLInputPeerNotifySettings$inputPeerNotifySettings : TLInputPeerNotifySettings
+@implementation TLInputPeerNotifySettings$inputPeerNotifySettingsMeta : TLInputPeerNotifySettings
 
 
 - (int32_t)TLconstructorSignature
@@ -48,7 +48,7 @@
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
-    TLInputPeerNotifySettings$inputPeerNotifySettings *object = [[TLInputPeerNotifySettings$inputPeerNotifySettings alloc] init];
+    TLInputPeerNotifySettings$inputPeerNotifySettingsMeta *object = [[TLInputPeerNotifySettings$inputPeerNotifySettingsMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.mute_until = metaObject->getInt32((int32_t)0xb47c7399);
     object.sound = metaObject->getString((int32_t)0x352fa0b9);

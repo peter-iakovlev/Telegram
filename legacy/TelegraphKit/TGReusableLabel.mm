@@ -238,12 +238,12 @@
 {
 }
 
-+ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL
++ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor linkColor:(UIColor *)linkColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL
 {
-    return [self calculateLayout:text additionalAttributes:additionalAttributes textCheckingResults:textCheckingResults font:font textColor:textColor frame:frame orMaxWidth:maxWidth flags:flags textAlignment:textAlignment outIsRTL:outIsRTL additionalTrailingWidth:0.0f maxNumberOfLines:0 numberOfLinesToInset:0 linesInset:0.0f containsEmptyNewline:NULL additionalLineSpacing:0.0f ellipsisString:nil];
+    return [self calculateLayout:text additionalAttributes:additionalAttributes textCheckingResults:textCheckingResults font:font textColor:textColor linkColor:linkColor frame:frame orMaxWidth:maxWidth flags:flags textAlignment:textAlignment outIsRTL:outIsRTL additionalTrailingWidth:0.0f maxNumberOfLines:0 numberOfLinesToInset:0 linesInset:0.0f containsEmptyNewline:NULL additionalLineSpacing:0.0f ellipsisString:nil underlineAllLinks:false];
 }
 
-+ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL additionalTrailingWidth:(CGFloat)additionalTrailingWidth maxNumberOfLines:(NSUInteger)maxNumberOfLines numberOfLinesToInset:(NSUInteger)numberOfLinesToInset linesInset:(CGFloat)linesInset containsEmptyNewline:(bool *)containsEmptyNewline additionalLineSpacing:(CGFloat)additionalLineSpacing ellipsisString:(NSString *)ellipsisString
++ (TGReusableLabelLayoutData *)calculateLayout:(NSString *)text additionalAttributes:(NSArray *)additionalAttributes textCheckingResults:(NSArray *)textCheckingResults font:(CTFontRef)font textColor:(UIColor *)textColor linkColor:(UIColor *)linkColor frame:(CGRect)frame orMaxWidth:(float)maxWidth flags:(int)flags textAlignment:(NSTextAlignment)textAlignment outIsRTL:(bool *)outIsRTL additionalTrailingWidth:(CGFloat)additionalTrailingWidth maxNumberOfLines:(NSUInteger)maxNumberOfLines numberOfLinesToInset:(NSUInteger)numberOfLinesToInset linesInset:(CGFloat)linesInset containsEmptyNewline:(bool *)containsEmptyNewline additionalLineSpacing:(CGFloat)additionalLineSpacing ellipsisString:(NSString *)ellipsisString underlineAllLinks:(bool)underlineAllLinks
 {
     if (font == NULL || text == nil)
         return nil;
@@ -299,16 +299,10 @@
         }
     }
     
-    static CGColorRef defaultLinkColor = nil;
-    if (defaultLinkColor == nil)
-        defaultLinkColor = (CGColorRef)CFRetain(UIColorRGB(0x004bad).CGColor);
-    
     CTFontRef boldFont = NULL;
     CTFontRef ultraBoldFont = NULL;
     CTFontRef italicFont = NULL;
     CTFontRef fixedFont = NULL;
-    
-    CGColorRef linkColor = defaultLinkColor;
     
     NSRange *pLinkRanges = NULL;
     int linkRangeActualCount = 0;
@@ -321,6 +315,10 @@
         for (id match in textCheckingResults)
         {
             NSRange linkRange = [match range];
+            if (linkRange.location == NSNotFound || linkRange.location + linkRange.length > string.length) {
+                continue;
+            }
+            
             
             bool useRange = false;
             bool useRangeUnderline = false;
@@ -338,9 +336,9 @@
                 }
                 layout.links->push_back(TGLinkData(linkRange, url, linkText, hidden));
                 
-                if (flags & TGReusableLabelLayoutHighlightLinks)
+                if (flags & TGReusableLabelLayoutHighlightLinks && linkColor != NULL)
                 {
-                    CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor);
+                    CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor.CGColor);
                     
                     if (enableUnderline) {
                         CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);
@@ -359,12 +357,21 @@
                     {
                         url = [[NSString alloc] initWithFormat:@"mention://%@", ((TGTextCheckingResult *)match).contents];
                         useRange = true;
+                        useRangeUnderline = underlineAllLinks;
                         break;
                     }
                     case TGTextCheckingResultTypeHashtag:
                     {
-                        useRange = true;
                         url = [[NSString alloc] initWithFormat:@"hashtag://%@", ((TGTextCheckingResult *)match).contents];
+                        useRange = true;
+                        useRangeUnderline = underlineAllLinks;
+                        break;
+                    }
+                    case TGTextCheckingResultTypeCashtag:
+                    {
+                        url = [[NSString alloc] initWithFormat:@"cashtag://%@", ((TGTextCheckingResult *)match).contents];
+                        useRange = true;
+                        useRangeUnderline = underlineAllLinks;
                         break;
                     }
                     case TGTextCheckingResultTypeCommand:
@@ -373,6 +380,7 @@
                         {
                             useRange = true;
                             url = [[NSString alloc] initWithFormat:@"command://%@", ((TGTextCheckingResult *)match).contents];
+                            useRangeUnderline = underlineAllLinks;
                         }
                         break;
                     }
@@ -429,7 +437,7 @@
                     {
                         url = ((TGTextCheckingResult *)match).contents;
                         useRange = true;
-                        useRangeUnderline = ((TGTextCheckingResult *)match).highlightAsLink;
+                        useRangeUnderline = ((TGTextCheckingResult *)match).highlightAsLink || underlineAllLinks;
                         
                         break;
                     }
@@ -446,9 +454,9 @@
                     }
                     layout.links->push_back(TGLinkData(linkRange, url, linkText, false));
                 
-                    if (flags & TGReusableLabelLayoutHighlightLinks)
+                    if (flags & TGReusableLabelLayoutHighlightLinks && linkColor != NULL)
                     {
-                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor);
+                        CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTForegroundColorAttributeName, linkColor.CGColor);
                         
                         if (enableUnderline && useRangeUnderline) {
                             CFAttributedStringSetAttribute((CFMutableAttributedStringRef)string, CFRangeMake(linkRange.location, linkRange.length), kCTUnderlineStyleAttributeName, (CFNumberRef)underlineStyle);

@@ -123,8 +123,7 @@ void TGCallAesIgeDecrypt(uint8_t *inBytes, uint8_t *outBytes, size_t length, uin
     unsigned char ccIv[AES_BLOCK_SIZE];
     memcpy(ccIv, (void *)((uint8_t *)iv + AES_BLOCK_SIZE), AES_BLOCK_SIZE);
     
-    assert(((size_t)inBytes | (size_t)outBytes | (size_t)aesIv | (size_t)ccIv) % sizeof(long) ==
-           0);
+    //assert(((size_t)inBytes | (size_t)outBytes | (size_t)aesIv | (size_t)ccIv) % sizeof(long) == 0);
     
     CCCryptorRef decryptor = NULL;
     CCCryptorCreate(kCCDecrypt, kCCAlgorithmAES128, kCCOptionECBMode, key, 32, nil, &decryptor);

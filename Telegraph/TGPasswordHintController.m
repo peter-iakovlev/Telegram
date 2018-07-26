@@ -2,6 +2,8 @@
 
 #import "TGPasswordSetupView.h"
 
+#import "TGPresentation.h"
+
 @interface TGPasswordHintController ()
 {
     NSString *_password;
@@ -53,9 +55,11 @@
 {
     [super loadView];
     
-    self.view.backgroundColor = UIColorRGB(0xefeff4);
+    TGPresentation *presentation = TGPresentation.current;
+    self.view.backgroundColor = presentation.pallete.collectionMenuBackgroundColor;
     
     _view = [[TGPasswordSetupView alloc] initWithFrame:self.view.bounds];
+    _view.presentation = presentation;
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _view.secureEntry = false;
     [self.view addSubview:_view];

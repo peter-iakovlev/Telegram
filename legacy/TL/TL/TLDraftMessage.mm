@@ -33,7 +33,7 @@
 
 @end
 
-@implementation TLDraftMessage$draftMessageEmpty : TLDraftMessage
+@implementation TLDraftMessage$draftMessageEmptyMeta : TLDraftMessage
 
 
 - (int32_t)TLconstructorSignature
@@ -48,7 +48,7 @@
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
 {
-    TLDraftMessage$draftMessageEmpty *object = [[TLDraftMessage$draftMessageEmpty alloc] init];
+    TLDraftMessage$draftMessageEmptyMeta *object = [[TLDraftMessage$draftMessageEmptyMeta alloc] init];
     return object;
 }
 

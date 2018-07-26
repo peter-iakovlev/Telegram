@@ -5,6 +5,8 @@
 #import "TGGroupInvitationInfo.h"
 
 @class TGUser;
+@class TLInputPeer;
+@class TLInputMedia;
 
 typedef enum {
     TGSynchronizePinnedConversationsActionPush = 1,
@@ -32,10 +34,13 @@ typedef enum {
 + (SSignal *)toggleUserIsAdmin:(int64_t)peerId user:(TGUser *)user isAdmin:(bool)isAdmin;
 + (SSignal *)migrateGroup:(int64_t)peerId;
 + (SSignal *)messageEditData:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId;
-+ (SSignal *)editMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId text:(NSString *)text entities:(NSArray *)entities disableLinksPreview:(bool)disableLinksPreview;
+
++ (SSignal *)editMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId text:(NSString *)text entities:(NSArray *)entities disableLinksPreview:(bool)disableLinksPreview media:(TLInputMedia *)media;
 
 + (SSignal *)validatePeerReadStates:(SSignal *)peers;
 + (SSignal *)synchronizePeerMessageDrafts:(SSignal *)peerIdsSets;
++ (SSignal *)clearAllMessageDrafts;
+
 + (SSignal *)conversationsToBeRemovedToAssignPublicUsernames:(int64_t)conversationId accessHash:(int64_t)accessHash;
 + (SSignal *)preloadedPeer:(int64_t)peerId accessHash:(int64_t)accessHash;
 

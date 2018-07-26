@@ -3,6 +3,8 @@
 #import "TGFont.h"
 #import "TGImageUtils.h"
 
+#import "LegacyComponentsGlobals.h"
+
 @interface TGCheckButtonView ()
 {
     UIView *_wrapperView;
@@ -11,7 +13,6 @@
     
     TGCheckButtonStyle _style;
     CGSize _size;
-    bool _borderOnTop;
     UIImage *_fillImage;
     
     UIView *_checkView;
@@ -21,14 +22,31 @@
     
     UILabel *_numberLabel;
     NSInteger _number;
+    
+    UIColor *_checkColor;
 }
 @end
 
 @implementation TGCheckButtonView
 
+static NSMutableDictionary *backgroundImages;
+static NSMutableDictionary *fillImages;
 static CGAffineTransform TGCheckButtonDefaultTransform;
 
-- (instancetype)initWithStyle:(TGCheckButtonStyle)style
++ (void)resetCache
+{
+    [backgroundImages removeAllObjects];
+    [fillImages removeAllObjects];
+}
+
+- (instancetype)initWithStyle:(TGCheckButtonStyle)style {
+    TGCheckButtonPallete *pallete = nil;
+    if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(checkButtonPallete)])
+        pallete = [[LegacyComponentsGlobals provider] checkButtonPallete];
+    return [self initWithStyle:style pallete:pallete];
+}
+
+- (instancetype)initWithStyle:(TGCheckButtonStyle)style pallete:(TGCheckButtonPallete *)pallete
 {
     CGSize size = CGSizeMake(32.0f, 32.0f);
     if (style == TGCheckButtonStyleGallery)
@@ -38,8 +56,6 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     if (self != nil)
     {
         static dispatch_once_t onceToken;
-        static NSMutableDictionary *backgroundImages;
-        static NSMutableDictionary *fillImages;
         static CGFloat screenScale = 2.0f;
         dispatch_once(&onceToken, ^
         {
@@ -49,31 +65,50 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             screenScale = [UIScreen mainScreen].scale;
         });
         
-        bool borderOnTop = false;
+        int32_t hex = 0x29c519;
+        UIColor *greenColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
+        
+        hex = 0x007ee5;
+        UIColor *blueColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
+        
+        hex = 0xcacacf;
+        UIColor *borderColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
+        
+        UIColor *checkColor = [UIColor whiteColor];
+        
+        UIColor *backgroundColor = [UIColor whiteColor];
+        UIColor *chatBorderColor = [UIColor whiteColor];
+        
+        if (pallete != nil)
+        {
+            greenColor = pallete.defaultBackgroundColor;
+            blueColor = pallete.accentBackgroundColor;
+            borderColor = pallete.defaultBorderColor;
+            chatBorderColor = pallete.chatBorderColor;
+            checkColor = pallete.checkColor;
+            backgroundColor = pallete.barBackgroundColor;
+        }
+        
+        _checkColor = checkColor;
+        
         CGFloat insideInset = 0.0f;
         switch (style)
         {
-            case TGCheckButtonStyleGallery:
-            {
-                insideInset = 3.5f;
-                borderOnTop = true;
-            }
-                break;
-                
-            case TGCheckButtonStyleMedia:
-            {
-                insideInset = 4.0f;
-                borderOnTop = true;
-            }
-                break;
-                
             case TGCheckButtonStyleBar:
             {
                 insideInset = 2.0f;
             }
                 break;
                 
+            case TGCheckButtonStyleGallery:
+            {
+                insideInset = 3.5f;
+            }
+                break;
+                
             case TGCheckButtonStyleShare:
+            case TGCheckButtonStyleChat:
+            case TGCheckButtonStyleMedia:
             {
                 insideInset = 4.0f;
             }
@@ -112,13 +147,16 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     break;
                     
                 case TGCheckButtonStyleMedia:
+                case TGCheckButtonStyleChat:
                 {
                     CGRect rect = CGRectMake(0, 0, size.width, size.height);
                     UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
                     CGContextRef context = UIGraphicsGetCurrentContext();
-                    CGContextSetShadowWithColor(context, CGSizeZero, 2.5f, [UIColor colorWithWhite:0.0f alpha:0.22f].CGColor);
+                    
+                    if (style == TGCheckButtonStyleMedia || [chatBorderColor isEqual:[UIColor whiteColor]])
+                        CGContextSetShadowWithColor(context, CGSizeZero, 2.5f, [UIColor colorWithWhite:0.0f alpha:0.22f].CGColor);
                     CGContextSetLineWidth(context, 1.5f);
-                    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
+                    CGContextSetStrokeColorWithColor(context, (style == TGCheckButtonStyleChat ? chatBorderColor : [UIColor whiteColor]).CGColor);
                     CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
                     
                     backgroundImage = UIGraphicsGetImageFromCurrentImageContext();
@@ -133,10 +171,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     CGContextRef context = UIGraphicsGetCurrentContext();
                     CGContextSetLineWidth(context, 1.0f);
                     
-                    int32_t hex = 0xcacacf;
-                    UIColor *color = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
-                    
-                    CGContextSetStrokeColorWithColor(context, color.CGColor);
+                    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
                     CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
                     
                     backgroundImage = UIGraphicsGetImageFromCurrentImageContext();
@@ -160,10 +195,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     CGContextRef context = UIGraphicsGetCurrentContext();
                     CGContextSetLineWidth(context, 1.0f);
                     
-                    int32_t hex = 0xcacacf;
-                    UIColor *color = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
-                    
-                    CGContextSetStrokeColorWithColor(context, color.CGColor);
+                    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
                     CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
                     
                     backgroundImage = UIGraphicsGetImageFromCurrentImageContext();
@@ -181,20 +213,21 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             switch (style)
             {
                 case TGCheckButtonStyleShare:
+                case TGCheckButtonStyleChat:
                 {
                     CGRect rect = CGRectMake(0, 0, size.width, size.height);
                     UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
                     CGContextRef context = UIGraphicsGetCurrentContext();
                     
-                    int32_t hex = 0x007ee5;
-                    UIColor *accentColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
-                    
-                    CGContextSetFillColorWithColor(context, accentColor.CGColor);
-                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset + 0.5f, insideInset + 0.5f));
-                    
+                    CGContextSetFillColorWithColor(context, blueColor.CGColor);
+                    CGFloat inset = (style == TGCheckButtonStyleChat && ![chatBorderColor isEqual:[UIColor whiteColor]]) ? 0.0f : 1.2f;
+                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset + inset, insideInset + inset));
                     CGContextSetLineWidth(context, 2.0f);
-                    CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
-                    CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 1.0f, insideInset + 1.0f));
+                    if (style == TGCheckButtonStyleShare)
+                    {
+                        CGContextSetStrokeColorWithColor(context, backgroundColor.CGColor);
+                        CGContextStrokeEllipseInRect(context, CGRectInset(rect, insideInset + 1.0f, insideInset + 1.0f));
+                    }
                     
                     fillImage = UIGraphicsGetImageFromCurrentImageContext();
                     UIGraphicsEndImageContext();
@@ -206,16 +239,11 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     CGRect rect = CGRectMake(0, 0, size.width, size.height);
                     UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
                     CGContextRef context = UIGraphicsGetCurrentContext();
-                    
-                    int32_t hex = 0x29c519;
-                    UIColor *hexColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
-                    
-                    hex = 0x007ee5;
-                    UIColor *accentColor = [[UIColor alloc] initWithRed:(((hex >> 16) & 0xff) / 255.0f) green:(((hex >> 8) & 0xff) / 255.0f) blue:(((hex) & 0xff) / 255.0f) alpha:1.0f];
-                    
-                    UIColor *color = style == TGCheckButtonStyleDefaultBlue ? accentColor : hexColor;
+                                        
+                    UIColor *color = style == TGCheckButtonStyleDefaultBlue ? blueColor : greenColor;
                     CGContextSetFillColorWithColor(context, color.CGColor);
-                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset, insideInset));
+                    CGFloat inset = (style == TGCheckButtonStyleDefault || style == TGCheckButtonStyleDefaultBlue) ? 0.0f : 1.2f;
+                    CGContextFillEllipseInRect(context, CGRectInset(rect, insideInset + inset, insideInset + inset));
                     
                     fillImage = UIGraphicsGetImageFromCurrentImageContext();
                     UIGraphicsEndImageContext();
@@ -228,7 +256,6 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
         
         _style = style;
         _size = size;
-        _borderOnTop = borderOnTop;
         _fillImage = fillImage;
         
         _wrapperView = [[UIView alloc] initWithFrame:self.bounds];
@@ -248,10 +275,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
 {
     if (_checkFillView != nil)
         return;
-    
-    if (_borderOnTop)
-        [_checkBackground removeFromSuperlayer];
-    
+
     _checkFillView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, _size.width, _size.height)];
     _checkFillView.alpha = 0.0f;
     _checkFillView.image = _fillImage;
@@ -274,21 +298,18 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     }
     
     _checkShortFragment = [[UIView alloc] init];
-    _checkShortFragment.backgroundColor = [UIColor whiteColor];
+    _checkShortFragment.backgroundColor = _checkColor;
     _checkShortFragment.layer.anchorPoint = CGPointMake(0.5f, 0);
     _checkShortFragment.frame = shortFragmentFrame;
     _checkShortFragment.transform = CGAffineTransformMakeScale(1.0f, 0.0f);
     [_checkView addSubview:_checkShortFragment];
     
     _checkLongFragment = [[UIView alloc] init];
-    _checkLongFragment.backgroundColor = [UIColor whiteColor];
+    _checkLongFragment.backgroundColor = _checkColor;
     _checkLongFragment.layer.anchorPoint = CGPointMake(0, 0.5f);
     _checkLongFragment.frame = longFragmentFrame;
     _checkLongFragment.transform = CGAffineTransformMakeScale(0.0f, 1.0f);
     [_checkView addSubview:_checkLongFragment];
-    
-    if (_borderOnTop)
-        [_wrapperView.layer addSublayer:_checkBackground];
     
     if (_numberLabel != nil)
     {
@@ -305,6 +326,11 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
 }
 
 - (void)setSelected:(bool)selected animated:(bool)animated bump:(bool)bump
+{
+    [self setSelected:selected animated:animated bump:bump completion:nil];
+}
+
+- (void)setSelected:(bool)selected animated:(bool)animated bump:(bool)bump completion:(void (^)())completion
 {
     if (selected)
         [self _createCheckButtonDetailsIfNeeded];
@@ -324,8 +350,12 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
     
     if (animated)
     {
-        if (self.selected == selected)
+        if (self.selected == selected) {
+            if (completion) {
+                completion();
+            }
             return;
+        }
         
         if (bump)
         {
@@ -362,13 +392,13 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             [UIView animateWithDuration:duration delay:0.0f usingSpringWithDamping:damping initialSpringVelocity:initialVelocity options:UIViewAnimationOptionBeginFromCurrentState animations:^
              {
                  _wrapperView.transform = CGAffineTransformIdentity;
-             } completion:nil];
+             } completion:^(__unused BOOL finished) {
+                 if (completion) {
+                     completion();
+                 }
+             }];
             
-            if (_number > 0)
-            {
-                
-            }
-            else
+            if (_number == 0)
             {
                 _checkView.alpha = 1.0f;
                 _checkShortFragment.transform = CGAffineTransformMakeScale(1.0f, 0.0f);
@@ -385,7 +415,8 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
                     {
                         _checkLongFragment.transform = CGAffineTransformIdentity;
                     }];
-                } completion:nil];
+                } completion:^(__unused BOOL finished) {
+                }];
             }
         }
         else
@@ -411,6 +442,9 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             } completion:^(__unused BOOL finished)
             {
                 _checkView.transform = TGCheckButtonDefaultTransform;
+                if (completion) {
+                    completion();
+                }
             }];
         }
     }
@@ -430,6 +464,10 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
             _checkShortFragment.transform = CGAffineTransformIdentity;
             _checkLongFragment.transform = CGAffineTransformIdentity;
         }
+        
+        if (completion) {
+            completion();
+        }
     }
     
     super.selected = selected;
@@ -446,7 +484,7 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
         _numberLabel = [[UILabel alloc] init];
         _numberLabel.backgroundColor = [UIColor clearColor];
         _numberLabel.frame = CGRectMake(0.0f, -TGScreenPixel, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
-        _numberLabel.textColor = [UIColor whiteColor];
+        _numberLabel.textColor = _checkColor;
         _numberLabel.textAlignment = NSTextAlignmentCenter;
         _numberLabel.userInteractionEnabled = false;
         _numberLabel.font = [TGFont roundedFontOfSize:_style == TGCheckButtonStyleGallery ? 18.0f : 16.0f];
@@ -501,6 +539,25 @@ static CGAffineTransform TGCheckButtonDefaultTransform;
 {
     [super touchesCancelled:touches withEvent:event];
     [self setWrapperScale:1.0f animated:true];
+}
+
+@end
+
+
+@implementation TGCheckButtonPallete
+
++ (instancetype)palleteWithDefaultBackgroundColor:(UIColor *)defaultBackgroundColor accentBackgroundColor:(UIColor *)accentBackgroundColor defaultBorderColor:(UIColor *)defaultBorderColor mediaBorderColor:(UIColor *)mediaBorderColor chatBorderColor:(UIColor *)chatBorderColor checkColor:(UIColor *)checkColor blueColor:(UIColor *)blueColor barBackgroundColor:(UIColor *)barBackgroundColor
+{
+    TGCheckButtonPallete *pallete = [[TGCheckButtonPallete alloc] init];
+    pallete->_defaultBackgroundColor = defaultBackgroundColor;
+    pallete->_accentBackgroundColor = accentBackgroundColor;
+    pallete->_defaultBorderColor = defaultBorderColor;
+    pallete->_mediaBorderColor = mediaBorderColor;
+    pallete->_chatBorderColor = chatBorderColor;
+    pallete->_checkColor = checkColor;
+    pallete->_blueColor = blueColor;
+    pallete->_barBackgroundColor = barBackgroundColor;
+    return pallete;
 }
 
 @end

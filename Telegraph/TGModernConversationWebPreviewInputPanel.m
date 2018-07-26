@@ -60,6 +60,16 @@
     return self;
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _lineView.backgroundColor = pallete.accentColor;
+    _nameLabel.textColor = pallete.accentColor;
+    _contentLabel.textColor = pallete.secondaryTextColor;
+    [_closeButton setBackgroundImage:pallete.closeIcon forState:UIControlStateNormal];
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];

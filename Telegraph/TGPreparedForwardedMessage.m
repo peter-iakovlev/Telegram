@@ -1,5 +1,6 @@
 #import "TGPreparedForwardedMessage.h"
 
+#import "TGTelegraph.h"
 #import <LegacyComponents/LegacyComponents.h>
 
 @interface TGPreparedForwardedMessage ()
@@ -50,6 +51,12 @@
             }
             else
                 [attachments addObject:attachment];
+        }
+        
+        if (message.cid == TGTelegraphInstance.clientUserId)
+        {
+            _forwardMid = 0;
+            _forwardSourcePeerId = 0;
         }
         
         innerMessage.mediaAttachments = attachments;

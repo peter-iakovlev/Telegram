@@ -27,6 +27,8 @@
 #import "TGReplyHeaderModel.h"
 #import "TGImageMessageViewModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGLiveLocationMessageViewModel ()
 {
     TGMessage *_message;
@@ -66,21 +68,6 @@
         _message = message;
         _period = period;
         
-        static UIColor *incomingDetailColor = nil;
-        static UIColor *outgoingDetailColor = nil;
-        static UIImage *incomingButtonIcon = nil;
-        static UIImage *outgoingButtonIcon = nil;
-
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            incomingDetailColor = UIColorRGB(0x999999);
-            outgoingDetailColor = UIColorRGB(0x2da32e);
-            
-            incomingButtonIcon = TGTintedImage(TGComponentsImageNamed(@"LocationMessageLiveIcon"), TGAccentColor());
-            outgoingButtonIcon = TGTintedImage(TGComponentsImageNamed(@"LocationMessageLiveIcon"), outgoingDetailColor);
-        });
-        
         int32_t currentTime = (int32_t)[[TGTelegramNetworking instance] globalTime];
         _expired = currentTime >= message.date + period;
         
@@ -90,13 +77,13 @@
         
         _titleModel = [[TGModernTextViewModel alloc] initWithText:TGLocalized(@"Conversation.LiveLocation") font:TGCoreTextMediumFontOfSize(16.0f)];
         _titleModel.maxNumberOfLines = 1;
-        _titleModel.textColor = [UIColor blackColor];
+        _titleModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingTextColor : _context.presentation.pallete.chatOutgoingTextColor;
         [_bottomModel addSubmodel:_titleModel];
         
         NSString *subtitle = [TGDateUtils stringForRelativeUpdate:[message actualDate]];
         _subtitleModel = [[TGModernTextViewModel alloc] initWithText:subtitle font:TGCoreTextSystemFontOfSize(13.0f)];
         _subtitleModel.maxNumberOfLines = 1;
-        _subtitleModel.textColor = _incomingAppearance ? incomingDetailColor : outgoingDetailColor;
+        _subtitleModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingSubtextColor : _context.presentation.pallete.chatOutgoingSubtextColor;
         [_bottomModel addSubmodel:_subtitleModel];
     
         CGSize size;
@@ -134,20 +121,7 @@
         [_pinModel setViewUserInteractionDisabled:true];
         [self addSubmodel:_pinModel];
         
-        static UIImage *placeholder = nil;
-        static dispatch_once_t onceToken2;
-        dispatch_once(&onceToken2, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(42.0f, 42.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            //!placeholder
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 42.0f, 42.0f));
-            
-            placeholder = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
+        UIImage *placeholder = [context.presentation.images avatarPlaceholderWithDiameter:42.0f];
         
         _avatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(42, 42) placeholder:placeholder];
         _avatarModel.skipDrawInContext = true;
@@ -176,7 +150,7 @@
         {
             _remainingDisposable = [[SMetaDisposable alloc] init];
             
-            _elapsedModel = [[TGLiveLocationElapsedViewModel alloc] initWithColor:_incomingAppearance ? TGAccentColor() : outgoingDetailColor];
+            _elapsedModel = [[TGLiveLocationElapsedViewModel alloc] initWithColor:_incomingAppearance ? _context.presentation.pallete.chatIncomingAccentColor : _context.presentation.pallete.chatOutgoingAccentColor];
             _elapsedModel.skipDrawInContext = true;
             [_elapsedModel setViewUserInteractionDisabled:true];
             [self addSubmodel:_elapsedModel];
@@ -398,7 +372,7 @@
         CGPoint point = [recognizer locationInView:[_contentModel boundView]];
         if (recognizer.longTapped)
         {
-            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
         }
         else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
         {
@@ -406,7 +380,7 @@
         }
         else
         {
-            [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+            [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
         }
     }
 }

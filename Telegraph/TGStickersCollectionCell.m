@@ -54,6 +54,13 @@ NSString *const TGStickersCollectionCellIdentifier = @"TGStickersCollectionCell"
     return self;
 }
 
+- (void)setBackgroundColor:(UIColor *)backgroundColor
+{
+    [super setBackgroundColor:backgroundColor];
+    _wrapperView.backgroundColor = backgroundColor;
+    _imageView.backgroundColor = backgroundColor;
+}
+
 - (TGDocumentMediaAttachment *)sticker
 {
     return _sticker;

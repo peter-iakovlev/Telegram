@@ -1,5 +1,9 @@
-#import <UIKit/UIKit.h>
+#import <LegacyComponents/TGViewController.h>
 
-@interface TGLocalizationSelectionController : UITableViewController
+@class TGPresentation;
+
+@interface TGLocalizationSelectionController : TGViewController
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @end

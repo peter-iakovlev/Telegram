@@ -5,8 +5,13 @@
 #import <LegacyComponents/TGWallpaperInfo.h>
 #import "TGWallpaperManager.h"
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationGenericEmptyListView ()
 {
+    UIImageView *_backgroundImageView;
+    UIImageView *_iconView;
+    UILabel *_titleLabel;
     UIView *_containerView;
 }
 
@@ -14,44 +19,33 @@
 
 @implementation TGModernConversationGenericEmptyListView
 
-- (id)initWithFrame:(CGRect)frame
+@synthesize presentation = _presentation;
+
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGPresentation *)presentation
 {
     self = [super initWithFrame:CGRectMake(frame.origin.x, frame.origin.y, 144.0f, 144.0f)];
     if (self)
     {
+        _presentation = presentation;
+        
         _containerView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 144.0f, 144.0f)];
         [self addSubview:_containerView];
         
-        static UIImage *backgroundImage = nil;
-        static int backgroundColor = -1;
+        _backgroundImageView = [[UIImageView alloc] initWithImage:presentation.images.chatPlaceholderBackground];
+        _backgroundImageView.frame = _containerView.bounds;
+        [_containerView addSubview:_backgroundImageView];
         
-        if (backgroundColor == -1 || backgroundColor != [[TGWallpaperManager instance] currentWallpaperInfo].tintColor)
-        {
-            backgroundColor = [[TGWallpaperManager instance] currentWallpaperInfo].tintColor;
-            
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(30.0f, 30.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGBA(backgroundColor, 0.35f).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 30.0f, 30.0f));
-            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:15 topCapHeight:15];
-            UIGraphicsEndImageContext();
-        }
+        _iconView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"ModernConversationEmptyListLogo.png"), presentation.pallete.chatSystemTextColor)];
+        CGSize iconSize = _iconView.frame.size;
+        _iconView.frame = CGRectMake(CGFloor((_containerView.frame.size.width - iconSize.width) / 2.0f), 14.0f, iconSize.width, iconSize.height);
+        [_containerView addSubview:_iconView];
         
-        UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:backgroundImage];
-        backgroundImageView.frame = _containerView.bounds;
-        [_containerView addSubview:backgroundImageView];
+        _titleLabel = [[UILabel alloc] init];
+        _titleLabel.backgroundColor = [UIColor clearColor];
+        _titleLabel.textColor = presentation.pallete.chatSystemTextColor;
+        _titleLabel.font = TGMediumSystemFontOfSize(14.0f);
         
-        UIImageView *iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernConversationEmptyListLogo.png")];
-        CGSize iconSize = iconView.frame.size;
-        iconView.frame = CGRectMake(CGFloor((_containerView.frame.size.width - iconSize.width) / 2.0f), 14.0f, iconSize.width, iconSize.height);
-        [_containerView addSubview:iconView];
-        
-        UILabel *titleLabel = [[UILabel alloc] init];
-        titleLabel.backgroundColor = [UIColor clearColor];
-        titleLabel.textColor = [UIColor whiteColor];
-        titleLabel.font = TGMediumSystemFontOfSize(14.0f);
-        
-        if ([titleLabel respondsToSelector:@selector(setAttributedText:)])
+        if ([_titleLabel respondsToSelector:@selector(setAttributedText:)])
         {
             NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:TGLocalized(@"Conversation.EmptyPlaceholder") attributes:nil];
             
@@ -61,22 +55,34 @@
             style.alignment = NSTextAlignmentCenter;
             [attributedString addAttributes:@{NSParagraphStyleAttributeName: style} range:NSMakeRange(0, attributedString.length)];
             
-            titleLabel.attributedText = attributedString;
+            _titleLabel.attributedText = attributedString;
         }
         else
-            titleLabel.text = TGLocalized(@"Conversation.EmptyPlaceholder");
+            _titleLabel.text = TGLocalized(@"Conversation.EmptyPlaceholder");
         
         
-        titleLabel.numberOfLines = 0;
-        titleLabel.textAlignment = NSTextAlignmentCenter;
-        titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
-        CGSize labelSize = [titleLabel sizeThatFits:CGSizeMake(105.0f, CGFLOAT_MAX)];
-        titleLabel.frame = CGRectMake(CGFloor((_containerView.frame.size.width - labelSize.width) / 2.0f), 114.0f - CGFloor(labelSize.height / 2.0f), labelSize.width, labelSize.height);
-        [_containerView addSubview:titleLabel];
+        _titleLabel.numberOfLines = 0;
+        _titleLabel.textAlignment = NSTextAlignmentCenter;
+        _titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        CGSize labelSize = [_titleLabel sizeThatFits:CGSizeMake(105.0f, CGFLOAT_MAX)];
+        _titleLabel.frame = CGRectMake(CGFloor((_containerView.frame.size.width - labelSize.width) / 2.0f), 114.0f - CGFloor(labelSize.height / 2.0f), labelSize.width, labelSize.height);
+        [_containerView addSubview:_titleLabel];
         
         self.userInteractionEnabled = false;
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (_presentation != presentation)
+    {
+        _presentation = presentation;
+        
+        _backgroundImageView.image = presentation.images.chatPlaceholderBackground;
+        _iconView.image = TGTintedImage(TGImageNamed(@"ModernConversationEmptyListLogo.png"), presentation.pallete.chatSystemTextColor);
+        _titleLabel.textColor = presentation.pallete.chatSystemTextColor;
+    }
 }
 
 - (void)adjustLayoutForSize:(CGSize)size contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve

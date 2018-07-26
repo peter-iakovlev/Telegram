@@ -10,7 +10,7 @@
 #import <LegacyComponents/TGProgressWindow.h>
 #import "TGInterfaceManager.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGConvertToSupergroupController () {
     TGConversation *_conversation;
@@ -62,7 +62,7 @@
 
 - (void)convertPressed {
     int64_t conversationId = _conversation.conversationId;
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Group.UpgradeConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Group.UpgradeConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
         if (okButtonPressed) {
             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
             [progressWindow show:true];
@@ -76,7 +76,7 @@
             } error:^(__unused id error) {
             } completed:nil];
         }
-    }] show];
+    }];
 }
 
 @end

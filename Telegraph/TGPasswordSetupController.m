@@ -2,7 +2,9 @@
 
 #import "TGPasswordSetupView.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
+
+#import "TGPresentation.h"
 
 typedef enum {
     TGPasswordSetupControllerStateEnterNewPassword,
@@ -54,9 +56,11 @@ typedef enum {
 {
     [super loadView];
     
-    self.view.backgroundColor = UIColorRGB(0xefeff4);
+    TGPresentation *presentation = TGPresentation.current;
+    self.view.backgroundColor = presentation.pallete.collectionMenuBackgroundColor;
     
     _view = [[TGPasswordSetupView alloc] initWithFrame:self.view.bounds];
+    _view.presentation = presentation;
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     __weak TGPasswordSetupController *weakSelf = self;
     _view.passwordChanged = ^(NSString *password)
@@ -122,7 +126,13 @@ typedef enum {
             }
             else
             {
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.SetupPasswordConfirmFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                __weak TGPasswordSetupController *weakSelf = self;
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.SetupPasswordConfirmFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
+                {
+                    __strong TGPasswordSetupController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                        [strongSelf->_view becomeFirstResponder];
+                }];
                 
                 _state = TGPasswordSetupControllerStateEnterNewPassword;
                 [_view setTitle:[self stringForState:_state]];

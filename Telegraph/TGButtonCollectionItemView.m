@@ -24,7 +24,6 @@
     if (self)
     {
         _titleLabel = [[UILabel alloc] init];
-        _titleLabel.textAlignment = NSTextAlignmentLeft;
         _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.font = TGSystemFontOfSize(17);
         _titleLabel.textAlignment = NSTextAlignmentLeft;

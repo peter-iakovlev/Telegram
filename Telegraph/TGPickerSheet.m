@@ -6,6 +6,8 @@
 
 #import <LegacyComponents/TGSecretTimerValueControllerItemView.h>
 
+#import "TGPresentation.h"
+
 @interface TGPickerSheetOverlayController () <UIPickerViewDelegate, UIPickerViewDataSource>
 {
     bool _dateMode;
@@ -77,6 +79,8 @@
 {
     [super loadView];
     
+    TGPresentation *presentation = TGPresentation.current;
+    
     _backgroundView = [[UIView alloc] initWithFrame:self.view.bounds];
     _backgroundView.backgroundColor = UIColorRGBA(0x000000, 0.4f);
     _backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -86,7 +90,7 @@
     CGFloat containerHeight = 216.0f + 32.0f;
     _containerView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - containerHeight, self.view.frame.size.width, containerHeight)];
     _containerView.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleWidth;
-    _containerView.backgroundColor = [UIColor whiteColor];
+    _containerView.backgroundColor = presentation.pallete.menuBackgroundColor;
     [self.view addSubview:_containerView];
     
     CGFloat buttonInset = 10.0f;
@@ -95,6 +99,8 @@
         _datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0.0f, 32.0f + CGFloor((_containerView.frame.size.height - 44.0f - 216.0f) / 2.0f), _containerView.frame.size.width, 216.0)];
         _datePicker.locale = [NSLocale localeWithLocaleIdentifier:effectiveLocalization().code];
         _datePicker.datePickerMode = UIDatePickerModeDate;
+        if (iosMajorVersion() >= 7)
+            [_datePicker setValue:presentation.pallete.menuTextColor forKey:@"textColor"];
         
         if (_banTimeout) {
             _datePicker.datePickerMode = UIDatePickerModeDateAndTime;
@@ -119,7 +125,7 @@
     [_cancelButton setTitleEdgeInsets:UIEdgeInsetsMake(0.0f, buttonInset, 0.0f, buttonInset)];
     _cancelButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
     [_cancelButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
-    [_cancelButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+    [_cancelButton setTitleColor:presentation.pallete.menuAccentColor forState:UIControlStateNormal];
     _cancelButton.titleLabel.font = TGSystemFontOfSize(16.0f);
     [_cancelButton addTarget:self action:@selector(cancelButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_cancelButton];
@@ -134,7 +140,7 @@
     } else {
         [_doneButton setTitle:TGLocalized(@"Common.Done") forState:UIControlStateNormal];
     }
-    [_doneButton setTitleColor:TGAccentColor() forState:UIControlStateNormal];
+    [_doneButton setTitleColor:presentation.pallete.menuAccentColor forState:UIControlStateNormal];
     _doneButton.titleLabel.font = TGBoldSystemFontOfSize(16.0f);
     [_doneButton addTarget:self action:@selector(doneButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_containerView addSubview:_doneButton];

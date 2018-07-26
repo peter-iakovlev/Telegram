@@ -35,12 +35,28 @@
     return CGSizeMake(containerSize.width, 61.0f);
 }
 
+- (void)setChecking:(bool)checking {
+    _checking = checking;
+    self.highlightDisabled = checking;
+}
+
+- (void)setIsChecked:(bool)isChecked
+{
+    _isChecked = isChecked;
+    
+    if ([self boundView] != nil)
+        [(TGUserInfoUsernameCollectionItemView *)[self boundView] setIsChecked:_isChecked animated:true];
+}
+
 - (void)bindView:(TGUserInfoUsernameCollectionItemView *)view
 {
     [super bindView:view];
     
     [view setLabel:_label];
     [view setUsername:_username];
+    [view setLastInList:_lastInList];
+    [view setChecking:_checking];
+    [view setIsChecked:_isChecked animated:false];
 }
 
 - (void)unbindView
@@ -50,12 +66,12 @@
 
 - (bool)itemWantsMenu
 {
-    return true;
+    return !_checking;
 }
 
 - (bool)itemCanPerformAction:(SEL)action
 {
-    if (action == @selector(copy:))
+    if (!_checking && action == @selector(copy:))
         return true;
     
     return false;
@@ -71,10 +87,19 @@
 }
 
 - (void)itemSelected:(id)actionTarget {
+    if (self.checking)
+    {
+        self.isChecked = !self.isChecked;
+        return;
+    }
+    
     if ([actionTarget respondsToSelector:_action]) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [actionTarget performSelector:_action withObject:nil];
+        if ([NSStringFromSelector(_action) rangeOfString:@":"].location != NSNotFound)
+            [actionTarget performSelector:_action withObject:self];
+        else
+            [actionTarget performSelector:_action];
 #pragma clang diagnostic pop
     }
 }

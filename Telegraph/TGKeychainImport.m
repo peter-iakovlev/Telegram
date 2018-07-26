@@ -98,7 +98,7 @@
                         if (address.length != 0 && port != 0)
                         {
                             datacenterAddressSets[@(datacenter.datacenterId)] = [[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                                                                                                                      [[MTDatacenterAddress alloc] initWithIp:address port:port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                                                                                                                                      [[MTDatacenterAddress alloc] initWithIp:address port:port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                             ]];
                         }
                     }
@@ -107,7 +107,7 @@
                     {
                         int64_t authKeyId = 0;
                         [datacenter.authKeyId getBytes:&authKeyId length:8];
-                        datacenterAuthInfo[@(datacenter.datacenterId)] = [[MTDatacenterAuthInfo alloc] initWithAuthKey:datacenter.authKey authKeyId:authKeyId saltSet:@[] authKeyAttributes:@{} tempAuthKey:nil];
+                        datacenterAuthInfo[@(datacenter.datacenterId)] = [[MTDatacenterAuthInfo alloc] initWithAuthKey:datacenter.authKey authKeyId:authKeyId saltSet:@[] authKeyAttributes:@{} mainTempAuthKey:nil mediaTempAuthKey:nil];
                         
                         if (datacenter.authorized && clientUserId != 0)
                             datacenterAuthTokens[@(datacenter.datacenterId)] = @(clientUserId);

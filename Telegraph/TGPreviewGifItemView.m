@@ -312,7 +312,7 @@
                         }
                         if ([externalResult.resultId isEqualToString:currentExternalResult.resultId]) {
                             if (path != nil) {
-                                if ([externalResult.contentType isEqualToString:@"video/mp4"]) {
+                                if ([externalResult.content.mimeType isEqualToString:@"video/mp4"]) {
                                     [strongSelf->_videoView removeFromSuperview];
                                     strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf.bounds];
                                     [strongSelf insertSubview:strongSelf->_videoView aboveSubview:strongSelf->_overlayView];

@@ -4,6 +4,8 @@
 #import "TGModernConversationController.h"
 #import "TGHashtagSearchController.h"
 
+#import "TGPresentation.h"
+
 @interface TGHashtagOverviewController () <UINavigationControllerDelegate>
 {
     TGModernConversationController *_conversationController;
@@ -30,6 +32,8 @@
         self.currentAdditionalNavigationBarHeight = 38 + TGScreenPixel;
         self.delegate = self;
         
+        [(TGNavigationBar *)self.navigationBar setPallete:TGPresentation.current.navigationBarPallete];
+        
         [self setQuery:query peerId:peerId];
     }
     return self;
@@ -42,10 +46,15 @@
     [self _layoutTitleLabel];
     
     _conversationController = [[TGInterfaceManager instance] configuredConversationControlerWithId:peerId performActions:nil preview:false];
+    if (_conversationController == nil) {
+        [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+        return;
+    }
     [self setViewControllers:@[_conversationController]];
     
     __weak TGHashtagOverviewController *weakSelf = self;
     _searchController = [[TGHashtagSearchController alloc] initWithQuery:query peerId:0 accessHash:0];
+    _searchController.presentation = _conversationController.presentation;
     _searchController.customResultBlockPeerId = peerId;
     _searchController.customResultBlock = ^(int32_t messageId)
     {
@@ -55,7 +64,7 @@
             strongSelf->_segmentedControl.selectedSegmentIndex = 0;
             [strongSelf segmentedControlChanged];
             
-            [strongSelf->_conversationController scrollToMessage:messageId sourceMessageId:0 animated:true];
+            [strongSelf->_conversationController scrollToMessage:messageId peerId:0 sourceMessageId:0 animated:true];
         }
     };
     
@@ -112,13 +121,16 @@
     }
 }
 
-- (void)createNavigationBarExtension
+- (void)setPresentation:(TGPresentation *)presentation
 {
-    if (iosMajorVersion() < 7 || _navbarExtensionClipView != nil)
-        return;
+    _conversationController.presentation = presentation;
+    _searchController.presentation = presentation;
     
-    TGNavigationBar *navigationBar = (TGNavigationBar *)self.navigationBar;
-    
+    [self setNavigationBarExtensionPresentation:presentation];
+}
+
+- (void)setNavigationBarExtensionPresentation:(TGPresentation *)presentation
+{
     static UIImage *maskImage = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
@@ -126,7 +138,7 @@
         UIGraphicsBeginImageContextWithOptions(CGSizeMake(10.0f, 10.0f), false, 0.0f);
         CGContextRef context = UIGraphicsGetCurrentContext();
         
-        UIColor *whiteColor = TGIsPad() ? [UIColor whiteColor] : UIColorRGB(0xf7f7f7);
+        UIColor *whiteColor = TGIsPad() ? [UIColor whiteColor] : presentation.pallete.barBackgroundColor;
         
         CGColorRef colors[3] = {
             CGColorRetain(whiteColor.CGColor),
@@ -155,6 +167,29 @@
         UIGraphicsEndImageContext();
     });
     
+    _navbarExtensionView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _titleLabel.textColor = presentation.pallete.navigationTitleColor;
+    
+    [_segmentedControl setBackgroundImage:presentation.images.segmentedControlBackgroundImage forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setBackgroundImage:presentation.images.segmentedControlHighlightedImage forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+    [_segmentedControl setDividerImage:presentation.images.segmentedControlDividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+    
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:presentation.pallete.navigationButtonColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:presentation.pallete.accentContrastColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
+    
+    _stripeView.backgroundColor = presentation.pallete.barSeparatorColor;
+}
+
+- (void)createNavigationBarExtension
+{
+    if (iosMajorVersion() < 7 || _navbarExtensionClipView != nil)
+        return;
+    
+    TGPresentation *presentation = TGPresentation.current;
+    TGNavigationBar *navigationBar = (TGNavigationBar *)self.navigationBar;
+    
     _navbarExtensionClipView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, navigationBar.frame.size.height - 12.0f, navigationBar.frame.size.width, 51.0f)];
     _navbarExtensionClipView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [navigationBar insertSubview:_navbarExtensionClipView atIndex:1];
@@ -163,38 +198,27 @@
     
     _navbarExtensionView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 11.0f, navigationBar.frame.size.width, 40.0f)];
     _navbarExtensionView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _navbarExtensionView.backgroundColor = UIColorRGB(0xf7f7f7);
     [_navbarExtensionClipView addSubview:_navbarExtensionView];
     
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.backgroundColor = [UIColor clearColor];
     _titleLabel.font = TGMediumSystemFontOfSize(17.0f);
     _titleLabel.text = _query;
-    _titleLabel.textColor = [UIColor blackColor];
     [_titleLabel sizeToFit];
     [_navbarExtensionClipView addSubview:_titleLabel];
     
-    NSArray *items = @[[_conversationController.companion title], TGLocalized(@"HashtagSearch.AllChats")];
+    NSString *title = [_conversationController.companion title] ?: @"";
+    NSArray *items = @[title, TGLocalized(@"HashtagSearch.AllChats")];
     _segmentedControl = [[UISegmentedControl alloc] initWithItems:items];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    [_segmentedControl setBackgroundImage:TGImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-    UIImage *dividerImage = TGImageNamed(@"ModernSegmentedControlDivider.png");
-    [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
     
     _segmentedControl.frame = CGRectMake(12.0f, 0.0f, _navbarExtensionView.frame.size.width - 24.0f, 29.0f);
     _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
-    
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
-    [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
     
     [_segmentedControl setSelectedSegmentIndex:0];
     [_segmentedControl addTarget:self action:@selector(segmentedControlChanged) forControlEvents:UIControlEventValueChanged];
     
     _stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _navbarExtensionView.frame.size.height - TGScreenPixel, _navbarExtensionView.frame.size.width, TGScreenPixel)];
     _stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _stripeView.backgroundColor = TGSeparatorColor();
     [_navbarExtensionView addSubview:_stripeView];
     
     [_navbarExtensionView addSubview:_segmentedControl];
@@ -204,6 +228,8 @@
     _segmentedControl.selectedSegmentIndex = 0;
     
     navigationBar.musicPlayerOffset = 39.0f;
+    
+    [self setNavigationBarExtensionPresentation:presentation];
 }
 
 - (void)segmentedControlChanged

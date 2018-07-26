@@ -66,6 +66,8 @@ typedef enum {
 @property (nonatomic) CGFloat inlineVideoCornerRadius;
 @property (nonatomic) int inlineVideoPosition;
 @property (nonatomic) bool flexibleTimestamp;
+@property (nonatomic, strong) UIColor *timestampTextColor;
+@property (nonatomic) bool serviceTimestampStyle;
 
 @property (nonatomic, copy) void (^progressBlock)(TGImageView *, CGFloat);
 @property (nonatomic, copy) void (^completionBlock)(TGImageView *);

@@ -446,7 +446,7 @@
                                 TLupload_File$upload_fileCdnRedirect *redirect = (TLupload_File$upload_fileCdnRedirect *)result;
                                 
                                 NSMutableDictionary *hashDict = [[NSMutableDictionary alloc] init];
-                                for (TLCdnFileHash$cdnFileHash *nHash in redirect.cdn_file_hashes) {
+                                for (TLFileHash$fileHash *nHash in redirect.file_hashes) {
                                     hashDict[@(nHash.offset)] = nHash.n_hash;
                                 }
                                 
@@ -527,7 +527,7 @@
             [ActionStageInstance() dispatchOnStageQueue:^{
                 __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    for (TLCdnFileHash$cdnFileHash *nHash in hashes) {
+                    for (TLFileHash$fileHash *nHash in hashes) {
                         dict[@(nHash.offset)] = nHash.n_hash;
                     }
                     

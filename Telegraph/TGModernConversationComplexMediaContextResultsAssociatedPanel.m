@@ -168,6 +168,20 @@
     [_loadMoreDisposable dispose];
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    if (self.pallete == nil)
+        return;
+    
+    self.backgroundColor = pallete.backgroundColor;
+    _stripeView.backgroundColor = pallete.barSeparatorColor;
+    _tableViewBackground.backgroundColor = pallete.backgroundColor;
+    _tableViewSeparator.backgroundColor = pallete.barSeparatorColor;
+    _bottomView.backgroundColor = pallete.barBackgroundColor;
+    _separatorView.backgroundColor = pallete.barSeparatorColor;
+}
+
 - (TGItemPreviewController *)presentPreviewForResultIfAvailable:(TGBotContextResult *)result immediately:(bool)immediately
 {
     void (^resultPreviewDisappeared)(bool) = self.resultPreviewDisappeared;
@@ -268,6 +282,7 @@
     if (results.switchPm != nil) {
         if (_switchPm == nil) {
             _switchPm = [[TGModernConversationGenericContextResultsAssociatedPanelSwitchPm alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.frame.size.width, 32.0f)];
+            [_switchPm setBackgroundColor:self.pallete.backgroundColor separatorColor:self.pallete.barSeparatorColor accentColor:self.pallete.accentColor];
             _switchPm.autoresizingMask = UIViewAutoresizingFlexibleWidth;
             __weak TGModernConversationComplexMediaContextResultsAssociatedPanel *weakSelf = self;
             _switchPm.pressed = ^{
@@ -423,7 +438,7 @@
             _loadingMore = true;
             TGBotContextResultsSwitchPm *switchPm = _results.switchPm;
             __weak TGModernConversationComplexMediaContextResultsAssociatedPanel *weakSelf = self;
-            [_loadMoreDisposable setDisposable:[[[TGBotSignals botContextResultForUserId:_results.userId peerId:_results.peerId accessHash:_results.accessHash query:_results.query geoPoint:nil offset:_results.nextOffset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotContextResults *nextResults) {
+            [_loadMoreDisposable setDisposable:[[[TGBotSignals botContextResultForUserId:_results.userId peerId:_results.peerId accessHash:_results.accessHash query:_results.query geoPoint:nil offset:_results.nextOffset forceAllowLocation:false] deliverOn:[SQueue mainQueue]] startWithNext:^(TGBotContextResults *nextResults) {
                 __strong TGModernConversationComplexMediaContextResultsAssociatedPanel *strongSelf = weakSelf;
                 if (strongSelf != nil) {
                     TGBotContextResults *mergedResults = [[TGBotContextResults alloc] initWithUserId:strongSelf->_results.userId peerId:strongSelf->_results.peerId accessHash:strongSelf->_results.accessHash isMedia:strongSelf->_results.isMedia query:strongSelf->_results.query nextOffset:nextResults.nextOffset results:[strongSelf->_results.results arrayByAddingObjectsFromArray:nextResults.results] switchPm:switchPm];

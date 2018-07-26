@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGSharedMediaSelectionPanelView : UIView
 
 @property (nonatomic) NSUInteger selecterItemCount;
@@ -11,5 +13,6 @@
 @property (nonatomic) bool shareEnabled;
 
 @property (nonatomic, assign) UIEdgeInsets safeAreaInset;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @end

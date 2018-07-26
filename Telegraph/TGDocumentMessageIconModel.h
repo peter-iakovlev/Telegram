@@ -1,8 +1,11 @@
 #import "TGModernViewModel.h"
 
+@class TGPresentation;
+
 @interface TGDocumentMessageIconModel : TGModernViewModel
 
 @property (nonatomic, strong) NSString *fileName;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic) CGFloat diameter;
 @property (nonatomic) bool incoming;

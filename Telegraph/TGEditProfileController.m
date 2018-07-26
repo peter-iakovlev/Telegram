@@ -16,8 +16,8 @@
 #import "TGUserSignal.h"
 #import "TGAccountSignals.h"
 
-#import "TGActionSheet.h"
-#import "TGAlertView.h"
+#import "TGCustomActionSheet.h"
+#import "TGCustomAlertView.h"
 
 #import "TGAccountInfoCollectionItem.h"
 #import "TGCollectionMultilineInputItem.h"
@@ -235,7 +235,7 @@
         {
             [progressWindow dismiss:true];
         }] startWithNext:nil error:^(__unused id error) {
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         } completed:^{
         }]];
     }
@@ -249,7 +249,7 @@
     
     if ([_profileDataItem hasUpdatingAvatar])
     {
-        TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:@[
+        TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
                                                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoStop") action:@"stop" type:TGActionSheetActionTypeDestructive],
                                                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel],
                                                                                         ] actionBlock:^(id target, NSString *action)
@@ -388,7 +388,12 @@
         strongSelf->_avatarMixin = nil;
     };
     _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        __strong TGEditProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
         TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        searchController.presentation = strongSelf.presentation;
         
         __weak TGMediaAssetsController *weakAssetsController = assetsController;
         __weak TGWebSearchController *weakController = searchController;
@@ -412,12 +417,34 @@
         
         return searchController;
     };
+    _avatarMixin.sourceRect = ^CGRect
+    {
+        __strong TGEditProfileController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+
+        return [strongSelf->_profileDataItem.visibleAvatarView convertRect:[strongSelf->_profileDataItem.visibleAvatarView bounds] toView:strongSelf.view];
+    };
     [_avatarMixin present];
+}
+
+- (CGRect)frameForItem:(TGCollectionItem *)item
+{
+    for (TGCollectionItemView *itemView in self.collectionView.visibleCells)
+    {
+        if (![itemView isKindOfClass:[TGCollectionItemView class]])
+            continue;
+        
+        if (itemView.boundItem == item)
+            return [itemView convertRect:itemView.bounds toView:self.view];
+    }
+    return CGRectZero;
 }
 
 - (void)phoneNumberPressed
 {
     TGChangePhoneNumberHelpController *phoneNumberController = [[TGChangePhoneNumberHelpController alloc] init];
+    phoneNumberController.presentation = self.presentation;
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[phoneNumberController]];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone)
@@ -453,7 +480,7 @@
     {
         if ([_profileDataItem hasUpdatingAvatar])
         {
-            TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:@[
+            TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
                 [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoStop") action:@"stop" type:TGActionSheetActionTypeDestructive],
                 [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel],
             ] actionBlock:^(id target, NSString *action)
@@ -529,8 +556,7 @@
             {
                 [_profileDataItem setUpdatingAvatar:nil hasUpdatingAvatar:false];
                 
-                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                [alertView show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         });
     }
@@ -634,7 +660,7 @@
     
     [[TGInterfaceManager instance] dismissAllCalls];
     
-    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Settings.LogoutConfirmationTitle") message:TGLocalized(@"Settings.LogoutConfirmationText") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
+    [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Settings.LogoutConfirmationTitle") message:TGLocalized(@"Settings.LogoutConfirmationText") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
       {
           if (okButtonPressed)
           {
@@ -648,7 +674,7 @@
                   [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/auth/logout/(%d)", actionId++] options:nil watcher:strongSelf];
               }
           }
-      }] show];
+      }];
 }
 
 @end

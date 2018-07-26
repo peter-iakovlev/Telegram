@@ -294,6 +294,7 @@
                     //message.unread = false;
                     message.outgoing = false;
                     message.cid = _peerId;
+                    message.layer = [actionDesc[@"layer"] intValue];
                     
                     TGActionMediaAttachment *actionAttachment = [[TGActionMediaAttachment alloc] init];
                     actionAttachment.actionType = TGMessageActionEncryptedChatMessageScreenshot;
@@ -1005,7 +1006,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(17)
                      };
         }
         else if ([action isKindOfClass:[Secret17_DecryptedMessageAction_decryptedMessageActionTyping class]])
@@ -1075,7 +1077,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(20)
                      };
         }
         else if ([action isKindOfClass:[Secret20_DecryptedMessageAction_decryptedMessageActionTyping class]])
@@ -1165,7 +1168,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(23)
                      };
         }
         else if ([action isKindOfClass:[Secret23_DecryptedMessageAction_decryptedMessageActionTyping class]])
@@ -1255,7 +1259,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(46)
                      };
         }
         else if ([action isKindOfClass:[Secret46_DecryptedMessageAction_decryptedMessageActionTyping class]])
@@ -1343,7 +1348,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(66)
                      };
         }
         else if ([action isKindOfClass:[Secret66_DecryptedMessageAction_decryptedMessageActionTyping class]])
@@ -1431,7 +1437,8 @@
                      @"peerId": @(conversationId),
                      @"actionType": @"screenshotMessages",
                      @"randomIds": concreteAction.randomIds,
-                     @"date": @(date)
+                     @"date": @(date),
+                     @"layer": @(73)
                      };
         }
         else if ([action isKindOfClass:[Secret73_DecryptedMessageAction_decryptedMessageActionSetMessageTTL class]])

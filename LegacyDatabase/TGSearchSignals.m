@@ -148,22 +148,38 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
     if (query.length < 5)
         return [SSignal single:@{@"chats": @[], @"users": @[]}];
     
-    return [[context function:[Api73 contacts_searchWithQ:query limit:@(100)]] map:^id(Api73_contacts_Found *result)
+    return [[context function:[Api82 contacts_searchWithQ:query limit:@(100)]] map:^id(Api82_contacts_Found *result)
     {
         NSMutableArray *chatModels = [[NSMutableArray alloc] init];
         NSMutableArray *userModels = [[NSMutableArray alloc] init];
         
-        for (Api73_User *user in result.users)
+        for (Api82_User *user in result.users)
         {
             TGUserModel *userModel = [TGChatListSignal userModelWithApiUser:user];
             if (userModel != nil)
                 [userModels addObject:userModel];
         }
         
-        for (Api73_Peer *peerFound in result.results)
+        for (Api82_Peer *peerFound in result.myResults)
         {
-            if ([peerFound isKindOfClass:[Api73_Peer_peerUser class]]) {
-                int32_t userId = [((Api73_Peer_peerUser *)peerFound).userId intValue];
+            if ([peerFound isKindOfClass:[Api82_Peer_peerUser class]]) {
+                int32_t userId = [((Api82_Peer_peerUser *)peerFound).userId intValue];
+                
+                for (TGUserModel *userModel in userModels)
+                {
+                    if (userModel.userId == userId)
+                    {
+                        [chatModels addObject:[[TGPrivateChatModel alloc] initWithUserId:userId]];
+                        break;
+                    }
+                }
+            }
+        }
+        
+        for (Api82_Peer *peerFound in result.results)
+        {
+            if ([peerFound isKindOfClass:[Api82_Peer_peerUser class]]) {
+                int32_t userId = [((Api82_Peer_peerUser *)peerFound).userId intValue];
                 
                 for (TGUserModel *userModel in userModels)
                 {

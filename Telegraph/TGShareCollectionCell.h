@@ -1,8 +1,11 @@
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGShareCollectionCell : UICollectionViewCell
 
 @property (nonatomic, readonly) int64_t peerId;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)setShowOnlyFirstName:(bool)showOnlyFirstName;
 - (void)setPeer:(id)peer;

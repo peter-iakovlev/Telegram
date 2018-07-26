@@ -9,6 +9,7 @@
 @class TGMainTabsController;
 @class TGCallStatusBarView;
 @class TGVolumeBarView;
+@class TGPresentation;
 
 @interface TGRootController : TGViewController
 
@@ -19,6 +20,8 @@
 @property (nonatomic, strong, readonly) TGRecentCallsController *callsController;
 @property (nonatomic, strong, readonly) TGCallStatusBarView *callStatusBarView;
 @property (nonatomic, strong, readonly) TGVolumeBarView *volumeBarView;
+
+@property (nonatomic, readonly) TGPresentation *presentation;
 
 - (SSignal *)sizeClass;
 - (bool)isSplitView;

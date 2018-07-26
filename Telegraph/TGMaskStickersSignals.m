@@ -274,7 +274,13 @@ static OSSpinLock cachedPacksLock = 0;
     if (cachedStickerPacksData == nil)
         return nil;
     
-    NSDictionary *dict = [NSKeyedUnarchiver unarchiveObjectWithData:cachedStickerPacksData];
+    NSDictionary *dict = nil;
+    @try {
+        dict = [NSKeyedUnarchiver unarchiveObjectWithData:cachedStickerPacksData];
+    } @catch (NSException *e) {
+        
+    }
+
     if ([dict[@"packs"] isKindOfClass:[NSArray class]])
     {
         NSArray *cachedPacks = dict[@"packs"];
@@ -771,7 +777,7 @@ static OSSpinLock cachedPacksLock = 0;
                     }
                 }
                 
-                return [[TGStickerPack alloc] initWithPackReference:resultPackReference title:result.set.title stickerAssociations:stickerAssociations documents:documents packHash:packHash hidden:(result.set.flags & (1 << 1)) isMask:(result.set.flags & (1 << 3))];
+                return [[TGStickerPack alloc] initWithPackReference:resultPackReference title:result.set.title stickerAssociations:stickerAssociations documents:documents packHash:packHash hidden:(result.set.flags & (1 << 1)) isMask:(result.set.flags & (1 << 3)) isFeatured:false installedDate:result.set.installed_date];
             }];
 }
 

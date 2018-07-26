@@ -19,6 +19,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGPresentation.h"
+
 static TGWorkerPool *workerPool()
 {
     static TGWorkerPool *instance = nil;
@@ -167,37 +169,47 @@ static ASQueue *taskManagementQueue()
 
 + (TGDataResource *)resultForUnavailableImage:(bool)isFlat cornerRadius:(int)cornerRadius position:(int)position
 {
-    static TGDataResource *normalData = nil;
+    static NSMutableDictionary *normalDatas = nil;
     static NSMutableDictionary *flatDatas = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, 0) decoded:true];
+        normalDatas = [[NSMutableDictionary alloc] init];
         flatDatas = [[NSMutableDictionary alloc] init];
     });
     
+    TGPresentation *presentation = TGPresentation.current;
+    UIColor *color = presentation.pallete.backgroundColor;
     if (position == 0)
     {
         if (isFlat)
         {
-            TGDataResource *flatData = flatDatas[@(cornerRadius)];
+            NSNumber *key = @(cornerRadius + presentation.currentId);
+            TGDataResource *flatData = flatDatas[key];
             if (flatData == nil)
             {
                 if (cornerRadius == 0)
                 {
-                    flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false, 0) decoded:true];
+                    flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage(color, false, 0) decoded:true];
                 }
                 else
                 {
-                    flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, 0) decoded:true];
+                    flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage(color, false, cornerRadius, 0) decoded:true];
                 }
                 
-                flatDatas[@(cornerRadius)] = flatData;
+                flatDatas[key] = flatData;
             }
             return flatData;
         }
         else
         {
+            NSNumber *key = @(presentation.currentId);
+            TGDataResource *normalData = normalDatas[key];
+            if (normalData == nil)
+            {
+                normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage(color, true, 0) decoded:true];
+                normalDatas[key] = normalData;
+            }
             return normalData;
         }
     }
@@ -207,16 +219,16 @@ static ASQueue *taskManagementQueue()
         {
             if (cornerRadius == 0)
             {
-                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false, position) decoded:true];
+                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage(color, false, position) decoded:true];
             }
             else
             {
-                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, position) decoded:true];
+                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage(color, false, cornerRadius, position) decoded:true];
             }
         }
         else
         {
-            return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, position) decoded:true];
+            return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage(color, true, position) decoded:true];
         }
     }
 }
@@ -246,33 +258,43 @@ static ASQueue *taskManagementQueue()
             return image;
         }
         
-        static UIImage *normalPlaceholder = nil;
+        static NSMutableDictionary *normalPlaceholders = nil;
         static NSMutableDictionary *flatPlaceholders = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            normalPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], true, 0);
+            normalPlaceholders = [[NSMutableDictionary alloc] init];
             flatPlaceholders = [[NSMutableDictionary alloc] init];
         });
         
+        TGPresentation *presentation = TGPresentation.current;
+        UIColor *color = presentation.pallete.backgroundColor;
         if (position == 0)
         {
             if (isFlat)
             {
-                UIImage *flatPlaceholder = flatPlaceholders[@(cornerRadius)];
+                NSNumber *key = @(presentation.currentId + cornerRadius);
+                UIImage *flatPlaceholder = flatPlaceholders[key];
                 if (flatPlaceholder == nil)
                 {
                     if (cornerRadius == 0)
-                        flatPlaceholder = TGAverageColorAttachmentImage([UIColor whiteColor], false, 0);
+                        flatPlaceholder = TGAverageColorAttachmentImage(color, false, 0);
                     else
-                        flatPlaceholder = TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, 0);
+                        flatPlaceholder = TGAverageColorAttachmentWithCornerRadiusImage(color, false, cornerRadius, 0);
                     
-                    flatPlaceholders[@(cornerRadius)] = flatPlaceholder;
+                    flatPlaceholders[key] = flatPlaceholder;
                 }
                 return flatPlaceholder;
             }
             else
             {
+                NSNumber *key = @(presentation.currentId);
+                UIImage *normalPlaceholder = normalPlaceholders[key];
+                if (normalPlaceholder == nil)
+                {
+                    normalPlaceholder = TGAverageColorAttachmentImage(color, true, 0);
+                    normalPlaceholders[key] = normalPlaceholder;
+                }
                 return normalPlaceholder;
             }
         }
@@ -281,13 +303,13 @@ static ASQueue *taskManagementQueue()
             if (isFlat)
             {
                 if (cornerRadius == 0)
-                    return TGAverageColorAttachmentImage([UIColor whiteColor], false, position);
+                    return TGAverageColorAttachmentImage(color, false, position);
                 else
-                    return TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, position);
+                    return TGAverageColorAttachmentWithCornerRadiusImage(color, false, cornerRadius, position);
             }
             else
             {
-                return TGAverageColorAttachmentImage([UIColor whiteColor], true, position);
+                return TGAverageColorAttachmentImage(color, true, position);
             }
         }
     }
@@ -489,8 +511,7 @@ static ASQueue *taskManagementQueue()
             
             if (thumbnailSourceImage != nil && !lowQualityThumbnail)
             {
-                NSData *thumbnailSourceData = UIImageJPEGRepresentation(thumbnailSourceImage, 0.85f);
-                [thumbnailSourceData writeToFile:thumbnailPath atomically:true];
+                TGWriteJPEGRepresentationToFile(thumbnailSourceImage, 0.85f, thumbnailPath);
             }
         }
     }
@@ -520,7 +541,10 @@ static ASQueue *taskManagementQueue()
         
         if ([args[@"secret"] boolValue])
         {
-            thumbnailImage = TGSecretBlurredAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, ![args[@"flat"] boolValue], 0, position);
+            if (isFlat && cornerRadius != 0)
+                thumbnailImage = TGSecretBlurredAttachmentWithCornerRadiusImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, cornerRadius, position);
+            else
+                thumbnailImage = TGSecretBlurredAttachmentImage(thumbnailSourceImage, size, averageColorPtr, !isFlat, position);
         }
         else
         {

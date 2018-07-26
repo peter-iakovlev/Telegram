@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 
+@class TGVCard;
+
 @interface TGPhoneNumberModel : NSObject
 
 @property (nonatomic, strong, readonly) NSString *phoneNumber;
@@ -19,6 +21,8 @@
 
 @property (nonatomic, strong, readonly) NSArray *phoneNumbers;
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumbers:(NSArray *)phoneNumbers;
+@property (nonatomic, strong, readonly) TGVCard *vcard;
+
+- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumbers:(NSArray *)phoneNumbers vcard:(TGVCard *)vcard;
 
 @end

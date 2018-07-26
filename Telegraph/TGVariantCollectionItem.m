@@ -49,6 +49,7 @@
     [super bindView:view];
     
     [((TGVariantCollectionItemView *)view) setTitle:_title];
+    [((TGVariantCollectionItemView *)view) setTitleColor:_titleColor];
     [((TGVariantCollectionItemView *)view) setVariant:_variant variantColor:_variantColor];
     [((TGVariantCollectionItemView *)view) setIcon:_icon];
     [((TGVariantCollectionItemView *)view) setVariantIcon:_variantIcon];
@@ -80,6 +81,12 @@
     }
 }
 
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _titleColor = titleColor;
+    [((TGVariantCollectionItemView *)[self boundView]) setTitleColor:_titleColor];
+}
+
 - (void)setVariant:(NSString *)variant
 {
     if (!TGStringCompare(_variant, variant))
@@ -89,6 +96,12 @@
         if ([self boundView] != nil)
             [((TGVariantCollectionItemView *)[self boundView]) setVariant:_variant variantColor:_variantColor];
     }
+}
+
+- (void)setVariantColor:(UIColor *)variantColor
+{
+    _variantColor = variantColor;
+    [((TGVariantCollectionItemView *)[self boundView]) setVariant:_variant variantColor:_variantColor];
 }
 
 - (void)setIcon:(UIImage *)icon

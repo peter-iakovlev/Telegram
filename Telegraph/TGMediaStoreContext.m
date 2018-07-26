@@ -136,6 +136,14 @@
     return result;
 }
 
+- (void)clearMemoryCache
+{
+    pthread_rwlock_rdlock(&_mediaImageCacheLock);
+    [_mediaReducedImageCache clearCache];
+    [_mediaImageCache clearCache];
+    pthread_rwlock_unlock(&_mediaImageCacheLock);
+}
+
 - (void)setMediaImageForKey:(NSString *)key image:(UIImage *)image attributes:(NSDictionary *)attributes
 {
     if (key == nil || image == nil)

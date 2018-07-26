@@ -6,6 +6,7 @@
 
 @interface TLcontacts_Found : NSObject <TLObject>
 
+@property (nonatomic, retain) NSArray *my_results;
 @property (nonatomic, retain) NSArray *results;
 @property (nonatomic, retain) NSArray *chats;
 @property (nonatomic, retain) NSArray *users;

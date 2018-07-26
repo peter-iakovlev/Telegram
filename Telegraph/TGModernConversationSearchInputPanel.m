@@ -4,6 +4,8 @@
 #import <LegacyComponents/TGFont.h>
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationSearchInputPanel ()
 {
     CALayer *_stripeLayer;
@@ -56,33 +58,26 @@
         [self.layer addSublayer:_stripeLayer];
         
         _nextButton = [[TGModernButton alloc] init];
-        [_nextButton setImage:TGImageNamed(@"InlineSearchUp.png") forState:UIControlStateNormal];
-        [_nextButton setImage:TGImageNamed(@"InlineSearchUpDisabled.png") forState:UIControlStateDisabled];
         [_nextButton addTarget:self action:@selector(nextPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_nextButton];
         
         _previousButton = [[TGModernButton alloc] init];
-        [_previousButton setImage:TGImageNamed(@"InlineSearchDown.png") forState:UIControlStateNormal];
-        [_previousButton setImage:TGImageNamed(@"InlineSearchDownDisabled.png") forState:UIControlStateDisabled];
         [_previousButton addTarget:self action:@selector(previousPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_previousButton];
         
         _calendarButton = [[TGModernButton alloc] init];
-        [_calendarButton setImage:TGImageNamed(@"ConversationSearchCalendar.png") forState:UIControlStateNormal];
         _calendarButton.modernHighlight = true;
         [_calendarButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0)];
         [self addSubview:_calendarButton];
         [_calendarButton addTarget:self action:@selector(calendarButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _searchByNameButton = [[TGModernButton alloc] init];
-        [_searchByNameButton setImage:TGImageNamed(@"ConversationSearchUser.png") forState:UIControlStateNormal];
         _searchByNameButton.modernHighlight = true;
         [_searchByNameButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 0.0f, 0.0f, 0.0)];
         [self addSubview:_searchByNameButton];
         [_searchByNameButton addTarget:self action:@selector(searchByNamePressed) forControlEvents:UIControlEventTouchUpInside];
         
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-        //[self addSubview:_activityIndicator];
         _activityIndicator.hidden = true;
         
         _doneButton = [[TGModernButton alloc] init];
@@ -101,6 +96,27 @@
         [self updateInterface];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    [_nextButton setImage:presentation.images.chatSearchNextIcon forState:UIControlStateNormal];
+    [_nextButton setImage:presentation.images.chatSearchNextDisabledIcon forState:UIControlStateDisabled];
+    
+    [_previousButton setImage:presentation.images.chatSearchPreviousIcon forState:UIControlStateNormal];
+    [_previousButton setImage:presentation.images.chatSearchPreviousDisabledIcon forState:UIControlStateDisabled];
+    
+    [_calendarButton setImage:presentation.images.chatSearchCalendarIcon forState:UIControlStateNormal];
+    [_searchByNameButton setImage:presentation.images.chatSearchNameIcon forState:UIControlStateNormal];
+    
+    _backgroundView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    _activityIndicator.color = presentation.pallete.secondaryTextColor;
+    
+    [_doneButton setTitleColor:presentation.pallete.accentColor];
+    _countLabel.textColor = presentation.pallete.textColor;
 }
 
 - (void)setFrame:(CGRect)frame {

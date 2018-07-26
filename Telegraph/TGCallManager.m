@@ -90,18 +90,24 @@
             
             if ([TGCallManager useCallKit])
             {
-                [_callKitAdapter startCallWithPeerId:peerId uuid:context.uuid];
+                TGDispatchOnMainThread(^{
+                    [_callKitAdapter startCallWithPeerId:peerId uuid:context.uuid];
+                });
                 session.onStartedConnecting = ^{
-                    __strong TGCallManager *strongSelf = weakSelf;
-                    if (strongSelf != nil) {
-                        [strongSelf->_callKitAdapter updateCallWithUUID:uuid connectingAtDate:[NSDate date]];
-                    }
+                    TGDispatchOnMainThread(^{
+                        __strong TGCallManager *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_callKitAdapter updateCallWithUUID:uuid connectingAtDate:[NSDate date]];
+                        }
+                    });
                 };
                 session.onConnected = ^{
-                    __strong TGCallManager *strongSelf = weakSelf;
-                    if (strongSelf != nil) {
-                        [strongSelf->_callKitAdapter updateCallWithUUID:uuid connectedAtDate:[NSDate date]];
-                    }
+                    TGDispatchOnMainThread(^{
+                        __strong TGCallManager *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            [strongSelf->_callKitAdapter updateCallWithUUID:uuid connectedAtDate:[NSDate date]];
+                        }
+                    });
                 };
             }
             
@@ -232,10 +238,14 @@
             } else {
                 context.session.hasCallKit = true;
                 
-                [_callKitAdapter reportIncomingCallWithPeerId:requestedContext.adminId session:context.session uuid:context.uuid completion:^(bool silent) {
-                    if (silent)
-                        [context.session presentCallNotification:requestedContext.adminId];
-                }];    
+                TGDispatchOnMainThread(^{
+                    [_callKitAdapter reportIncomingCallWithPeerId:requestedContext.adminId session:context.session uuid:context.uuid completion:^(bool silent) {
+                        TGDispatchOnMainThread(^{
+                            if (silent)
+                                [context.session presentCallNotification:requestedContext.adminId];
+                        });
+                    }];
+                });
             }
             
             [self setContextState:internalId state:[[TGCallStateData alloc] initWithInternalId:@(internalId) callId:requestedContext.callId accessHash:requestedContext.accessHash state:TGCallStateHandshake peerId:requestedContext.adminId connection:nil hungUpOutside:false needsRating:false needsDebug:false error:nil]];
@@ -303,11 +313,13 @@
             if (!context.session.hasCallKit || declined || context.session.completed || (discardedContext.reason == TGCallDiscardReasonBusy && !discardedContext.outside)) {
                 [self cleanupContext:internalId];
             } else {
-                [_callKitAdapter endCallWithUUID:context.uuid reason:discardedContext.reason completion:^{
-                    [_queue dispatch:^{
-                        [self cleanupContext:internalId];
+                TGDispatchOnMainThread(^{
+                    [_callKitAdapter endCallWithUUID:context.uuid reason:discardedContext.reason completion:^{
+                        [_queue dispatch:^{
+                            [self cleanupContext:internalId];
+                        }];
                     }];
-                }];
+                });
             }
         }
     } else if ([context.context isKindOfClass:[TGCallRequestingContext class]]) {

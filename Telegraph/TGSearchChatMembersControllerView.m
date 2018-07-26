@@ -15,6 +15,8 @@
 
 #import "TGCachedConversationData.h"
 
+#import "TGPresentation.h"
+
 static void adjustCellForSelectionEnabled(TGContactCell *contactCell, bool selectionEnabled, bool animated)
 {
     UITableViewCellSelectionStyle selectionStyle = selectionEnabled ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleBlue;
@@ -127,15 +129,18 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
     SMetaDisposable *_searchDisposable;
     
     NSArray *_reusableSectionHeaders;
+    
+    TGPresentation *_presentation;
 }
 
 @end
 
 @implementation TGSearchChatMembersControllerView
 
-- (instancetype)initWithFrame:(CGRect)frame updateNavigationBarHidden:(void (^)(bool hidden, bool animated))updateNavigationBarHidden peerId:(int64_t)peerId accessHash:(int64_t)accessHash includeContacts:(bool)includeContacts completion:(void (^)(TGUser *, TGCachedConversationMember *))completion {
+- (instancetype)initWithFrame:(CGRect)frame updateNavigationBarHidden:(void (^)(bool hidden, bool animated))updateNavigationBarHidden peerId:(int64_t)peerId accessHash:(int64_t)accessHash includeContacts:(bool)includeContacts completion:(void (^)(TGUser *, TGCachedConversationMember *))completion presentation:(TGPresentation *)presentation {
     self = [super initWithFrame:frame];
     if (self != nil) {
+        _presentation = presentation;
         _searchDisposable = [[SMetaDisposable alloc] init];
         _reusableSectionHeaders = [[NSArray alloc] initWithObjects:[[NSMutableArray alloc] init], [[NSMutableArray alloc] init], nil];
         
@@ -149,9 +154,10 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         if (iosMajorVersion() >= 11)
             _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         
-        self.backgroundColor = [UIColor whiteColor];
+        self.backgroundColor = presentation.pallete.backgroundColor;
         
         _tableView = [[TGListsTableView alloc] init];
+        _tableView.backgroundColor = self.backgroundColor;
         if (iosMajorVersion() >= 11)
             _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _tableView.dataSource = self;
@@ -161,12 +167,12 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         
         if (iosMajorVersion() >= 7) {
             _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
-            _tableView.separatorColor = TGSeparatorColor();
+            _tableView.separatorColor = presentation.pallete.separatorColor;
             _tableView.separatorInset = UIEdgeInsetsMake(0.0f, 65.0f, 0.0f, 0.0f);
         }
         
         _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLightPlain];
-        
+        [_searchBar setPallete:presentation.searchBarPallete];
         [(TGListsTableView *)_tableView adjustBehaviour];
         
         _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -189,8 +195,6 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         _tableView.tableHeaderView = _searchBar;
         
         [self addSubview:_tableView];
-        
-        
     }
     return self;
 }
@@ -230,7 +234,7 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         
         //contactCell.actionHandle = _actionHandle;
     }
-    
+    contactCell.presentation = _presentation;
     contactCell.contactSelected = false;
     
     adjustCellForSelectionEnabled(contactCell, false, false);
@@ -259,12 +263,12 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
 - (UITableView *)createTableViewForSearchMixin:(TGSearchDisplayMixin *)__unused searchMixin {
     UITableView *tableView = [[UITableView alloc] init];
     
-    tableView.backgroundColor = [UIColor whiteColor];
+    tableView.backgroundColor = _tableView.backgroundColor;
     tableView.dataSource = self;
     tableView.delegate = self;
     
     tableView.tableFooterView = [[UIView alloc] init];
-    
+    tableView.separatorColor = _tableView.separatorColor;
     tableView.rowHeight = 51;
     tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     
@@ -307,7 +311,8 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
             if (strongSelf != nil) {
                 NSDictionary *memberData = values[0];
                 NSArray *contactData = values[1];
-                NSArray *globalData = values[2];
+                NSArray *myData = values[2][@"myPeers"];
+                NSArray *globalData = values[2][@"peers"];
                 
                 NSMutableSet *processedUserIds = [[NSMutableSet alloc] init];
                 
@@ -316,21 +321,28 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
                 NSMutableArray *global = [[NSMutableArray alloc] init];
                 
                 for (TGUser *user in memberData[@"users"]) {
-                    if (![processedUserIds containsObject:user] && user.uid != TGTelegraphInstance.clientUserId) {
+                    if (![processedUserIds containsObject:@(user.uid)] && user.uid != TGTelegraphInstance.clientUserId) {
                         [processedUserIds addObject:@(user.uid)];
                         [members addObject:user];
                     }
                 }
                 
                 for (TGUser *user in contactData) {
-                    if ([user isKindOfClass:[TGUser class]] && ![processedUserIds containsObject:user] && user.uid != TGTelegraphInstance.clientUserId) {
+                    if ([user isKindOfClass:[TGUser class]] && ![processedUserIds containsObject:@(user.uid)] && user.uid != TGTelegraphInstance.clientUserId) {
+                        [processedUserIds addObject:@(user.uid)];
+                        [contacts addObject:user];
+                    }
+                }
+                
+                for (TGUser *user in myData) {
+                    if ([user isKindOfClass:[TGUser class]] && ![processedUserIds containsObject:@(user.uid)] && user.uid != TGTelegraphInstance.clientUserId) {
                         [processedUserIds addObject:@(user.uid)];
                         [contacts addObject:user];
                     }
                 }
                 
                 for (TGUser *user in globalData) {
-                    if ([user isKindOfClass:[TGUser class]] && ![processedUserIds containsObject:user] && user.uid != TGTelegraphInstance.clientUserId) {
+                    if ([user isKindOfClass:[TGUser class]] && ![processedUserIds containsObject:@(user.uid)] && user.uid != TGTelegraphInstance.clientUserId) {
                         [processedUserIds addObject:@(user.uid)];
                         [global addObject:user];
                     }
@@ -415,7 +427,7 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
         
         UIView *sectionView = [[UIView alloc] initWithFrame:CGRectMake(0, first ? 0 : -1, 10, first ? 10 : 11)];
         sectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        sectionView.backgroundColor = UIColorRGB(0xf2f2f2);
+        sectionView.backgroundColor = _presentation.pallete.sectionHeaderBackgroundColor;
         [sectionContainer addSubview:sectionView];
         
         UILabel *sectionLabel = [[UILabel alloc] init];
@@ -430,17 +442,17 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
     }
     
     UILabel *sectionLabel = (UILabel *)[sectionContainer viewWithTag:100];
-    sectionLabel.font = wide ? TGMediumSystemFontOfSize(14) : TGMediumSystemFontOfSize(12);
-    sectionLabel.text = title;
-    sectionLabel.textColor = wide ? UIColorRGB(0x8e8e93) : UIColorRGB(0x8e8e93);
+    sectionLabel.font = TGBoldSystemFontOfSize(12.0f);
+    sectionLabel.text = [title uppercaseString];
+    sectionLabel.textColor = _presentation.pallete.sectionHeaderTextColor;
     [sectionLabel sizeToFit];
     if (wide)
     {
-        sectionLabel.frame = CGRectMake(8.0f, 4.0f + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+        sectionLabel.frame = CGRectMake(14.0f, 6.0f + TGScreenPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     }
     else
     {
-        sectionLabel.frame = CGRectMake(14.0f, 5.0 + TGRetinaPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+        sectionLabel.frame = CGRectMake(14.0f, 5.0 + TGScreenPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     }
     
     return sectionContainer;

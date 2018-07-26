@@ -3,8 +3,10 @@
 
 #import "TGContactModel.h"
 
+@class TGShareContext;
+
 @interface TGShareContactSignals : NSObject
 
-+ (SSignal *)contactMessageContentForContact:(TGContactModel *)contact parentController:(UIViewController *)parentController;
++ (SSignal *)contactMessageContentForContact:(TGContactModel *)contact parentController:(UIViewController *)parentController context:(TGShareContext *)context;
 
 @end

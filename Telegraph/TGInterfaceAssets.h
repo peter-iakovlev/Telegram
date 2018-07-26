@@ -41,9 +41,6 @@
 + (UIImage *)settingsProfileAvatarOverlay;
 - (UIImage *)dialogListAuthorAvatarStroke;
 + (UIImage *)profileAvatarOverlay;
-+ (UIImage *)profileAvatarPlaceholderGeneric;
-+ (UIImage *)profileAvatarPlaceholderEmpty;
-+ (UIImage *)profileGroupAvatarPlaceholder;
 + (UIImage *)actionButton;
 + (UIImage *)actionButtonHighlighted;
 + (UIImage *)timelineLocationIcon;

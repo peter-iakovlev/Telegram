@@ -4,8 +4,12 @@
 
 #import <LegacyComponents/TGTextField.h>
 
+#import "TGPresentation.h"
+
 @interface TGUsernameCollectionItemView () <UITextFieldDelegate>
 {
+    UIColor *_titleColor;
+    
     UILabel *_usernameLabel;
     UILabel *_prefixLabel;
     TGTextField *_textField;
@@ -45,7 +49,7 @@
         _textField.placeholderFont = _textField.font;
         _textField.placeholderColor = UIColorRGB(0xbfbfbf);
         _textField.editingRectOffset = -TGScreenPixel;
-        _textField.placeholderOffset = 1.0f + (TGScreenPixel < 0.5f ? TGScreenPixel : 0.0);
+        _textField.placeholderOffset = 0.0f;
         _textField.autocorrectionType = UITextAutocorrectionTypeNo;
         _textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
         _textField.spellCheckingType = UITextSpellCheckingTypeNo;
@@ -59,11 +63,32 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _textField.textColor = presentation.pallete.collectionMenuTextColor;
+    _textField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _prefixLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _usernameLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _activityIndicator.color = presentation.pallete.collectionMenuAccessoryColor;
+}
+
 - (void)setTitle:(NSString *)title
 {
     _usernameLabel.text = title;
     [_usernameLabel sizeToFit];
     [self setNeedsLayout];
+}
+
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _titleColor = titleColor;
+    if (titleColor != nil)
+        _usernameLabel.textColor = titleColor;
+    else
+        _usernameLabel.textColor = self.presentation.pallete.collectionMenuTextColor;
 }
 
 - (void)setPlaceholder:(NSString *)placeholder
@@ -101,7 +126,7 @@
 
 - (void)setUsernameValid:(bool)usernameValid
 {
-    _textField.textColor = usernameValid ? [UIColor blackColor] : [UIColor redColor];
+    _textField.textColor = usernameValid ? self.presentation.pallete.collectionMenuTextColor : self.presentation.pallete.collectionMenuDestructiveColor;
 }
 
 - (void)setUsernameChecking:(bool)usernameChecking
@@ -125,7 +150,7 @@
         _clearButton = [[TGModernButton alloc] init];
         _clearButton.adjustsImageWhenHighlighted = false;
         _clearButton.hidden = true;
-        [_clearButton setImage:TGImageNamed(@"SearchBarClearIcon") forState:UIControlStateNormal];
+        [_clearButton setImage:self.presentation.images.collectionMenuClearImage forState:UIControlStateNormal];
         [_clearButton addTarget:self action:@selector(clearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_clearButton];
         
@@ -201,6 +226,8 @@
     if (!_textField.secureTextEntry && [string rangeOfCharacterFromSet:[NSCharacterSet characterSetWithCharactersInString:@"[]"]].location != NSNotFound)
         return false;
  
+    NSString *username = [textField.text stringByReplacingCharactersInRange:range withString:string];
+    
     if (_textPasted) {
         NSString *modifiedText = _textPasted(range, string);
         if (modifiedText != nil)
@@ -212,9 +239,11 @@
             
             return false;
         }
+    } else if (_shouldChangeText) {
+        bool shouldChange = _shouldChangeText(username);
+        if (!shouldChange)
+            return false;
     }
-    
-    NSString *username = [textField.text stringByReplacingCharactersInRange:range withString:string];
     
     if (_usernameChanged)
         _usernameChanged(username);
@@ -235,6 +264,11 @@
 - (BOOL)becomeFirstResponder
 {
     return [_textField becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder
+{
+    return [_textField resignFirstResponder];
 }
 
 - (bool)textFieldIsFirstResponder

@@ -14,6 +14,13 @@
 @property (nonatomic, strong) UIColor *phoneColor;
 @property (nonatomic) bool lastInList;
 
+@property (nonatomic, assign) bool checking;
+@property (nonatomic, assign) bool isChecked;
+@property (nonatomic, copy) void (^isCheckedChanged)(bool);
+
+@property (nonatomic, assign) int64_t uniqueId;
+
 - (instancetype)initWithLabel:(NSString *)label phone:(NSString *)phone phoneColor:(UIColor *)phoneColor action:(SEL)action;
+- (instancetype)initWithLabel:(NSString *)label phone:(NSString *)phone formattedPhone:(NSString *)formattedPhone phoneColor:(UIColor *)phoneColor action:(SEL)action;
 
 @end

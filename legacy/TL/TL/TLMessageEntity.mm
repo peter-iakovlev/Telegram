@@ -582,3 +582,82 @@
 
 @end
 
+@implementation TLMessageEntity$messageEntityPhone : TLMessageEntity
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9b69e34b;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xc517c26e;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageEntity$messageEntityPhone *object = [[TLMessageEntity$messageEntityPhone alloc] init];
+    object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.length = metaObject->getInt32((int32_t)0x18492126);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.offset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.length;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18492126, value));
+    }
+}
+
+
+@end
+
+@implementation TLMessageEntity$messageEntityCashtag : TLMessageEntity
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x4c4e743f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xd5af324c;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLMessageEntity$messageEntityCashtag *object = [[TLMessageEntity$messageEntityCashtag alloc] init];
+    object.offset = metaObject->getInt32((int32_t)0xfc56269);
+    object.length = metaObject->getInt32((int32_t)0x18492126);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.offset;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc56269, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.length;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18492126, value));
+    }
+}
+
+
+@end

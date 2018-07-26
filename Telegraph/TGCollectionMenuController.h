@@ -15,9 +15,12 @@
 @property (nonatomic, strong) TGCollectionMenuLayout *collectionLayout;
 @property (nonatomic) bool enableItemReorderingGestures;
 
-@property (nonatomic, readonly) TGPresentation *presentation;
+@property (nonatomic) bool disableStopScrolling;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)_resetCollectionView;
+- (void)_ensureBinding;
 - (NSIndexPath *)indexPathForItem:(TGCollectionItem *)item;
 - (NSUInteger)indexForSection:(TGCollectionMenuSection *)section;
 

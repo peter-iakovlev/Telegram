@@ -111,6 +111,10 @@
         result.available_min_id = [is readInt32];
     }
     
+    if (flags & (1 << 11)) {
+        //result.call_msg_id = [is readInt32];
+    }
+    
     return result;
 }
 

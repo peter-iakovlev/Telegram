@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernUnreadHeaderView ()
 {
     UIImageView *_backgroundView;
@@ -15,51 +17,41 @@
 
 @implementation TGModernUnreadHeaderView
 
-+ (void)drawHeaderForContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position
++ (void)drawHeaderForContainerWidth:(CGFloat)containerWidth inContext:(CGContextRef)context andBindBackgroundToContainer:(UIView *)backgroundContainer atPosition:(CGPoint)position presentation:(TGPresentation *)presentation
 {
-    UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernConversationUnreadSeparator.png")];
+    UIImageView *backgroundImageView = [[UIImageView alloc] initWithImage:presentation.images.chatUnreadBackground];
     CGRect backgroundFrame = CGRectMake(0.0f, 3.0f, containerWidth, 25.0f);
     backgroundImageView.frame = CGRectOffset(backgroundFrame, position.x, position.y);
     [backgroundContainer addSubview:backgroundImageView];
     
     static UIFont *font = nil;
-    static CGColorRef color = NULL;
-    
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
         font = TGSystemFontOfSize(13.0f);
-        color = CGColorRetain(UIColorRGB(0x86868d).CGColor);
     });
     
     NSString *text = TGLocalized(@"Conversation.UnreadMessages");
     CGSize textSize = [text sizeWithFont:font];
     
-    CGContextSetFillColorWithColor(context, color);
+    CGContextSetFillColorWithColor(context, presentation.pallete.chatUnreadTextColor.CGColor);
     CGPoint textOrigin = CGPointMake(CGFloor((containerWidth - textSize.width) / 2) + 1, 7.0f + TGRetinaPixel);
     [text drawAtPoint:textOrigin withFont:font];
 }
 
-- (id)initWithFrame:(CGRect)frame
+- (id)initWithFrame:(CGRect)frame presentation:(TGPresentation *)presentation
 {
     self = [super initWithFrame:frame];
     if (self)
     {
         self.viewIdentifier = @"_unread";
         
-        static UIImage *backgroundImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            backgroundImage = TGImageNamed(@"ModernConversationUnreadSeparator.png");
-        });
-        
-        _backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
+        _backgroundView = [[UIImageView alloc] initWithImage:presentation.images.chatUnreadBackground];
         [self addSubview:_backgroundView];
         
         _labelView = [[UILabel alloc] init];
         _labelView.backgroundColor = [UIColor clearColor];
-        _labelView.textColor = UIColorRGB(0x86868d);
+        _labelView.textColor = presentation.pallete.chatUnreadTextColor;
         _labelView.font = TGSystemFontOfSize(13.0f);
         _labelView.text = TGLocalized(@"Conversation.UnreadMessages");
         _labelView.transform = CGAffineTransformMakeRotation((CGFloat)M_PI);
@@ -67,6 +59,11 @@
         [self addSubview:_labelView];
     }
     return self;
+}
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _backgroundView.image = presentation.images.chatUnreadBackground;
+    _labelView.textColor = presentation.pallete.chatUnreadTextColor;
 }
 
 - (void)willBecomeRecycled

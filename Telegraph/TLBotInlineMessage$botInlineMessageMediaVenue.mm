@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//botInlineMessageMediaVenue flags:# geo:GeoPoint title:string address:string provider:string venue_id:string reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
+//botInlineMessageMediaVenue#8a86659c flags:# geo:GeoPoint title:string address:string provider:string venue_id:string venue_type:string reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
 
 @implementation TLBotInlineMessage$botInlineMessageMediaVenue
 
@@ -30,6 +30,7 @@
     result.address = [is readString];
     result.provider = [is readString];
     result.venue_id = [is readString];
+    result.venue_type = [is readString];
     
     if (flags & (1 << 2))
     {

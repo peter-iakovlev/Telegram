@@ -15,6 +15,8 @@
 @interface TGContactListSearchActor ()
 {
     TGTimer *_timer;
+    bool _onlyMy;
+    bool _ignoreMy;
 }
 
 @end
@@ -41,6 +43,8 @@
     }
     
     int ignoreUid = [[options objectForKey:@"ignoreUid"] intValue];
+    _onlyMy = [[options objectForKey:@"onlyMy"] boolValue];
+    _ignoreMy = [[options objectForKey:@"ignoreMy"] boolValue];
     
     __weak TGContactListSearchActor *weakSelf = self;
     
@@ -51,7 +55,7 @@
         {
             [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"localResults" message:result];
             
-            if (query.length < 5)
+            if (query.length < 5 || _onlyMy)
                 [ActionStageInstance() actionCompleted:self.path result:nil];
             else
             {
@@ -84,6 +88,20 @@
                 [users addObject:user];
         }
         [TGUserDataRequestBuilder executeUserObjectsUpdate:users];
+        
+        if (_ignoreMy)
+        {
+            NSMutableArray *notMyUsers = [[NSMutableArray alloc] init];
+            for (TLPeer *peer in result.results)
+            {
+                if ([peer isKindOfClass:[TLPeer$peerUser class]]) {
+                    TGUser *user = [TGDatabaseInstance() loadUser:((TLPeer$peerUser *)peer).user_id];
+                    if (user != nil)
+                        [notMyUsers addObject:user];
+                }
+            }
+            users = notMyUsers;
+        }
         [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"globalResults" message:@{@"users": users}];
     }
     

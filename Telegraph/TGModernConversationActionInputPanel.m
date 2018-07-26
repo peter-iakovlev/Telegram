@@ -6,6 +6,8 @@
 
 #import <LegacyComponents/ASHandle.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationActionInputPanel ()
 {
     UIEdgeInsets _safeAreaInset;
@@ -19,6 +21,7 @@
     UIActivityIndicatorView *_activityIndicator;
     
     TGModernConversationActionInputPanelIcon _icon;
+    bool _destructive;
 }
 
 @end
@@ -57,9 +60,24 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    
+    if (_icon == TGModernConversationActionInputPanelIconJoin)
+        _iconView.image = [self joinImage:self.presentation.pallete.accentColor];
+    
+    if (_destructive)
+        [_actionButton setTitleColor:self.presentation.pallete.destructiveColor];
+}
+
 - (void)setActionWithTitle:(NSString *)title action:(NSString *)action
 {
-    [self setActionWithTitle:title action:action color:TGDestructiveAccentColor()];
+    _destructive = true;
+    [self setActionWithTitle:title action:action color:self.presentation.pallete.destructiveColor];
 }
 
 - (void)setActionWithTitle:(NSString *)title action:(NSString *)action color:(UIColor *)color
@@ -67,19 +85,17 @@
     [self setActionWithTitle:title action:action color:color icon:TGModernConversationActionInputPanelIconNone];
 }
 
-- (UIImage *)joinImage {
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        CGFloat side = 18.0f;
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(side, side), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-        CGContextFillRect(context, CGRectMake(side / 2.0f - 0.5f, 0.0f, 1.5f, side));
-        CGContextFillRect(context, CGRectMake(0.0f, side / 2.0f - 0.5f, side, 1.5f));
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+- (UIImage *)joinImage:(UIColor *)color
+{
+    CGFloat side = 18.0f;
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(side, side), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(side / 2.0f - 0.5f, 0.0f, 1.5f, side));
+    CGContextFillRect(context, CGRectMake(0.0f, side / 2.0f - 0.5f, side, 1.5f));
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
     return image;
 }
 
@@ -100,13 +116,16 @@
         }
         case TGModernConversationActionInputPanelIconJoin: {
             if (_iconView == nil) {
-                _iconView = [[UIImageView alloc] init];
+                _iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 18.0f, 18.0f)];
             }
             if (_iconView.superview == nil) {
                 [_actionButton addSubview:_iconView];
             }
-            _iconView.image = [self joinImage];
-            [_iconView sizeToFit];
+            if (self.presentation != nil)
+            {
+                _iconView.image = [self joinImage:self.presentation.pallete.accentColor];
+                [_iconView sizeToFit];
+            }
             break;
         }
     }
@@ -123,6 +142,7 @@
         if (_activityIndicator == nil)
         {
             _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+            _activityIndicator.color = self.presentation.pallete.secondaryTextColor;
         }
         
         if (_activityIndicator.superview == nil)

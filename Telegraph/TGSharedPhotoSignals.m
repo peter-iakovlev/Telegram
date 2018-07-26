@@ -2,6 +2,7 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGDatabase.h"
 #import "TGSharedMediaSignals.h"
 
 #import "TGImageInfo+Telegraph.h"
@@ -438,7 +439,36 @@
     
     return [TGSharedMediaSignals cachedRemoteThumbnailWithKey:key size:size pixelProcessingBlock:pixelProcessingBlock fetchData:[SSignal defer:^SSignal *{
         if (url.length != 0) {
-            return [TGRemoteHttpLocationSignal dataForHttpLocation:url];
+            if ([url hasPrefix:@"webdoc"]) {
+                NSInteger datacenterId = 0;
+                
+                int32_t webFileDatacenterId = 0;
+                NSData *data = [TGDatabaseInstance() customProperty:@"webFileDatacenterId"];
+                if (data.length == 4)
+                    [data getBytes:&webFileDatacenterId length:4];
+                
+                TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:url datacenterId:&datacenterId];
+                if (datacenterId == -1)
+                    datacenterId = webFileDatacenterId;
+                if (webLocation != nil) {
+                    return [[TGSharedMediaSignals memoizedDataSignalForRemoteWebLocation:webLocation datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+                   {
+                       [[TGSharedMediaUtils sharedMediaTemporaryPersistentCache] setValue:data forKey:[url dataUsingEncoding:NSUTF8StringEncoding]];
+                       //[data writeToFile:lowQualityImagePath atomically:true];
+
+                       if (data.length == 0)
+                           return [SSignal complete];
+                       else
+                           return [SSignal single:data];
+                   }];
+                }
+                else
+                {
+                    return [SSignal fail:nil];
+                }
+            } else {
+                return [TGRemoteHttpLocationSignal dataForHttpLocation:url];
+            }
         } else {
             return [SSignal fail:nil];
         }

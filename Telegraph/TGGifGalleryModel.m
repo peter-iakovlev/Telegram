@@ -26,6 +26,8 @@
     
     TGMessage *_message;
     int64_t _peerId;
+    
+    TGGenericPeerMediaGalleryDefaultFooterView *_footerView;
 }
 @end
 
@@ -53,7 +55,8 @@
         item.authorPeer = [self authorPeerForId:message.fromUid];
         item.date = message.date;
         item.messageId = message.mid;
-        item.caption = documentMedia.caption;
+        item.caption = message.caption;
+        item.textCheckingResults = message.textCheckingResults;
         
         _message = message;
         _peerId = message.cid;
@@ -73,7 +76,15 @@
 
 - (UIView<TGModernGalleryDefaultFooterView> *)createDefaultFooterView
 {
-    return [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    __weak TGGifGalleryModel *weakSelf = self;
+    _footerView.openLinkRequested = ^(NSString *url)
+    {
+        __strong TGGifGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.openLinkRequested != nil)
+            strongSelf.openLinkRequested(url);
+    };
+    return _footerView;
 }
 
 - (UIView<TGModernGalleryDefaultFooterAccessoryView> *)createDefaultLeftAccessoryView

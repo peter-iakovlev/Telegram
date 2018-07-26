@@ -110,8 +110,14 @@
         if (data.length == 0) {
             [subscriber putCompletion];
         } else {
-            NSArray *localizations = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-            [subscriber putNext:localizations];
+            @try
+            {
+                NSArray *localizations = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+                [subscriber putNext:localizations];
+            }
+            @catch (NSException *e)
+            {
+            }
             [subscriber putCompletion];
         }
         return nil;

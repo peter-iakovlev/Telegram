@@ -1,5 +1,7 @@
 #import "TGContactCellContents.h"
 
+#import "TGPresentation.h"
+
 @interface TGContactCellContents ()
 
 @property (nonatomic) NSString *validTitleFirst;
@@ -51,6 +53,13 @@
     [self requestRedrawIfNeeded];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    [self setNeedsDisplay];
+}
+
 - (void)drawRect:(CGRect)__unused rect
 {
     CGSize size = self.frame.size;
@@ -82,7 +91,7 @@
         CGContextSetFillColorWithColor(context, disabledColor.CGColor);
     }
     else
-        CGContextSetFillColorWithColor(context, (_highlighted ? [UIColor whiteColor]: [UIColor blackColor]).CGColor);
+        CGContextSetFillColorWithColor(context, _presentation.pallete.textColor.CGColor);
     
     [_titleFirst drawInRect:CGRectMake(_titleOffset.x, _titleOffset.y, titleFirstSize.width, titleFirstSize.height) withFont:titleFirstFont lineBreakMode:NSLineBreakByTruncatingTail];
     

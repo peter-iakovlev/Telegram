@@ -41,6 +41,8 @@
         else
             _text = @" ";
         
+        _linkColor = UIColorRGB(0x004bad);
+        
         if (font != NULL)
             _font = (CTFontRef)CFRetain(font);
     }
@@ -126,7 +128,7 @@
 {
     if (_layoutData == nil || ABS(containerSize.width - _cachedLayoutContainerWidth) > FLT_EPSILON || _cachedLayoutFlags != _layoutFlags || ABS(_additionalTrailingWidth - _cachedAdditionalTrailingWidth) > FLT_EPSILON)
     {
-        _layoutData = [TGReusableLabel calculateLayout:_text additionalAttributes:_additionalAttributes textCheckingResults:_textCheckingResults font:_font textColor:_textColor frame:CGRectZero orMaxWidth:(float)containerSize.width flags:_layoutFlags textAlignment:(NSTextAlignment)_alignment outIsRTL:&_isRTL additionalTrailingWidth:_additionalTrailingWidth maxNumberOfLines:_maxNumberOfLines numberOfLinesToInset:_linesInset.numberOfLinesToInset linesInset:_linesInset.inset containsEmptyNewline:&_containsEmptyNewline additionalLineSpacing:_additionalLineSpacing ellipsisString:_ellipsisString];
+        _layoutData = [TGReusableLabel calculateLayout:_text additionalAttributes:_additionalAttributes textCheckingResults:_textCheckingResults font:_font textColor:_textColor linkColor:_linkColor frame:CGRectZero orMaxWidth:(float)containerSize.width flags:_layoutFlags textAlignment:(NSTextAlignment)_alignment outIsRTL:&_isRTL additionalTrailingWidth:_additionalTrailingWidth maxNumberOfLines:_maxNumberOfLines numberOfLinesToInset:_linesInset.numberOfLinesToInset linesInset:_linesInset.inset containsEmptyNewline:&_containsEmptyNewline additionalLineSpacing:_additionalLineSpacing ellipsisString:_ellipsisString underlineAllLinks:_underlineAllLinks];
         _cachedLayoutContainerWidth = containerSize.width;
         _cachedLayoutFlags = _layoutFlags;
         _cachedAdditionalTrailingWidth = _additionalTrailingWidth;

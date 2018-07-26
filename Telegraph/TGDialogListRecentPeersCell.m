@@ -14,6 +14,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGDialogListRecentPeersCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     NSArray *_recentPeers;
     NSDictionary *_unreadCounts;
@@ -77,6 +79,18 @@
 }
 
 - (void)dealloc {
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    _collectionView.backgroundColor = presentation.pallete.backgroundColor;
+    _headerBackground.backgroundColor = presentation.pallete.sectionHeaderBackgroundColor;
+    _headerLabel.backgroundColor = presentation.pallete.sectionHeaderBackgroundColor;
+    _headerLabel.textColor = presentation.pallete.sectionHeaderTextColor;
+    [_expandButton setTitleColor:presentation.pallete.sectionHeaderTextColor];
 }
 
 - (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers unreadCounts:(NSDictionary *)unreadCounts {
@@ -284,6 +298,7 @@
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     TGShareSheetSharePeersCell *cell = (TGShareSheetSharePeersCell *)[collectionView dequeueReusableCellWithReuseIdentifier:@"TGShareSheetSharePeersCell" forIndexPath:indexPath];
+    cell.presentation = self.presentation;
     if (cell.toggleSelected == nil) {
         __weak TGDialogListRecentPeersCell *weakSelf = self;
         cell.toggleSelected = ^(int64_t peerId) {

@@ -122,9 +122,26 @@
                     _currentActionType = action.type;
                     _currentActionRandomId = action.randomId;
                     
-                    TGChangeNotificationSettingsFutureAction *notificationSettingsAction = (TGChangeNotificationSettingsFutureAction *)action;
                     
-                    int peerSoundId = notificationSettingsAction.soundId;
+                    TGChangeNotificationSettingsFutureAction *notificationSettingsAction = (TGChangeNotificationSettingsFutureAction *)action;
+                    NSNumber *peerSoundId = notificationSettingsAction.soundId;
+                    NSNumber *peerMuteUntil = notificationSettingsAction.muteUntil;
+                    NSNumber *peerPreviewText = notificationSettingsAction.previewText;
+                    NSNumber *messagesMuted = notificationSettingsAction.messagesMuted;
+                    if (notificationSettingsAction.uniqueId == INT_MAX - 1 || notificationSettingsAction.uniqueId == INT_MAX - 2) {
+                        if (peerSoundId == nil)
+                            peerSoundId = @1;
+                        
+                        if (peerMuteUntil == nil)
+                            peerMuteUntil = @0;
+                        
+                        if (peerPreviewText == nil)
+                            peerPreviewText = @true;
+                        
+                        if (messagesMuted == nil)
+                            messagesMuted = @false;
+                    }
+                    
                     __block int64_t accessHash = 0;
                     
                     if (TGPeerIdIsChannel(notificationSettingsAction.uniqueId)) {

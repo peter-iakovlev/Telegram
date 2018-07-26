@@ -40,22 +40,29 @@ JitterBuffer::JitterBuffer(MediaStreamItf *out, uint32_t step):bufferPool(JITTER
 	}
 	lossesToReset=(uint32_t) ServerConfig::GetSharedInstance()->GetInt("jitter_losses_to_reset", 20);
 	resyncThreshold=ServerConfig::GetSharedInstance()->GetDouble("jitter_resync_threshold", 1.0);
-	//dump=fopen("/sdcard/tgvoip_jitter_dump.txt", "a");
-	//fprintf(dump, "==================================\n");
+#ifdef TGVOIP_DUMP_JITTER_STATS
+#ifdef TGVOIP_JITTER_DUMP_FILE
+	dump=fopen(TGVOIP_JITTER_DUMP_FILE, "w");
+#elif defined(__ANDROID__)
+	dump=fopen("/sdcard/tgvoip_jitter_dump.txt", "w");
+#else
+	dump=fopen("tgvoip_jitter_dump.txt", "w");
+#endif
+	tgvoip_log_file_write_header(dump);
+	fprintf(dump, "PTS\tRTS\tNumInBuf\tAJitter\tADelay\tTDelay\n");
+#endif
 	Reset();
-	init_mutex(mutex);
 }
 
 JitterBuffer::~JitterBuffer(){
 	Reset();
-	free_mutex(mutex);
 }
 
 void JitterBuffer::SetMinPacketCount(uint32_t count){
 	if(minDelay==count)
 		return;
 	minDelay=count;
-	Reset();
+	//Reset();
 }
 
 int JitterBuffer::GetMinPacketCount(){
@@ -71,15 +78,16 @@ size_t JitterBuffer::CallbackOut(unsigned char *data, size_t len, void *param){
 	return 0; //((JitterBuffer*)param)->HandleOutput(data, len, 0, NULL);
 }
 
-void JitterBuffer::HandleInput(unsigned char *data, size_t len, uint32_t timestamp){
+void JitterBuffer::HandleInput(unsigned char *data, size_t len, uint32_t timestamp, bool isEC){
+	MutexGuard m(mutex);
 	jitter_packet_t pkt;
 	pkt.size=len;
 	pkt.buffer=data;
 	pkt.timestamp=timestamp;
-	lock_mutex(mutex);
-	PutInternal(&pkt);
-	unlock_mutex(mutex);
-	//LOGV("in, ts=%d", timestamp);
+	pkt.isEC=isEC;
+	PutInternal(&pkt, !isEC);
+	//LOGV("in, ts=%d, ec=%d", timestamp, isEC);
+
 }
 
 void JitterBuffer::Reset(){
@@ -106,28 +114,38 @@ void JitterBuffer::Reset(){
 }
 
 
-size_t JitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offsetInSteps, int* playbackScaledDuration){
+size_t JitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offsetInSteps, bool advance, int& playbackScaledDuration, bool& isEC){
 	jitter_packet_t pkt;
 	pkt.buffer=buffer;
 	pkt.size=len;
-	lock_mutex(mutex);
-	int result=GetInternal(&pkt, offsetInSteps);
-	if(playbackScaledDuration){
-		if(outstandingDelayChange!=0){
-			if(outstandingDelayChange<0){
-				*playbackScaledDuration=40;
-				outstandingDelayChange+=20;
-			}else{
-				*playbackScaledDuration=80;
-				outstandingDelayChange-=20;
-			}
-			LOGV("outstanding delay change: %d", outstandingDelayChange);
+	MutexGuard m(mutex);
+	int result=GetInternal(&pkt, offsetInSteps, advance);
+	if(outstandingDelayChange!=0){
+		if(outstandingDelayChange<0){
+			playbackScaledDuration=40;
+			outstandingDelayChange+=20;
+
+
+
+
+
+
+
+
+
 		}else{
-			*playbackScaledDuration=60;
+			playbackScaledDuration=80;
+			outstandingDelayChange-=20;
 		}
+		//LOGV("outstanding delay change: %d", outstandingDelayChange);
+	}else if(advance && GetCurrentDelay()==0){
+		//LOGV("stretching packet because the next one is late");
+		playbackScaledDuration=80;
+	}else{
+		playbackScaledDuration=60;
 	}
-	unlock_mutex(mutex);
 	if(result==JR_OK){
+		isEC=pkt.isEC;
 		return pkt.size;
 	}else{
 		return 0;
@@ -135,7 +153,7 @@ size_t JitterBuffer::HandleOutput(unsigned char *buffer, size_t len, int offsetI
 }
 
 
-int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
+int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset, bool advance){
 	/*if(needBuffering && lastPutTimestamp<nextTimestamp){
 		LOGV("jitter: don't have timestamp %lld, buffering", (long long int)nextTimestamp);
 		Advance();
@@ -161,6 +179,7 @@ int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 				pkt->size = slots[i].size;
 				pkt->timestamp = slots[i].timestamp;
 				memcpy(pkt->buffer, slots[i].buffer, slots[i].size);
+				pkt->isEC=slots[i].isEC;
 			}
 		}
 		bufferPool.Reuse(slots[i].buffer);
@@ -172,9 +191,9 @@ int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 		return JR_OK;
 	}
 
-	LOGW("jitter: found no packet for timestamp %lld (last put = %d, lost = %d)", (long long int)timestampToGet, lastPutTimestamp, lostCount);
+	//LOGV("jitter: found no packet for timestamp %lld (last put = %d, lost = %d)", (long long int)timestampToGet, lastPutTimestamp, lostCount);
 
-	if(offset==0)
+	if(advance)
 		Advance();
 
 	if(!needBuffering){
@@ -199,18 +218,30 @@ int JitterBuffer::GetInternal(jitter_packet_t* pkt, int offset){
 	return JR_BUFFERING;
 }
 
-void JitterBuffer::PutInternal(jitter_packet_t* pkt){
+void JitterBuffer::PutInternal(jitter_packet_t* pkt, bool overwriteExisting){
 	if(pkt->size>JITTER_SLOT_SIZE){
 		LOGE("The packet is too big to fit into the jitter buffer");
 		return;
 	}
-	gotSinceReset++;
+
 	int i;
+	for(i=0;i<JITTER_SLOT_COUNT;i++){
+		if(slots[i].buffer && slots[i].timestamp==pkt->timestamp){
+			//LOGV("Found existing packet for timestamp %u, overwrite %d", pkt->timestamp, overwriteExisting);
+			if(overwriteExisting){
+				memcpy(slots[i].buffer, pkt->buffer, pkt->size);
+				slots[i].size=pkt->size;
+				slots[i].isEC=pkt->isEC;
+			}
+			return;
+		}
+	}
+	gotSinceReset++;
 	if(wasReset){
 		wasReset=false;
 		outstandingDelayChange=0;
 		nextTimestamp=((int64_t)pkt->timestamp)-step*minDelay;
-		LOGI("jitter: resyncing, next timestamp = %lld (step=%d, minDelay=%d)", (long long int)nextTimestamp, step, minDelay);
+		LOGI("jitter: resyncing, next timestamp = %lld (step=%d, minDelay=%f)", (long long int)nextTimestamp, step, minDelay);
 	}
 	
 	for(i=0;i<JITTER_SLOT_COUNT;i++){
@@ -242,11 +273,11 @@ void JitterBuffer::PutInternal(jitter_packet_t* pkt){
 	}
 
 	if(pkt->timestamp<nextTimestamp){
-		LOGW("jitter: would drop packet with timestamp %d because it is late but not hopelessly", pkt->timestamp);
+		//LOGW("jitter: would drop packet with timestamp %d because it is late but not hopelessly", pkt->timestamp);
 		latePacketCount++;
 		lostPackets--;
 	}else if(pkt->timestamp<nextTimestamp-1){
-		LOGW("jitter: dropping packet with timestamp %d because it is too late", pkt->timestamp);
+		//LOGW("jitter: dropping packet with timestamp %d because it is too late", pkt->timestamp);
 		latePacketCount++;
 		return;
 	}
@@ -276,11 +307,14 @@ void JitterBuffer::PutInternal(jitter_packet_t* pkt){
 	slots[i].size=pkt->size;
 	slots[i].buffer=bufferPool.Get();
 	slots[i].recvTimeDiff=time-prevRecvTime;
+	slots[i].isEC=pkt->isEC;
 	if(slots[i].buffer)
 		memcpy(slots[i].buffer, pkt->buffer, pkt->size);
 	else
 		LOGE("WTF!!");
-	//fprintf(dump, "%f %d\n", time-prevRecvTime, GetCurrentDelay());
+#ifdef TGVOIP_DUMP_JITTER_STATS
+	fprintf(dump, "%u\t%.03f\t%d\t%.03f\t%.03f\t%.03f\n", pkt->timestamp, time, GetCurrentDelay(), lastMeasuredJitter, lastMeasuredDelay, minDelay);
+#endif
 	prevRecvTime=time;
 }
 
@@ -290,8 +324,8 @@ void JitterBuffer::Advance(){
 }
 
 
-int JitterBuffer::GetCurrentDelay(){
-	int delay=0;
+unsigned int JitterBuffer::GetCurrentDelay(){
+	unsigned int delay=0;
 	int i;
 	for(i=0;i<JITTER_SLOT_COUNT;i++){
 		if(slots[i].buffer!=NULL)
@@ -301,10 +335,8 @@ int JitterBuffer::GetCurrentDelay(){
 }
 
 void JitterBuffer::Tick(){
-	lock_mutex(mutex);
+	MutexGuard m(mutex);
 	int i;
-
-	int count=0;
 
 	memmove(&lateHistory[1], lateHistory, 63*sizeof(int));
 	lateHistory[0]=latePacketCount;
@@ -329,26 +361,6 @@ void JitterBuffer::Tick(){
 	if(avgLate16>=resyncThreshold){
 		wasReset=true;
 	}
-	/*if(avgLate16>=0.3){
-		if(dontIncMinDelay==0 && minDelay<15){
-			minDelay++;
-			if(GetCurrentDelay()<minDelay)
-				nextTimestamp-=(minDelay-GetCurrentDelay());
-			dontIncMinDelay=16;
-			dontDecMinDelay+=128;
-		}
-	}else if(absolutelyNoLatePackets){
-		if(dontDecMinDelay>0)
-			dontDecMinDelay--;
-		if(dontDecMinDelay==0 && minDelay>minMinDelay){
-			minDelay--;
-			dontDecMinDelay=64;
-			dontIncMinDelay+=16;
-		}
-	}
-
-	if(dontIncMinDelay>0)
-		dontIncMinDelay--;*/
 
 	if(absolutelyNoLatePackets){
 		if(dontDecMinDelay>0)
@@ -397,7 +409,7 @@ void JitterBuffer::Tick(){
 			minDelay+=diff;
 			outstandingDelayChange+=diff*60;
 			dontChangeDelay+=32;
-			LOGD("new delay from stddev %d", minDelay);
+			LOGD("new delay from stddev %f", minDelay);
 			if(diff<0){
 				dontDecMinDelay+=25;
 			}
@@ -444,7 +456,6 @@ void JitterBuffer::Tick(){
 
 	tickCount++;
 
-	unlock_mutex(mutex);
 }
 
 
@@ -468,10 +479,9 @@ void JitterBuffer::GetAverageLateCount(double *out){
 
 
 int JitterBuffer::GetAndResetLostPacketCount(){
-	lock_mutex(mutex);
+	MutexGuard m(mutex);
 	int r=lostPackets;
 	lostPackets=0;
-	unlock_mutex(mutex);
 	return r;
 }
 

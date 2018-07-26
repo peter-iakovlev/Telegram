@@ -18,6 +18,11 @@
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
+    return [self initWithFrame:frame backgroundColor:[UIColor whiteColor] separatorColor:[UIColor colorWithRed:0.8f green:0.8f blue:0.8f alpha:1.0f] textColor:[UIColor blackColor] accentColor:[UIColor colorWithRed:0.0f green:126.0f / 255.0f blue:229.0 / 255.0f alpha:1.0f]];
+}
+
+- (instancetype)initWithFrame:(CGRect)frame backgroundColor:(UIColor *)backgroundColor separatorColor:(UIColor *)separatorColor textColor:(UIColor *)textColor accentColor:(UIColor *)accentColor
+{
     self = [super initWithFrame:frame];
     if (self != nil)
     {
@@ -25,32 +30,26 @@
         _dimView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.2f];
         [self addSubview:_dimView];
         
-        static UIImage *backgroundImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            CGFloat radius = 8.0f;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
-            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)radius topCapHeight:(NSInteger)radius];
-            UIGraphicsEndImageContext();
-        });
+        CGFloat radius = 8.0f;
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
+        UIImage *backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)radius topCapHeight:(NSInteger)radius];
+        UIGraphicsEndImageContext();
+        
         _backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
         [self addSubview:_backgroundView];
         
         _textLabel = [[UILabel alloc] init];
         _textLabel.backgroundColor = [UIColor clearColor];
-        _textLabel.textColor = [UIColor blackColor];
+        _textLabel.textColor = textColor;
         _textLabel.font = [UIFont boldSystemFontOfSize:18.0f];
         [self addSubview:_textLabel];
         
         _separatorView = [[UIView alloc] init];
-        _separatorView.backgroundColor = [UIColor colorWithRed:0.8f green:0.8f blue:0.8f alpha:1.0f]; //[UIColor hexColor:0xcccccc];
+        _separatorView.backgroundColor = separatorColor; //[UIColor hexColor:0xcccccc];
         [self addSubview:_separatorView];
-        
-        UIColor *accentColor = [UIColor colorWithRed:0.0f green:126.0f / 255.0f blue:229.0 / 255.0f alpha:1.0f]; //[UIColor hexColor:0x007ee5];
         
         _progressView = [[UIView alloc] init];
         _progressView.backgroundColor = accentColor;

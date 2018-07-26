@@ -169,16 +169,18 @@
         if ([result isKindOfClass:[TGBotContextMediaResult class]])
             webPage.title = ((TGBotContextMediaResult *)result).title;
         
+        NSString *mediaUrl = nil;
         SSignal *thumbnailSignal = nil;
         if ([result isKindOfClass:[TGBotContextExternalResult class]])
         {
+            mediaUrl = ((TGBotContextExternalResult *)result).originalUrl;
             CGSize thumbnailSize = TGFitSize(size, CGSizeMake(320, 320));
             thumbnailSignal = [TGSharedPhotoSignals cachedExternalThumbnail:((TGBotContextExternalResult *)result).thumbUrl size:thumbnailSize pixelProcessingBlock:nil cacheVariantKey:@"genericContextCell" threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] diskCache:[TGSharedMediaUtils sharedMediaTemporaryPersistentCache]];
         }
         
         TGPreviewAboutItemView *aboutItem = [[TGPreviewAboutItemView alloc] initWithWebPageAttachment:webPage];
         
-        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
+        TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithMediaAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0 mediaUrl:mediaUrl];
         embedItem.parentController = parentController;
         [items addObject:embedItem];
         
@@ -354,8 +356,8 @@
             }
             else if ([result.type isEqualToString:@"audio"])
             {
-                TGPreviewAudioItemView *audioItem = [[TGPreviewAudioItemView alloc] initWithBotContextResult:result];
-                [items addObject:audioItem];
+                //TGPreviewAudioItemView *audioItem = [[TGPreviewAudioItemView alloc] initWithBotContextResult:result];
+                //[items addObject:audioItem];
             }
         }
         else if ([result isKindOfClass:[TGBotContextMediaResult class]])
@@ -363,8 +365,8 @@
             TGBotContextMediaResult *concreteResult = (TGBotContextMediaResult *)result;
             if ([result.type isEqualToString:@"audio"])
             {
-                TGPreviewAudioItemView *audioItem = [[TGPreviewAudioItemView alloc] initWithBotContextResult:result];
-                [items addObject:audioItem];
+                //TGPreviewAudioItemView *audioItem = [[TGPreviewAudioItemView alloc] initWithBotContextResult:result];
+                //[items addObject:audioItem];
             }
             else if (concreteResult.document != nil) {
                 TGDocumentMediaAttachment *document = concreteResult.document;

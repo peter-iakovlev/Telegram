@@ -9,14 +9,12 @@
 
 @end
 
-@interface TLPeerNotifySettings$peerNotifySettingsEmpty : TLPeerNotifySettings
 
-
-@end
-
-@interface TLPeerNotifySettings$peerNotifySettings : TLPeerNotifySettings
+@interface TLPeerNotifySettings$peerNotifySettingsMeta : TLPeerNotifySettings
 
 @property (nonatomic) int32_t flags;
+@property (nonatomic) bool showPreviews;
+@property (nonatomic) bool silent;
 @property (nonatomic) int32_t mute_until;
 @property (nonatomic, retain) NSString *sound;
 

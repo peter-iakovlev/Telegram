@@ -31,6 +31,7 @@
 @property (nonatomic, retain) NSString *phone_number;
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *vcard;
 @property (nonatomic) int32_t user_id;
 
 @end
@@ -69,7 +70,6 @@
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLPhoto *photo;
-@property (nonatomic, retain) NSString *caption;
 @property (nonatomic) int32_t ttl_seconds;
 
 @end
@@ -78,7 +78,6 @@
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLDocument *document;
-@property (nonatomic, retain) NSString *caption;
 @property (nonatomic) int32_t ttl_seconds;
 
 @end

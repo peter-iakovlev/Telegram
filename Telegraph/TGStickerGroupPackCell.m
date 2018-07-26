@@ -3,6 +3,8 @@
 #import <LegacyComponents/TGFont.h>
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGStickerGroupPackCell ()
 {
     UILabel *_label;
@@ -27,16 +29,14 @@
         static UIImage *buttonImage = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^{
-            {
-                CGSize size = CGSizeMake(12.0f, 12.0f);
-                UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
-                CGContextSetLineWidth(context, 1.0f);
-                CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
-                buttonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size.width / 2.0f) topCapHeight:(NSInteger)(size.height / 2.0f)];
-                UIGraphicsEndImageContext();
-            }
+            CGSize size = CGSizeMake(12.0f, 12.0f);
+            UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetStrokeColorWithColor(context, TGAccentColor().CGColor);
+            CGContextSetLineWidth(context, 1.0f);
+            CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
+            buttonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size.width / 2.0f) topCapHeight:(NSInteger)(size.height / 2.0f)];
+            UIGraphicsEndImageContext();
         });
         
         _button = [[TGModernButton alloc] init];
@@ -53,6 +53,15 @@
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+     [_button setBackgroundImage:presentation.images.chatStickersGroupButton forState:UIControlStateNormal];
+    [_button setTitleColor:presentation.pallete.accentColor];
+    _label.textColor = presentation.pallete.secondaryTextColor;
 }
 
 - (void)buttonPressed

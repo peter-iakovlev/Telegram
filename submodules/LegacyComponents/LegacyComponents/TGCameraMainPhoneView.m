@@ -1,5 +1,6 @@
 #import "TGCameraMainPhoneView.h"
 
+#import <SSignalKit/SSignalKit.h>
 #import "LegacyComponentsInternal.h"
 #import "TGImageUtils.h"
 #import "TGFont.h"
@@ -21,6 +22,9 @@
 #import "TGCameraSegmentsView.h"
 
 #import "TGMenuView.h"
+
+#import "TGMediaPickerPhotoCounterButton.h"
+#import "TGMediaPickerPhotoStripView.h"
 
 @interface TGCameraTopPanelView : UIView
 
@@ -54,17 +58,28 @@
     UIView *_bottomPanelView;
     UIView *_bottomPanelBackgroundView;
     
-    UIView *_videoLandscapePanelView;;
+    UIView *_topDocumentFrameView;
+    UIView *_bottomDocumentFrameView;
+    
+    UIView *_videoLandscapePanelView;
     
     TGCameraFlashControl *_flashControl;
     TGCameraFlashActiveView *_flashActiveView;
+    
+    TGCameraFlipButton *_topFlipButton;
+    
+    bool _hasResults;
     
     CGFloat _topPanelOffset;
     CGFloat _topPanelHeight;
     
     CGFloat _bottomPanelOffset;
     CGFloat _bottomPanelHeight;
+    
+    CGFloat _modeControlOffset;
     CGFloat _modeControlHeight;
+    
+    CGFloat _counterOffset;
     
     bool _displayedTooltip;
     TGMenuContainerView *_tooltipContainerView;
@@ -101,7 +116,9 @@
             _topPanelHeight = 44.0f;
             _bottomPanelOffset = 63.0f;
             _bottomPanelHeight = 123.0f;
+            _modeControlOffset = 3.0f;
             _modeControlHeight = 40.0f;
+            _counterOffset = 7.0f;
             shutterButtonWidth = 70.0f;
         }
         else if (widescreenWidth >= 736.0f - FLT_EPSILON)
@@ -109,13 +126,16 @@
             _topPanelHeight = 44.0f;
             _bottomPanelHeight = 140.0f;
             _modeControlHeight = 50.0f;
+            _counterOffset = 8.0f;
             shutterButtonWidth = 70.0f;
         }
         else if (widescreenWidth >= 667.0f - FLT_EPSILON)
         {
             _topPanelHeight = 44.0f;
             _bottomPanelHeight = 123.0f;
-            _modeControlHeight = 40.0f;
+            _modeControlOffset = 4.0f;
+            _modeControlHeight = 36.0f;
+            _counterOffset = 6.0f;
             shutterButtonWidth = 70.0f;
         }
         else
@@ -123,6 +143,7 @@
             _topPanelHeight = 40.0f;
             _bottomPanelHeight = 101.0f;
             _modeControlHeight = 31.0f;
+            _counterOffset = 8.0f;
         }
         
         __weak TGCameraMainPhoneView *weakSelf = self;
@@ -166,7 +187,6 @@
         [_bottomPanelView addSubview:_cancelButton];
         
         _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
-        _doneButton.alpha = 0.0f;
         _doneButton.backgroundColor = [UIColor clearColor];
         _doneButton.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
         _doneButton.exclusiveTouch = true;
@@ -188,12 +208,17 @@
         _modeControl = [[TGCameraModeControl alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, _modeControlHeight)];
         [_bottomPanelView addSubview:_modeControl];
         
-        _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(0, 0, 56, 56)];
+        _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(0, 0, 56, 56) large:true];
         [_flipButton addTarget:self action:@selector(flipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_bottomPanelView addSubview:_flipButton];
         
         _flashControl = [[TGCameraFlashControl alloc] initWithFrame:CGRectMake(0, 0, frame.size.width, TGCameraFlashControlHeight)];
         [_topPanelView addSubview:_flashControl];
+        
+        _topFlipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(0, 0, 44, 44) large:false];
+        _topFlipButton.hidden = true;
+        [_topFlipButton addTarget:self action:@selector(flipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_topPanelView addSubview:_topFlipButton];
         
         _timecodeView = [[TGCameraTimeCodeView alloc] initWithFrame:CGRectMake((frame.size.width - 120) / 2, 12, 120, 20)];
         _timecodeView.hidden = true;
@@ -217,7 +242,7 @@
         _flashActiveView = [[TGCameraFlashActiveView alloc] initWithFrame:CGRectMake((frame.size.width - 40) / 2, frame.size.height - _bottomPanelHeight - 37, 40, 21)];
         [self addSubview:_flashActiveView];
         
-        _zoomView = [[TGCameraZoomView alloc] initWithFrame:CGRectMake(10, frame.size.height - _bottomPanelHeight - 18, frame.size.width - 20, 1.5f)];
+        _zoomView = [[TGCameraZoomView alloc] initWithFrame:CGRectMake(10, frame.size.height - _bottomPanelHeight - _bottomPanelOffset - 18, frame.size.width - 20, 1.5f)];
         _zoomView.activityChanged = ^(bool active)
         {
             __strong TGCameraMainPhoneView *strongSelf = weakSelf;
@@ -272,29 +297,41 @@
                 [strongSelf updateForCameraModeChangeWithPreviousMode:previousMode];
             };
             
-            if (change)
-            {
-                changeBlock();
-            }
-            else
-            {
-                [strongSelf showMomentCaptureDismissWarningWithCompletion:^(bool dismiss)
-                {
-                    if (dismiss)
-                        changeBlock();
-                }];
-            }
+            changeBlock();
         };
         
-        _segmentsView = [[TGCameraSegmentsView alloc] init];
-        _segmentsView.hidden = true;
-        _segmentsView.deletePressed = ^
+        
+        _selectedPhotosView = [[TGMediaPickerPhotoStripView alloc] initWithFrame:CGRectZero];
+        _selectedPhotosView.interfaceOrientation = UIInterfaceOrientationPortrait;
+        _selectedPhotosView.removable = true;
+        _selectedPhotosView.itemSelected = ^(NSInteger index)
         {
             __strong TGCameraMainPhoneView *strongSelf = weakSelf;
-            if (strongSelf != nil && strongSelf.deleteSegmentButtonPressed != nil)
-                strongSelf.deleteSegmentButtonPressed();
+            if (strongSelf == nil)
+                return;
+            
+            [strongSelf->_photoCounterButton setSelected:false animated:true];
+            [strongSelf->_selectedPhotosView setHidden:true animated:true];
+            
+            if (strongSelf.resultPressed != nil)
+                strongSelf.resultPressed(index);
         };
-        [self addSubview:_segmentsView];
+        _selectedPhotosView.itemRemoved = ^(NSInteger index)
+        {
+            __strong TGCameraMainPhoneView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (strongSelf.itemRemoved != nil)
+                strongSelf.itemRemoved(index);
+        };
+        _selectedPhotosView.hidden = true;
+        [self addSubview:_selectedPhotosView];
+    
+        _photoCounterButton = [[TGMediaPickerPhotoCounterButton alloc] initWithFrame:CGRectMake(0, 0, 64, 38)];
+        [_photoCounterButton addTarget:self action:@selector(photoCounterButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        _photoCounterButton.userInteractionEnabled = false;
+        [_bottomPanelView addSubview:_photoCounterButton];
     }
     return self;
 }
@@ -302,6 +339,24 @@
 - (void)dealloc
 {
      [_actionHandle reset];
+}
+
+- (void)setResults:(NSArray *)results
+{
+    if (results.count == 0)
+    {
+        _hasResults = false;
+        _topFlipButton.hidden = true;
+        _flipButton.hidden = false;
+        _doneButton.hidden = true;
+    }
+    else
+    {
+        _hasResults = true;
+        _topFlipButton.hidden = false;
+        _flipButton.hidden = true;
+        _doneButton.hidden = false;
+    }
 }
 
 - (void)setupTooltip
@@ -355,7 +410,7 @@
 {
     UIView *view = [super hitTest:point withEvent:event];
     
-    if ([view isDescendantOfView:_topPanelView] || [view isDescendantOfView:_bottomPanelView] || [view isDescendantOfView:_videoLandscapePanelView] || [view isDescendantOfView:_segmentsView] || [view isDescendantOfView:_tooltipContainerView])
+    if ([view isDescendantOfView:_topPanelView] || [view isDescendantOfView:_bottomPanelView] || [view isDescendantOfView:_videoLandscapePanelView] || [view isDescendantOfView:_tooltipContainerView] || [view isDescendantOfView:_selectedPhotosView])
         return view;
     
     return nil;
@@ -446,10 +501,38 @@
     [_flashControl setHidden:!hasFlash animated:true];
 }
 
+#pragma mark -
+
+- (void)setDocumentFrameHidden:(bool)hidden
+{
+    if (!hidden)
+    {
+        if (_topDocumentFrameView == nil)
+        {
+            _topDocumentFrameView = [[UIView alloc] init];
+            _topDocumentFrameView.backgroundColor = [TGCameraInterfaceAssets transparentOverlayBackgroundColor];
+            [self addSubview:_topDocumentFrameView];
+            
+            _bottomDocumentFrameView = [[UIView alloc] init];
+            _bottomDocumentFrameView.backgroundColor = [TGCameraInterfaceAssets transparentOverlayBackgroundColor];
+            [self addSubview:_bottomDocumentFrameView];
+            
+            [self setNeedsLayout];
+        }
+    }
+    else
+    {
+        _topDocumentFrameView.hidden = true;
+        _bottomDocumentFrameView.hidden = true;
+    }
+}
+
 #pragma mark - Layout
 
 - (void)setInterfaceHiddenForVideoRecording:(bool)hidden animated:(bool)animated
 {
+    bool hasDoneButton = _hasResults;
+    
     if (animated)
     {
         if (!hidden)
@@ -457,19 +540,23 @@
             _modeControl.hidden = false;
             _cancelButton.hidden = false;
             _flashControl.hidden = false;
-            _flipButton.hidden = false;
+            _flipButton.hidden = hasDoneButton;
             _bottomPanelBackgroundView.hidden = false;
+            _topFlipButton.hidden = !hasDoneButton;
         }
         
-        [UIView animateWithDuration:0.25
-                         animations:^
+        [UIView animateWithDuration:0.25 animations:^
         {
             CGFloat alpha = hidden ? 0.0f : 1.0f;
             _modeControl.alpha = alpha;
             _cancelButton.alpha = alpha;
             _flashControl.alpha = alpha;
             _flipButton.alpha = alpha;
+            _topFlipButton.alpha = alpha;
             _bottomPanelBackgroundView.alpha = alpha;
+            
+            if (hasDoneButton)
+                _doneButton.alpha = alpha;
         } completion:^(BOOL finished)
         {
             if (finished)
@@ -477,8 +564,12 @@
                 _modeControl.hidden = hidden;
                 _cancelButton.hidden = hidden;
                 _flashControl.hidden = hidden;
-                _flipButton.hidden = hidden;
+                _flipButton.hidden = hidden || hasDoneButton;
+                _topFlipButton.hidden = hidden || !hasDoneButton;
                 _bottomPanelBackgroundView.hidden = hidden;
+                
+                if (hasDoneButton)
+                    _doneButton.hidden = hidden;
             }
         }];
     }
@@ -493,11 +584,26 @@
         _cancelButton.alpha = alpha;
         _flashControl.hidden = hidden;
         _flashControl.alpha = alpha;
-        _flipButton.hidden = hidden;
+        _flipButton.hidden = hidden || hasDoneButton;
         _flipButton.alpha = alpha;
+        _topFlipButton.hidden = hidden || !hasDoneButton;
+        _topFlipButton.alpha = alpha;
         _bottomPanelBackgroundView.hidden = hidden;
         _bottomPanelBackgroundView.alpha = alpha;
+        
+        if (hasDoneButton)
+        {
+            _doneButton.hidden = hidden;
+            _doneButton.alpha = alpha;
+        }
     }
+    
+    if (hidden && _photoCounterButton.selected)
+    {
+        [_photoCounterButton setSelected:false animated:true];
+        [_selectedPhotosView setHidden:true animated:true];
+    }
+    [_photoCounterButton setHidden:hidden animated:animated];
 }
 
 - (void)setInterfaceOrientation:(UIInterfaceOrientation)orientation animated:(bool)animated
@@ -523,6 +629,7 @@
                 _flashControl.alpha = 0.0f;
             }
             
+            _topFlipButton.transform = CGAffineTransformMakeRotation(TGRotationForInterfaceOrientation(orientation));
             _flipButton.transform = CGAffineTransformMakeRotation(TGRotationForInterfaceOrientation(orientation));
         } completion:^(__unused BOOL finished)
         {
@@ -574,6 +681,7 @@
     {
         [_flashControl dismissAnimated:false];
         
+        _topFlipButton.transform = CGAffineTransformMakeRotation(TGRotationForInterfaceOrientation(orientation));
         _flipButton.transform = CGAffineTransformMakeRotation(TGRotationForInterfaceOrientation(orientation));
         _flashControl.transform = CGAffineTransformMakeRotation(TGRotationForInterfaceOrientation(orientation));
         _flashControl.interfaceOrientation = orientation;
@@ -604,19 +712,19 @@
             
         case UIInterfaceOrientationLandscapeLeft:
         {
-            _flashActiveView.frame = CGRectMake(self.frame.size.width - 37, _topPanelHeight + (self.frame.size.height - _topPanelHeight - _bottomPanelHeight - 40) / 2, 21, 40);
+            _flashActiveView.frame = CGRectMake(self.frame.size.width - 37, _topPanelHeight + (self.frame.size.height - _topPanelHeight - _bottomPanelHeight - _bottomPanelOffset - 40) / 2, 21, 40);
         }
             break;
             
         case UIInterfaceOrientationLandscapeRight:
         {
-            _flashActiveView.frame = CGRectMake(16, _topPanelHeight + (self.frame.size.height - _topPanelHeight - _bottomPanelHeight - 40) / 2, 21, 40);
+            _flashActiveView.frame = CGRectMake(16, _topPanelHeight + (self.frame.size.height - _topPanelHeight - _bottomPanelHeight - _bottomPanelOffset - 40) / 2, 21, 40);
         }
             break;
             
         default:
         {
-            _flashActiveView.frame = CGRectMake((self.frame.size.width - 40) / 2, self.frame.size.height - _bottomPanelHeight - 37 + zoomOffset, 40, 21);
+            _flashActiveView.frame = CGRectMake((self.frame.size.width - 40) / 2, self.frame.size.height - _bottomPanelHeight - _bottomPanelOffset - 37 + zoomOffset, 40, 21);
         }
             break;
     }
@@ -705,9 +813,6 @@
 
 - (void)layoutPreviewRelativeViews
 {
-    CGRect segmentsContainerFrame = CGRectMake(0, CGRectGetMaxY(self.previewViewFrame), self.frame.size.width, self.frame.size.height - CGRectGetMaxY(self.previewViewFrame) - _bottomPanelView.frame.size.height);
-    
-    _segmentsView.frame = CGRectMake(0, segmentsContainerFrame.origin.y + (segmentsContainerFrame.size.height - 32) / 2 + 10, _bottomPanelView.frame.size.width, 32);
 }
 
 - (void)layoutSubviews
@@ -717,14 +822,28 @@
     [self _layoutTopPanelSubviewsForInterfaceOrientation:_interfaceOrientation];
     
     _bottomPanelView.frame = CGRectMake(0, self.frame.size.height - _bottomPanelHeight - _bottomPanelOffset, self.frame.size.width, _bottomPanelHeight + _bottomPanelOffset);
-    _modeControl.frame = CGRectMake(0, 0, self.frame.size.width, _modeControlHeight);
-    _shutterButton.frame = CGRectMake(round((self.frame.size.width - _shutterButton.frame.size.width) / 2), _modeControlHeight, _shutterButton.frame.size.width, _shutterButton.frame.size.height);
+    
+    CGFloat documentFrameHeight = self.frame.size.width * 0.704f;
+    CGFloat documentTopEdge = CGRectGetMidY(self.previewViewFrame) - documentFrameHeight / 2.0f;
+    CGFloat documentBottomEdge = CGRectGetMidY(self.previewViewFrame) + documentFrameHeight / 2.0f;
+    
+    _topDocumentFrameView.frame = CGRectMake(0.0f, CGRectGetMaxY(_topPanelView.frame), self.frame.size.width, documentTopEdge - CGRectGetMaxY(_topPanelView.frame));
+    _bottomDocumentFrameView.frame = CGRectMake(0.0f, documentBottomEdge, self.frame.size.width, CGRectGetMinY(_bottomPanelView.frame) - documentBottomEdge);
+    
+    _modeControl.frame = CGRectMake(0, _modeControlOffset, self.frame.size.width, _modeControlHeight);
+    _shutterButton.frame = CGRectMake(round((self.frame.size.width - _shutterButton.frame.size.width) / 2), _modeControlHeight + _modeControlOffset, _shutterButton.frame.size.width, _shutterButton.frame.size.height);
     _cancelButton.frame = CGRectMake(0, round(_shutterButton.center.y - _cancelButton.frame.size.height / 2.0f), _cancelButton.frame.size.width, _cancelButton.frame.size.height);
     _doneButton.frame = CGRectMake(_bottomPanelView.frame.size.width - _doneButton.frame.size.width, round(_shutterButton.center.y - _doneButton.frame.size.height / 2.0f), _doneButton.frame.size.width, _doneButton.frame.size.height);
     
     _flipButton.frame = CGRectMake(self.frame.size.width - _flipButton.frame.size.width - 4.0f - 7.0f, round(_shutterButton.center.y - _flipButton.frame.size.height / 2.0f), _flipButton.frame.size.width, _flipButton.frame.size.height);
     
-    if (!_displayedTooltip)
+    _topFlipButton.frame = CGRectMake(self.frame.size.width - _topFlipButton.frame.size.width - 4.0f, 0.0f, _topFlipButton.frame.size.width, _topFlipButton.frame.size.height);
+    
+    CGFloat photosViewSize = TGPhotoThumbnailSizeForCurrentScreen().height + 4 * 2;
+    _photoCounterButton.frame = CGRectMake(self.frame.size.width - 56.0f - 10.0f, _counterOffset, 64, 38);
+    _selectedPhotosView.frame = CGRectMake(4.0f, [_photoCounterButton convertRect:_photoCounterButton.bounds toView:self].origin.y - photosViewSize - 20.0f, self.frame.size.width - 4.0f * 2.0f, photosViewSize);
+    
+    if (!_displayedTooltip && _modeControl.superview != nil)
     {
         _displayedTooltip = true;
         [self setupTooltip];

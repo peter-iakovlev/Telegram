@@ -38,3 +38,7 @@
 "Share.PasscodeTryAgainIn1Minute" = "1분후 다시 시도해주세요";
 
 "Share.SavedMessages" = "저장된 메시지";
+
+"Share.ContactInfo" = "연락처 정보";
+"Share.ContactJob" = "직업";
+"Share.ContactBirthday" = "생일";

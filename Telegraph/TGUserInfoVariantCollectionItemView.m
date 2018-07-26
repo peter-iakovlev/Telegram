@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoVariantCollectionItemView ()
 {
     CALayer *_separatorLayer;
@@ -40,10 +42,20 @@
         _variantLabel.textColor = UIColorRGB(0x8e8e93);
         [self addSubview:_variantLabel];
         
-        _arrowView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
+        _arrowView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 8.0f, 14.0f)];
         [self addSubview:_arrowView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _variantLabel.textColor = presentation.pallete.collectionMenuVariantColor;
+    _separatorLayer.backgroundColor = presentation.pallete.collectionMenuSeparatorColor.CGColor;
+    _arrowView.image = presentation.images.collectionMenuDisclosureIcon;
 }
 
 - (void)setTitle:(NSString *)title
@@ -84,10 +96,10 @@
     CGRect bounds = self.bounds;
     
     CGFloat separatorHeight = TGScreenPixel;
-    CGFloat separatorInset = 35.0f + self.safeAreaInset.left;
+    CGFloat separatorInset = 15.0f + self.safeAreaInset.left;
     _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
+    CGFloat leftPadding = 15.0f + TGScreenPixel + self.safeAreaInset.left;
     
     CGSize titleSize = [_titleLabel sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
     _titleLabel.frame = CGRectMake(leftPadding, 12.0f, titleSize.width, titleSize.height);

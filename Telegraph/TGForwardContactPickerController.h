@@ -20,6 +20,7 @@
 
 @interface TGForwardContactPickerController : TGContactsController
 
+@property (nonatomic, assign) bool sendImmediately;
 @property (nonatomic, weak) id<TGForwardContactPickerControllerDelegate> delegate;
 
 @end

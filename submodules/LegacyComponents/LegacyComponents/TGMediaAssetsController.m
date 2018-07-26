@@ -34,7 +34,6 @@
     
     TGMediaPickerToolbarView *_toolbarView;
     TGMediaSelectionContext *_selectionContext;
-    TGMediaEditingContext *_editingContext;
     
     SMetaDisposable *_groupingChangedDisposable;
     SMetaDisposable *_selectionChangedDisposable;
@@ -62,6 +61,11 @@
 @implementation TGMediaAssetsController
 
 + (instancetype)controllerWithContext:(id<LegacyComponentsContext>)context assetGroup:(TGMediaAssetGroup *)assetGroup intent:(TGMediaAssetsControllerIntent)intent recipientName:(NSString *)recipientName saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping
+{
+    return [self controllerWithContext:context assetGroup:assetGroup intent:intent recipientName:recipientName saveEditedPhotos:saveEditedPhotos allowGrouping:allowGrouping inhibitSelection:false];
+}
+
++ (instancetype)controllerWithContext:(id<LegacyComponentsContext>)context assetGroup:(TGMediaAssetGroup *)assetGroup intent:(TGMediaAssetsControllerIntent)intent recipientName:(NSString *)recipientName saveEditedPhotos:(bool)saveEditedPhotos allowGrouping:(bool)allowGrouping inhibitSelection:(bool)inhibitSelection
 {
     if (intent != TGMediaAssetsControllerSendMediaIntent)
         allowGrouping = false;
@@ -93,6 +97,7 @@
     };
     
     TGMediaGroupsController *groupsController = [[TGMediaGroupsController alloc] initWithContext:context assetsLibrary:assetsController.assetsLibrary intent:intent];
+    groupsController.pallete = assetsController.pallete;
     groupsController.openAssetGroup = ^(id group)
     {
         __strong TGMediaAssetsController *strongController = weakController;
@@ -103,25 +108,26 @@
         
         if ([group isKindOfClass:[TGMediaAssetGroup class]])
         {
-            pickerController = [[TGMediaAssetsPickerController alloc] initWithContext:strongController->_context assetsLibrary:strongController.assetsLibrary assetGroup:group intent:intent selectionContext:strongController->_selectionContext editingContext:strongController->_editingContext saveEditedPhotos:strongController->_saveEditedPhotos];
-        }
-        else if ([group isKindOfClass:[TGMediaAssetMomentList class]])
-        {
-            pickerController = [[TGMediaAssetsMomentsController alloc] initWithContext:strongController->_context assetsLibrary:strongController.assetsLibrary momentList:group intent:intent selectionContext:strongController->_selectionContext editingContext:strongController->_editingContext saveEditedPhotos:strongController->_saveEditedPhotos];
+            pickerController = [[TGMediaAssetsPickerController alloc] initWithContext:strongController->_context assetsLibrary:strongController.assetsLibrary assetGroup:group intent:intent selectionContext:inhibitSelection ? nil : strongController->_selectionContext editingContext:strongController->_editingContext saveEditedPhotos:strongController->_saveEditedPhotos];
+            pickerController.pallete = strongController.pallete;
         }
         pickerController.suggestionContext = strongController.suggestionContext;
         pickerController.localMediaCacheEnabled = strongController.localMediaCacheEnabled;
         pickerController.captionsEnabled = strongController.captionsEnabled;
+        pickerController.allowCaptionEntities = strongController.allowCaptionEntities;
         pickerController.inhibitDocumentCaptions = strongController.inhibitDocumentCaptions;
+        pickerController.inhibitMute = strongController.inhibitMute;
         pickerController.liveVideoUploadEnabled = strongController.liveVideoUploadEnabled;
         pickerController.catchToolbarView = catchToolbarView;
         pickerController.recipientName = recipientName;
         pickerController.hasTimer = strongController.hasTimer;
+        pickerController.onlyCrop = strongController.onlyCrop;
         [strongController pushViewController:pickerController animated:true];
     };
     [groupsController loadViewIfNeeded];
     
-    TGMediaAssetsPickerController *pickerController = [[TGMediaAssetsPickerController alloc] initWithContext:context assetsLibrary:assetsController.assetsLibrary assetGroup:assetGroup intent:intent selectionContext:assetsController->_selectionContext editingContext:assetsController->_editingContext saveEditedPhotos:saveEditedPhotos];
+    TGMediaAssetsPickerController *pickerController = [[TGMediaAssetsPickerController alloc] initWithContext:context assetsLibrary:assetsController.assetsLibrary assetGroup:assetGroup intent:intent selectionContext:inhibitSelection ? nil : assetsController->_selectionContext editingContext:assetsController->_editingContext saveEditedPhotos:saveEditedPhotos];
+    pickerController.pallete = assetsController.pallete;
     pickerController.catchToolbarView = catchToolbarView;
     
     [groupsController setIsFirstInStack:true];
@@ -147,10 +153,22 @@
     self.pickerController.captionsEnabled = captionsEnabled;
 }
 
+- (void)setAllowCaptionEntities:(bool)allowCaptionEntities
+{
+    _allowCaptionEntities = allowCaptionEntities;
+    self.pickerController.allowCaptionEntities = allowCaptionEntities;
+}
+
 - (void)setInhibitDocumentCaptions:(bool)inhibitDocumentCaptions
 {
     _inhibitDocumentCaptions = inhibitDocumentCaptions;
     self.pickerController.inhibitDocumentCaptions = inhibitDocumentCaptions;
+}
+
+- (void)setInhibitMute:(bool)inhibitMute
+{
+    _inhibitMute = inhibitMute;
+    self.pickerController.inhibitMute = inhibitMute;
 }
 
 - (void)setLiveVideoUploadEnabled:(bool)liveVideoUploadEnabled
@@ -183,6 +201,12 @@
     self.pickerController.hasTimer = hasTimer;
 }
 
+- (void)setOnlyCrop:(bool)onlyCrop
+{
+    _onlyCrop = onlyCrop;
+    self.pickerController.onlyCrop = onlyCrop;
+}
+
 - (TGMediaAssetsPickerController *)pickerController
 {
     TGMediaAssetsPickerController *pickerController = nil;
@@ -204,6 +228,12 @@
     {
         _context = context;
         _saveEditedPhotos = saveEditedPhotos;
+     
+        if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(navigationBarPallete)])
+            [((TGNavigationBar *)self.navigationBar) setPallete:[[LegacyComponentsGlobals provider] navigationBarPallete]];
+        
+        if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(mediaAssetsPallete)])
+            [self setPallete:[[LegacyComponentsGlobals provider] mediaAssetsPallete]];
         
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
@@ -277,7 +307,7 @@
                 [strongSelf setupTooltip:[strongSelf->_toolbarView convertRect:strongSelf->_toolbarView.centerButton.frame toView:strongSelf.view]];
         }]];
         
-        if (intent == TGMediaAssetsControllerSendMediaIntent || intent == TGMediaAssetsControllerSetProfilePhotoIntent)
+        if (intent == TGMediaAssetsControllerSendMediaIntent || intent == TGMediaAssetsControllerSetProfilePhotoIntent || intent == TGMediaAssetsControllerPassportIntent || intent == TGMediaAssetsControllerPassportMultipleIntent)
             _editingContext = [[TGMediaEditingContext alloc] init];
         else if (intent == TGMediaAssetsControllerSendFileIntent)
             _editingContext = [TGMediaEditingContext contextForCaptionsOnly];
@@ -326,14 +356,16 @@
     
     CGFloat inset = [TGViewController safeAreaInsetForOrientation:self.interfaceOrientation].bottom;
     _toolbarView = [[TGMediaPickerToolbarView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - TGMediaPickerToolbarHeight - inset, self.view.frame.size.width, TGMediaPickerToolbarHeight + inset)];
+    if (_pallete != nil)
+        _toolbarView.pallete = _pallete;
     _toolbarView.safeAreaInset = [TGViewController safeAreaInsetForOrientation:self.interfaceOrientation];
     _toolbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    if (_intent != TGMediaAssetsControllerSendFileIntent && _intent != TGMediaAssetsControllerSendMediaIntent)
+    if ((_intent != TGMediaAssetsControllerSendFileIntent && _intent != TGMediaAssetsControllerSendMediaIntent) || _selectionContext == nil)
         [_toolbarView setRightButtonHidden:true];
     if (_selectionContext.allowGrouping)
     {
-        [_toolbarView setCenterButtonImage:TGTintedImage(TGComponentsImageNamed(@"MediaPickerGroupPhotosIcon"), UIColorRGB(0x858e99))];
-        [_toolbarView setCenterButtonSelectedImage:TGComponentsImageNamed(@"MediaPickerGroupPhotosIcon")];
+        [_toolbarView setCenterButtonImage:TGTintedImage(TGComponentsImageNamed(@"MediaPickerGroupPhotosIcon"), _pallete != nil ? _pallete.secondaryTextColor : UIColorRGB(0x858e99))];
+        [_toolbarView setCenterButtonSelectedImage:_pallete != nil ? TGTintedImage(TGComponentsImageNamed(@"MediaPickerGroupPhotosIcon"), _pallete.accentColor) : TGComponentsImageNamed(@"MediaPickerGroupPhotosIcon")];
         [_toolbarView setCenterButtonHidden:true animated:false];
         [_toolbarView setCenterButtonSelected:_selectionContext.grouping];
         
@@ -442,9 +474,15 @@
 
 - (void)completeWithCurrentItem:(TGMediaAsset *)currentItem
 {
-    NSArray *signals = [self resultSignalsWithCurrentItem:currentItem descriptionGenerator:self.descriptionGenerator];
     if (self.completionBlock != nil)
+    {
+        NSArray *signals = [self resultSignalsWithCurrentItem:currentItem descriptionGenerator:self.descriptionGenerator];
         self.completionBlock(signals);
+    }
+    else if (self.singleCompletionBlock != nil)
+    {
+        self.singleCompletionBlock(currentItem, _editingContext);
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -464,11 +502,11 @@
     }
 }
 
-- (NSArray *)resultSignalsWithCurrentItem:(TGMediaAsset *)currentItem descriptionGenerator:(id (^)(id, NSString *, NSString *))descriptionGenerator
+- (NSArray *)resultSignalsWithCurrentItem:(TGMediaAsset *)currentItem descriptionGenerator:(id (^)(id, NSString *, NSArray *, NSString *))descriptionGenerator
 {
     bool storeAssets = (_editingContext != nil) && self.shouldStoreAssets;
     
-    if (_intent == TGMediaAssetsControllerSendMediaIntent)
+    if (_intent == TGMediaAssetsControllerSendMediaIntent && _selectionContext.allowGrouping)
         [[NSUserDefaults standardUserDefaults] setObject:@(!_selectionContext.grouping) forKey:@"TG_mediaGroupingDisabled_v0"];
     
     return [TGMediaAssetsController resultSignalsForSelectionContext:_selectionContext editingContext:_editingContext intent:_intent currentItem:currentItem storeAssets:storeAssets useMediaCache:self.localMediaCacheEnabled descriptionGenerator:descriptionGenerator saveEditedPhotos:_saveEditedPhotos];
@@ -481,14 +519,14 @@
     return value;
 }
 
-+ (NSArray *)resultSignalsForSelectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext intent:(TGMediaAssetsControllerIntent)intent currentItem:(TGMediaAsset *)currentItem storeAssets:(bool)storeAssets useMediaCache:(bool)__unused useMediaCache descriptionGenerator:(id (^)(id, NSString *, NSString *))descriptionGenerator saveEditedPhotos:(bool)saveEditedPhotos
++ (NSArray *)resultSignalsForSelectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext intent:(TGMediaAssetsControllerIntent)intent currentItem:(TGMediaAsset *)currentItem storeAssets:(bool)storeAssets useMediaCache:(bool)__unused useMediaCache descriptionGenerator:(id (^)(id, NSString *, NSArray *, NSString *))descriptionGenerator saveEditedPhotos:(bool)saveEditedPhotos
 {
     NSMutableArray *signals = [[NSMutableArray alloc] init];
-    NSMutableArray *selectedItems = [selectionContext.selectedItems mutableCopy];
+    NSMutableArray *selectedItems = selectionContext.selectedItems ? [selectionContext.selectedItems mutableCopy] : [[NSMutableArray alloc] init];
     if (selectedItems.count == 0 && currentItem != nil)
         [selectedItems addObject:currentItem];
     
-    if (saveEditedPhotos && storeAssets)
+    if (saveEditedPhotos && storeAssets && editingContext != nil)
     {
         NSMutableArray *fullSizeSignals = [[NSMutableArray alloc] init];
         for (TGMediaAsset *asset in selectedItems)
@@ -571,6 +609,7 @@
                 if (intent == TGMediaAssetsControllerSendFileIntent)
                 {
                     NSString *caption = [editingContext captionForItem:asset];
+                    NSArray *entities = [editingContext entitiesForItem:asset];
                     
                     [signals addObject:[[[TGMediaAssetImageSignals imageDataForAsset:asset allowNetworkAccess:false] map:^NSDictionary *(TGMediaAssetImageData *assetData)
                     {
@@ -583,7 +622,7 @@
                         dict[@"fileName"] = assetData.fileName;
                         dict[@"mimeType"] = TGMimeTypeForFileUTI(assetData.fileUTI);
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return generatedItem;
                     }] catch:^SSignal *(id error)
                     {
@@ -600,7 +639,7 @@
                             dict[@"mimeType"] = TGMimeTypeForFileUTI(asset.uniformTypeIdentifier);
                             dict[@"fileName"] = asset.fileName;
                             
-                            id generatedItem = descriptionGenerator(dict, nil, nil);
+                            id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                             return generatedItem;
                         }];
                     }]];
@@ -608,6 +647,7 @@
                 else
                 {
                     NSString *caption = [editingContext captionForItem:asset];
+                    NSArray *entities = [editingContext entitiesForItem:asset];
                     id<TGMediaEditAdjustments> adjustments = [editingContext adjustmentsForItem:asset];
                     NSNumber *timer = [editingContext timerForItem:asset];
                     
@@ -624,58 +664,84 @@
                         else if (groupedId != nil && !hasAnyTimers)
                             dict[@"groupedId"] = groupedId;
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return generatedItem;
                     }];
                     
                     SSignal *assetSignal = inlineSignal;
                     SSignal *imageSignal = assetSignal;
-                    if (editingContext != nil)
+                    if (adjustments.sendAsGif)
                     {
-                        imageSignal = [[[[[editingContext imageSignalForItem:asset withUpdates:true] filter:^bool(id result)
+                        [signals addObject:[inlineThumbnailSignal(asset) map:^NSDictionary *(UIImage *image)
                         {
-                            return result == nil || ([result isKindOfClass:[UIImage class]] && !((UIImage *)result).degraded);
-                        }] take:1] mapToSignal:^SSignal *(id result)
-                        {
-                            if (result == nil)
-                            {
-                                return [SSignal fail:nil];
-                            }
-                            else if ([result isKindOfClass:[UIImage class]])
-                            {
-                                UIImage *image = (UIImage *)result;
-                                image.edited = true;
-                                return [SSignal single:image];
-                            }
-
-                            return [SSignal complete];
-                        }] onCompletion:^
-                        {
-                            __strong TGMediaEditingContext *strongEditingContext = editingContext;
-                            [strongEditingContext description];
-                        }];
+                            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                            dict[@"type"] = @"cloudPhoto";
+                            dict[@"previewImage"] = image;
+                            dict[@"livePhoto"] = @true;
+                            dict[@"asset"] = asset;
+                            dict[@"adjustments"] = adjustments;
+                            
+                            if (adjustments.paintingData.stickers.count > 0)
+                                dict[@"stickers"] = adjustments.paintingData.stickers;
+                            
+                            if (timer != nil)
+                                dict[@"timer"] = timer;
+                            else if (groupedId != nil && !hasAnyTimers)
+                                dict[@"groupedId"] = groupedId;
+                            
+                            id generatedItem = descriptionGenerator(dict, caption, entities, nil);
+                            return generatedItem;
+                        }]];
                     }
-                    
-                    [signals addObject:[[imageSignal map:^NSDictionary *(UIImage *image)
+                    else
                     {
-                        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-                        dict[@"type"] = @"editedPhoto";
-                        dict[@"image"] = image;
+                        if (editingContext != nil)
+                        {
+                            imageSignal = [[[[[editingContext imageSignalForItem:asset withUpdates:true] filter:^bool(id result)
+                            {
+                                return result == nil || ([result isKindOfClass:[UIImage class]] && !((UIImage *)result).degraded);
+                            }] take:1] mapToSignal:^SSignal *(id result)
+                            {
+                                if (result == nil)
+                                {
+                                    return [SSignal fail:nil];
+                                }
+                                else if ([result isKindOfClass:[UIImage class]])
+                                {
+                                    UIImage *image = (UIImage *)result;
+                                    image.edited = true;
+                                    return [SSignal single:image];
+                                }
+
+                                return [SSignal complete];
+                            }] onCompletion:^
+                            {
+                                __strong TGMediaEditingContext *strongEditingContext = editingContext;
+                                [strongEditingContext description];
+                            }];
+                        }
                         
-                        if (adjustments.paintingData.stickers.count > 0)
-                            dict[@"stickers"] = adjustments.paintingData.stickers;
-                        
-                        if (timer != nil)
-                            dict[@"timer"] = timer;
-                        else if (groupedId != nil && !hasAnyTimers)
-                            dict[@"groupedId"] = groupedId;
-                        
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
-                        return generatedItem;
-                    }] catch:^SSignal *(__unused id error)
-                    {
-                        return inlineSignal;
-                    }]];
+                        [signals addObject:[[imageSignal map:^NSDictionary *(UIImage *image)
+                        {
+                            NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+                            dict[@"type"] = @"editedPhoto";
+                            dict[@"image"] = image;
+                            
+                            if (adjustments.paintingData.stickers.count > 0)
+                                dict[@"stickers"] = adjustments.paintingData.stickers;
+                            
+                            if (timer != nil)
+                                dict[@"timer"] = timer;
+                            else if (groupedId != nil && !hasAnyTimers)
+                                dict[@"groupedId"] = groupedId;
+                            
+                            id generatedItem = descriptionGenerator(dict, caption, entities, nil);
+                            return generatedItem;
+                        }] catch:^SSignal *(__unused id error)
+                        {
+                            return inlineSignal;
+                        }]];
+                    }
                     
                     i++;
                 }
@@ -687,7 +753,11 @@
                 if (intent == TGMediaAssetsControllerSendFileIntent)
                 {
                     NSString *caption = [editingContext captionForItem:asset];
+                    NSArray *entities = [editingContext entitiesForItem:asset];
                     id<TGMediaEditAdjustments> adjustments = [editingContext adjustmentsForItem:asset];
+                    
+                    CGSize dimensions = asset.originalSize;
+                    NSTimeInterval duration = asset.videoDuration;
                     
                     [signals addObject:[inlineThumbnailSignal(asset) map:^id(UIImage *image)
                     {
@@ -697,11 +767,13 @@
                         dict[@"asset"] = asset;
                         dict[@"previewImage"] = image;
                         dict[@"fileName"] = asset.fileName;
+                        dict[@"dimensions"] = [NSValue valueWithCGSize:dimensions];
+                        dict[@"duration"] = @(duration);
                         
                         if (adjustments.paintingData.stickers.count > 0)
                             dict[@"stickers"] = adjustments.paintingData.stickers;
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return generatedItem;
                     }]];
                 }
@@ -709,6 +781,7 @@
                 {
                     TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[editingContext adjustmentsForItem:asset];
                     NSString *caption = [editingContext captionForItem:asset];
+                    NSArray *entities = [editingContext entitiesForItem:asset];
                     NSNumber *timer = [editingContext timerForItem:asset];
                     
                     UIImage *(^cropVideoThumbnail)(UIImage *, CGSize, CGSize, bool) = ^UIImage *(UIImage *image, CGSize targetSize, CGSize sourceSize, bool resize)
@@ -738,6 +811,10 @@
                     
                     SSignal *thumbnailSignal = adjustments.trimStartValue > FLT_EPSILON ? trimmedVideoThumbnailSignal : videoThumbnailSignal;
                     
+                    TGMediaVideoConversionPreset preset = [TGMediaVideoConverter presetFromAdjustments:adjustments];
+                    CGSize dimensions = [TGMediaVideoConverter dimensionsFor:asset.originalSize adjustments:adjustments preset:preset];
+                    NSTimeInterval duration = adjustments.trimApplied ? (adjustments.trimEndValue - adjustments.trimStartValue) : asset.videoDuration;
+                    
                     [signals addObject:[thumbnailSignal map:^id(UIImage *image)
                     {
                         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
@@ -746,6 +823,8 @@
                         dict[@"asset"] = asset;
                         dict[@"previewImage"] = image;
                         dict[@"adjustments"] = adjustments;
+                        dict[@"dimensions"] = [NSValue valueWithCGSize:dimensions];
+                        dict[@"duration"] = @(duration);
                         
                         if (adjustments.paintingData.stickers.count > 0)
                             dict[@"stickers"] = adjustments.paintingData.stickers;
@@ -755,7 +834,7 @@
                         else if (groupedId != nil && !hasAnyTimers)
                             dict[@"groupedId"] = groupedId;
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return generatedItem;
                     }]];
                     
@@ -766,8 +845,9 @@
                 
             case TGMediaAssetGifType:
             {
-                NSString *caption = editingContext ? [editingContext captionForItem:asset] : nil;
-
+                NSString *caption = [editingContext captionForItem:asset];
+                NSArray *entities = [editingContext entitiesForItem:asset];
+                
                 [signals addObject:[[[TGMediaAssetImageSignals imageDataForAsset:asset allowNetworkAccess:false] mapToSignal:^SSignal *(TGMediaAssetImageData *assetData)
                 {
                     NSString *tempFileName = TGTemporaryFileName(nil);
@@ -786,7 +866,7 @@
                             dict[@"mimeType"] = @"video/mp4";
                             dict[@"isAnimation"] = @true;
                             
-                            id generatedItem = descriptionGenerator(dict, caption, nil);
+                            id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                             return generatedItem;
                         }];
                     }
@@ -800,7 +880,7 @@
                         dict[@"fileName"] = assetData.fileName;
                         dict[@"mimeType"] = TGMimeTypeForFileUTI(assetData.fileUTI);
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return [SSignal single:generatedItem];
                     }
                 }] catch:^SSignal *(id error)
@@ -816,7 +896,7 @@
                         dict[@"asset"] = asset;
                         dict[@"previewImage"] = image;
                         
-                        id generatedItem = descriptionGenerator(dict, caption, nil);
+                        id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                         return generatedItem;
                     }];
                 }]];
@@ -842,6 +922,9 @@
 {
     if (_intent == TGMediaAssetsControllerSendFileIntent)
         return nil;
+    if (self.requestSearchController == nil) {
+        return nil;
+    }
     
     if (iosMajorVersion() < 7)
     {
@@ -995,6 +1078,8 @@
     {
         case TGMediaAssetsControllerSetProfilePhotoIntent:
         case TGMediaAssetsControllerSetCustomWallpaperIntent:
+        case TGMediaAssetsControllerPassportIntent:
+        case TGMediaAssetsControllerPassportMultipleIntent:
             assetType = TGMediaAssetPhotoType;
             break;
             
@@ -1102,6 +1187,30 @@
 - (bool)allowGrouping
 {
     return _selectionContext.allowGrouping;
+}
+
+@end
+
+@implementation TGMediaAssetsPallete
+
++ (instancetype)palleteWithDark:(bool)dark backgroundColor:(UIColor *)backgroundColor selectionColor:(UIColor *)selectionColor separatorColor:(UIColor *)separatorColor textColor:(UIColor *)textColor secondaryTextColor:(UIColor *)secondaryTextColor accentColor:(UIColor *)accentColor barBackgroundColor:(UIColor *)barBackgroundColor barSeparatorColor:(UIColor *)barSeparatorColor navigationTitleColor:(UIColor *)navigationTitleColor badge:(UIImage *)badge badgeTextColor:(UIColor *)badgeTextColor sendIconImage:(UIImage *)sendIconImage maybeAccentColor:(UIColor *)maybeAccentColor
+{
+    TGMediaAssetsPallete *pallete = [[TGMediaAssetsPallete alloc] init];
+    pallete->_isDark = dark;
+    pallete->_backgroundColor = backgroundColor;
+    pallete->_selectionColor = selectionColor;
+    pallete->_separatorColor = separatorColor;
+    pallete->_textColor = textColor;
+    pallete->_secondaryTextColor = secondaryTextColor;
+    pallete->_accentColor = accentColor;
+    pallete->_barBackgroundColor = barBackgroundColor;
+    pallete->_barSeparatorColor = barSeparatorColor;
+    pallete->_navigationTitleColor = navigationTitleColor;
+    pallete->_badge = badge;
+    pallete->_badgeTextColor = badgeTextColor;
+    pallete->_sendIconImage = sendIconImage;
+    pallete->_maybeAccentColor = maybeAccentColor;
+    return pallete;
 }
 
 @end

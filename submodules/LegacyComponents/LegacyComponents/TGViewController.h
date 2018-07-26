@@ -89,6 +89,7 @@ typedef enum {
 @property (nonatomic) CGFloat additionalStatusBarHeight;
 
 @property (nonatomic) bool navigationBarShouldBeHidden;
+@property (nonatomic) bool ignoreAppearEvents;
 
 @property (nonatomic) bool autoManageStatusBarBackground;
 @property (nonatomic) bool automaticallyManageScrollViewInsets;
@@ -133,6 +134,7 @@ typedef enum {
 - (void)setLeftBarButtonItem:(UIBarButtonItem *)leftBarButtonItem animated:(BOOL)animated;
 - (void)setRightBarButtonItem:(UIBarButtonItem *)rightBarButtonItem;
 - (void)setRightBarButtonItem:(UIBarButtonItem *)rightBarButtonItem animated:(BOOL)animated;
+- (void)setRightBarButtonItems:(NSArray *)rightBarButtonItems animated:(BOOL)animated;
 - (void)setTitleText:(NSString *)titleText;
 - (void)setTitleView:(UIView *)titleView;
 

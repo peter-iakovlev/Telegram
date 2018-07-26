@@ -1,7 +1,8 @@
 #import "TGLockIconView.h"
 #import <LegacyComponents/TGImageUtils.h>
 
-#import "TGPresentationAssets.h"
+#import "TGPresentation.h"
+
 
 @interface TGLockIconView ()
 {
@@ -17,22 +18,22 @@
 
 - (UIImage *)topLockedImage
 {
-    return [TGPresentationAssets chatsLockTopIcon:true];
+    return _presentation.images.dialogLockTopActiveIcon;
 }
 
 - (UIImage *)topUnlockedImage
 {
-    return [TGPresentationAssets chatsLockTopIcon:false];
+    return _presentation.images.dialogLockTopIcon;
 }
 
 - (UIImage *)bottomLockedImage
 {
-    return [TGPresentationAssets chatsLockBaseIcon:true];
+    return _presentation.images.dialogLockBaseActiveIcon;
 }
 
 - (UIImage *)bottomUnlockedImage
 {
-    return [TGPresentationAssets chatsLockBaseIcon:false];
+    return _presentation.images.dialogLockBaseIcon;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -51,6 +52,12 @@
 - (bool)isLocked
 {
     return _isLocked;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    [self setIsLocked:_isLocked animated:false];
 }
 
 - (void)setIsLocked:(bool)isLocked animated:(bool)animated

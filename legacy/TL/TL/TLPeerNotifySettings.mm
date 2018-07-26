@@ -33,33 +33,7 @@
 
 @end
 
-@implementation TLPeerNotifySettings$peerNotifySettingsEmpty : TLPeerNotifySettings
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x70a68512;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0xe73d3124;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
-{
-    TLPeerNotifySettings$peerNotifySettingsEmpty *object = [[TLPeerNotifySettings$peerNotifySettingsEmpty alloc] init];
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
-{
-}
-
-
-@end
-
-@implementation TLPeerNotifySettings$peerNotifySettings : TLPeerNotifySettings
+@implementation TLPeerNotifySettings$peerNotifySettingsMeta : TLPeerNotifySettings
 
 
 - (int32_t)TLconstructorSignature
@@ -74,7 +48,7 @@
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
-    TLPeerNotifySettings$peerNotifySettings *object = [[TLPeerNotifySettings$peerNotifySettings alloc] init];
+    TLPeerNotifySettings$peerNotifySettingsMeta *object = [[TLPeerNotifySettings$peerNotifySettingsMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.mute_until = metaObject->getInt32((int32_t)0xb47c7399);
     object.sound = metaObject->getString((int32_t)0x352fa0b9);

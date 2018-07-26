@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface NSInputStream (TL)
+@interface NSInputStream (TG_TL)
 
 - (int32_t)readInt32;
 - (int32_t)readInt32:(bool *)failed __attribute__((nonnull(1)));

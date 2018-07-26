@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @class TGModernConversationInputPanel;
+@class TGPresentation;
 
 @protocol TGModernConversationInputPanelDelegate <NSObject>
 
@@ -19,6 +20,8 @@
 @interface TGModernConversationInputPanel : UIView
 
 @property (nonatomic, weak) id<TGModernConversationInputPanelDelegate> delegate;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)setContentAreaHeight:(CGFloat)contentAreaHeight;
 - (void)adjustForSize:(CGSize)size keyboardHeight:(CGFloat)keyboardHeight duration:(NSTimeInterval)duration animationCurve:(int)animationCurve contentAreaHeight:(CGFloat)contentAreaHeight safeAreaInset:(UIEdgeInsets)safeAreaInset;

@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGTextField.h>
 
+#import "TGPresentation.h"
+
 @interface TGWatchReplyCollectionItemView () <UITextFieldDelegate>
 {
     TGTextField *_textField;
@@ -31,6 +33,15 @@
         [self.contentView addSubview:_textField];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _textField.textColor = presentation.pallete.collectionMenuTextColor;
+    _textField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
 }
 
 - (void)setValue:(NSString *)value

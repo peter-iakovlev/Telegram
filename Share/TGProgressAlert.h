@@ -7,6 +7,8 @@
 
 @property (nonatomic, copy) void (^cancel)();
 
+- (instancetype)initWithFrame:(CGRect)frame backgroundColor:(UIColor *)backgroundColor separatorColor:(UIColor *)separatorColor textColor:(UIColor *)textColor accentColor:(UIColor *)accentColor;
+
 - (void)setProgress:(CGFloat)progress animated:(bool)animated;
 
 @end

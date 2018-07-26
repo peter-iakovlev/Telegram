@@ -32,7 +32,7 @@
 
 #import "TGTelegramNetworking.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGModernConversationTitleIcon.h"
 
@@ -56,7 +56,6 @@
 
 #import "TGServiceSignals.h"
 #import "TGRecentContextBotsSignal.h"
-#import "TGActionSheet.h"
 
 #import "TGReportPeerOtherTextController.h"
 
@@ -70,6 +69,8 @@
 #import "TGChannelAdminLogEmptyView.h"
 
 #import "TGChannelBanController.h"
+
+#import "TGPresentation.h"
 
 static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (!filter.join) {
@@ -165,19 +166,19 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
         _minMessageId = 1000000;
         
         _eventFilter.join = true;
-        _eventFilter.leave= true;
-        _eventFilter.invite= true;
-        _eventFilter.ban= true;
-        _eventFilter.unban= true;
-        _eventFilter.kick= true;
-        _eventFilter.unkick= true;
-        _eventFilter.promote= true;
-        _eventFilter.demote= true;
-        _eventFilter.info= true;
-        _eventFilter.settings= true;
-        _eventFilter.pinned= true;
-        _eventFilter.edit= true;
-        _eventFilter.del= true;
+        _eventFilter.leave = true;
+        _eventFilter.invite = true;
+        _eventFilter.ban = true;
+        _eventFilter.unban = true;
+        _eventFilter.kick = true;
+        _eventFilter.unkick = true;
+        _eventFilter.promote = true;
+        _eventFilter.demote = true;
+        _eventFilter.info = true;
+        _eventFilter.settings = true;
+        _eventFilter.pinned = true;
+        _eventFilter.edit = true;
+        _eventFilter.del = true;
         
         TGCachedConversationData *data = [TGDatabaseInstance() _channelCachedDataSync:conversation.conversationId];
         _adminMembers = data.managementMembers;
@@ -237,7 +238,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (_joinChannelPanel == nil) {
         TGModernConversationController *controller = self.controller;
         _joinChannelPanel = [[TGModernConversationActionInputPanel alloc] init];
-        [_joinChannelPanel setActionWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelTitle") action:@"info" color:TGAccentColor() icon:TGModernConversationActionInputPanelIconNone];
+        [_joinChannelPanel setActionWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelTitle") action:@"info" color:self.controller.presentation.pallete.accentColor icon:TGModernConversationActionInputPanelIconNone];
         _joinChannelPanel.companionHandle = self.actionHandle;
         _joinChannelPanel.delegate = controller;
     }
@@ -248,7 +249,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (_joinChannelPanel == nil) {
         TGModernConversationController *controller = self.controller;
         _joinChannelPanel = [[TGModernConversationActionInputPanel alloc] init];
-        [_joinChannelPanel setActionWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelTitle") action:@"info" color:TGAccentColor() icon:TGModernConversationActionInputPanelIconNone];
+        [_joinChannelPanel setActionWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelTitle") action:@"info" color:self.controller.presentation.pallete.accentColor icon:TGModernConversationActionInputPanelIconNone];
         _joinChannelPanel.companionHandle = self.actionHandle;
         _joinChannelPanel.delegate = controller;
     }
@@ -262,7 +263,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if (_currentSearchQuery.length != 0 || !isEventFilterAllSet(_eventFilter) || _usersFilter != nil) {
         filter = [[TGChannelAdminLogEmptyFilter alloc] initWithQuery:_currentSearchQuery];
     }
-    return [[TGChannelAdminLogEmptyView alloc] initWithFilter:filter group:_isChannelGroup];
+    return [[TGChannelAdminLogEmptyView alloc] initWithFilter:filter group:_isChannelGroup presentation:self.viewContext.presentation];
 }
 
 - (bool)canPostMessages {
@@ -328,7 +329,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     if ([action isEqualToString:@"actionPanelAction"]) {
         NSString *panelAction = options[@"action"];
         if ([panelAction isEqualToString:@"info"]) {
-            [TGAlertView presentAlertWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelAlertTitle") message:[@"\n" stringByAppendingString:TGLocalized(@"Channel.AdminLog.InfoPanelAlertText")] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Channel.AdminLog.InfoPanelAlertTitle") message:[@"\n" stringByAppendingString:TGLocalized(@"Channel.AdminLog.InfoPanelAlertText")] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         }
     }
     
@@ -512,9 +513,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                             
                             TGWebPageMediaAttachment *originalMedia = [[TGWebPageMediaAttachment alloc] init];
                             originalMedia.pageType = @"message";
-                            
-                            
-                            
+
                             NSArray *previous = [value.previousMessage effectiveTextAndEntities];
                             if (((NSString *)previous.firstObject).length == 0) {
                                 NSString *emptyString = TGLocalized(@"Channel.AdminLog.EmptyMessageText");
@@ -526,22 +525,46 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
                                 originalMedia.pageDescriptionEntities = entities;
                             }
                             bool isCaption = false;
+                            
+                            int64_t previousId = 0;
+                            TGImageMediaAttachment *previousImage = nil;
                             for (id media in value.previousMessage.mediaAttachments) {
                                 if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+                                    previousId = ((TGImageMediaAttachment *)media).imageId;
                                     isCaption = true;
+                                    previousImage = media;
                                 } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+                                    previousId = ((TGVideoMediaAttachment *)media).videoId;
                                     isCaption = true;
                                 } else if ([media isKindOfClass:[TGAudioMediaAttachment class]]) {
+                                    previousId = ((TGAudioMediaAttachment *)media).audioId;
                                     isCaption = true;
                                 } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                                    previousId = ((TGDocumentMediaAttachment *)media).documentId;
                                     isCaption = true;
                                 }
                             }
-                            if (isCaption) {
+                            
+                            int64_t currentId = 0;
+                            for (id media in editedMessage.mediaAttachments) {
+                                if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+                                    currentId = ((TGImageMediaAttachment *)media).imageId;
+                                } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+                                    currentId = ((TGVideoMediaAttachment *)media).videoId;
+                                } else if ([media isKindOfClass:[TGAudioMediaAttachment class]]) {
+                                    currentId = ((TGAudioMediaAttachment *)media).audioId;
+                                } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                                    currentId = ((TGDocumentMediaAttachment *)media).documentId;
+                                }
+                            }
+                            
+                            if (isCaption && previousId == currentId) {
                                 originalMedia.siteName = TGLocalized(@"Channel.AdminLog.MessagePreviousCaption");
                             } else {
                                 originalMedia.siteName = TGLocalized(@"Channel.AdminLog.MessagePreviousMessage");
                             }
+//                            if (previousId != currentId)
+//                                originalMedia.photo = previousImage;
                             NSMutableArray *medias = [[NSMutableArray alloc] init];
                             if (editedMessage.mediaAttachments != nil) {
                                 [medias addObjectsFromArray:editedMessage.mediaAttachments];
@@ -1124,10 +1147,6 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
 }
 
 - (bool)canCreateLinksToMessages {
-    return false;
-}
-
-- (bool)canReportMessage:(TGMessage *)__unused message {
     return false;
 }
 

@@ -1,7 +1,8 @@
 #import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
-@interface TGAccessRequiredAlertView : TGAlertView
+@interface TGAccessRequiredAlertView : TGCustomAlertView
 
-- (instancetype)initWithMessage:(NSString *)message showSettingsButton:(bool)showSettingsButton completionBlock:(void (^)(void))completionBlock;
++ (TGCustomAlertView *)presentWithMessage:(NSString *)message showSettingsButton:(bool)showSettingsButton completionBlock:(void (^)(void))completionBlock;
 
 @end

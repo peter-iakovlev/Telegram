@@ -6,8 +6,6 @@
 
 @property (nonatomic, strong) TGImageInfo *imageInfo;
 
-@property (nonatomic, strong) NSString *caption;
-
-- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;
+- (instancetype)initWithImageInfo:(TGImageInfo *)imageInfo text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;
 
 @end

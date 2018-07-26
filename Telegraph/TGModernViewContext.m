@@ -1,20 +1,26 @@
 #import "TGModernViewContext.h"
-
+#import <libkern/OSAtomic.h>
 #import <LegacyComponents/LegacyComponents.h>
+
+@interface TGModernViewContext ()
+{
+    OSSpinLock _lock;
+}
+@end
 
 @implementation TGModernViewContext
 
-- (bool)isFocusedOnMessage:(int32_t)__unused messageId
+- (bool)isFocusedOnMessage:(int32_t)__unused messageId peerId:(int64_t)__unused peerId
 {
     return false;
 }
 
-- (bool)isMediaVisibleInMessage:(int32_t)__unused messageId
+- (bool)isMediaVisibleInMessage:(int32_t)__unused messageId peerId:(int64_t)__unused peerId
 {
     return true;
 }
 
-- (bool)isMessageChecked:(int32_t)__unused messageId
+- (bool)isMessageChecked:(int32_t)__unused messageId peerId:(int64_t)__unused peerId
 {
     return false;
 }
@@ -48,7 +54,18 @@
 }
 
 - (bool)isByAdmin:(TGMessage *)message {
-    return [_adminIds containsObject:@(message.fromUid)];
+    bool isByAdmin = false;
+    OSSpinLockLock(&_lock);
+    isByAdmin = [_adminIds containsObject:@(message.fromUid)];
+    OSSpinLockUnlock(&_lock);
+    return isByAdmin;
+}
+
+- (void)setAdminIds:(NSSet *)adminIds
+{
+    OSSpinLockLock(&_lock);
+    _adminIds = adminIds;
+    OSSpinLockUnlock(&_lock);
 }
 
 @end

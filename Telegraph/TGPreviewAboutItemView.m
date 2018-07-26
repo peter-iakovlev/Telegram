@@ -115,6 +115,15 @@ const CGFloat TGPreviewAboutItemViewMargin = 21.0f;
     }
 }
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _titleLabel.textColor = pallete.textColor;
+    _subtitleLabel.textColor = pallete.secondaryTextColor;
+    _indicatorView.color = pallete.secondaryTextColor;
+}
+
 - (CGFloat)preferredHeightForWidth:(CGFloat)width screenHeight:(CGFloat)__unused screenHeight
 {
     if (_loading)

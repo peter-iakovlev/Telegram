@@ -13,13 +13,15 @@ typedef enum {
     TGTextMessageBackgroundOutgoing = 1
 } TGTextMessageBackgroundType;
 
+@class TGModernViewContext;
+
 @interface TGTextMessageBackgroundViewModel : TGModernImageViewModel
 {
     @public
     bool _partialMode;
 }
 
-- (instancetype)initWithType:(TGTextMessageBackgroundType)type;
+- (instancetype)initWithType:(TGTextMessageBackgroundType)type context:(TGModernViewContext *)context;
 - (void)setPartialMode:(bool)partialMode;
 
 - (void)setHighlightedIfBound;

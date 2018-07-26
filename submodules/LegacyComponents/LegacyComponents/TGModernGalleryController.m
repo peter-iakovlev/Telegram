@@ -69,6 +69,9 @@
         _adjustsStatusBarVisibility = true;
         _defaultStatusBarStyle = UIStatusBarStyleDefault;
         _shouldAnimateStatusBarStyleTransition = true;
+        
+        if ([context respondsToSelector:@selector(prefersLightStatusBar)])
+            _defaultStatusBarStyle = [context prefersLightStatusBar] ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
     }
     return self;
 }
@@ -105,6 +108,11 @@
         return [self.childViewControllers.lastObject preferredScreenEdgesDeferringSystemGestures];
     
     return [super preferredScreenEdgesDeferringSystemGestures];
+}
+
+- (bool)prefersHomeIndicatorAutoHidden
+{
+    return [_view isInterfaceHidden];
 }
 
 - (void)complexDismiss
@@ -298,6 +306,9 @@
 - (void)itemViewDidRequestInterfaceShowHide:(TGModernGalleryItemView *)__unused itemView
 {
     [_view showHideInterface];
+    
+    if ([self respondsToSelector:@selector(setNeedsUpdateOfHomeIndicatorAutoHidden)])
+        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
 }
 
 - (void)itemViewDidRequestGalleryDismissal:(TGModernGalleryItemView *)__unused itemView animated:(bool)animated
@@ -434,6 +445,11 @@
     __weak TGModernGalleryController *weakSelf = self;
     _view = [[TGModernGalleryView alloc] initWithFrame:self.view.bounds context:_context itemPadding:TGModernGalleryItemPadding interfaceView:interfaceView previewMode:_previewMode previewSize:previewSize];
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_view.interfaceView setController:^UIViewController *(void)
+    {
+        __strong TGModernGalleryController *strongSelf = weakSelf;
+        return strongSelf;
+    }];
     [self.view addSubview:_view];
     
     _defaultHeaderView = [_model createDefaultHeaderView];
@@ -626,28 +642,35 @@
         }
         else if (!_previewMode)
         {
-            if (_finishedTransitionIn && _model.focusItem != nil)
-            {
-                TGModernGalleryItemView *itemView = nil;
-                if (self.finishedTransitionIn && self.model.focusItem != nil)
+            if (_startedTransitionIn) {
+                _startedTransitionIn();
+            }
+            
+            [_view simpleTransitionInWithCompletion:
+            ^{
+                if (_finishedTransitionIn && _model.focusItem != nil)
                 {
-                    for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
+                    TGModernGalleryItemView *itemView = nil;
+                    if (self.finishedTransitionIn && self.model.focusItem != nil)
                     {
-                        if ([visibleItemView.item isEqual:self.model.focusItem])
+                        for (TGModernGalleryItemView *visibleItemView in self->_visibleItemViews)
                         {
-                            itemView = visibleItemView;
-                            
-                            break;
+                            if ([visibleItemView.item isEqual:self.model.focusItem])
+                            {
+                                itemView = visibleItemView;
+                                
+                                break;
+                            }
                         }
                     }
+                    
+                    _finishedTransitionIn(_model.focusItem, itemView);
+                    
+                    [_model _transitionCompleted];
                 }
-                
-                _finishedTransitionIn(_model.focusItem, itemView);
-                
-                [_model _transitionCompleted];
-            }
-            else
-                [_model _transitionCompleted];
+                else
+                    [_model _transitionCompleted];
+            }];
             
             [_view transitionInWithDuration:0.15];
             
@@ -699,7 +722,7 @@
 
 - (UIView *)findScrollView:(UIView *)view
 {
-    if (view == nil || [view isKindOfClass:[UIScrollView class]])
+    if (view == nil || ([view isKindOfClass:[UIScrollView class]] && view.tag != 0xbeef))
         return view;
     
     return [self findScrollView:view.superview];
@@ -1284,13 +1307,17 @@ static CGFloat transformRotation(CGAffineTransform transform)
 
 - (NSUInteger)currentItemIndex
 {
-    return _model.items.count == 0 ? 0 : (NSUInteger)[self currentItemFuzzyIndex];
+    return _model.items.count == 0 ? 0 : (NSUInteger)([self currentItemFuzzyIndex]);
 }
 
 - (CGFloat)currentItemFuzzyIndex
 {
     if (_model.items.count == 0)
         return 0.0f;
+    
+    if (_view.scrollView.bounds.size.width <= FLT_EPSILON) {
+        return 0.0f;
+    }
     
     return CGFloor((_view.scrollView.bounds.origin.x + _view.scrollView.bounds.size.width / 2.0f) / _view.scrollView.bounds.size.width);
 }
@@ -1580,7 +1607,7 @@ static CGFloat transformRotation(CGAffineTransform transform)
         {
             itemHeaderView.alpha = alpha;
             itemHeaderView.hidden = (alpha < FLT_EPSILON);
-            if (![itemHeaderView isKindOfClass:[TGModernGalleryEmbeddedStickersHeaderView class]]) {
+            if (![itemHeaderView isKindOfClass:[TGModernGalleryEmbeddedStickersHeaderView class]] && itemHeaderView.tag != 0xbeef) {
                 titleAlpha -= alpha;
             }
         }
@@ -1620,12 +1647,12 @@ static CGFloat transformRotation(CGAffineTransform transform)
             
             [_view.interfaceView itemFocused:_model.items[_lastReportedFocusedIndex] itemView:currentItemView];
             
-            [_defaultHeaderView setItem:_model.items[_lastReportedFocusedIndex]];
-            [_defaultFooterView setItem:_model.items[_lastReportedFocusedIndex]];
-            
             if (previousFocusedIndex < _model.items.count)
                 [[self itemViewForItem:_model.items[previousFocusedIndex]] setFocused:false];
             [[self itemViewForItem:_model.items[_lastReportedFocusedIndex]] setFocused:true];
+            
+            [_defaultHeaderView setItem:_model.items[_lastReportedFocusedIndex]];
+            [_defaultFooterView setItem:_model.items[_lastReportedFocusedIndex]];
         }
     }
     

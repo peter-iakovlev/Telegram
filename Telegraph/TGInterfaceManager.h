@@ -32,7 +32,9 @@
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard canOpenKeyboardWhileInTransition:(bool)canOpenKeyboardWhileInTransition navigationController:(TGNavigationController *)navigationController animated:(bool)animated;
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)__unused conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard canOpenKeyboardWhileInTransition:(bool)canOpenKeyboardWhileInTransition navigationController:(TGNavigationController *)navigationController selectChat:(bool)selectChat animated:(bool)animated;
 - (void)navigateToChannelLogWithConversation:(TGConversation *)conversation animated:(bool)animated;
+- (void)navigateToChannelsFeed:(int32_t)feedId animated:(bool)animated;
 - (TGModernConversationController *)configuredPreviewConversationControlerWithId:(int64_t)conversationId;
+- (TGModernConversationController *)configuredPreviewFeedControllerWithId:(int32_t)feedId;
 - (TGModernConversationController *)configuredConversationControlerWithId:(int64_t)conversationId performActions:(NSDictionary *)performActions preview:(bool)preview;
 
 - (TGModernConversationController *)currentControllerWithPeerId:(int64_t)peerId;
@@ -60,6 +62,6 @@
 - (bool)hasCallControllerInForeground;
 
 - (SSignal *)callControllerInForeground;
-- (SSignal *)messageVisibilitySignalWithConversationId:(int64_t)conversationId messageId:(int32_t)messageId;
+- (SSignal *)messageVisibilitySignalWithConversationId:(int64_t)conversationId messageId:(int32_t)messageId peerId:(int64_t)peerId;
 
 @end

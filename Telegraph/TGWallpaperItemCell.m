@@ -1,15 +1,17 @@
 #import "TGWallpaperItemCell.h"
 
 #import <LegacyComponents/LegacyComponents.h>
-
 #import <LegacyComponents/TGWallpaperInfo.h>
-
 #import <LegacyComponents/TGRemoteImageView.h>
+#import <LegacyComponents/TGCheckButtonView.h>
+#import <LegacyComponents/TGColorWallpaperInfo.h>
+
+#import "TGPresentation.h"
 
 @interface TGWallpaperItemCell ()
 {
     TGRemoteImageView *_imageView;
-    UIImageView *_selectedView;
+    TGCheckButtonView *_checkView;
 }
 
 @end
@@ -27,12 +29,6 @@
         _imageView.clipsToBounds = true;
         _imageView.contentMode = UIViewContentModeScaleAspectFill;
         [self addSubview:_imageView];
-        
-        UIImage *indicatorImage = TGImageNamed(@"ModernWallpaperSelectedIndicator.png");
-        _selectedView = [[UIImageView alloc] initWithFrame:CGRectMake(frame.size.width - 5.0f - indicatorImage.size.width, frame.size.height - 4.0f - indicatorImage.size.height, indicatorImage.size.width, indicatorImage.size.height)];
-        _selectedView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin;
-        _selectedView.image = indicatorImage;
-        [self addSubview:_selectedView];
     }
     return self;
 }
@@ -40,26 +36,18 @@
 - (void)setWallpaperInfo:(TGWallpaperInfo *)wallpaperInfo
 {
     _wallpaperInfo = wallpaperInfo;
+    [_imageView loadImage:[wallpaperInfo thumbnailUrl] filter:nil placeholder:self.presentation.images.placeholderImage];
     
-    static UIImage *placeholderImage = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
+    if ([wallpaperInfo isKindOfClass:[TGColorWallpaperInfo class]] && ((TGColorWallpaperInfo *)wallpaperInfo).color == TGColorHexCode([UIColor whiteColor]))
     {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(4.0f, 4.0f), true, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 4.0f, 4.0f));
-        
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        //CGContextStrokeRect(context, CGRectMake(0.5f, 0.5f, 3.0f, 3.0f));
-        
-        placeholderImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:2 topCapHeight:2];
-        UIGraphicsEndImageContext();
-    });
-    
-    [_imageView loadImage:[wallpaperInfo thumbnailUrl] filter:nil placeholder:placeholderImage];
+        self.layer.borderWidth = TGScreenPixel;
+        self.layer.borderColor = UIColorRGB(0xc7c7cc).CGColor;
+    }
+    else
+    {
+        self.layer.borderWidth = 0.0f;
+        self.layer.borderColor = NULL;
+    }
 }
 
 - (UIImage *)currentImage
@@ -71,7 +59,15 @@
 {
     _isSelected = isSelected;
     
-    _selectedView.hidden = !isSelected;
+    if (_checkView == nil)
+    {
+        _checkView = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleMedia];
+        _checkView.frame = CGRectMake(self.frame.size.width - 3.0f - _checkView.frame.size.width, self.frame.size.height - 3.0f - _checkView.frame.size.height, _checkView.frame.size.width, _checkView.frame.size.height);
+        [_checkView setSelected:true animated:false];
+        _checkView.userInteractionEnabled = false;
+        [self addSubview:_checkView];
+    }
+    _checkView.hidden = !isSelected;
 }
 
 @end

@@ -119,29 +119,3 @@
 
 @end
 
-@implementation TLNotifyPeer$notifyAll : TLNotifyPeer
-
-
-- (int32_t)TLconstructorSignature
-{
-    return (int32_t)0x74d07c60;
-}
-
-- (int32_t)TLconstructorName
-{
-    return (int32_t)0x9794324d;
-}
-
-- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
-{
-    TLNotifyPeer$notifyAll *object = [[TLNotifyPeer$notifyAll alloc] init];
-    return object;
-}
-
-- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
-{
-}
-
-
-@end
-

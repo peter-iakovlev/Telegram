@@ -1,14 +1,17 @@
 #import "TGPreviewWebPageItemView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
-
 #import <WebKit/WebKit.h>
+#import "TGMediaStoreContext.h"
+#import "TGTelegramNetworking.h"
 
 #import "TGScrollIndicatorView.h"
 
-@interface TGPreviewWebPageItemView () <UIScrollViewDelegate, UIWebViewDelegate>
+@interface TGPreviewWebPageItemView () <UIScrollViewDelegate, UIWebViewDelegate, ASWatcher>
 {
     NSURL *_url;
+    NSString *_downloadPath;
+    void (^_downloadCompletionBlock)(NSURLRequest *);
     
     WKWebView *_wkWebView;
     UIWebView *_uiWebView;
@@ -17,6 +20,9 @@
     
     bool _passPanGesture;
 }
+
+@property (nonatomic, strong) ASHandle *actionHandle;
+
 @end
 
 @implementation TGPreviewWebPageItemView
@@ -27,12 +33,16 @@
     if (self != nil)
     {
         _url = [NSURL URLWithString:webPage.url];
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
     }
     return self;
 }
 
 - (void)dealloc
 {
+    [_actionHandle reset];
+    [ActionStageInstance() removeWatcher:self];
+    
     [_wkWebView removeObserver:self forKeyPath:@"estimatedProgress"];
     _wkWebView.scrollView.delegate = nil;
     
@@ -136,9 +146,19 @@
     else if ([webView isKindOfClass:[UIWebView class]])
         [((UIWebView *)webView).scrollView addSubview:_scrollIndicator];
     
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:_url];
-    if (completion != nil)
-        completion(request);
+    if ([_url.absoluteString hasPrefix:@"webdoc"])
+    {
+        NSString *url = _url.absoluteString;
+        _downloadPath = [[NSString alloc] initWithFormat:@"/temporaryDownload/(%@,%@)", [TGStringUtils stringByEscapingForActorURL:url], @"path"];
+        [ActionStageInstance() requestActor:_downloadPath options:@{@"url": url, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"returnPath": @true, @"mediaTypeTag": @(TGNetworkMediaTypeTagGeneric)} flags:0 watcher:self];
+        _downloadCompletionBlock = [completion copy];
+    }
+    else
+    {
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:_url];
+        if (completion != nil)
+            completion(request);
+    }
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
@@ -196,6 +216,33 @@
     _wkWebView.frame = self.bounds;
     _uiWebView.frame = self.bounds;
     _activityIndicatorView.center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result
+{
+    TGDispatchOnMainThread(^
+    {
+        if ([path isEqualToString:_downloadPath])
+        {
+            _downloadPath = nil;
+            void (^downloadCompletionBlock)(NSURLRequest *) = _downloadCompletionBlock;
+            _downloadCompletionBlock = nil;
+            
+            if (status == ASStatusSuccess)
+            {
+                [[[TGMediaStoreContext instance] temporaryFilesCache] getValuePathForKey:[_url.absoluteString dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSString *path)
+                {
+                    TGDispatchOnMainThread(^
+                    {
+                        NSURL *url = [NSURL fileURLWithPath:path];
+                        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+                        if (downloadCompletionBlock != nil)
+                            downloadCompletionBlock(request);
+                    });
+                }];
+            }
+        }
+    });
 }
 
 @end

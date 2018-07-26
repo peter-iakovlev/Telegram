@@ -18,6 +18,7 @@
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 #import "TGModernGalleryVideoFooterView.h"
 #import <LegacyComponents/TGModernGalleryDefaultFooterView.h>
+#import "TGModernGalleryPIPHeaderView.h"
 
 #import "TGGenericPeerGalleryItem.h"
 
@@ -112,6 +113,16 @@
         {
             __strong TGItemCollectionGalleryVideoBaseItemView *strongSelf = weakSelf;
             [strongSelf pause];
+        };
+        _footerView.backwardPressed = ^
+        {
+            __strong TGItemCollectionGalleryVideoBaseItemView *strongSelf = weakSelf;
+            [strongSelf backwardPressed];
+        };
+        _footerView.forwardPressed = ^
+        {
+            __strong TGItemCollectionGalleryVideoBaseItemView *strongSelf = weakSelf;
+            [strongSelf forwardPressed];
         };
         
         _playerView = [[TGModernGalleryVideoPlayerView alloc] init];
@@ -219,6 +230,7 @@
     }
     
     _videoDimensions = dimensions;
+    _footerView.duration = duration;
     
     [self _initializePlayerWithMedia:media synchronously:synchronously];
     
@@ -241,7 +253,7 @@
     }
     
     [_scrubbingInterfaceView setDuration:duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
-    [_scrubbingInterfaceView setPictureInPictureEnabled:false];
+    [_pipHeaderView setPictureInPictureEnabled:false];
     
     _playerView.initialFrame = CGRectMake(0, 0, _videoDimensions.width, _videoDimensions.height);
     
@@ -275,7 +287,7 @@
                         break;
                 }
                 
-                [strongSelf->_scrubbingInterfaceView setPictureInPictureEnabled:false];//status.status == MediaResourceStatusLocal];
+                [strongSelf->_pipHeaderView setPictureInPictureEnabled:false];//status.status == MediaResourceStatusLocal];
             }
         }
     }]];
@@ -405,6 +417,22 @@
     [[self _playerView] pauseVideo];
     
     _actionButton.hidden = true;
+}
+
+- (void)backwardPressed
+{
+    NSTimeInterval positionSeconds = MAX(0.0, [self _playerView].state.position - 15.0);
+    [[self _playerView] seekToPosition:positionSeconds];
+    
+    [_scrubbingInterfaceView setDuration:[self _playerView].state.duration currentTime:positionSeconds isPlaying:[self _playerView].state.isPlaying isPlayable:true animated:false];
+}
+
+- (void)forwardPressed
+{
+    NSTimeInterval positionSeconds = MIN([self _playerView].state.duration, [self _playerView].state.position + 15.0);
+    [[self _playerView] seekToPosition:positionSeconds];
+    
+    [_scrubbingInterfaceView setDuration:[self _playerView].state.duration currentTime:positionSeconds isPlaying:[self _playerView].state.isPlaying isPlayable:true animated:false];
 }
 
 - (void)loadAndPlay {

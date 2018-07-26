@@ -17,4 +17,6 @@
 
 - (void)setProgress:(CGFloat)progress;
 
+- (void)setShareHidden:(bool)hidden;
+
 @end

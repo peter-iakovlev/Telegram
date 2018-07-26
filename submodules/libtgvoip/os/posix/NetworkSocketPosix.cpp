@@ -13,10 +13,17 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <netinet/tcp.h>
+#include <ifaddrs.h>
 #include "../../logging.h"
 #include "../../VoIPController.h"
-#include "../../BufferInputStream.h"
-#include "../../BufferOutputStream.h"
+#include "../../Buffers.h"
+
+#ifdef __ANDROID__
+#include <jni.h>
+#include <sys/system_properties.h>
+extern JavaVM* sharedJVM;
+extern jclass jniUtilitiesClass;
+#endif
 
 using namespace tgvoip;
 
@@ -61,7 +68,7 @@ void NetworkSocketPosix::SetMaxPriority(){
 }
 
 void NetworkSocketPosix::Send(NetworkPacket *packet){
-	if(!packet || !packet->address){
+	if(!packet || (protocol==PROTO_UDP && !packet->address)){
 		LOGW("tried to send null packet");
 		return;
 	}
@@ -119,6 +126,7 @@ void NetworkSocketPosix::Send(NetworkPacket *packet){
 			IPv6Address *v6addr=dynamic_cast<IPv6Address *>(packet->address);
 			assert(v6addr!=NULL);
 			memcpy(addr.sin6_addr.s6_addr, v6addr->GetAddress(), 16);
+			addr.sin6_family=AF_INET6;
 		}
 		addr.sin6_port=htons(packet->port);
 		res=sendto(fd, packet->data, packet->length, 0, (const sockaddr *) &addr, sizeof(addr));
@@ -222,7 +230,6 @@ void NetworkSocketPosix::Open(){
 	}
 	size_t addrLen=sizeof(sockaddr_in6);
 	getsockname(fd, (sockaddr*)&addr, (socklen_t*) &addrLen);
-	uint16_t localUdpPort=ntohs(addr.sin6_port);
 	LOGD("Bound to local UDP port %u", ntohs(addr.sin6_port));
 
 	needUpdateNat64Prefix=true;
@@ -237,6 +244,7 @@ void NetworkSocketPosix::Close(){
     if (fd>=0) {
         shutdown(fd, SHUT_RDWR);
         close(fd);
+		fd=-1;
     }
 }
 
@@ -299,54 +307,72 @@ void NetworkSocketPosix::OnActiveInterfaceChanged(){
 }
 
 std::string NetworkSocketPosix::GetLocalInterfaceInfo(IPv4Address *v4addr, IPv6Address *v6addr){
-	struct ifconf ifc;
-	struct ifreq* ifr;
-	char buf[16384];
-	int sd;
 	std::string name="";
-	sd=socket(PF_INET, SOCK_DGRAM, 0);
-	if(sd>0){
-		ifc.ifc_len=sizeof(buf);
-		ifc.ifc_ifcu.ifcu_buf=buf;
-		if(ioctl(sd, SIOCGIFCONF, &ifc)==0){
-			ifr=ifc.ifc_req;
-			int len;
-			int i;
-			for(i=0;i<ifc.ifc_len;){
-#ifndef __linux__
-				len=IFNAMSIZ + ifr->ifr_addr.sa_len;
-#else
-				len=sizeof(*ifr);
-#endif
-				if(ifr->ifr_addr.sa_family==AF_INET){
-					if(ioctl(sd, SIOCGIFADDR, ifr)==0){
-						struct sockaddr_in* addr=(struct sockaddr_in *)(&ifr->ifr_addr);
-						LOGI("Interface %s, address %s\n", ifr->ifr_name, inet_ntoa(addr->sin_addr));
-						if(ioctl(sd, SIOCGIFFLAGS, ifr)==0){
-							if(!(ifr->ifr_flags & IFF_LOOPBACK) && (ifr->ifr_flags & IFF_UP) && (ifr->ifr_flags & IFF_RUNNING)){
-								//LOGV("flags = %08X", ifr->ifr_flags);
-								if((ntohl(addr->sin_addr.s_addr) & 0xFFFF0000)==0xA9FE0000){
-									LOGV("skipping link-local");
-									continue;
-								}
-								if(v4addr){
-									*v4addr=IPv4Address(addr->sin_addr.s_addr);
-								}
-								name=ifr->ifr_name;
-							}
-						}
-					}else{
-						LOGE("Error getting address for %s: %d\n", ifr->ifr_name, errno);
-					}
-				}
-				ifr=(struct ifreq*)((char*)ifr+len);
-				i+=len;
-			}
-		}else{
-			LOGE("Error getting LAN address: %d", errno);
-		}
+	// Android doesn't support ifaddrs
+#ifdef __ANDROID__
+	JNIEnv *env=NULL;
+	bool didAttach=false;
+	sharedJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+	if(!env){
+		sharedJVM->AttachCurrentThread(&env, NULL);
+		didAttach=true;
 	}
-	close(sd);
+
+	jmethodID getLocalNetworkAddressesAndInterfaceNameMethod=env->GetStaticMethodID(jniUtilitiesClass, "getLocalNetworkAddressesAndInterfaceName", "()[Ljava/lang/String;");
+	jobjectArray jinfo=(jobjectArray) env->CallStaticObjectMethod(jniUtilitiesClass, getLocalNetworkAddressesAndInterfaceNameMethod);
+	if(jinfo){
+		jstring jitfName=static_cast<jstring>(env->GetObjectArrayElement(jinfo, 0));
+		jstring jipv4=static_cast<jstring>(env->GetObjectArrayElement(jinfo, 1));
+		jstring jipv6=static_cast<jstring>(env->GetObjectArrayElement(jinfo, 2));
+		const char* itfchars=env->GetStringUTFChars(jitfName, NULL);
+		name=std::string(itfchars);
+		env->ReleaseStringUTFChars(jitfName, itfchars);
+
+		if(v4addr && jipv4){
+			const char* ipchars=env->GetStringUTFChars(jipv4, NULL);
+			*v4addr=IPv4Address(ipchars);
+			env->ReleaseStringUTFChars(jipv4, ipchars);
+		}
+		if(v6addr && jipv6){
+			const char* ipchars=env->GetStringUTFChars(jipv6, NULL);
+			*v6addr=IPv6Address(ipchars);
+			env->ReleaseStringUTFChars(jipv6, ipchars);
+		}
+	}else{
+		LOGW("Failed to get android network interface info");
+	}
+
+	if(didAttach){
+		sharedJVM->DetachCurrentThread();
+	}
+#else
+	struct ifaddrs* interfaces;
+	if(!getifaddrs(&interfaces)){
+		struct ifaddrs* interface;
+		for(interface=interfaces;interface;interface=interface->ifa_next){
+			if(!(interface->ifa_flags & IFF_UP) || !(interface->ifa_flags & IFF_RUNNING) || (interface->ifa_flags & IFF_LOOPBACK))
+				continue;
+			const struct sockaddr_in* addr=(const struct sockaddr_in*)interface->ifa_addr;
+			if(addr){
+				if(addr->sin_family==AF_INET){
+					if((ntohl(addr->sin_addr.s_addr) & 0xFFFF0000)==0xA9FE0000)
+						continue;
+					if(v4addr)
+						*v4addr=IPv4Address(addr->sin_addr.s_addr);
+					name=interface->ifa_name;
+				}else if(addr->sin_family==AF_INET6){
+					const struct sockaddr_in6* addr6=(const struct sockaddr_in6*)addr;
+					if((addr6->sin6_addr.s6_addr[0] & 0xF0)==0xF0)
+						continue;
+					if(v6addr)
+						*v6addr=IPv6Address(addr6->sin6_addr.s6_addr);
+					name=interface->ifa_name;
+				}
+			}
+		}
+		freeifaddrs(interfaces);
+	}
+#endif
 	return name;
 }
 
@@ -458,7 +484,7 @@ bool NetworkSocketPosix::Select(std::vector<NetworkSocket *> &readFds, std::vect
 			maxfd=sfd;
 	}
 
-	int res=select(maxfd+1, &readSet, NULL, &errorSet, NULL);
+	select(maxfd+1, &readSet, NULL, &errorSet, NULL);
 
 	if(canceller && FD_ISSET(canceller->pipeRead, &readSet) && !anyFailed){
 		char c;
@@ -496,7 +522,10 @@ bool NetworkSocketPosix::Select(std::vector<NetworkSocket *> &readFds, std::vect
 SocketSelectCancellerPosix::SocketSelectCancellerPosix(){
 	int p[2];
 	int pipeRes=pipe(p);
-	assert(pipeRes==0);
+	if(pipeRes!=0){
+		LOGE("pipe() failed");
+		abort();
+	}
 	pipeRead=p[0];
 	pipeWrite=p[1];
 }

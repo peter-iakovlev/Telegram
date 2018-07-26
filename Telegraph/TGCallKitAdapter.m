@@ -1,7 +1,10 @@
 #import "TGCallKitAdapter.h"
-
 #import <CallKit/Callkit.h>
+
+#import <libkern/OSAtomic.h>
+
 #import "TGDatabase.h"
+#import "TGAppDelegate.h"
 
 #import "TGCallSession.h"
 
@@ -9,11 +12,11 @@
 {
     CXProvider *_provider;
     CXCallController *_callController;
-    SQueue *_queue;
     
     SPipe *_audioSessionActivationPipe;
     SPipe *_audioSessionDeactivationPipe;
 
+    OSSpinLock _sessionsLock;
     NSMapTable *_sessions;
     NSMutableDictionary *_actionCompletionBlocks;
 }
@@ -26,7 +29,6 @@
     self = [super init];
     if (self != nil)
     {
-        _queue = [[SQueue alloc] init];
         _sessions = [[NSMapTable alloc] initWithKeyOptions:NSMapTableStrongMemory valueOptions:NSMapTableWeakMemory capacity:8];
         
         _audioSessionActivationPipe = [[SPipe alloc] init];
@@ -42,11 +44,11 @@
     if (_provider == nil)
     {
         _provider = [[CXProvider alloc] initWithConfiguration:[TGCallKitAdapter configuration]];
-        [_provider setDelegate:self queue:_queue._dispatch_queue];
+        [_provider setDelegate:self queue:NULL];
     }
     
     if (_callController == nil)
-        _callController = [[CXCallController alloc] initWithQueue:_queue._dispatch_queue];
+        _callController = [[CXCallController alloc] init];
 }
 
 - (CXProvider *)provider
@@ -63,7 +65,7 @@
 
 + (CXProviderConfiguration *)configuration
 {
-    CXProviderConfiguration *config = [[CXProviderConfiguration alloc] initWithLocalizedName:TGLocalized(@"Application.Name")];
+    CXProviderConfiguration *config = [[CXProviderConfiguration alloc] initWithLocalizedName:TGAppDelegateInstance.applicationName];
     config.supportsVideo = false;
     config.maximumCallsPerCallGroup = 1;
     config.maximumCallGroups = 1;
@@ -111,11 +113,7 @@
     {
         CXEndCallAction *action = [[CXEndCallAction alloc] initWithCallUUID:uuid];
         CXTransaction *transaction = [[CXTransaction alloc] initWithAction:action];
-        
-        TGDispatchOnMainThread(^
-        {
-            [self _requestTransaction:transaction completion:nil];
-        });
+        [self _requestTransaction:transaction completion:nil];
         
         if (completion != nil)
             _actionCompletionBlocks[action.UUID] = completion;
@@ -150,9 +148,8 @@
     [[self controller] requestTransaction:transaction completion:^(NSError *error)
     {
         if (error != nil)
-        {
             TGLog(@"CALLKITERROR %@", error);
-        }
+        
         if (completion != nil)
             completion(error == nil);
     }];
@@ -183,11 +180,8 @@
             [[self provider] reportNewIncomingCallWithUUID:uuid update:update completion:^(NSError *error)
             {
                 bool silent = ([error.domain isEqualToString:CXErrorDomainIncomingCall] && error.code == CXErrorCodeIncomingCallErrorFilteredByDoNotDisturb);
-                TGDispatchOnMainThread(^
-                {
-                    if (completion != nil)
-                        completion(silent);
-                });
+                if (completion != nil)
+                    completion(silent);
             }];
         });
     }];
@@ -199,8 +193,10 @@
     if (outUser != NULL)
         *outUser = user;
     
+    bool isContact = user.phoneNumber.length > 0 && [TGDatabaseInstance() contactUsersMatchingPhone:user.phoneNumber].count > 0;
+    
     CXHandle *handle = nil;
-    if (user.phoneNumber.length > 0)
+    if (isContact)
         handle = [[CXHandle alloc] initWithType:CXHandleTypePhoneNumber value:user.phoneNumber];
     else
         handle = [[CXHandle alloc] initWithType:CXHandleTypeGeneric value:[NSString stringWithFormat:@"TGCA%d", user.uid]];
@@ -272,9 +268,9 @@
         
         if (_actionCompletionBlocks[action.UUID] != nil)
         {
-            dispatch_block_t block = _actionCompletionBlocks[action.UUID];
-            block();
+            dispatch_block_t block = [_actionCompletionBlocks[action.UUID] copy];
             _actionCompletionBlocks[action.UUID] = nil;
+            block();
         }
     });
 }
@@ -304,15 +300,14 @@
 
 - (void)addCallSession:(TGCallSession *)session uuid:(NSUUID *)uuid
 {
-    [_queue dispatch:^
-    {
-        [_sessions setObject:session forKey:uuid];
-        
-        SVariable *audioSessionDeactivated = [[SVariable alloc] init];
-        [audioSessionDeactivated set:[SSignal single:@false]];
-        [audioSessionDeactivated set:_audioSessionDeactivationPipe.signalProducer()];
-        session.audioSessionDeactivated = audioSessionDeactivated;
-    }];
+    OSSpinLockLock(&_sessionsLock);
+    [_sessions setObject:session forKey:uuid];
+    OSSpinLockUnlock(&_sessionsLock);
+    
+    SVariable *audioSessionDeactivated = [[SVariable alloc] init];
+    [audioSessionDeactivated set:[SSignal single:@false]];
+    [audioSessionDeactivated set:_audioSessionDeactivationPipe.signalProducer()];
+    session.audioSessionDeactivated = audioSessionDeactivated;
 }
 
 - (TGCallSession *)_sessionForUUID:(NSUUID *)uuid
@@ -320,7 +315,12 @@
     if (uuid == nil)
         return nil;
     
-    return [_sessions objectForKey:uuid];
+    TGCallSession *session = nil;
+    OSSpinLockLock(&_sessionsLock);
+    session = [_sessions objectForKey:uuid];
+    OSSpinLockUnlock(&_sessionsLock);
+    
+    return session;
 }
 
 + (bool)callKitAvailable
@@ -328,8 +328,7 @@
 #if TARGET_OS_SIMULATOR
     return false;
 #endif
-    
-    return iosMajorVersion() >= 10;
+    return iosMajorVersion() >= 10 && ![[NSLocale currentLocale].countryCode isEqualToString:@"CN"];
 }
 
 @end

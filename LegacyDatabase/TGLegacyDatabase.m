@@ -6,6 +6,7 @@
 
 #import "TGLegacyUser.h"
 
+#import "TGUserModel.h"
 #import "TGPrivateChatModel.h"
 #import "TGGroupChatModel.h"
 #import "TGChannelChatModel.h"
@@ -286,11 +287,8 @@ int32_t murMurHash32(NSString *string)
         }
     }
     
-    if (bufPtr > 8) {
-        return [[NSString alloc] initWithBytes:buf + bufPtr - 8 length:8 encoding:NSUTF8StringEncoding];
-    } else {
-        return [[NSString alloc] initWithBytes:buf length:bufPtr encoding:NSUTF8StringEncoding];
-    }
+    return [[NSString alloc] initWithBytes:buf length:bufPtr encoding:NSUTF8StringEncoding];
+    
 }
 
 - (SSignal *)contactUsersMatchingPhone:(NSString *)queryPhoneNumber {
@@ -383,6 +381,31 @@ int32_t murMurHash32(NSString *string)
     }
     
     return counts;
+}
+
+- (TGLegacyUser *)userWithIdSync:(int32_t)userId {
+    
+    __block TGLegacyUser *resultUser = nil;
+    [_queue dispatchSync:^{
+        NSString *tableName = @"users_v29";
+        
+        TGLegacyUser *model = nil;
+        FMResultSet *result = [_database executeQuery:[NSString stringWithFormat:@"SELECT uid, first_name, last_name, access_hash, photo_small, phone_number FROM %@ WHERE uid=?", tableName], @(userId)];
+        if ([result next])
+        {
+            int32_t uid = [result intForColumnIndex:0];
+            NSString *firstName = [result stringForColumnIndex:1];
+            NSString *lastName = [result stringForColumnIndex:2];
+            int64_t accessHash = [result intForColumnIndex:3];
+            NSString *photoSmall = [result stringForColumnIndex:4];
+            NSString *phoneNumber = [result stringForColumnIndex:5];
+            
+            model = [[TGLegacyUser alloc] initWithUserId:uid accessHash:accessHash firstName:firstName lastName:lastName phoneNumber:phoneNumber photoSmall:photoSmall];
+        }
+        
+        resultUser = model;
+    }];
+    return resultUser;
 }
 
 - (TGChatModel *)conversationWithIdSync:(int64_t)conversationId {

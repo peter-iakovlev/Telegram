@@ -6,6 +6,7 @@
 
 @interface TGModernConversationGenericContextResultsAssociatedPanelSwitchPm () {
     TGModernButton *_button;
+    UIView *_separatorView;
 }
 
 @end
@@ -25,12 +26,19 @@
         [self addSubview:_button];
         
         CGFloat separatorHeight = 1.0f / TGScreenScaling();
-        UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, frame.size.height - separatorHeight, frame.size.width, separatorHeight)];
-        separatorView.backgroundColor = UIColorRGB(0xc5c7d0);
-        separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-        [self addSubview:separatorView];
+        _separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, frame.size.height - separatorHeight, frame.size.width, separatorHeight)];
+        _separatorView.backgroundColor = UIColorRGB(0xc5c7d0);
+        _separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+        [self addSubview:_separatorView];
     }
     return self;
+}
+
+- (void)setBackgroundColor:(UIColor *)backgroundColor separatorColor:(UIColor *)separatorColor accentColor:(UIColor *)accentColor
+{
+    self.backgroundColor = backgroundColor;
+    _separatorView.backgroundColor = separatorColor;
+    [_button setTitleColor:accentColor];
 }
 
 - (void)buttonPressed {

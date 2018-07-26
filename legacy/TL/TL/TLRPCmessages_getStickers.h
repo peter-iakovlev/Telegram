@@ -8,7 +8,7 @@
 @interface TLRPCmessages_getStickers : TLMetaRpc
 
 @property (nonatomic, retain) NSString *emoticon;
-@property (nonatomic, retain) NSString *n_hash;
+@property (nonatomic, assign) int32_t n_hash;
 
 - (Class)responseClass;
 

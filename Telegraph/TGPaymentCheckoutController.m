@@ -23,7 +23,7 @@
 #import "TGStoredTmpPassword.h"
 #import "TGTelegramNetworking.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGPaymentWebController.h"
 
@@ -46,6 +46,8 @@
 #import "TGAddPaymentCardController.h"
 
 #import "TGShareSheetTitleItemView.h"
+
+#import "TGPresentation.h"
 
 static const NSTimeInterval passwordSaveDurationGeneric = 1.0 * 60.0 * 60.0;
 static const NSTimeInterval passwordSaveDurationTouchId = 5.0 * 60.0 * 60.0;
@@ -157,7 +159,7 @@ static bool isNativeApplePayProvider(NSString *provider) {
         [_payButton addTarget:self action:@selector(payPressed) forControlEvents:UIControlEventTouchUpInside];
         
         if (NSClassFromString(@"PKPaymentButton") != nil) {
-            _applePayButton = [[PKPaymentButton alloc] initWithPaymentButtonType:PKPaymentButtonTypeBuy paymentButtonStyle:PKPaymentButtonStyleBlack];
+            _applePayButton = [[PKPaymentButton alloc] initWithPaymentButtonType:PKPaymentButtonTypeBuy paymentButtonStyle:self.presentation.pallete.isDark ? PKPaymentButtonStyleWhite : PKPaymentButtonStyleBlack];
             [_applePayButton addTarget:self action:@selector(payPressed) forControlEvents:UIControlEventTouchUpInside];
         }
         
@@ -253,7 +255,7 @@ static bool isNativeApplePayProvider(NSString *provider) {
                 alertText = TGLocalized(@"Checkout.ErrorInvoiceAlreadyPaid");
             }
             
-            [TGAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+            [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         } completed:nil]];
     }
     return self;
@@ -268,11 +270,12 @@ static bool isNativeApplePayProvider(NSString *provider) {
     
     if (_paymentForm == nil) {
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        _activityIndicator.color = self.presentation.pallete.collectionMenuCommentColor;
         [self.view addSubview:_activityIndicator];
         [_activityIndicator startAnimating];
     }
     
-    self.collectionView.backgroundColor = [UIColor whiteColor];
+    self.collectionView.backgroundColor = self.presentation.pallete.backgroundColor;
     self.collectionView.scrollEnabled = _paymentForm != nil;
     
     UIEdgeInsets safeAreaInset = self.controllerSafeAreaInset;
@@ -280,39 +283,38 @@ static bool isNativeApplePayProvider(NSString *provider) {
     _applePayButton.frame = CGRectMake(15.0f + safeAreaInset.left, 14.0f, self.view.frame.size.width - 30.0f - safeAreaInset.left - safeAreaInset.right, 48.0f);
     _payButtonContainer = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 76.0f - safeAreaInset.bottom, self.view.frame.size.width, 76.0f + safeAreaInset.bottom)];
     _payButtonContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    _payButtonContainer.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.75f];
+    _payButtonContainer.backgroundColor = [self.presentation.pallete.backgroundColor colorWithAlphaComponent:0.75f];
     _payButtonContainer.hidden = _paymentForm == nil;
     [self.view addSubview:_payButtonContainer];
     
-    static UIImage *payButtonImage;
-    static UIImage *payButtonHighlightedImage;
-    static UIImage *payDisabledButtonImage;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0x027bff).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
-        payButtonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
-        UIGraphicsEndImageContext();
-        
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
-        context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0x0067d8).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
-        payButtonHighlightedImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
-        UIGraphicsEndImageContext();
-        
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
-        context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, UIColorRGB(0xcbcbcb).CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
-        payDisabledButtonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
-        UIGraphicsEndImageContext();
-    });
+    UIImage *payButtonImage;
+    UIImage *payButtonHighlightedImage;
+    UIImage *payDisabledButtonImage;
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, self.presentation.pallete.paymentsPayButtonColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
+    payButtonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
+    UIGraphicsEndImageContext();
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
+    context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, [self.presentation.pallete.paymentsPayButtonColor colorWithHueMultiplier:1.0f saturationMultiplier:1.0f brightnessMultiplier:0.8f].CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
+    payButtonHighlightedImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
+    UIGraphicsEndImageContext();
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(48.0f, 48.0f), false, 0.0f);
+    context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, self.presentation.pallete.paymentsPayButtonDisabledColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 48.0f, 48.0f));
+    payDisabledButtonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:24 topCapHeight:24];
+    UIGraphicsEndImageContext();
+    
     _payButton.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _applePayButton.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    [_payButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [_payButton setTitleColor:self.presentation.pallete.accentContrastColor forState:UIControlStateNormal];
     _payButton.titleLabel.font = [UIFont boldSystemFontOfSize:17.0f];
     [_payButton setBackgroundImage:payButtonImage forState:UIControlStateNormal];
     [_payButton setBackgroundImage:payButtonHighlightedImage forState:UIControlStateHighlighted];
@@ -545,7 +547,8 @@ static bool isNativeApplePayProvider(NSString *provider) {
     if (alertData.length == 0 && ![_paymentMethods.methods[_paymentMethods.selectedIndex] isKindOfClass:[TGPaymentMethodApplePay class]]) {
         TGUser *paymentUser = [TGDatabaseInstance() loadUser:_paymentForm.providerId];
         __weak TGPaymentCheckoutController *weakSelf = self;
-        [TGAlertView presentAlertWithTitle:TGLocalized(@"Checkout.LiabilityAlertTitle") message:[@"\n" stringByAppendingString:[NSString stringWithFormat:TGLocalized(@"Checkout.LiabilityAlert"), _bot.displayName, paymentUser == nil ? @"" : paymentUser.displayName]] cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(__unused bool okButtonPressed) {
+        
+        TGCustomAlertView *alertView = [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Checkout.LiabilityAlertTitle") message:[@"\n" stringByAppendingString:[NSString stringWithFormat:TGLocalized(@"Checkout.LiabilityAlert"), _bot.displayName, paymentUser == nil ? @"" : paymentUser.displayName]] cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(__unused bool okButtonPressed) {
             __strong TGPaymentCheckoutController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 uint8_t one = 1;
@@ -554,6 +557,7 @@ static bool isNativeApplePayProvider(NSString *provider) {
                 [strongSelf proceedToPayment];
             }
         }];
+        alertView.messageLabel.textAlignment = NSTextAlignmentLeft;
     } else {
         [self proceedToPayment];
     }
@@ -726,70 +730,40 @@ static bool isNativeApplePayProvider(NSString *provider) {
 - (void)requestPasswordAndPay:(TGPaymentMethodSavedCredentialsCard *)card {
     __weak TGPaymentCheckoutController *weakSelf = self;
     
-    if (true) {
-        TGPaymentPasswordEntryController *controller = [[TGPaymentPasswordEntryController alloc] initWithCardTitle:_paymentForm.savedCredentials.title];
-        __weak TGPaymentPasswordEntryController *weakController = controller;
-        controller.payWithPassword = ^SSignal *(NSString *password) {
-            __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                SSignal *signal = [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *config) {
-                    return [TGTwoStepVerifyPasswordSignal tmpPassword:password config:config durationSeconds:(int32_t)passwordSaveDuration()];
-                }];
-                return [[signal onNext:^(TGStoredTmpPassword *tmpPassword) {
-                    TGDispatchOnMainThread(^{
-                        __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-                        if (strongSelf != nil) {
-                            [strongSelf payWithObtainedTmpPassword:tmpPassword card:card];
-                        }
-                    });
-                }] onError:^(id error) {
-                    TGDispatchOnMainThread(^{
-                        NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
-                        if ([errorType hasPrefix:@"FLOOD_"]) {
-                            __strong TGPaymentPasswordEntryController *strongController = weakController;
-                            if (strongController != nil) {
-                                [strongController dismissAnimated];
-                            }
-                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"LoginPassword.FloodError")cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okPressed) {
-                            }] show];
-                        }
-                    });
-                }];
-            } else {
-                return [SSignal fail:nil];
-            }
-        };
-        [TGAppDelegateInstance.window presentOverlayController:controller];
-        return;
-    }
-    
-    UIAlertController *alertController = [TGPaymentPasswordAlert alertWithText:[NSString stringWithFormat:@"Your card %@ is on file. To pay with this card, please enter your 2-Step-Verification password.", _paymentForm.savedCredentials.title] result:^(NSString *password) {
+    TGPaymentPasswordEntryController *controller = [[TGPaymentPasswordEntryController alloc] initWithCardTitle:_paymentForm.savedCredentials.title];
+    controller.presentation = self.presentation;
+    __weak TGPaymentPasswordEntryController *weakController = controller;
+    controller.payWithPassword = ^SSignal *(NSString *password) {
         __strong TGPaymentCheckoutController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            if (password.length == 0) {
-                
-            } else {
-                SSignal *signal = [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *config) {
-                    return [TGTwoStepVerifyPasswordSignal tmpPassword:password config:config durationSeconds:(int32_t)passwordSaveDuration()];
-                }];
-                [strongSelf->_disposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(TGStoredTmpPassword *next) {
-                    [TGDatabaseInstance() setCustomProperty:@"paymentsTmpPassword" value:[NSKeyedArchiver archivedDataWithRootObject:next]];
+            SSignal *signal = [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *config) {
+                return [TGTwoStepVerifyPasswordSignal tmpPassword:password config:config durationSeconds:(int32_t)passwordSaveDuration()];
+            }];
+            return [[signal onNext:^(TGStoredTmpPassword *tmpPassword) {
+                TGDispatchOnMainThread(^{
                     __strong TGPaymentCheckoutController *strongSelf = weakSelf;
                     if (strongSelf != nil) {
-                        [strongSelf payWithCredentials:[[TGPaymentCredentialsSaved alloc] initWithCardId:card.card.cardId tmpPassword:next.data] isApplePay:false completion:nil];
+                        [strongSelf payWithObtainedTmpPassword:tmpPassword card:card];
                     }
-                } error:^(__unused id error) {
-                    [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"LoginPassword.InvalidPasswordError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
-                        __strong TGPaymentCheckoutController *strongSelf = weakSelf;
-                        if (strongSelf != nil) {
-                            [strongSelf requestPasswordAndPay:card];
+                });
+            }] onError:^(id error) {
+                TGDispatchOnMainThread(^{
+                    NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                    if ([errorType hasPrefix:@"FLOOD_"]) {
+                        __strong TGPaymentPasswordEntryController *strongController = weakController;
+                        if (strongController != nil) {
+                            [strongController dismissAnimated];
                         }
-                    }];
-                } completed:nil]];
-            }
+                        
+                        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"LoginPassword.FloodError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                    }
+                });
+            }];
+        } else {
+            return [SSignal fail:nil];
         }
-    }];
-    [self presentViewController:alertController animated:true completion:nil];
+    };
+    [TGAppDelegateInstance.window presentOverlayController:controller];
 }
 
 - (void)payWithObtainedTmpPassword:(TGStoredTmpPassword *)tmpPassword card:(TGPaymentMethodSavedCredentialsCard *)card {
@@ -805,17 +779,18 @@ static bool isNativeApplePayProvider(NSString *provider) {
     }
     
     __weak TGPaymentCheckoutController *weakSelf = self;
-    [[[TGAlertView alloc] initWithTitle:nil message:saveText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okPressed) {
+    [TGCustomAlertView presentAlertWithTitle:nil message:saveText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
+    {
         __strong TGPaymentCheckoutController *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            if (okPressed) {
+            if (okButtonPressed) {
                 [TGDatabaseInstance() setCustomProperty:@"paymentsTmpPassword" value:[NSKeyedArchiver archivedDataWithRootObject:tmpPassword]];
             } else {
                 [TGDatabaseInstance() setCustomProperty:@"paymentsTmpPassword" value:[NSData data]];
             }
             [strongSelf payWithCredentials:[[TGPaymentCredentialsSaved alloc] initWithCardId:card.card.cardId tmpPassword:tmpPassword.data] isApplePay:false completion:nil];
         }
-    }] show];
+    }];
 }
 
 - (void)payWithCredentials:(id)credentials isApplePay:(bool)isApplePay completion:(void (^)(bool))completion {
@@ -879,7 +854,7 @@ static bool isNativeApplePayProvider(NSString *provider) {
                 alertText = TGLocalized(@"Checkout.ErrorInvoiceAlreadyPaid");
             }
             
-            [TGAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+            [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         }
     } completed:nil]];
 }

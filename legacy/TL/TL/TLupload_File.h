@@ -24,7 +24,7 @@
 @property (nonatomic, retain) NSData *file_token;
 @property (nonatomic, retain) NSData *encryption_key;
 @property (nonatomic, retain) NSData *encryption_iv;
-@property (nonatomic, retain) NSArray *cdn_file_hashes;
+@property (nonatomic, retain) NSArray *file_hashes;
 
 @end
 

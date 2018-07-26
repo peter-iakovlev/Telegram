@@ -167,3 +167,42 @@
 
 @end
 
+@implementation TLInputFileLocation$inputSecureFileLocation : TLInputFileLocation
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xcbc7ee28;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x0da7ad9c;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLInputFileLocation$inputSecureFileLocation *object = [[TLInputFileLocation$inputSecureFileLocation alloc] init];
+    object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
+    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.n_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.access_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
+    }
+}
+
+
+@end

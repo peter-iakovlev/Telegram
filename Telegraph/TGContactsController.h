@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/ActionStage.h>
 
+@class TGPresentation;
+
 typedef enum {
     TGContactsModeRegistered = 1,
     TGContactsModePhonebook = 2,
@@ -26,7 +28,7 @@ typedef enum {
     TGContactsModeIgnoreBots = (2 << 18),
     TGContactsModeCalls = (2 << 19),
     TGContactsModeSortByImporters = (2 << 20),
-    TGContactsModeGlobalSearchIncludeAll = (2 << 21)
+    TGContactsModeShare = (2 << 21),
 } TGContactsMode;
 
 @interface TGContactsController : TGViewController <TGViewControllerNavigationBarAppearance, ASWatcher>
@@ -58,6 +60,8 @@ typedef enum {
 
 @property (nonatomic, assign) bool shouldOpenSearch;
 
+@property (nonatomic, strong) TGPresentation *presentation;
+
 - (id)initWithContactsMode:(int)contactsMode;
 
 - (void)clearData;
@@ -86,5 +90,8 @@ typedef enum {
 - (void)didSelectRowInFirstSection:(NSInteger)row;
 - (bool)shouldDisplaySectionIndices;
 - (void)commitDeleteItemInFirstSection:(NSInteger)row;
+
++ (NSString *)localizedLabel:(NSString *)label;
++ (NSString *)downloadLink;
 
 @end

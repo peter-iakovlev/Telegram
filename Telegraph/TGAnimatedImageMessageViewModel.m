@@ -49,7 +49,7 @@
     return queue;
 }
 
-- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser caption:(NSString *)caption textCheckingResults:(NSArray *)textCheckingResults
+- (instancetype)initWithMessage:(TGMessage *)message imageInfo:(TGImageInfo *)imageInfo document:(TGDocumentMediaAttachment *)document authorPeer:(id)authorPeer context:(TGModernViewContext *)context forwardPeer:(id)forwardPeer forwardAuthor:(id)forwardAuthor forwardMessageId:(int32_t)forwardMessageId replyHeader:(TGMessage *)replyHeader replyAuthor:(id)replyAuthor viaUser:(TGUser *)viaUser caption:(NSString *)caption textCheckingResults:(NSArray *)__unused textCheckingResults
 {
     TGImageInfo *previewImageInfo = imageInfo;
     
@@ -88,7 +88,7 @@
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:caption textCheckingResults:textCheckingResults];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:caption textCheckingResults:message.textCheckingResults];
     if (self != nil)
     {
         _document = document;
@@ -172,7 +172,8 @@
         
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
         
-        [self updateImageInfo:previewImageInfo];
+        NSString *updatedImageUri = [self updatedImageUriForInfo:previewImageInfo];
+        self.imageModel.uri = updatedImageUri;
     }
     
     _canDownload = _document.documentId != 0 || (_document.documentUri != nil && ![_document.documentUri hasPrefix:@"http"]);
@@ -250,7 +251,7 @@
 - (void)activateMedia:(bool)instant
 {
     if (_activatedMedia)
-        [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant)}];
+        [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"instant": @(instant), @"peerId": @(_authorPeerId)}];
     else
         [self activateMediaPlayback];
 }

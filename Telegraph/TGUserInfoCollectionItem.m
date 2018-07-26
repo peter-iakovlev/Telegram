@@ -73,9 +73,11 @@
     
     view.itemHandle = _actionHandle;
     
+    [view setMultilineName:_multilineName];
     [view setDisableAvatarPlaceholder:_disableAvatarPlaceholder];
     [view setAvatarOffset:_avatarOffset];
     [view setNameOffset:_nameOffset];
+    view.customProperties = _user.customProperties;
     [view setFirstName:[self currentFirstName] lastName:[self currentLastName] uidForPlaceholderCalculation:_user.uid];
     view.isVerified = _user.isVerified;
     
@@ -125,6 +127,12 @@
     [(TGUserInfoCollectionItemView *)[self boundView] setDisableAvatarPlaceholder:disableAvatarPlaceholder];
 }
 
+- (void)setMultilineName:(bool)multilineName
+{
+    _multilineName = multilineName;
+    [(TGUserInfoCollectionItemView *)[self boundView] setMultilineName:multilineName];
+}
+
 - (void)setUser:(TGUser *)user animated:(bool)animated
 {
     _user = user;
@@ -138,6 +146,7 @@
     if ([self boundView] != nil)
     {
         TGUserInfoCollectionItemView *view = (TGUserInfoCollectionItemView *)[self boundView];
+        view.customProperties = _user.customProperties;
         
         [view setFirstName:[self currentFirstName] lastName:[self currentLastName] uidForPlaceholderCalculation:_user.uid];
         

@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationContactLinkTitlePanel ()
 {
     CALayer *_stripeLayer;
@@ -51,16 +53,26 @@
         [_secondaryActionButton addTarget:self action:@selector(secondaryActionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_secondaryActionButton];
         
-        UIImage *closeImage = TGImageNamed(@"ModernConversationTitlePanelClose.png");
         _closeButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 34, 34)];
         _closeButton.adjustsImageWhenDisabled = false;
         _closeButton.adjustsImageWhenHighlighted = false;
         _closeButton.modernHighlight = true;
-        [_closeButton setImage:closeImage forState:UIControlStateNormal];
         [_closeButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_closeButton];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _backgroundView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    [_actionButton setTitleColor:presentation.pallete.navigationButtonColor];
+    [_secondaryActionButton setTitleColor:presentation.pallete.navigationButtonColor];
+    
+    [_closeButton setImage:TGTintedImage(TGImageNamed(@"ModernConversationTitlePanelClose.png"), presentation.pallete.navigationButtonColor) forState:UIControlStateNormal];
 }
 
 - (void)setShareContact:(bool)shareContact addContact:(bool)addContact reportSpam:(bool)reportSpam

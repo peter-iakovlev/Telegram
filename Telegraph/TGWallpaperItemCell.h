@@ -9,11 +9,13 @@
 #import <UIKit/UIKit.h>
 
 @class TGWallpaperInfo;
+@class TGPresentation;
 
 @interface TGWallpaperItemCell : UICollectionViewCell
 
 @property (nonatomic, strong) TGWallpaperInfo *wallpaperInfo;
 @property (nonatomic) bool isSelected;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 - (void)setWallpaperInfo:(TGWallpaperInfo *)wallpaperInfo;
 - (UIImage *)currentImage;

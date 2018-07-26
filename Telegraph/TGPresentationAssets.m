@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGRoundMessageViewModel.h"
+
 @implementation TGPresentationAssets
 
 + (UIImage *)tabBarContactsIcon:(UIColor *)color
@@ -59,7 +61,7 @@
     return [self _callsIcon:color stroke:false];
 }
 
-+ (UIImage *)tabBarChatsIcon:(UIColor *)color
++ (UIImage *)tabBarChatsIcon:(UIColor *)color downArrow:(NSNumber *)downArrow
 {
     NSString *code = @"M36.3991203,72.9863676 C36.7653912,72.9954488 37.1323771,73 37.5,73 C58.6483576,73 76,57.9116153 76,39 C76,32.2746124 73.8055889,26.0327374 70.0263925,20.7810195 C81.821834,25.5490491 90,35.9440407 90,48 C90,57.4495579 85.3853733,65.1952817 77.5330155,70.69422 C76.5288377,71.397437 75.6039392,75.3047404 77.8422549,78.5867691 C80.0805706,81.8687978 82.8711876,83.3686517 81.471701,83.9301475 C80.6088976,84.2763177 75.5108064,84.447552 71.8312186,82.4737142 C66.5697786,79.651325 65.0988406,76.8415645 63.9666822,77.0899522 C61.2576974,77.6842845 58.4212488,78 55.5,78 C48.4361182,78 41.8680823,76.1539405 36.3991203,72.9863676 Z M37.5,69 C34.5787512,69 31.7423026,68.6842845 29.0333178,68.0899522 C27.9011594,67.8415645 26.4302214,70.651325 21.1687814,73.4737142 C17.4891936,75.447552 12.3911024,75.2763177 11.528299,74.9301475 C10.1288124,74.3686517 12.9194294,72.8687978 15.1577451,69.5867691 C17.3960608,66.3047404 16.4711623,62.397437 15.4669845,61.69422 C7.61462671,56.1952817 3,48.4495579 3,39 C3,22.4314575 18.4461761,9 37.5,9 C56.5538239,9 72,22.4314575 72,39 C72,55.5685425 56.5538239,69 37.5,69 Z";
     
@@ -69,6 +71,26 @@
     CGContextScaleCTM(context, 0.3333f, 0.3333f);
     CGContextSetFillColorWithColor(context, color.CGColor);
     TGDrawSvgPath(context, code);
+    
+    if (downArrow != nil)
+    {
+        NSString *arrowCode = @"M0,0 L11.6775298,10.8847467 C11.8591736,11.0540588 12.1408264,11.0540588 12.3224702,10.8847467 L24,0 U";
+        bool down = downArrow.boolValue;
+        
+        CGContextSetLineWidth(context, 4.0f);
+        CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
+        CGContextSetBlendMode(context, kCGBlendModeClear);
+        if (!down)
+        {
+            CGContextScaleCTM(context, 1.0f, -1.0f);
+            CGContextTranslateCTM(context, 25.0f, -44.0f);
+        }
+        else
+        {
+            CGContextTranslateCTM(context, 25.0f, 35.0f);
+        }
+        TGDrawSvgPath(context, arrowCode);
+    }
     
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -113,6 +135,54 @@
     return image;
 }
 
++ (UIImage *)contactsPlusIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(18.0f, 18.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake((18.0f) / 2.0f - 1.0f, 0.0f, 1.5f, 18.0f));
+    CGContextFillRect(context, CGRectMake(0.0f, (18.0f) / 2.0f - 1.0f, 18.0f, 1.5f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)contactsInviteIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListAddMemberIcon.png"), color);
+}
+
++ (UIImage *)contactsShareIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListInviteIcon.png"), color);
+}
+
++ (UIImage *)contactsNewGroupIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListCreateGroupIcon.png"), color);
+}
+
++ (UIImage *)contactsNewEncryptedIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListCreateSecretChatIcon.png"), color);
+}
+
++ (UIImage *)contactsNewChannelIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListBroadcastIcon.png"), color);
+}
+
++ (UIImage *)contactsUpgradeIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"GroupInfoIconUpgrade.png"), color);
+}
+
++ (UIImage *)contactsInviteLinkIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernContactListInviteFriendsIcon.png"), color);
+}
+
 + (UIImage *)callsNewIcon:(UIColor *)color
 {
     return [self _callsIcon:color stroke:true];
@@ -126,6 +196,32 @@
 + (UIImage *)callsOutgoingIcon:(UIColor *)color
 {
     return TGTintedImage(TGImageNamed(@"CallOutgoing.png"), color);
+}
+
++ (UIImage *)searchClearIcon:(UIColor *)backgroundColor color:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(14, 14), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 14.0f, 14.0f));
+    
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.3333f);
+    
+    CGContextMoveToPoint(context, 4.0f, 4.0f);
+    CGContextAddLineToPoint(context, 10.0f, 10.0f);
+    CGContextStrokePath(context);
+    
+    CGContextMoveToPoint(context, 10.0f, 4.0f);
+    CGContextAddLineToPoint(context, 4.0f, 10.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 + (UIImage *)chatMutedIcon:(UIColor *)color
@@ -330,15 +426,13 @@
     return image;
 }
 
-+ (UIImage *)chatEditDeleteIcon
++ (UIImage *)chatEditDeleteIcon:(UIColor *)color
 {
     NSString *code = @"M39.0015,9 L39.0015,6 C39.0015,2.6865 36.315,0 33.0015,0 L21.0015,0 C17.688,0 15.0015,2.6865 15.0015,6 L15.0015,9 L0,9 L0,12 L3.375,12 L7.4985,70.5 C7.4985,70.5 8.442,75 11.9985,75 L25.4985,75 L28.4985,75 L41.9985,75 C45.5565,75 46.5,70.5 46.5,70.5 L50.5005,12 L54,12 L54,9 L39.0015,9 L39.0015,9 Z";
     
     NSString *innerCode = @"M18.0015,6 C18.0015,4.3425 19.3455,3 21.0015,3 L33.0015,3 C34.6575,3 36.0015,4.344 36.0015,6 L36.0015,9 L18.0015,9 L18.0015,6 L18.0015,6 Z M43.5015,68.9985 C43.2495,71.3175 42,71.9985 42,71.9985 L28.5,71.9985 L25.5,71.9985 L12,71.9985 C12,71.9985 10.752,71.3175 10.5,68.9985 C10.2495,66.6795 6.375,11.9985 6.375,11.9985 L47.3745,11.9985 C47.376,11.9985 43.752,66.6795 43.5015,68.9985 L43.5015,68.9985 Z";
     
     NSString *linesCode = @"M39.0015,18 L36.0015,18 L34.5015,66 L37.5015,66 L39.0015,18 Z M19.5015,66 L18.0015,18 L15,18 L16.5,66 L19.5015,66 Z M25.5,18 L28.5,18 L28.5,66 L25.5,66 L25.5,18 Z";
-    
-    UIColor *color = [UIColor whiteColor];
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(18, 25), false, 0.0f);
     
@@ -409,25 +503,21 @@
     return image;
 }
 
-
-
-+ (UIImage *)chatEditMuteIcon
++ (UIImage *)chatEditMuteIcon:(UIColor *)color
 {
-    return [self _muteUnmuteIcon:true color:[UIColor whiteColor]];
+    return [self _muteUnmuteIcon:true color:color];
 }
 
-+ (UIImage *)chatEditUnmuteIcon
++ (UIImage *)chatEditUnmuteIcon:(UIColor *)color
 {
-    return [self _muteUnmuteIcon:false color:[UIColor whiteColor]];
+    return [self _muteUnmuteIcon:false color:color];
 }
 
-+ (UIImage *)chatEditPinIcon
++ (UIImage *)chatEditPinIcon:(UIColor *)color
 {
     NSString *code = @"M45.7904491,0.0606601718 C46.6859491,0.0606601718 47.5296991,0.384660172 48.1341991,0.998160172 L70.0018398,23.1001759 C70.6588398,23.7616759 71.0128398,24.6988009 70.9393398,25.6783009 C70.8418398,27.0133009 70.0033398,28.3550509 68.6893398,29.3345509 L51.1580898,41.2876759 C53.1650898,49.3411759 50.8232148,57.8443009 44.9237148,63.7408009 C44.6297148,64.0348009 44.2295898,64.2095509 43.8455898,64.2095509 C43.4615898,64.2095509 43.1068398,64.0801759 42.8143398,63.7876759 L7.21232414,28.1856602 C6.93032414,27.9036602 6.79044914,27.5050352 6.79044914,27.1075352 C6.79044914,26.7100352 6.93032414,26.3567852 7.21232414,26.0762852 C11.6793241,21.6092852 17.6286991,19.1387852 23.9466991,19.1387852 C25.7871991,19.1387852 27.5976991,19.3266602 29.3841991,19.7481602 L41.8060741,2.31066017 C42.9085741,0.885660172 44.3819491,0.0606601718 45.7904491,0.0606601718 Z M18.6148945,43.8069805 L27.1461445,52.3851055 L2.61948052,70.4898945 C2.34648052,70.7073945 2.00898052,70.8180195 1.68198052,70.8180195 C1.29648052,70.8180195 0.894855515,70.6871445 0.603855515,70.3961445 C0.0653555153,69.8591445 0.0376055153,68.9775195 0.510105515,68.3805195 L18.6148945,43.8069805 Z";
     
     NSString *innerCode = @"M10.4385304,27.1692257 L43.8089702,60.5396656 C48.2093318,55.4701442 49.8834924,48.5793907 48.247121,42.0131138 L47.7419263,39.9859164 L49.4680794,38.8089938 L66.8963766,26.9292893 C67.5607162,26.4340682 67.9184305,25.855193 67.9477504,25.4538171 C67.9554285,25.3514951 67.9236195,25.2649162 67.8692423,25.2101588 L45.9972624,3.10374825 C45.9800997,3.08633007 45.9152382,3.06066017 45.7904491,3.06066017 C45.3756316,3.06066017 44.7431757,3.41699786 44.2494916,4.0512667 L30.6577436,23.1310035 L28.6953049,22.6679932 C27.1858018,22.3118468 25.6124554,22.1387852 23.9466991,22.1387852 C18.9356843,22.1387852 14.1973723,23.9129562 10.4385304,27.1692257 Z M22.5677792,52.0358966 L18.9547618,48.4030275 L8.77661164,62.2160899 L22.5677792,52.0358966 Z";
-    
-    UIColor *color = [UIColor whiteColor];
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(24, 26), false, 0.0f);
     
@@ -449,15 +539,13 @@
     return image;
 }
 
-+ (UIImage *)chatEditUnpinIcon
++ (UIImage *)chatEditUnpinIcon:(UIColor *)color
 {
     NSString *code = @"M45.7904491,0.0606601718 C46.6859491,0.0606601718 47.5296991,0.384660172 48.1341991,0.998160172 L70.0018398,23.1001759 C70.6588398,23.7616759 71.0128398,24.6988009 70.9393398,25.6783009 C70.8418398,27.0133009 70.0033398,28.3550509 68.6893398,29.3345509 L51.1580898,41.2876759 C53.1650898,49.3411759 50.8232148,57.8443009 44.9237148,63.7408009 C44.6297148,64.0348009 44.2295898,64.2095509 43.8455898,64.2095509 C43.4615898,64.2095509 43.1068398,64.0801759 42.8143398,63.7876759 L7.21232414,28.1856602 C6.93032414,27.9036602 6.79044914,27.5050352 6.79044914,27.1075352 C6.79044914,26.7100352 6.93032414,26.3567852 7.21232414,26.0762852 C11.6793241,21.6092852 17.6286991,19.1387852 23.9466991,19.1387852 C25.7871991,19.1387852 27.5976991,19.3266602 29.3841991,19.7481602 L41.8060741,2.31066017 C42.9085741,0.885660172 44.3819491,0.0606601718 45.7904491,0.0606601718 Z M18.6148945,43.8069805 L27.1461445,52.3851055 L2.61948052,70.4898945 C2.34648052,70.7073945 2.00898052,70.8180195 1.68198052,70.8180195 C1.29648052,70.8180195 0.894855515,70.6871445 0.603855515,70.3961445 C0.0653555153,69.8591445 0.0376055153,68.9775195 0.510105515,68.3805195 L18.6148945,43.8069805 Z";
     
     NSString *innerCode = @"M10.4385304,27.1692257 L43.8089702,60.5396656 C48.2093318,55.4701442 49.8834924,48.5793907 48.247121,42.0131138 L47.7419263,39.9859164 L49.4680794,38.8089938 L66.8963766,26.9292893 C67.5607162,26.4340682 67.9184305,25.855193 67.9477504,25.4538171 C67.9554285,25.3514951 67.9236195,25.2649162 67.8692423,25.2101588 L45.9972624,3.10374825 C45.9800997,3.08633007 45.9152382,3.06066017 45.7904491,3.06066017 C45.3756316,3.06066017 44.7431757,3.41699786 44.2494916,4.0512667 L30.6577436,23.1310035 L28.6953049,22.6679932 C27.1858018,22.3118468 25.6124554,22.1387852 23.9466991,22.1387852 C18.9356843,22.1387852 14.1973723,23.9129562 10.4385304,27.1692257 Z M22.5677792,52.0358966 L18.9547618,48.4030275 L8.77661164,62.2160899 L22.5677792,52.0358966 Z M7.82842712,2.17157288 L72.3284271,66.6715729 C76.0996633,70.442809 70.442809,76.0996633 66.6715729,72.3284271 L2.17157288,7.82842712 C-1.59966329,4.05719096 4.05719096,-1.59966329 7.82842712,2.17157288 Z";
     
     NSString *lineCode = @"M4.06066017,1.93933983 L68.5606602,66.4393398 C69.9748737,67.8535534 67.8535534,69.9748737 66.4393398,68.5606602 L1.93933983,4.06066017 C0.525126266,2.64644661 2.64644661,0.525126266 4.06066017,1.93933983 Z";
-    
-    UIColor *color = [UIColor whiteColor];
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(24, 26), false, 0.0f);
     
@@ -483,10 +571,68 @@
     return image;
 }
 
-+ (UIImage *)chatsLockBaseIcon:(bool)active
++ (UIImage *)chatEditGroupIcon:(UIColor *)color
 {
-    UIColor *color = active ? TGAccentColor() : [UIColor blackColor];
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(26, 26), false, 0.0f);
     
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextTranslateCTM(context, 0.0f, 2.0f);
+    
+    //CGContextSetFillColorWithColor(context, [UIColor redColor].CGColor);
+    //CGCo
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 3.0f);
+    
+    CGContextStrokeEllipseInRect(context, CGRectMake(9.0f, 5.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(45.0f, 5.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(9.0f, 41.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(45.0f, 41.0f, 29.0f, 29.0f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatEditUngroupIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(26, 26), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextTranslateCTM(context, 0.0f, 2.0f);
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 3.0f);
+    
+    CGContextStrokeEllipseInRect(context, CGRectMake(9.0f, 5.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(45.0f, 5.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(9.0f, 41.0f, 29.0f, 29.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(45.0f, 41.0f, 29.0f, 29.0f));
+    
+    CGContextSetBlendMode(context, kCGBlendModeClear);
+    CGContextSetStrokeColorWithColor(context, [UIColor clearColor].CGColor);
+    CGContextSetLineWidth(context, 4.0f);
+    
+    CGContextMoveToPoint(context, 0.0f, 0.0f);
+    CGContextAddLineToPoint(context, 78.0f, 78.0f);
+    
+    CGContextSetBlendMode(context, kCGBlendModeNormal);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    
+    CGContextMoveToPoint(context, 0.0f, 0.0f);
+    CGContextAddLineToPoint(context, 78.0f, 78.0f);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatsLockBaseIcon:(UIColor *)color
+{
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(10, 7), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -501,10 +647,8 @@
     return image;
 }
 
-+ (UIImage *)chatsLockTopIcon:(bool)active
++ (UIImage *)chatsLockTopIcon:(UIColor *)color active:(bool)active
 {
-    UIColor *color = active ? TGAccentColor() : [UIColor blackColor];
-    
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(7, 6), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -530,36 +674,101 @@
     return image;
 }
 
-+ (UIImage *)chatTitleMutedIcon
++ (UIImage *)chatsProxyIcon:(UIColor *)color connected:(bool)connected onlyShield:(bool)onlyShield
 {
-    return [self chatMutedIcon:UIColorRGB(0xb6b6bb)];
+    NSString *shieldCode = @"M27,1.6414763 L1.5,12.9748096 L1.5,30 C1.5,45.9171686 12.4507463,60.7063193 27,64.4535514 C41.5492537,60.7063193 52.5,45.9171686 52.5,30 L52.5,12.9748096 L27,1.6414763 S";
+    NSString *onCode = @"M27,47 C34.7319865,47 41,40.7319865 41,33 C41,25.2680135 34.7319865,19 27,19 C19.2680135,19 13,25.2680135 13,33 U";
+    NSString *checkCode = @"M15.5769231,34.1735387 L23.5896918,42.2164446 C23.6840928,42.3112006 23.8352513,42.30478 23.9262955,42.2032393 L40.5,23.71875 U";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(18, 22), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 3.0f);
+    
+    TGDrawSvgPath(context, shieldCode);
+    
+    if (!onlyShield)
+    {
+        if (connected)
+        {
+            TGDrawSvgPath(context, checkCode);
+        }
+        else
+        {
+            UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(26.0f - 0.5f, 15.0f, 3.0f, 15.0f) cornerRadius:1.5f];
+            CGContextAddPath(context, path.CGPath);
+            CGContextFillPath(context);
+            
+            CGContextTranslateCTM(context, 18.0f * 1.5f, 22.0f * 1.5f);
+            CGContextRotateCTM(context, M_PI_2 + M_PI_4);
+            CGContextTranslateCTM(context, -18.0f * 1.5f, -22.0f * 1.5f);
+            TGDrawSvgPath(context, onCode);
+        }
+    }
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
-+ (UIImage *)chatTitleEncryptedIcon
++ (UIImage *)chatsProxySpinner:(UIColor *)color
 {
-    return [self _encryptedIcon:[UIColor blackColor]];
+    NSString *onCode = @"M27,47 C34.7319865,47 41,40.7319865 41,33 C41,25.2680135 34.7319865,19 27,19 C19.2680135,19 13,25.2680135 13,33 U";
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(18, 22), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 3.0f);
+    
+    TGDrawSvgPath(context, onCode);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
-+ (UIImage *)chatTitleMuteIcon
++ (UIImage *)chatTitleMutedIcon:(UIColor *)color
 {
-    return [self _muteUnmuteIcon:true color:TGAccentColor()];
+    return [self chatMutedIcon:color];
 }
 
-+ (UIImage *)chatTitleUnmuteIcon
++ (UIImage *)chatTitleEncryptedIcon:(UIColor *)color
 {
-    return [self _muteUnmuteIcon:false color:TGAccentColor()];
+    return [self _encryptedIcon:color];
 }
 
-+ (UIImage *)chatTitleSearchIcon
++ (UIImage *)chatTitleLiveLocationIcon:(UIColor *)color active:(bool)active
+{
+    return active ? TGTintedImage(TGImageNamed(@"LiveLocationTitlePin"), color) : TGTintedImage(TGImageNamed(@"LiveLocationTitleIcon"), color);
+}
+
++ (UIImage *)chatTitleMuteIcon:(UIColor *)color
+{
+    return [self _muteUnmuteIcon:true color:color];
+}
+
++ (UIImage *)chatTitleUnmuteIcon:(UIColor *)color
+{
+    return [self _muteUnmuteIcon:false color:color];
+}
+
++ (UIImage *)chatTitleSearchIcon:(UIColor *)color
 {
     NSString *code = @"M72.5,72.5 L92,92 U";
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(25, 25), false, 0.0f);
     
-    UIColor *color = TGAccentColor();
-    
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextTranslateCTM(context, -8.0f, -8.0f);
+    CGContextTranslateCTM(context, -8.0f, -7.0f);
     CGContextScaleCTM(context, 0.3333f, 0.3333f);
     CGContextSetStrokeColorWithColor(context, color.CGColor);
     CGContextSetLineCap(context, kCGLineCapRound);
@@ -575,13 +784,11 @@
     return image;
 }
 
-+ (UIImage *)chatTitleReportIcon
++ (UIImage *)chatTitleReportIcon:(UIColor *)color
 {
     NSString *code = @"M57.3010254,65.8984375 L56.5197754,54.2041016 C56.3732903,51.9254443 56.3000488,50.2897185 56.3000488,49.296875 C56.3000488,47.9459568 56.6540492,46.8920936 57.3620605,46.1352539 C58.0700719,45.3784142 59.001866,45 60.1574707,45 C61.5572173,45 62.4930803,45.4842074 62.9650879,46.4526367 C63.4370955,47.421066 63.6730957,48.8167227 63.6730957,50.6396484 C63.6730957,51.7138726 63.6161301,52.8043564 63.5021973,53.9111328 L62.4523926,65.9472656 C62.3384597,67.3795645 62.0943215,68.4781863 61.7199707,69.2431641 C61.3456199,70.0081418 60.7271365,70.390625 59.864502,70.390625 C58.9855913,70.390625 58.3752458,70.0203488 58.0334473,69.2797852 C57.6916487,68.5392216 57.4475105,67.4121169 57.3010254,65.8984375 Z M60.0109863,81.9628906 C59.0181428,81.9628906 58.1514523,81.641442 57.4108887,80.9985352 C56.6703251,80.3556283 56.3000488,79.456386 56.3000488,78.3007812 C56.3000488,77.2916616 56.6540492,76.433109 57.3620605,75.7250977 C58.0700719,75.0170863 58.9367625,74.6630859 59.9621582,74.6630859 C60.987554,74.6630859 61.8623824,75.0170863 62.5866699,75.7250977 C63.3109574,76.433109 63.6730957,77.2916616 63.6730957,78.3007812 C63.6730957,79.4401099 63.3068884,80.3352832 62.5744629,80.9863281 C61.8420374,81.637373 60.9875537,81.9628906 60.0109863,81.9628906 Z M57.86981,28.3335289 L22.0213699,86.6914547 C21.2986803,87.8679262 21.6665432,89.4075004 22.8430146,90.13019 C23.2366499,90.3719945 23.6895877,90.5 24.1515599,90.5 L95.8484401,90.5 C97.229152,90.5 98.3484401,89.3807119 98.3484401,88 C98.3484401,87.5380279 98.2204347,87.0850901 97.9786301,86.6914547 L62.13019,28.3335289 C61.4075004,27.1570575 59.8679262,26.7891946 58.6914547,27.5118842 C58.356842,27.717432 58.0753578,27.9989162 57.86981,28.3335289 S";
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(30, 30), false, 0.0f);
-    
-    UIColor *color = TGAccentColor();
     
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextTranslateCTM(context, -4.0f, -4.0f);
@@ -598,24 +805,22 @@
     return image;
 }
 
-+ (UIImage *)chatTitleInfoIcon
++ (UIImage *)chatTitleInfoIcon:(UIColor *)color
 {
     NSString *code= @"M60,49.5 C62.4852814,49.5 64.5,47.4852814 64.5,45 C64.5,42.5147186 62.4852814,40.5 60,40.5 C57.5147186,40.5 55.5,42.5147186 55.5,45 C55.5,47.4852814 57.5147186,49.5 60,49.5 Z M63,76.5 L66,76.5 L66,78 L54,78 L54,76.5 L57,76.5 L57,52.5 L63,52.5 L63,76.5 Z M54,52.5 L57,52.5 L57,54 L54,54 L54,52.5 Z";
     
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0.0f);
-    
-    UIColor *color = TGAccentColor();
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(24, 24), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextTranslateCTM(context, -9.0f, -9.0f);
     CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextTranslateCTM(context, -24.0f, -24.0f);
     CGContextSetFillColorWithColor(context, color.CGColor);
     CGContextSetStrokeColorWithColor(context, color.CGColor);
     CGContextSetLineCap(context, kCGLineCapRound);
     CGContextSetLineWidth(context, 3.0f);
     TGDrawSvgPath(context, code);
     
-    CGContextStrokeEllipseInRect(context, CGRectMake(28.5f, 28.5f, 63.0f, 63.0f));
+    CGContextStrokeEllipseInRect(context, CGRectMake(27.5f, 27.5f, 65.0f, 65.0f));
     
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -623,9 +828,34 @@
     return image;
 }
 
-+ (UIImage *)chatTitleCallIcon
++ (UIImage *)chatTitleCallIcon:(UIColor *)color
 {
-    return [self _callsIcon:TGAccentColor() stroke:true];
+    return [self _callsIcon:color stroke:true];
+}
+
++ (UIImage *)chatTitleGroupIcon:(UIColor *)color
+{
+    return [self chatEditGroupIcon:color];
+}
+
++ (UIImage *)chatSearchNextIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InlineSearchUp.png"), color);
+}
+
++ (UIImage *)chatSearchPreviousIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InlineSearchDown.png"), color);
+}
+
++ (UIImage *)chatSearchCalendarIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationSearchCalendar.png"), color);
+}
+
++ (UIImage *)chatSearchNameIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationSearchUser.png"), color);
 }
 
 + (UIImage *)chatPlaceholderEncryptedIcon
@@ -633,9 +863,431 @@
     return [self _encryptedIcon:[UIColor whiteColor]];
 }
 
++ (UIImage *)chatBubbleFull:(UIColor *)color borderColor:(UIColor *)borderColor outgoing:(bool)outgoing
+{
+    NSString *code = @"M98.9898269,45.5175307 C98.4669332,20.2898891 77.8529454,0 52.5,0 L52.5,0 L46.5,0 L46.5,0 C20.8187591,0 0,20.8187591 0,46.5 L0,46.5 L0,46.5 C0,72.1812409 20.8187591,93 46.5,93 L52.5,93 C63.4281796,93 73.475875,89.2301985 81.4135902,82.9200913 C89.2183311,91.030032 103.215929,92.6305181 109.680374,92.9265773 C111.202766,92.9962999 112.30736,92.9936773 112.814875,92.9866937 C113.019729,92.9838748 113.043082,92.9866937 113.043082,92.9866937 C99.0430817,83.9870161 99,69.5848507 99,69.5848507 L99,45.5 L98.9898269,45.5175307";
+    
+    NSString *fillCode = [code stringByAppendingString:@" Z"];
+    NSString *strokeCode = [code stringByAppendingString:@" S"];
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(40, 33), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    if (!outgoing)
+    {
+        CGContextScaleCTM(context, -1.0f, 1.0f);
+        CGContextTranslateCTM(context, -38.0f * 3.0f - 3.0f, 3.0f);
+    }
+    else
+    {
+        CGContextTranslateCTM(context, 3.0f, 3.0f);
+    }
+    CGContextSetLineWidth(context, TGScreenPixel * 2 * 3.0f);
+
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    if (borderColor != nil)
+        TGDrawSvgPath(context, strokeCode);
+    TGDrawSvgPath(context, fillCode);
+
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return [image stretchableImageWithLeftCapWidth:outgoing ? 17 : 23 topCapHeight:16];
+}
+
++ (UIImage *)chatBubblePartial:(UIColor *)color borderColor:(UIColor *)borderColor outgoing:(bool)outgoing
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(40, 33), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    CGPoint origin = CGPointMake(outgoing ? 1.0f : 6.0f, 1.0f);
+    CGContextSetLineWidth(context, TGScreenPixel * 2);
+    if (borderColor != nil)
+        CGContextStrokeEllipseInRect(context, CGRectMake(origin.x, origin.y, 33.0f, 31.0f));
+    CGContextFillEllipseInRect(context, CGRectMake(origin.x, origin.y, 33.0f, 31.0f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return [image stretchableImageWithLeftCapWidth:outgoing ? 17 : 23 topCapHeight:16];
+}
+
++ (UIImage *)chatBubbleImage:(UIColor *)color borderColor:(UIColor *)borderColor outgoing:(bool)outgoing hasTail:(bool)hasTail
+{
+    if (hasTail)
+        return [self chatBubbleFull:color borderColor:borderColor outgoing:outgoing];
+    else
+        return [self chatBubblePartial:color borderColor:borderColor outgoing:outgoing];
+}
+
++ (UIImage *)chatRoundMessageBackgroundImage:(UIColor *)color borderColor:(UIColor *)borderColor
+{
+    CGSize roundSize = [TGRoundMessageViewModel roundSize];
+    UIGraphicsBeginImageContextWithOptions(roundSize, false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    CGContextSetLineWidth(context, TGScreenPixel);
+    
+    CGRect rect = CGRectInset(CGRectMake(0.0f, 0.0f, roundSize.width, roundSize.height), TGScreenPixel, TGScreenPixel);
+    CGContextFillEllipseInRect(context, rect);
+    CGContextStrokeEllipseInRect(context, rect);
+    
+    UIImage *backgroundImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return backgroundImage;
+}
+
++ (UIImage *)chatPlaceholderBackgroundImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(30.0f, 30.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 30.0f, 30.0f));
+    
+    UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:15 topCapHeight:15];
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatUnreadBackgroundImage:(UIColor *)color borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(1, 25), false, 0.0f);
+
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 25.0f));
+    
+    if (borderColor != nil)
+    {
+        CGContextSetFillColorWithColor(context, borderColor.CGColor);
+        CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 1.0f));
+        CGContextFillRect(context, CGRectMake(0.0f, 24.0f, 1.0f, 1.0f));
+    }
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatSystemBackgroundImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(21, 21), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGRect bounds = CGRectMake(0.5f, 0, 20, 20);
+    
+    CGFloat radius = 0.5f * CGRectGetHeight(bounds);
+    
+    CGMutablePathRef visiblePath = CGPathCreateMutable();
+    CGRect innerRect = CGRectInset(bounds, radius, radius);
+    CGPathMoveToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x + innerRect.size.width, bounds.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, bounds.origin.y, bounds.origin.x + bounds.size.width, innerRect.origin.y, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, innerRect.origin.y + innerRect.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x + bounds.size.width, bounds.origin.y + bounds.size.height, innerRect.origin.x + innerRect.size.width, bounds.origin.y + bounds.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y + bounds.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y + bounds.size.height, bounds.origin.x, innerRect.origin.y + innerRect.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x, innerRect.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y, innerRect.origin.x, bounds.origin.y, radius);
+    CGPathCloseSubpath(visiblePath);
+    
+    CGContextSaveGState(context);
+    
+    [color setFill];
+    CGContextAddPath(context, visiblePath);
+    CGContextFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, CGRectInset(bounds, -2, -2));
+    
+    CGPathAddPath(path, NULL, visiblePath);
+    CGPathCloseSubpath(path);
+    
+    CGContextAddPath(context, visiblePath);
+    CGContextClip(context);
+    
+    CGContextSaveGState(context);
+    
+    [color setFill];
+    CGContextAddPath(context, path);
+    CGContextEOFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGPathRelease(path);
+    CGPathRelease(visiblePath);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    image = [image stretchableImageWithLeftCapWidth:(int)(image.size.width / 2) topCapHeight:(int)(image.size.height / 2)];
+    
+    return image;
+}
+
++ (UIImage *)chatReplyBackgroundImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(16.0f, 16.0f), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGRect bounds = CGRectMake(0.0f, 0.0f, 16.0f, 16.0f);
+    
+    CGFloat radius = 0.5f * CGRectGetHeight(bounds);
+    
+    CGMutablePathRef visiblePath = CGPathCreateMutable();
+    CGRect innerRect = CGRectInset(bounds, radius, radius);
+    CGPathMoveToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x + innerRect.size.width, bounds.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, bounds.origin.y, bounds.origin.x + bounds.size.width, innerRect.origin.y, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x + bounds.size.width, innerRect.origin.y + innerRect.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x + bounds.size.width, bounds.origin.y + bounds.size.height, innerRect.origin.x + innerRect.size.width, bounds.origin.y + bounds.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, innerRect.origin.x, bounds.origin.y + bounds.size.height);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y + bounds.size.height, bounds.origin.x, innerRect.origin.y + innerRect.size.height, radius);
+    CGPathAddLineToPoint(visiblePath, NULL, bounds.origin.x, innerRect.origin.y);
+    CGPathAddArcToPoint(visiblePath, NULL,  bounds.origin.x, bounds.origin.y, innerRect.origin.x, bounds.origin.y, radius);
+    CGPathCloseSubpath(visiblePath);
+    
+    CGContextSaveGState(context);
+    
+    [color setFill];
+    CGContextAddPath(context, visiblePath);
+    CGContextFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGMutablePathRef path = CGPathCreateMutable();
+    CGPathAddRect(path, NULL, CGRectInset(bounds, -2, -2));
+    
+    CGPathAddPath(path, NULL, visiblePath);
+    CGPathCloseSubpath(path);
+    
+    CGContextAddPath(context, visiblePath);
+    CGContextClip(context);
+    
+    CGContextSaveGState(context);
+
+    [color setFill];
+    CGContextAddPath(context, path);
+    CGContextEOFillPath(context);
+    
+    CGContextRestoreGState(context);
+    
+    CGPathRelease(path);
+    CGPathRelease(visiblePath);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    image = [image stretchableImageWithLeftCapWidth:(int)(image.size.width / 2) topCapHeight:(int)(image.size.height / 2)];
+    
+    return image;
+}
+
++ (UIImage *)chatActionShareImage:(UIColor *)color backgroundColor:(UIColor *)backgroundColor borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(29.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 29.0f, 29.0f));
+    
+    if (borderColor != nil)
+    {
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 28.0f, 28.0f));
+    }
+    
+    UIImage *iconImage = TGTintedImage(TGImageNamed(@"ConversationChannelInlineShareIcon.png"), color);
+    [iconImage drawAtPoint:CGPointMake(CGFloor((29.0f - iconImage.size.width) / 2.0f), CGFloor((29.0f - iconImage.size.height) / 2.0f))];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatActionReplyImage:(UIColor *)color backgroundColor:(UIColor *)backgroundColor borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(33.0f, 33.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 33.0f, 33.0f));
+    
+    if (borderColor != nil)
+    {
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 32.0f, 32.0f));
+    }
+    
+    CGContextTranslateCTM(context, 33.0f, 0);
+    CGContextScaleCTM(context, -1.0, 1.0);
+    UIImage *iconImage = TGTintedImage(TGImageNamed(@"ConversationChannelInlineShareIcon.png"), color);
+    [iconImage drawAtPoint:CGPointMake(CGFloor((33.0f - iconImage.size.width) / 2.0f), CGFloor((33.0f - iconImage.size.height) / 2.0f))];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatActionGoToImage:(UIColor *)color backgroundColor:(UIColor *)backgroundColor borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(29.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 29.0f, 29.0f));
+    
+    if (borderColor != nil)
+    {
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 28.0f, 28.0f));
+    }
+    
+    UIImage *iconImage = TGTintedImage(TGImageNamed(@"ConversationGoToIcon.png"), color);
+    [iconImage drawAtPoint:CGPointMake(CGFloor((29.0f - iconImage.size.width) / 2.0f), CGFloor((29.0f - iconImage.size.height) / 2.0f) + 1.0f)];
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatReplyButtonImage:(UIColor *)color borderColor:(UIColor *)borderColor
+{
+    CGFloat size = 14.0f;
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size, size));
+
+    if (borderColor != nil)
+    {
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextSetLineWidth(context, 1.0f);
+        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size - 1.0f, size - 1.0f));
+    }
+    
+    UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size / 2.0f) topCapHeight:(NSInteger)(size / 2.0f)];
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatReplyButtonUrlIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(8.0f, 8.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGFloat lineWidth = 1.5f;
+    CGContextSetLineWidth(context, lineWidth);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextMoveToPoint(context, lineWidth / 2.0f, lineWidth / 2.0f);
+    CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, lineWidth / 2.0f);
+    CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, 8.0f - lineWidth / 2.0f);
+    CGContextStrokePath(context);
+    CGContextMoveToPoint(context, lineWidth / 2.0f, 8.0f - lineWidth / 2.0f);
+    CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, lineWidth / 2.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatReplyButtonPhoneIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"botbutton_phone.png"), color);
+}
+
++ (UIImage *)chatReplyButtonLocationIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"botbutton_location.png"), color);
+}
+
++  (UIImage *)chatReplyButtonSwitchInlineIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"botbutton_share.png"), color);
+}
+
++ (UIImage *)chatReplyButtonActionIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"botbutton_msg.png"), color);
+}
+
 + (UIImage *)chatCallIcon:(UIColor *)color
 {
     return [self _callsIcon:color stroke:true];
+}
+
++ (UIImage *)chatClockFrameIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(15, 15), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    
+    CGContextSetLineWidth(context, 1.0f);
+    CGContextStrokeEllipseInRect(context, CGRectMake(2.5f, 2.5f, 10.0f, 10.0f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatClockHourIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(15, 15), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    
+    CGContextSetLineWidth(context, 1.0f);
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextMoveToPoint(context, 7.5f, 4.5f);
+    CGContextAddLineToPoint(context, 7.5f, 7.5f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatClockMinuteIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(15, 15), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    
+    CGContextSetLineWidth(context, 1.0f);
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextMoveToPoint(context, 7.5f, 7.5f);
+    CGContextAddLineToPoint(context, 11.0f, 7.5f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 + (UIImage *)chatDeliveredMessageIcon:(UIColor * )color
@@ -680,9 +1332,45 @@
     return image;
 }
 
-+ (UIImage *)chatMessageViewsIcon:(UIColor *)__unused color
++ (UIImage *)chatUnsentMessageIcon:(UIColor *)color color:(UIColor *)iconColor
 {
-    return nil;
+    NSString *code = @"M30.3209839,35.4970703 L29.5397339,23.8027344 C29.3932488,21.5240771 29.3200073,19.8883513 29.3200073,18.8955078 C29.3200073,17.5445896 29.6740077,16.4907264 30.382019,15.7338867 C31.0900304,14.977047 32.0218245,14.5986328 33.1774292,14.5986328 C34.5771758,14.5986328 35.5130388,15.0828402 35.9850464,16.0512695 C36.457054,17.0196989 36.6930542,18.4153555 36.6930542,20.2382812 C36.6930542,21.3125054 36.6360886,22.4029893 36.5221558,23.5097656 L35.4723511,35.5458984 C35.3584182,36.9781973 35.11428,38.0768191 34.7399292,38.8417969 C34.3655784,39.6067747 33.747095,39.9892578 32.8844604,39.9892578 C32.0055498,39.9892578 31.3952043,39.6189816 31.0534058,38.878418 C30.7116072,38.1378544 30.467469,37.0107498 30.3209839,35.4970703 Z M33.0309448,51.5615234 C32.0381013,51.5615234 31.1714108,51.2400748 30.4308472,50.597168 C29.6902836,49.9542611 29.3200073,49.0550188 29.3200073,47.8994141 C29.3200073,46.8902944 29.6740077,46.0317418 30.382019,45.3237305 C31.0900304,44.6157191 31.9567209,44.2617188 32.9821167,44.2617188 C34.0075125,44.2617188 34.8823409,44.6157191 35.6066284,45.3237305 C36.3309159,46.0317418 36.6930542,46.8902944 36.6930542,47.8994141 C36.6930542,49.0387427 36.3268469,49.933916 35.5944214,50.5849609 C34.8619958,51.2360059 34.0075122,51.5615234 33.0309448,51.5615234 Z";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(22, 22), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 66.0f, 66.0f));
+
+    CGContextSetFillColorWithColor(context, iconColor.CGColor);
+    TGDrawSvgPath(context, code);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)chatMessageViewsIcon:(UIColor *)color
+{
+    CGFloat alpha = 1.0f;
+    if (![color getRed:nil green:nil blue:nil alpha:&alpha])
+        [color getWhite:nil alpha:&alpha];
+    
+    UIImage *tintedImage = TGTintedImage(TGImageNamed(@"MessageInlineViewCountIconMedia.png"), [color colorWithAlphaComponent:1.0f]);
+    if (alpha > 1.0f - FLT_EPSILON)
+    {
+        return tintedImage;
+    }
+    else
+    {
+        UIGraphicsBeginImageContextWithOptions(tintedImage.size, false, 0.0f);
+        [tintedImage drawAtPoint:CGPointZero blendMode:kCGBlendModeNormal alpha:alpha];
+        UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        return image;
+    }
 }
 
 + (UIImage *)chatInstantViewIcon:(UIColor *)color
@@ -703,11 +1391,72 @@
     return image;
 }
 
-+ (UIImage *)inputPanelFieldBackground
++ (UIImage *)chatMentionsButton:(UIColor *)color backgroundColor:(UIColor *)backgroundColor borderColor:(UIColor *)borderColor
 {
-    UIColor *color = [UIColor whiteColor];
-    UIColor *borderColor = UIColorRGB(0xd9dcdf);
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(38.0f, 38.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, 37.0f, 37.0f));
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    CGContextSetLineWidth(context, TGScreenPixel);
+    CGContextStrokeEllipseInRect(context, CGRectMake(0.25f, 0.25f, 37.5f, 37.5f));
     
+    UIImage *icon = TGTintedImage(TGImageNamed(@"ChatNavigateToUnseenMentionsIcon.png"), color);
+    [icon drawAtPoint:CGPointMake(CGFloor((38.0f - icon.size.width) / 2.0f), CGFloor((38.0f - icon.size.height) / 2.0f))];
+   
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)chatDownButton:(UIColor *)color backgroundColor:(UIColor *)backgroundColor borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(38.0f, 38.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.5f, 0.5f, 37.0f, 37.0f));
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    CGContextSetLineWidth(context, TGScreenPixel);
+    CGContextStrokeEllipseInRect(context, CGRectMake(0.25f, 0.25f, 37.5f, 37.5f));
+    
+    CGFloat arrowLineWidth = 1.5f;
+    CGFloat scale = (int)TGScreenScaling();
+    if (scale >= 3.0)
+        arrowLineWidth = 5.0f / 3.0f;
+    
+    CGContextSetLineWidth(context, arrowLineWidth);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetLineJoin(context, kCGLineJoinRound);
+    CGContextBeginPath(context);
+    CGPoint position = CGPointMake(9.0f - TGRetinaPixel, 15.0f);
+    CGContextMoveToPoint(context, position.x + 1.0f, position.y + 1.0f);
+    CGContextAddLineToPoint(context, position.x + 10.0f, position.y + 10.0f);
+    CGContextAddLineToPoint(context, position.x + 19.0f, position.y + 1.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)chatDeleteIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernConversationActionDelete.png"), color);
+}
+
++ (UIImage *)chatShareIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ActionsWhiteIcon"), color);
+}
+
++ (UIImage *)chatForwardIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernConversationActionForward.png"), color);
+}
+
++ (UIImage *)inputPanelFieldBackground:(UIColor *)color borderColor:(UIColor *)borderColor
+{
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(33, 33), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -726,11 +1475,9 @@
     return [image stretchableImageWithLeftCapWidth:16 topCapHeight:16];
 }
 
-+ (UIImage *)inputPanelAttachIcon
++ (UIImage *)inputPanelAttachIcon:(UIColor *)color accentColor:(UIColor *)accentColor
 {
     NSString *code = @"M63.5084258,47.1736444 L46.1818644,64.3732581 C42.6551823,67.874101 42.6501313,73.5450748 46.1843277,77.0533769 L46.0546538,76.9246531 C49.5826963,80.4268464 55.3002588,80.4293526 58.8309565,76.9245234 L82.1903763,53.7362527 C88.4607317,47.5118387 88.4555115,37.414888 82.8995295,31.8996133 L82.8995295,31.8996133 L82.7705247,31.7715537 C76.4976538,25.5446426 66.3304974,25.541489 60.060003,31.766041 L36.7280964,54.9270001 C27.9458841,63.6448672 27.9414991,77.7749696 36.7272423,86.4963418 L36.5419919,86.3124486 C45.3237325,95.0298475 59.5643416,95.0272721 68.336344,86.3195401 L85.6397976,69.1428648 U";
-    
-    UIColor *color = UIColorRGB(0x858e99);
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(30, 30), false, 0.0f);
     
@@ -742,23 +1489,37 @@
     CGContextSetStrokeColorWithColor(context, color.CGColor);
     TGDrawSvgPath(context, code);
     
+    if (accentColor != nil)
+    {
+        CGContextTranslateCTM(context, 51.0f, 45.0f);
+        code = @"M17,12.5706686 L17,0 L30.8544849,13.8544849 C38.5953555,17.2617212 44,24.9996994 44,34 C44,46.1502645 34.1502645,56 22,56 C9.8497355,56 0,46.1502645 0,34 C0,23.5696354 7.25858699,14.8346046 17,12.5706686 Z";
+        CGContextSetBlendMode(context, kCGBlendModeClear);
+        TGDrawSvgPath(context, code);
+        
+        CGContextSetBlendMode(context, kCGBlendModeNormal);
+        CGContextSetStrokeColorWithColor(context, accentColor.CGColor);
+        code = @"M36,34 C36,36.9179632 35.1072962,39.6274244 33.5800985,41.8701734 C31.0605447,45.5702359 26.8140232,48 22,48 C14.2680135,48 8,41.7319865 8,34 C8,26.2680135 15,20 22,20 U";
+        TGDrawSvgPath(context, code);
+        
+        CGContextSetFillColorWithColor(context, accentColor.CGColor);
+        code = @"M22,12 L22,28 L30,20 Z";
+        TGDrawSvgPath(context, code);
+    }
+    
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
     return image;
 }
 
-+ (UIImage *)inputPanelSendIcon
++ (UIImage *)inputPanelSendIcon:(UIColor *)backgroundColor color:(UIColor *)color
 {
     NSString *code = @"M33,44 L49.2911562,28.2025152 L49.2911562,28.2025152 C49.4075223,28.0896753 49.5924777,28.0896753 49.7088438,28.2025152 L66,44 U M49.5,28 C51.1568542,28 52.5,29.3431458 52.5,31 L52.5,72 C52.5,73.6568542 51.1568542,75 49.5,75 C47.8431458,75 46.5,73.6568542 46.5,72 L46.5,31 C46.5,29.3431458 47.8431458,28 49.5,28 Z";
-    
-    UIColor *backColor = TGAccentColor();
-    UIColor *color = [UIColor whiteColor];
-    
+
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(33, 33), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(context, backColor.CGColor);
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
     CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 33.0f, 33.0f));
     
     CGContextScaleCTM(context, 0.3333f, 0.3333f);
@@ -774,17 +1535,14 @@
     return image;
 }
 
-+ (UIImage *)inputPanelConfirmIcon
++ (UIImage *)inputPanelConfirmIcon:(UIColor *)backgroundColor color:(UIColor *)color
 {
     NSString *code = @"M28,51.8059701 L42.5672395,66.3732097 C42.6826007,66.4885708 42.8628212,66.4857542 42.9771136,66.3587627 L73,33 U";
     
-    UIColor *backColor = TGAccentColor();
-    UIColor *color = [UIColor whiteColor];
-    
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(33, 33), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
-    CGContextSetFillColorWithColor(context, backColor.CGColor);
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
     CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 33.0f, 33.0f));
     
     CGContextScaleCTM(context, 0.3333f, 0.3333f);
@@ -800,11 +1558,9 @@
     return image;
 }
 
-+ (UIImage *)inputPanelMicrophoneIcon:(bool)overlay
++ (UIImage *)inputPanelMicrophoneIcon:(UIColor *)color
 {
     NSString *arcCode = @"M34.9964878,61 C35,73 45,85 60,85 C75,85 85,73 85,61 U";
-    
-    UIColor *color = overlay ? [UIColor whiteColor] : UIColorRGB(0x858e99);
     
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(30, 30), false, 0.0f);
     
@@ -832,10 +1588,8 @@
     return image;
 }
 
-+ (UIImage *)inputPanelVideoMessageIcon:(bool)overlay
++ (UIImage *)inputPanelVideoMessageIcon:(UIColor *)color
 {
-    UIColor *color = overlay ? [UIColor whiteColor] : UIColorRGB(0x858e99);
-    
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(30, 30), false, 0.0f);
     
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -851,6 +1605,177 @@
     CGContextStrokeEllipseInRect(context, CGRectMake(29.5f, 29.5f, 31.0f, 31.0f));
     
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)inputPanelArrowIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"StickersTabArrow"), color);
+}
+
++ (UIImage *)inputPanelStickersIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationInputFieldStickerIcon.png"), color);
+}
+
++ (UIImage *)inputPanelKeyboardIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationInputFieldKeyboardIcon.png"), color);
+}
+
++ (UIImage *)inputPanelCommandsIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationInputFieldCommandIcon.png"), color);
+}
+
++ (UIImage *)inputPanelBotKeyboardIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ConversationInputFieldActionsIcon.png"), color);
+}
+
++ (UIImage *)inputPanelBroadcastIcon:(UIColor *)color active:(bool)active
+{
+    return TGTintedImage(active ? TGImageNamed(@"ConversationInputFieldBroadcastIconActive.png") : TGImageNamed(@"ConversationInputFieldBroadcastIconInactive.png"), color);
+}
+
++ (UIImage *)inputPanelTimerIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ModernConversationSecretAccessoryTimer.png"), color);
+}
+
++ (UIImage *)inputPanelClearIcon:(UIColor *)backgroundColor color:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(14, 14), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 14.0f, 14.0f));
+    
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.3333f);
+    
+    CGContextMoveToPoint(context, 4.0f, 4.0f);
+    CGContextAddLineToPoint(context, 10.0f, 10.0f);
+    CGContextStrokePath(context);
+    
+    CGContextMoveToPoint(context, 10.0f, 4.0f);
+    CGContextAddLineToPoint(context, 4.0f, 10.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)replyCloseIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(9, 9), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.3333f);
+    
+    CGContextMoveToPoint(context, 0.0f, 0.0f);
+    CGContextAddLineToPoint(context, 9.0f, 9.0f);
+    CGContextStrokePath(context);
+    
+    CGContextMoveToPoint(context, 9.0f, 0.0f);
+    CGContextAddLineToPoint(context, 0.0f, 9.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)pinCloseIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(15, 15), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.3333f);
+    
+    CGContextMoveToPoint(context, 2.0f, 2.0f);
+    CGContextAddLineToPoint(context, 13.0f, 13.0f);
+    CGContextStrokePath(context);
+    
+    CGContextMoveToPoint(context, 13.0f, 2.0f);
+    CGContextAddLineToPoint(context, 2.0f, 13.0f);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)stickersGifIcon:(UIColor *)color
+{
+    return TGTintedImage(TGComponentsImageNamed(@"StickerKeyboardGifIcon.png"), color);
+}
+
++ (UIImage *)stickersTrendingIcon:(UIColor *)color
+{
+    return TGTintedImage(TGComponentsImageNamed(@"StickerKeyboardTrendingIcon.png"), color);
+}
+
++ (UIImage *)stickersRecentIcon:(UIColor *)color
+{
+    return TGTintedImage(TGComponentsImageNamed(@"StickerKeyboardRecentTab.png"), color);
+}
+
++ (UIImage *)stickersFavoritesIcon:(UIColor *)color
+{
+    return TGTintedImage(TGComponentsImageNamed(@"StickerKeyboardFavoriteTab.png"), color);
+}
+
++ (UIImage *)stickersSettingsIcon:(UIColor *)color
+{
+    return TGTintedImage(TGComponentsImageNamed(@"StickerKeyboardSettingsIcon.png"), color);
+}
+
++ (UIImage *)stickersHollowButton:(UIColor *)color radius:(CGFloat)radius
+{
+    CGSize size = CGSizeMake(radius * 2.0f, radius * 2.0f);
+    UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.0f);
+    CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
+    
+    UIImage *buttonImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(size.width / 2.0f) topCapHeight:(NSInteger)(size.height / 2.0f)];
+    UIGraphicsEndImageContext();
+    
+    return buttonImage;
+}
+
++ (UIImage *)stickersPlaceholderImage:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"StickersPlaceholderIcon.png"), color);
+}
+
++ (UIImage *)commandsButtonImage:(UIColor *)color shadowColor:(UIColor *)shadowColor
+{
+    CGFloat radius = 5.0f;
+    CGFloat shadowSize = 1.0f;
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(radius * 2.0f, radius * 2.0f + shadowSize), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, shadowColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, shadowSize, radius * 2.0f, radius * 2.0f));
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, radius * 2.0f, radius * 2.0f));
+    
+    UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)radius topCapHeight:(NSInteger)radius];
     UIGraphicsEndImageContext();
     
     return image;
@@ -883,6 +1808,26 @@
 + (UIImage *)profileCallIcon:(UIColor *)color
 {
     return [self _callsIcon:color stroke:true];
+}
+
++ (UIImage *)profilePhoneDisclosureIcon:(UIColor *)color
+{
+    NSString *code = @"M0,0 L12.2928932,12.2928932 C12.6834175,12.6834175 12.6834175,13.3165825 12.2928932,13.7071068 L0,26 U";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(7, 11), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextTranslateCTM(context, 3.0f, 3.0f);
+    CGContextSetLineWidth(context, 6.0f);
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    TGDrawSvgPath(context, code);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
 }
 
 + (UIImage *)collectionMenuDisclosureIcon:(UIColor *)color
@@ -925,6 +1870,20 @@
     return image;
 }
 
++ (UIImage *)collectionMenuAddIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(18.0f, 18.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake((18.0f - 1.5f) / 2.0f, 0.0f, 1.5f, 18.0f));
+    CGContextFillRect(context, CGRectMake(0.0f, (18.0f - 1.5f) / 2.0f, 18.0f, 1.5f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
 + (UIImage *)collectionMenuReorderIcon:(UIColor *)color
 {
     UIGraphicsBeginImageContextWithOptions(CGSizeMake(22.0f, 9.0f), false, 0.0f);
@@ -933,6 +1892,198 @@
     CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 22.0f, 2.0f - TGRetinaPixel));
     CGContextFillRect(context, CGRectMake(0.0f, 4.0f - TGRetinaPixel, 22.0f, 2.0f - TGRetinaPixel));
     CGContextFillRect(context, CGRectMake(0.0f, 7.0f, 22.0f, 2.0f - TGRetinaPixel));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)menuCornersImage:(UIColor *)color
+{
+    CGFloat radius = 5.5f;
+    CGRect rect = CGRectMake(0, 0, radius * 2 + 1.0f, radius * 2 + 1.0f);
+    
+    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, rect);
+    
+    CGContextSetBlendMode(context, kCGBlendModeClear);
+    
+    CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+    CGContextFillEllipseInRect(context, rect);
+    
+    UIImage *cornersImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(radius, radius, radius, radius)];
+    UIGraphicsEndImageContext();
+    
+    return cornersImage;
+}
+
++ (UIImage *)fontSizeSmallIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InstantViewFontMinIcon"), color);
+}
+
++ (UIImage *)fontSizeLargeIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InstantViewFontMaxIcon"), color);
+}
+
++ (UIImage *)brightnessMinIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InstantViewBrightnessMinIcon"), color);
+}
+
++ (UIImage *)brightnessMaxIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"InstantViewBrightnessMaxIcon"), color);
+}
+
++ (UIImage *)videoPlayerPlayIcon:(UIColor *)color
+{
+      return TGTintedImage(TGImageNamed(@"VideoPlayerPlayIcon"), color);
+}
+
++ (UIImage *)videoPlayerPauseIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"VideoPlayerPauseIcon"), color);
+}
+
++ (UIImage *)videoPlayerForwardIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"VideoPlayerForwardIcon"), color);
+}
+
++ (UIImage *)videoPlayerBackwardIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"VideoPlayerBackwardIcon"), color);
+}
+
++ (UIImage *)videoPlayerPIPIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"VideoPlayerPIPIcon"), color);
+}
+
++ (UIImage *)speakerIcon:(UIColor *)color
+{
+    NSString *code = @"M40.4733082,11.3180452 L20.5516959,27.55047 C20.1948571,27.8412276 19.7486477,28 19.28835,28 L4,28 C1.790861,28 -2.705415e-16,29.790861 0,32 L0,54 C-3.65367767e-15,56.209139 1.790861,58 4,58 L19.28835,58 C19.7486477,58 20.1948571,58.1587724 20.5516959,58.44953 L40.4733082,74.6819548 C42.18591,76.0774082 44.7054866,75.8203085 46.1009399,74.1077067 C46.6824551,73.394029 47,72.5016102 47,71.5810149 L47,14.4189851 C47,12.2098461 45.209139,10.4189851 43,10.4189851 C42.0794047,10.4189851 41.1869859,10.73653 40.4733082,11.3180452 Z";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(11.0f, 11.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    TGDrawSvgPath(context, code);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)rate2xIcon:(UIColor *)color
+{
+    NSString *code = @"M15.3637695,32.1972656 L23.7749023,32.1972656 C24.6127972,32.1972656 25.2519509,32.3691389 25.6923828,32.7128906 C26.1328147,33.0566423 26.3530273,33.5239228 26.3530273,34.1147461 C26.3530273,34.6411159 26.1784685,35.0869122 25.8293457,35.4521484 C25.4802229,35.8173846 24.9511754,36 24.2421875,36 L12.3828125,36 C11.5771444,36 10.9487327,35.7771018 10.4975586,35.3312988 C10.0463845,34.8854958 9.82080078,34.3618194 9.82080078,33.7602539 C9.82080078,33.3735332 9.96581886,32.8605989 10.2558594,32.2214355 C10.5458999,31.5822722 10.8627913,31.08008 11.206543,30.7148438 C12.635261,29.2324145 13.9243107,27.9621635 15.0737305,26.9040527 C16.2231503,25.845942 17.0449194,25.1503923 17.5390625,24.8173828 C18.4199263,24.1943328 19.1530732,23.5686067 19.7385254,22.9401855 C20.3239775,22.3117644 20.7697739,21.6672396 21.0759277,21.0065918 C21.3820816,20.345944 21.5351562,19.6987336 21.5351562,19.0649414 C21.5351562,18.377438 21.3713395,17.7624539 21.0437012,17.2199707 C20.7160628,16.6774875 20.2702665,16.2558609 19.7062988,15.9550781 C19.1423312,15.6542954 18.5273471,15.5039062 17.8613281,15.5039062 C16.4540945,15.5039062 15.3476603,16.1215759 14.5419922,17.3569336 C14.4345698,17.5180672 14.2546399,17.9584925 14.0021973,18.6782227 C13.7497546,19.3979528 13.4650895,19.9511699 13.1481934,20.3378906 C12.8312972,20.7246113 12.3667023,20.9179688 11.7543945,20.9179688 C11.2172825,20.9179688 10.7714861,20.7407244 10.4169922,20.3862305 C10.0624982,20.0317365 9.88525391,19.5483429 9.88525391,18.9360352 C9.88525391,18.1948205 10.0517561,17.4213907 10.3847656,16.6157227 C10.7177751,15.8100546 11.2145963,15.0795931 11.8752441,14.4243164 C12.535892,13.7690397 13.3737742,13.2399922 14.388916,12.8371582 C15.4040578,12.4343242 16.5937432,12.2329102 17.9580078,12.2329102 C19.6015707,12.2329102 21.0034122,12.4907201 22.1635742,13.0063477 C22.9155311,13.3500994 23.576169,13.8227509 24.1455078,14.4243164 C24.7148466,15.0258819 25.1579574,15.7214316 25.4748535,16.5109863 C25.7917496,17.3005411 25.9501953,18.1196247 25.9501953,18.9682617 C25.9501953,20.3002996 25.6198764,21.5114692 24.9592285,22.6018066 C24.2985807,23.6921441 23.6245152,24.5461395 22.9370117,25.1638184 C22.2495083,25.7814972 21.0974202,26.75097 19.4807129,28.0722656 C17.8640056,29.3935613 16.7548858,30.4194299 16.1533203,31.1499023 C15.8955065,31.4399429 15.6323256,31.7890605 15.3637695,32.1972656 Z M28.8464425,31.4077148 L34.1315987,23.6894531 L29.6843331,16.8251953 C29.2653857,16.1591764 28.9511799,15.5871606 28.7417062,15.1091309 C28.5322325,14.6311011 28.4274972,14.1718772 28.4274972,13.7314453 C28.4274972,13.2802712 28.6289112,12.8747577 29.0317452,12.5148926 C29.4345793,12.1550275 29.9260294,11.9750977 30.5061105,11.9750977 C31.1721294,11.9750977 31.6904348,12.1711406 32.0610421,12.5632324 C32.4316494,12.9553242 32.9445837,13.6831002 33.5998605,14.746582 L37.1447823,20.4829102 L40.9314034,14.746582 C41.2429284,14.2631812 41.5087949,13.8496111 41.7290109,13.5058594 C41.9492268,13.1621077 42.1613829,12.8774425 42.3654855,12.6518555 C42.569588,12.4262684 42.7978572,12.2570806 43.0502999,12.1442871 C43.3027426,12.0314936 43.5954643,11.9750977 43.9284737,11.9750977 C44.5300392,11.9750977 45.0214894,12.1550275 45.402839,12.5148926 C45.7841885,12.8747577 45.9748605,13.3017553 45.9748605,13.7958984 C45.9748605,14.5156286 45.5612904,15.4931579 44.7341378,16.7285156 L40.0773995,23.6894531 L45.08863,31.4077148 C45.5398041,32.084476 45.8674376,32.6457497 46.0715401,33.0915527 C46.2756427,33.5373557 46.3776925,33.9589824 46.3776925,34.3564453 C46.3776925,34.7324238 46.2863848,35.0761703 46.1037667,35.3876953 C45.9211486,35.6992203 45.6633387,35.9462881 45.3303292,36.1289062 C44.9973197,36.3115244 44.6213469,36.402832 44.2023995,36.402832 C43.7512254,36.402832 43.3698815,36.3088388 43.0583566,36.1208496 C42.7468316,35.9328604 42.4943927,35.6992201 42.3010323,35.4199219 C42.107672,35.1406236 41.7478123,34.5981486 41.2214425,33.7924805 L37.0642159,27.2504883 L32.6491769,33.9858398 C32.3054251,34.5229519 32.0610428,34.8989247 31.9160226,35.1137695 C31.7710023,35.3286144 31.5964435,35.5380849 31.3923409,35.7421875 C31.1882383,35.9462901 30.9465415,36.1074213 30.6672433,36.2255859 C30.387945,36.3437506 30.0603116,36.402832 29.6843331,36.402832 C29.1042521,36.402832 28.623544,36.2255877 28.2421944,35.8710938 C27.8608449,35.5165998 27.670173,35.0009799 27.670173,34.3242188 C27.670173,33.5292929 28.0622589,32.5571347 28.8464425,31.4077148 Z M8,2 C4.6862915,2 2,4.6862915 2,8 L2,40 C2,43.3137085 4.6862915,46 8,46 L48,46 C51.3137085,46 54,43.3137085 54,40 L54,8 C54,4.6862915 51.3137085,2 48,2 L8,2 S";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(19.0f, 16.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 4.0f);
+    
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    TGDrawSvgPath(context, code);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)sharedMediaDownloadIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"SharedMediaDocumentStatusDownload.png"), color);
+}
+
++ (UIImage *)sharedMediaPauseIcon:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(11.0f, 11.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(2.0f, 0.0f, 2.0f, 11.0f - 1.0f));
+    CGContextFillRect(context, CGRectMake(2.0f + 2.0f + 2.0f, 0.0f, 2.0f, 11.0f - 1.0f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
++ (UIImage *)shareSearchIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ShareSearchIcon"), color);
+}
+
++ (UIImage *)shareExternalIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"ShareExternalIcon"), color);
+}
+
++ (UIImage *)shareSelectionImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(60.0f, 60.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetBlendMode(context, kCGBlendModeCopy);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 60.0f, 60.0f));
+    CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(2.0f, 2.0f, 60.0f - 4.0f, 60.0f - 4.0f));
+    UIImage *circleImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return circleImage;
+}
+
++ (UIImage *)passportIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"PassportButtonIcon"), color);
+}
+
++ (UIImage *)passportScanIcon:(UIColor *)color
+{
+    return TGTintedImage(TGImageNamed(@"PassportScan"), color);
+}
+
++ (UIImage *)appearanceSwatchCheckIcon:(UIColor *)color
+{
+    NSString *code = @"M0,23.173913 L16.699191,39.765981 C17.390617,40.452972 18.503246,40.464805 19.209127,39.792676 L61,0 U";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(60, 60), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextScaleCTM(context, 0.3333f, 0.3333f);
+    CGContextTranslateCTM(context, 62.0f, 72.0f);
+    CGContextSetLineWidth(context, 10.0f);
+    CGContextSetLineCap(context, kCGLineCapRound);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    TGDrawSvgPath(context, code);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)proxyShieldImage:(UIColor *)color
+{
+    NSString *code = @"M100,6.56393754 L6,48.2657557 L6,110.909091 C6,169.509174 46.3678836,223.966692 100,237.814087 C153.632116,223.966692 194,169.509174 194,110.909091 L194,48.2657557 L100,6.56393754 S";
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(67, 82), false, 0.0f);
+    
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextScaleCTM(context, 0.333333f, 0.333333f);
+    //CGContextTranslateCTM(context, 62.0f, 72.0f);
+    CGContextSetLineWidth(context, 12.0f);
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    TGDrawSvgPath(context, code);
     
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
@@ -959,6 +2110,154 @@
     UIGraphicsEndImageContext();
     
     return [image stretchableImageWithLeftCapWidth:(int)(size / 2.0f) topCapHeight:0];
+}
+
++ (UIImage *)avatarPlaceholderWithDiameter:(CGFloat)diameter color:(UIColor *)color border:(CGFloat)border borderColor:(UIColor *)borderColor
+{
+    CGFloat size = diameter;
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(size, size), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+    
+    if (border > FLT_EPSILON)
+    {
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextSetLineWidth(context, border);
+        CGContextStrokeEllipseInRect(context, CGRectMake(border / 2.0f, border / 2.0f, diameter - border, diameter - border));
+    }
+
+    UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:10.0f topCapHeight:0.0f];
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)imageWithColor:(UIColor *)color border:(CGFloat)border borderColor:(UIColor *)borderColor
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(4.0f, 4.0f), true, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 4.0f, 4.0f));
+    
+    if (borderColor != nil)
+    {
+        CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+        CGContextSetLineWidth(context, border);
+    }
+    
+    UIImage *placeholderImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:2 topCapHeight:2];
+    UIGraphicsEndImageContext();
+    
+    return placeholderImage;
+}
+
++ (UIImage *)plusMinusIcon:(bool)plus backgroundColor:(UIColor *)backgroundColor color:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(22.0f, 24.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSetFillColorWithColor(context, backgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 22.0f, 22.0f));
+    
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(5.5f, 10.5f, 11.0f, 1.0f));
+    if (plus)
+        CGContextFillRect(context, CGRectMake(10.5f, 5.5f, 1.0f, 11.0f));
+    
+    UIImage *placeholderImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return placeholderImage;
+}
+
++ (UIImage *)segmentedControlBackgroundImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(10.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.0f);
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5f, 0.5f, 9.0f, 28.0f) cornerRadius:4.0f];
+    CGContextAddPath(context, path.CGPath);
+    CGContextStrokePath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)segmentedControlSelectedImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(10.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextSetLineWidth(context, 1.0f);
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5f, 0.5f, 9.0f, 28.0f) cornerRadius:4.0f];
+    CGContextAddPath(context, path.CGPath);
+    CGContextDrawPath(context, kCGPathFillStroke);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)segmentedControlHighlightedImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(10.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetFillColorWithColor(context, [color colorWithAlphaComponent:0.15f].CGColor);
+    CGContextSetLineWidth(context, 1.0f);
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5f, 0.5f, 9.0f, 28.0f) cornerRadius:4.0f];
+    CGContextAddPath(context, path.CGPath);
+    CGContextStrokePath(context);
+    CGContextFillPath(context);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)segmentedControlDividerImage:(UIColor *)color
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0f, 29.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    CGContextFillRect(context, CGRectMake(0.0f, 0.0f, 1.0f, 29.0f));
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return image;
+}
+
++ (UIImage *)modernButtonImageWithColor:(UIColor *)color solid:(bool)solid
+{
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(16.0f, 16.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetStrokeColorWithColor(context, color.CGColor);
+    CGContextSetFillColorWithColor(context, color.CGColor);
+    
+    CGFloat lineWidth = 1.666667f;
+    CGContextSetLineWidth(context, lineWidth);
+    
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(lineWidth / 2.0f, lineWidth / 2.0f, 16.0f - lineWidth, 16.0f - lineWidth) cornerRadius:8.0f];
+    CGContextAddPath(context, path.CGPath);
+    CGContextDrawPath(context, solid ? kCGPathFillStroke : kCGPathStroke);
+    
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return [image resizableImageWithCapInsets:UIEdgeInsetsMake(8.0f, 8.0f, 8.0f, 8.0f)];
 }
 
 @end

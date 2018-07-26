@@ -35,6 +35,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
+        self.tag = 0xbeef;
         self.scrollsToTop = false;
         self.showsHorizontalScrollIndicator = false;
         self.showsVerticalScrollIndicator = false;

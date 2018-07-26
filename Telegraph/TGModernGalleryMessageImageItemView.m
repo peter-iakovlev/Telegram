@@ -123,9 +123,9 @@
     TGViewController *controller = [self.delegate parentControllerForPresentation];
     if (controller != nil) {
         CGRect sourceRect = _stickersHeaderView.bounds;
-        [TGStickersMenu presentWithParentController:controller packReference:nil stickerPack:stickerPack showShareAction:false sendSticker:nil stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:_stickersHeaderView sourceRect:^CGRect{
+        [TGStickersMenu presentWithParentController:controller packReference:nil stickerPack:stickerPack showShareAction:false sendSticker:nil stickerPackRemoved:nil stickerPackAdded:nil stickerPackHidden:nil linkOpened:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:_stickersHeaderView sourceRect:^CGRect{
             return sourceRect;
-        } centered:true existingController:menuController];
+        } centered:true existingController:menuController expanded:false];
     }
 }
 

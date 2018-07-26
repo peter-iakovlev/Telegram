@@ -7,6 +7,8 @@
 #import <LegacyComponents/TGMessageImageViewOverlayView.h>
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGDocumentMessageIconView ()
 {
     UILabel *_extensionLabel;
@@ -74,6 +76,15 @@ static UIImage *highlightImageForDiameter(CGFloat diameter) {
         _buttonView.highlightImage = highlightImageForDiameter(_diameter);
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    _overlayView.incomingColor = presentation.pallete.chatIncomingButtonColor;
+    _overlayView.outgoingColor = presentation.pallete.chatOutgoingButtonColor;
+    _overlayView.incomingIconColor = presentation.pallete.chatIncomingButtonIconColor;
+    _overlayView.outgoingIconColor = presentation.pallete.chatOutgoingButtonIconColor;
 }
 
 - (void)willBecomeRecycled

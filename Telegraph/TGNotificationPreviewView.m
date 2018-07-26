@@ -197,8 +197,11 @@ const CGFloat TGNotificationTextHeaderMargin = 4.0f;
     
     CGFloat expandedHeight = _textHeight + _headerHeight;
     CGFloat maxContentHeight = [self maxContentHeight];
-    if (maxContentHeight > FLT_EPSILON)
+    if (maxContentHeight > FLT_EPSILON && !self.unnlimitedHeight)
         expandedHeight = MIN(maxContentHeight, expandedHeight);
+    
+    if (self.unnlimitedHeight && textHeight > 20.0f)
+        expandedHeight += 6.0f;
     
     return MAX(TGNotificationDefaultHeight - 5, expandedHeight + 31);
 }

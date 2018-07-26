@@ -24,6 +24,7 @@
             break;
         } else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]]) {
             TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:attachment peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:((TGAudioMediaAttachment *)attachment).duration];
+            item->_peerId = message.fromUid;
             item->_isVoice = true;
             return item;
         } else if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]]) {
@@ -32,6 +33,7 @@
         } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
             if (((TGVideoMediaAttachment *)attachment).roundMessage) {
                 TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:attachment peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:((TGVideoMediaAttachment *)attachment).duration];
+                item->_peerId = message.fromUid;
                 item->_isVoice = true;
                 return item;
             }
@@ -44,7 +46,8 @@
             if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
             {
                 TGDocumentAttributeAudio *audio = attribute;
-                TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:document peerId:message.cid author:author date:(int32_t)message.date performer:audio.performer title:audio.title duration:audio.duration];
+                TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:document peerId:message.cid author:author date:(int32_t)message.date performer:audio.performer title:audio.title duration:audio.duration];\
+                item->_peerId = message.fromUid;
                 item->_isVoice = audio.isVoice;
                 return item;
             }
@@ -54,6 +57,7 @@
                 if (video.isRoundMessage)
                 {
                     TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:document peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:video.duration];
+                    item->_peerId = message.fromUid;
                     item->_isVoice = true;
                     return item;
                 }
@@ -84,7 +88,7 @@
             @"audio/ogg",
             @"audio/aac"
         ];
-        if (([externalResult.type isEqualToString:@"audio"] || [externalResult.type isEqualToString:@"voice"]) && externalResult.contentType != nil && [contentTypes containsObject:externalResult.contentType]) {
+        if (([externalResult.type isEqualToString:@"audio"] || [externalResult.type isEqualToString:@"voice"]) && externalResult.content.mimeType != nil && [contentTypes containsObject:externalResult.content.mimeType]) {
             TGMusicPlayerItem *item  = [[TGMusicPlayerItem alloc] initWithKey:result.resultId media:result peerId:0 author:nil date:0 performer:externalResult.pageDescription title:externalResult.title duration:externalResult.duration];
             item->_isVoice = false;
             return item;
@@ -115,7 +119,7 @@
     {
         _key = key;
         _media = media;
-        _peerId = peerId;
+        _conversationId = peerId;
         _author = author;
         _date = date;
         _performer = performer;

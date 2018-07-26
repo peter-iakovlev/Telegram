@@ -116,7 +116,7 @@
                     return;
                 
                 CGSize dimensions = [avAsset tracksWithMediaType:AVMediaTypeVideo].firstObject.naturalSize;
-                TGMediaVideoConversionPreset preset = adjustments.sendAsGif ? TGMediaVideoConversionPresetAnimation : [self _presetFromAdjustments:adjustments];
+                TGMediaVideoConversionPreset preset = adjustments.sendAsGif ? TGMediaVideoConversionPresetAnimation : [self presetFromAdjustments:adjustments];
                 if (!CGSizeEqualToSize(dimensions, CGSizeZero) && preset != TGMediaVideoConversionPresetAnimation && preset != TGMediaVideoConversionPresetVideoMessage)
                 {
                     TGMediaVideoConversionPreset bestPreset = [self bestAvailablePresetForDimensions:dimensions];
@@ -230,11 +230,13 @@
     
     bool hasCropping = [adjustments cropAppliedForAvatar:false];
     CGRect cropRect = hasCropping ? CGRectIntegral(adjustments.cropRect) : transformedRect;
-    
+    if (cropRect.size.width < FLT_EPSILON || cropRect.size.height < FLT_EPSILON)
+        cropRect = transformedRect;
+
     CGSize maxDimensions = [TGMediaVideoConversionPresetSettings maximumSizeForPreset:preset];
     CGSize outputDimensions = TGFitSizeF(cropRect.size, maxDimensions);
     outputDimensions = CGSizeMake(ceil(outputDimensions.width), ceil(outputDimensions.height));
-    outputDimensions = [self _renderSizeWithCropSize:outputDimensions];
+    outputDimensions = [self _renderSizeWithCropSize:outputDimensions rotateSideward:false];
     
     if (TGOrientationIsSideward(adjustments.cropOrientation, NULL))
         outputDimensions = CGSizeMake(outputDimensions.height, outputDimensions.width);
@@ -247,13 +249,18 @@
     else
         videoComposition.frameDuration = CMTimeMake(1, 30);
     
+    if (CMTimeCompare(videoComposition.frameDuration, kCMTimeZero) != 1)
+        videoComposition.frameDuration = CMTimeMake(1, 30);
+    
+    if (!CMTIME_IS_VALID(videoComposition.frameDuration))
+        videoComposition.frameDuration = CMTimeMake(1, 30);
+    
+    videoComposition.renderSize = [self _renderSizeWithCropSize:cropRect.size rotateSideward:TGOrientationIsSideward(adjustments.cropOrientation, NULL)];
+    if (videoComposition.renderSize.width < FLT_EPSILON || videoComposition.renderSize.height < FLT_EPSILON)
+        return nil;
+    
     AVMutableCompositionTrack *trimVideoTrack = [composition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
     [trimVideoTrack insertTimeRange:timeRange ofTrack:videoTrack atTime:kCMTimeZero error:NULL];
-    
-    if (TGOrientationIsSideward(adjustments.cropOrientation, NULL))
-        videoComposition.renderSize = [self _renderSizeWithCropSize:CGSizeMake(cropRect.size.height, cropRect.size.width)];
-    else
-        videoComposition.renderSize = [self _renderSizeWithCropSize:cropRect.size];
     
     bool mirrored = false;
     UIImageOrientation videoOrientation = TGVideoOrientationForAsset(avAsset, &mirrored);
@@ -357,6 +364,8 @@
     NSDictionary *outputSettings = nil;
     AVMutableComposition *composition = [AVMutableComposition composition];
     AVAssetReaderVideoCompositionOutput *output = [self setupVideoCompositionOutputWithAVAsset:avAsset composition:composition videoTrack:videoTrack preset:preset adjustments:adjustments timeRange:timeRange outputSettings:&outputSettings dimensions:&dimensions conversionContext:outConversionContext];
+    if (output == nil)
+        return false;
     
     AVAssetReader *assetReader = [[AVAssetReader alloc] initWithAsset:composition error:error];
     if (assetReader == nil)
@@ -377,6 +386,8 @@
     {
         AVMutableCompositionTrack *trimAudioTrack = [composition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
         [trimAudioTrack insertTimeRange:timeRange ofTrack:audioTrack atTime:kCMTimeZero error:NULL];
+        if (trimAudioTrack == nil)
+            return false;
         
         AVAssetReaderOutput *output = [AVAssetReaderTrackOutput assetReaderTrackOutputWithTrack:trimAudioTrack outputSettings:@{ AVFormatIDKey: @(kAudioFormatLinearPCM) }];
         [assetReader addOutput:output];
@@ -445,6 +456,8 @@
         {
             [context.assetReader cancelReading];
             [context.assetWriter cancelWriting];
+            
+            [[NSFileManager defaultManager] removeItemAtURL:context.assetWriter.outputURL error:nil];
         }
         else
         {
@@ -514,19 +527,23 @@
     
     return [SSignal defer:^SSignal *
     {
-        NSError *error;
-        NSData *fileData = [NSData dataWithContentsOfURL:fileUrl options:NSDataReadingMappedIfSafe error:&error];
-        if (error == nil)
-            return [SSignal single:[self _hashForVideoWithFileData:fileData timingData:timingData preset:[self _presetFromAdjustments:adjustments]]];
-        else
-            return [SSignal fail:error];
+        if (fileUrl == nil) {
+            return [SSignal fail:nil];
+        } else {
+            NSError *error;
+            NSData *fileData = [NSData dataWithContentsOfURL:fileUrl options:NSDataReadingMappedIfSafe error:&error];
+            if (error == nil)
+                return [SSignal single:[self _hashForVideoWithFileData:fileData timingData:timingData preset:[self presetFromAdjustments:adjustments]]];
+            else
+                return [SSignal fail:error];
+        }
     }];
 }
 
 + (NSString *)_hashForVideoWithFileData:(NSData *)fileData timingData:(NSData *)timingData preset:(TGMediaVideoConversionPreset)preset
 {
     const NSUInteger bufSize = 1024;
-    const NSUInteger numberOfBuffersToRead = 32;
+    NSUInteger numberOfBuffersToRead = MIN(32, floor(fileData.length / bufSize));
     uint8_t buf[bufSize];
     NSUInteger size = fileData.length;
     
@@ -564,7 +581,7 @@
     return hash;
 }
 
-+ (TGMediaVideoConversionPreset)_presetFromAdjustments:(TGMediaVideoEditAdjustments *)adjustments
++ (TGMediaVideoConversionPreset)presetFromAdjustments:(TGMediaVideoEditAdjustments *)adjustments
 {
     TGMediaVideoConversionPreset preset = adjustments.preset;
     if (preset == TGMediaVideoConversionPresetCompressedDefault)
@@ -579,7 +596,14 @@
 
 + (CGSize)_renderSizeWithCropSize:(CGSize)cropSize
 {
+    return [self _renderSizeWithCropSize:cropSize rotateSideward:false];
+}
+
++ (CGSize)_renderSizeWithCropSize:(CGSize)cropSize rotateSideward:(bool)rotateSideward
+{
     const CGFloat blockSize = 16.0f;
+    if (rotateSideward)
+        cropSize = CGSizeMake(cropSize.height, cropSize.width);
     
     CGFloat renderWidth = CGFloor(cropSize.width / blockSize) * blockSize;
     CGFloat renderHeight = CGFloor(cropSize.height * renderWidth / cropSize.width);

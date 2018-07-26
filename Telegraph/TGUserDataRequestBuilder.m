@@ -54,14 +54,14 @@
                     }
                 }
             }
-            else if ((userLink & TGUserLinkKnown) && !(userLink & TGUserLinkMyContact))
-            {
-                if ([TGDatabaseInstance() uidIsRemoteContact:uid])
-                {
-                    static int actionId = 0;
-                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/synchronizeContacts/(%d,breakLink)", actionId++] options:[NSDictionary dictionaryWithObjectsAndKeys:[[NSNumber alloc] initWithInt:uid], @"uid", nil] watcher:TGTelegraphInstance];
-                }
-            }
+//            else if ((userLink & TGUserLinkKnown) && !(userLink & TGUserLinkMyContact))
+//            {
+//                if ([TGDatabaseInstance() uidIsRemoteContact:uid])
+//                {
+//                    static int actionId = 0;
+//                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/synchronizeContacts/(%d,breakLink)", actionId++] options:[NSDictionary dictionaryWithObjectsAndKeys:[[NSNumber alloc] initWithInt:uid], @"uid", nil] watcher:TGTelegraphInstance];
+//                }
+//            }
         }
     }
 }

@@ -6,9 +6,11 @@
 
 #import <LegacyComponents/ASHandle.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationGenericTitleButton : TGModernButton
 
-- (instancetype)initWithTitle:(NSString *)title icon:(UIImage *)icon;
+- (instancetype)initWithTitle:(NSString *)title icon:(UIImage *)icon color:(UIColor *)color;
 
 @end
 
@@ -42,6 +44,22 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _backgroundView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    
+    for (TGModernConversationGenericTitleButton *button in self.subviews)
+    {
+        if (![button isKindOfClass:[TGModernConversationGenericTitleButton class]])
+            continue;
+        
+        [button setTitleColor:presentation.pallete.navigationButtonColor];
+    }
+}
+
 - (void)setButtonsWithTitlesAndActions:(NSArray *)buttonsDesc
 {
     for (TGModernButton *button in _buttons)
@@ -55,7 +73,7 @@
     
     for (NSDictionary *desc in buttonsDesc)
     {
-        TGModernConversationGenericTitleButton *button = [[TGModernConversationGenericTitleButton alloc] initWithTitle:desc[@"title"] icon:desc[@"icon"]];
+        TGModernConversationGenericTitleButton *button = [[TGModernConversationGenericTitleButton alloc] initWithTitle:desc[@"title"] icon:desc[@"icon"] color:self.presentation.pallete.navigationButtonColor];
         [button addTarget:self action:@selector(buttonPressed:) forControlEvents:UIControlEventTouchUpInside];
         [buttons addObject:button];
         [buttonActions addObject:desc[@"action"] == nil ? @"" : desc[@"action"]];
@@ -120,7 +138,7 @@
 
 @implementation TGModernConversationGenericTitleButton
 
-- (instancetype)initWithTitle:(NSString *)title icon:(UIImage *)icon
+- (instancetype)initWithTitle:(NSString *)title icon:(UIImage *)icon color:(UIColor *)color
 {
     self = [super initWithFrame:CGRectMake(0, 0, 76.0f, 54.0f)];
     if (self != nil)
@@ -131,7 +149,7 @@
         self.imageView.contentMode = UIViewContentModeCenter;
         self.titleLabel.font = TGSystemFontOfSize(10.0f);
         self.titleLabel.textAlignment = NSTextAlignmentCenter;
-        [self setTitleColor:TGAccentColor()];
+        [self setTitleColor:color];
     }
     return self;
 }

@@ -7,6 +7,8 @@
 
 #import <QuartzCore/QuartzCore.h>
 
+#import "TGPresentation.h"
+
 @interface TGTokenFieldScrollView : UIScrollView
 
 @end
@@ -110,6 +112,24 @@
     _tokenList = [[NSMutableArray alloc] init];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _shadowView.backgroundColor = presentation.pallete.barSeparatorColor;
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _scrollView.backgroundColor = presentation.pallete.barBackgroundColor;
+    _textField.backgroundColor = presentation.pallete.barBackgroundColor;
+    _textField.textColor = presentation.pallete.textColor;
+    _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _textField.customPlaceholderLabel.textColor = presentation.pallete.secondaryTextColor;
+    
+    for (TGTokenView *view in _tokenList)
+    {
+        view.presentation = presentation;
+    }
+}
+
 - (void)setPlaceholder:(NSString *)placeholder
 {
     _placeholder = placeholder;
@@ -120,6 +140,7 @@
 - (void)addToken:(NSString *)title tokenId:(id)tokenId animated:(bool)animated
 {
     TGTokenView *tokenView = [[TGTokenView alloc] initWithFrame:CGRectMake(0, 0, 20, 28)];
+    tokenView.presentation = self.presentation;
     tokenView.label = title;
     tokenView.tokenId = tokenId;
     [_tokenList addObject:tokenView];

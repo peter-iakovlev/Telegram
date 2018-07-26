@@ -363,7 +363,7 @@
                         }
                         if ([externalResult.resultId isEqualToString:currentExternalResult.resultId]) {
                             if (path != nil) {
-                                if ([externalResult.contentType isEqualToString:@"video/mp4"]) {
+                                if ([externalResult.content.mimeType isEqualToString:@"video/mp4"]) {
                                     [strongSelf->_videoView removeFromSuperview];
                                     strongSelf->_videoView = [[[TGVTAcceleratedVideoView videoViewClass] alloc] initWithFrame:strongSelf.bounds];
                                     [strongSelf insertSubview:strongSelf->_videoView aboveSubview:strongSelf->_overlayView];
@@ -419,6 +419,8 @@
         }
     } else if ([_result isKindOfClass:[TGBotContextExternalResult class]]) {
         TGBotContextExternalResult *externalResult = (TGBotContextExternalResult *)_result;
+        if (externalResult.originalUrl.length == 0)
+            return;
         
         _overlayView.hidden = false;
         [_overlayView setProgress:0.0f cancelEnabled:false animated:true];
@@ -479,6 +481,11 @@
         [self.selectedBackgroundView addSubview:_selectionView];
     }
     return self;
+}
+
+- (void)setSelectionColor:(UIColor *)color
+{
+    _selectionView.backgroundColor = color;
 }
 
 - (void)prepareForReuse {

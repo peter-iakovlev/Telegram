@@ -58,6 +58,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -68,7 +69,6 @@
     documentAttachment.thumbnailInfo = _thumbnailInfo;
     documentAttachment.documentUri = _documentUrl;
     documentAttachment.attributes = _attributes;
-    documentAttachment.caption = _caption;
     
     [attachments addObject:documentAttachment];
     
@@ -91,6 +91,7 @@
     }
     
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
     
     return message;
 }

@@ -23,7 +23,7 @@
 
 #import "TGAppDelegate.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGSettingsController () <UITableViewDataSource, UITableViewDelegate, MFMailComposeViewControllerDelegate>
 
@@ -384,14 +384,14 @@
 }
 
 - (void)clearChannelsButtonPressed {
-    [[[TGAlertView alloc] initWithTitle:nil message:@"Application will be force closed" cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+    [TGCustomAlertView presentAlertWithTitle:nil message:@"Application will be force closed" cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
         if (okButtonPressed) {
             [TGDatabaseInstance() _dropChannels];
             TGDispatchAfter(1.0, dispatch_get_main_queue(), ^{
                 exit(0);
             });
         }
-    }] show];
+    }];
 }
 
 - (void)clearCacheButtonPressed

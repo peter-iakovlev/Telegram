@@ -659,9 +659,10 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         NSArray *phones = [options objectForKey:@"phones"];
         int addingUid = [[options objectForKey:@"addingUid"] intValue];
         bool removedMainPhone = [[options objectForKey:@"removedMainPhone"] boolValue];
+        NSString *vcard = [options objectForKey:@"vcard"];
         
         if (nativeId != 0 && phones != nil)
-            [self processChangeContactPhones:uid nativeId:nativeId changePhones:phones addingUid:addingUid removedMainPhone:removedMainPhone];
+            [self processChangeContactPhones:uid nativeId:nativeId changePhones:phones addingUid:addingUid removedMainPhone:removedMainPhone vcard:vcard];
         else
             [self completeAction:false];
         
@@ -670,9 +671,10 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
     else if ([self.path hasSuffix:@"addContactLocal)"])
     {
         TGPhonebookContact *contact = [options objectForKey:@"contact"];
+        NSString *vcard = [options objectForKey:@"vcard"];
         if (contact != nil)
         {
-            [self processCreateContact:contact uid:[[options objectForKey:@"uid"] intValue]];
+            [self processCreateContact:contact uid:[[options objectForKey:@"uid"] intValue] vcard:vcard];
         }
         else
             [self completeAction:false];
@@ -697,16 +699,24 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
     }
     
     bool firstTimeSync = [[TGSynchronizeContactsManager instance] firstTimeSync];
+    if ([options[@"forceFirstTime"] boolValue]) {
+        [TGDatabaseInstance() replaceContactBindings:nil];
+        [TGDatabaseInstance() setCustomProperty:@"exportState" value:nil];
+        [TGDatabaseInstance() replaceRemoteContactUids:@[]];
+        firstTimeSync = true;
+    }
+
     [[TGSynchronizeContactsManager instance] setFirstTimeSync:false];
     
     [[TGSynchronizeContactsManager instance] setContactsSynchronizationStatus:true];
     
     CreateAddressBookAsync(^(ABAddressBookRef addressBook, bool denied)
     {
-        if (addressBook == NULL || denied)
+        bool inhibit = TGAppDelegateInstance.contactsInhibitSync;
+        bool failed = addressBook == NULL || denied;
+        if (failed)
         {
             [[TGSynchronizeContactsManager instance] addressBookChangeCommitted];
-            
             [TGDatabaseInstance() replaceContactBindings:nil];
             
             [ActionStageInstance() dispatchOnStageQueue:^
@@ -1083,7 +1093,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         }
         
         NSData *completedExplicitExport = [TGDatabaseInstance() customProperty:@"explicitExport"];
-        if (completedExplicitExport == nil)
+        if (!inhibit && completedExplicitExport == nil)
         {
             if (currentExportActions == nil)
                 currentExportActions = [[NSMutableArray alloc] init];
@@ -1097,10 +1107,13 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
             [TGDatabaseInstance() setCustomProperty:@"explicitExport" value:[NSData dataWithBytes:&flag length:sizeof(bool)]];
         }
         
-        if (currentExportActions != nil && currentExportActions.count != 0)
-            [TGDatabaseInstance() storeFutureActions:currentExportActions];
+        if (!inhibit)
+        {
+            if (currentExportActions != nil && currentExportActions.count != 0)
+                [TGDatabaseInstance() storeFutureActions:currentExportActions];
         
-        [TGDatabaseInstance() setCustomProperty:@"exportState" value:newExportState];
+            [TGDatabaseInstance() setCustomProperty:@"exportState" value:newExportState];
+        }
         
         [TGDatabaseInstance() replaceContactBindings:newBindings];
         [TGDatabaseInstance() replacePhonebookContacts:newPhonebookContacts];
@@ -1209,8 +1222,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
             
             return;
         }
-        else
-        {
+        else {
             self.cancelToken = [TGTelegraphInstance doExportContacts:contactsToExport requestBuilder:self];
         }
     }
@@ -1272,7 +1284,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
 
 #pragma mark -
 
-- (void)processCreateContact:(TGPhonebookContact *)phonebookContact uid:(int)uid
+- (void)processCreateContact:(TGPhonebookContact *)phonebookContact uid:(int)uid vcard:(NSString *)vcard
 {
     CreateAddressBookAsync(^(ABAddressBookRef addressBook, bool denied)
     {
@@ -1298,15 +1310,85 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
         
         ABMutableMultiValueRef multiPhone = ABMultiValueCreateMutable(kABMultiStringPropertyType);
         
+        NSMutableArray *actions = TGAppDelegateInstance.contactsInhibitSync ? [[NSMutableArray alloc] init] : nil;
         for (TGPhoneNumber *phoneNumber in phonebookContact.phoneNumbers)
         {
             NSString *phoneLabel = nativePhoneLabelForString(phoneNumber.label);
             
             ABMultiValueAddValueAndLabel(multiPhone, (__bridge CFTypeRef)phoneNumber.number, (__bridge CFStringRef)phoneLabel, NULL);
+            
+            if (actions != nil)
+                [actions addObject:[[TGExportContactFutureAction alloc] initWithContactId:phoneMatchHash(phoneNumber.number)]];
         }
         
         ABRecordSetValue(newPerson, kABPersonPhoneProperty, multiPhone, nil);
         CFRelease(multiPhone);
+        
+        if (vcard.length > 0)
+        {
+            CFDataRef vCardData = (__bridge CFDataRef)([vcard dataUsingEncoding:NSUTF8StringEncoding]);
+            
+            ABRecordRef defaultSource = ABAddressBookCopyDefaultSource(addressBook);
+            CFArrayRef vCardPeople = ABPersonCreatePeopleInSourceWithVCardRepresentation(defaultSource, vCardData);
+            CFIndex index = 0;
+            ABRecordRef person = CFArrayGetValueAtIndex(vCardPeople, index);
+            
+            CFRelease(vCardPeople);
+            CFRelease(defaultSource);
+            
+            void (^copySingleValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                CFTypeRef value = ABRecordCopyValue(person, property);
+                if (value != NULL) {
+                    ABRecordSetValue(newPerson, property, value, NULL);
+                    CFRelease(value);
+                }
+            };
+
+            void (^copyMultiValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                ABMultiValueRef values = ABRecordCopyValue(person, property);
+                NSInteger valueCount = (values == NULL) ? 0 : ABMultiValueGetCount(values);
+                
+                if (valueCount == 0) {
+                    if (values != NULL)
+                        CFRelease(values);
+                    return;
+                }
+                
+                ABMutableMultiValueRef multiValue = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+                
+                for (CFIndex i = 0; i < valueCount; i++) {
+                    CFTypeRef value = ABMultiValueCopyValueAtIndex(values, i);
+                    CFStringRef label = ABMultiValueCopyLabelAtIndex(values, i);
+                    
+                    ABMultiValueAddValueAndLabel(multiValue, value, label, NULL);
+                    
+                    if (value != NULL)
+                        CFRelease(value);
+                    if (label != NULL)
+                        CFRelease(label);
+                }
+                
+                ABRecordSetValue(newPerson, property, multiValue, nil);
+                CFRelease(multiValue);
+                
+                if (values != NULL)
+                    CFRelease(values);
+            };
+            
+            copySingleValueProperty(kABPersonPrefixProperty);
+            copySingleValueProperty(kABPersonSuffixProperty);
+            copySingleValueProperty(kABPersonOrganizationProperty);
+            copySingleValueProperty(kABPersonJobTitleProperty);
+            copySingleValueProperty(kABPersonDepartmentProperty);
+            copySingleValueProperty(kABPersonBirthdayProperty);
+            
+            copyMultiValueProperty(kABPersonPhoneProperty);
+            copyMultiValueProperty(kABPersonEmailProperty);
+            copyMultiValueProperty(kABPersonURLProperty);
+            copyMultiValueProperty(kABPersonAddressProperty);
+            copyMultiValueProperty(kABPersonSocialProfileProperty);
+            copyMultiValueProperty(kABPersonInstantMessageProperty);
+        }
         
         ABAddressBookAddRecord(addressBook, newPerson, &error);
         ABAddressBookSave(addressBook, &error);
@@ -1344,6 +1426,9 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
             
             [TGContactListRequestBuilder dispatchNewContactList];
             [TGContactListRequestBuilder dispatchNewPhonebook];
+            
+            if (actions.count > 0)
+                [TGDatabaseInstance() storeFutureActions:actions];
             
             [self completeAction:true];
             
@@ -1586,7 +1671,7 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
 }
 
 
-- (void)processChangeContactPhones:(int)uid nativeId:(int)nativeId changePhones:(NSArray *)changePhones addingUid:(int)addingUid removedMainPhone:(bool)removedMainPhone
+- (void)processChangeContactPhones:(int)uid nativeId:(int)nativeId changePhones:(NSArray *)changePhones addingUid:(int)addingUid removedMainPhone:(bool)removedMainPhone vcard:(NSString *)vcard
 {
     CreateAddressBookAsync(^(ABAddressBookRef addressBook, bool denied)
     {
@@ -1612,10 +1697,71 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
                 
                 ABMultiValueAddValueAndLabel(mutablePhones, (__bridge CFStringRef)phoneNumber.number, (__bridge CFStringRef)label, NULL);
             }
-            
             ABRecordSetValue(person, kABPersonPhoneProperty, mutablePhones, NULL);
-            
             CFRelease(mutablePhones);
+            
+            if (vcard.length > 0)
+            {
+                CFDataRef vCardData = (__bridge CFDataRef)([vcard dataUsingEncoding:NSUTF8StringEncoding]);
+                
+                ABRecordRef defaultSource = ABAddressBookCopyDefaultSource(addressBook);
+                CFArrayRef vCardPeople = ABPersonCreatePeopleInSourceWithVCardRepresentation(defaultSource, vCardData);
+                CFIndex index = 0;
+                ABRecordRef vcardPerson = CFArrayGetValueAtIndex(vCardPeople, index);
+                
+                CFRelease(vCardPeople);
+                CFRelease(defaultSource);
+                
+                void (^copySingleValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                    CFTypeRef value = ABRecordCopyValue(vcardPerson, property);
+                    if (value != NULL) {
+                        ABRecordSetValue(person, property, value, NULL);
+                        CFRelease(value);
+                    }
+                };
+                
+                void (^copyMultiValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                    ABMultiValueRef values = ABRecordCopyValue(vcardPerson, property);
+                    NSInteger valueCount = (values == NULL) ? 0 : ABMultiValueGetCount(values);
+                    
+                    if (valueCount == 0) {
+                        if (values != NULL)
+                            CFRelease(values);
+                        return;
+                    }
+                    
+                    ABMutableMultiValueRef multiValue = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+                    
+                    for (CFIndex i = 0; i < valueCount; i++) {
+                        CFTypeRef value = ABMultiValueCopyValueAtIndex(values, i);
+                        CFStringRef label = ABMultiValueCopyLabelAtIndex(values, i);
+                        
+                        ABMultiValueAddValueAndLabel(multiValue, value, label, NULL);
+                        
+                        if (value != NULL)
+                            CFRelease(value);
+                        if (label != NULL)
+                            CFRelease(label);
+                    }
+                    
+                    ABRecordSetValue(person, property, multiValue, nil);
+                    CFRelease(multiValue);
+                    
+                    if (values != NULL)
+                        CFRelease(values);
+                };
+                
+                copySingleValueProperty(kABPersonOrganizationProperty);
+                copySingleValueProperty(kABPersonJobTitleProperty);
+                copySingleValueProperty(kABPersonDepartmentProperty);
+                copySingleValueProperty(kABPersonBirthdayProperty);
+                
+                copyMultiValueProperty(kABPersonEmailProperty);
+                copyMultiValueProperty(kABPersonURLProperty);
+                copyMultiValueProperty(kABPersonAddressProperty);
+                copyMultiValueProperty(kABPersonSocialProfileProperty);
+                copyMultiValueProperty(kABPersonInstantMessageProperty);
+            }
             
             ABAddressBookSave(addressBook, NULL);
         }

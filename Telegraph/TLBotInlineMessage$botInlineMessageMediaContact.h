@@ -8,6 +8,7 @@
 @property (nonatomic, strong) NSString *phone_number;
 @property (nonatomic, strong) NSString *first_name;
 @property (nonatomic, strong) NSString *last_name;
+@property (nonatomic, strong) NSString *vcard;
 @property (nonatomic, strong) TLReplyMarkup *reply_markup;
 
 @end

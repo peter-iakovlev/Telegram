@@ -54,9 +54,25 @@
         _movedToWindow();
 }
 
+- (BOOL)becomeFirstResponder
+{
+    return [super becomeFirstResponder];
+}
+
+- (BOOL)resignFirstResponder
+{
+    return [super resignFirstResponder];
+}
+
 - (void)deleteBackward {
     bool notify = self.text.length == 0;
     [super deleteBackward];
+    
+    if (self.clearAllOnNextBackspace)
+    {
+        self.text = @"";
+        self.clearAllOnNextBackspace = false;
+    }
     
     if (notify) {
         if (_deleteBackwardEmpty) {

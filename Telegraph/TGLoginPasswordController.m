@@ -98,14 +98,15 @@
 {
     [super viewWillAppear:animated];
     
+    [_view layoutSubviews];
     [_view setFirstReponder];
 }
 
 - (void)viewDidLayoutSubviews
 {
-    [super viewDidLayoutSubviews];
-    
     [_view setFirstReponder];
+    
+    [super viewDidLayoutSubviews];
 }
 
 - (void)loadView
@@ -233,7 +234,7 @@
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progressWindow show:true];
                 
-                [[[[TGAccountSignals deleteAccount] deliverOn:[SQueue mainQueue]] onDispose:^
+                [[[[TGAccountSignals deleteAccount:@"Forgot password"] deliverOn:[SQueue mainQueue]] onDispose:^
                 {
                     [progressWindow dismiss:true];
                 }] startWithNext:nil error:^(id error) {
@@ -360,13 +361,18 @@
     NSString *phoneCodeHash = nil;
     if ([self loginPhoneNumber:&phoneNumber phoneCode:&phoneCode phoneCodeHash:&phoneCodeHash])
     {
-        [self.navigationController pushViewController:[[TGLoginProfileController alloc] initWithShowKeyboard:true phoneNumber:phoneNumber phoneCodeHash:phoneCodeHash phoneCode:phoneCode] animated:true];
+        [self.navigationController pushViewController:[[TGLoginProfileController alloc] initWithShowKeyboard:true phoneNumber:phoneNumber phoneCodeHash:phoneCodeHash phoneCode:phoneCode termsOfService:nil] animated:true];
     }
     else
     {
         NSString *phone = [TGPhoneUtils cleanPhone:[TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId].phoneNumber];
         [TGTelegraphInstance doLogout:phone];
     }
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    return UIStatusBarStyleDefault;
 }
 
 @end

@@ -4,22 +4,7 @@
 
 #import "TGInterfaceAssets.h"
 
-static UIImage *plusImage() {
-    static UIImage *image = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(18.0f, 18.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-        CGContextFillRect(context, CGRectMake((18.0f) / 2.0f - 1.0f, 0.0f, 1.5f, 18.0f));
-        CGContextFillRect(context, CGRectMake(0.0f, (18.0f) / 2.0f - 1.0f, 18.0f, 1.5f));
-        
-        image = UIGraphicsGetImageFromCurrentImageContext();
-        
-        UIGraphicsEndImageContext();
-    });
-    return image;
-}
+#import "TGPresentation.h"
 
 @interface TGFlatActionCell ()
 {
@@ -49,7 +34,7 @@ static UIImage *plusImage() {
         _titleLabel.contentMode = UIViewContentModeLeft;
         _titleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         _titleLabel.font = TGSystemFontOfSize(17);
-        _titleLabel.backgroundColor = [UIColor whiteColor];
+        _titleLabel.backgroundColor = [UIColor clearColor];
         _titleLabel.textColor = TGAccentColor();
         [self.contentView addSubview:_titleLabel];
         
@@ -61,6 +46,18 @@ static UIImage *plusImage() {
         [self.contentView.layer addSublayer:_separatorLayer];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+
+    _titleLabel.textColor = _presentation.pallete.accentColor;
+    
+    _separatorLayer.backgroundColor = presentation.pallete.separatorColor.CGColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
 }
 
 - (void)setMode:(TGFlatActionCellMode)mode
@@ -87,7 +84,7 @@ static UIImage *plusImage() {
     
     if (mode == TGFlatActionCellModeInvite)
     {
-        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListAddMemberIcon.png"), TGAccentColor());
+        _iconView.image = self.presentation.images.contactsInviteIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -96,11 +93,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeCreateGroup || mode == TGFlatActionCellModeCreateGroupContacts || mode == TGFlatActionCellModeCreateChannelGroup)
     {
-        static UIImage *friendsIcon = nil;
-        if (friendsIcon == nil)
-            friendsIcon = TGTintedImage(TGImageNamed(@"ModernContactListCreateGroupIcon.png"), TGAccentColor());
-        
-        _iconView.image = friendsIcon;
+        _iconView.image = self.presentation.images.contactsNewGroupIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -109,11 +102,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeCreateEncrypted)
     {
-        static UIImage *encryptedIcon = nil;
-        if (encryptedIcon == nil)
-            encryptedIcon = TGTintedImage(TGImageNamed(@"ModernContactListCreateSecretChatIcon.png"), TGAccentColor());
-            
-        _iconView.image = encryptedIcon;
+        _iconView.image = self.presentation.images.contactsNewEncryptedIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -122,11 +111,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeChannels || mode == TGFlatActionCellModeCreateChannel)
     {
-        static UIImage *broadcastsIcon = nil;
-        if (broadcastsIcon == nil)
-            broadcastsIcon = TGTintedImage(TGImageNamed(@"ModernContactListBroadcastIcon.png"), TGAccentColor());
-            
-        _iconView.image = broadcastsIcon;
+        _iconView.image = self.presentation.images.contactsNewChannelIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -135,7 +120,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeAddPhoneNumber)
     {
-        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListAddMemberIcon.png"), TGAccentColor());
+        _iconView.image = self.presentation.images.contactsInviteIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -144,7 +129,7 @@ static UIImage *plusImage() {
     }
     else if (mode == TGFlatActionCellModeShareApp)
     {
-        _iconView.image = TGTintedImage(TGImageNamed(@"ModernContactListInviteIcon.png"), TGAccentColor());
+        _iconView.image = self.presentation.images.contactsShareIcon;
         [_iconView sizeToFit];
         
         CGRect iconFrame = _iconView.frame;
@@ -166,7 +151,7 @@ static UIImage *plusImage() {
     if (selected)
     {
         CGRect frame = self.selectedBackgroundView.frame;
-        frame.origin.y = true ? -1 : 0;
+        frame.origin.y = -1;
         frame.size.height = self.frame.size.height + 1;
         self.selectedBackgroundView.frame = frame;
         
@@ -181,7 +166,7 @@ static UIImage *plusImage() {
     if (highlighted)
     {
         CGRect frame = self.selectedBackgroundView.frame;
-        frame.origin.y = true ? -1 : 0;
+        frame.origin.y = -1;
         frame.size.height = self.frame.size.height + 1;
         self.selectedBackgroundView.frame = frame;
         
@@ -224,7 +209,7 @@ static UIImage *plusImage() {
     CGFloat separatorHeight = TGScreenPixel;
     
     CGRect frame = self.selectedBackgroundView.frame;
-    frame.origin.y = true ? -1 : 0;
+    frame.origin.y = -1;
     frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
     

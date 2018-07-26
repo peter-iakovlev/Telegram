@@ -3,12 +3,12 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
-@class TLInputPeer;
+@class TLInputDialogPeer;
 
 @interface TLRPCmessages_toggleDialogPin : TLMetaRpc
 
 @property (nonatomic) int32_t flags;
-@property (nonatomic, retain) TLInputPeer *peer;
+@property (nonatomic, retain) TLInputDialogPeer *peer;
 
 - (Class)responseClass;
 

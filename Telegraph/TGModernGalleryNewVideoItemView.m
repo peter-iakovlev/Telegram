@@ -22,6 +22,7 @@
 #import "TGGenericPeerGalleryItem.h"
 
 #import "TGGenericPeerMediaGalleryVideoItem.h"
+#import "TGModernGalleryPIPHeaderView.h"
 
 @interface TGModernGalleryNewVideoItemView () <ASWatcher>
 {
@@ -34,6 +35,7 @@
     bool _autoplayAfterDownload;
         
     SMetaDisposable *_stateDisposable;
+    NSTimeInterval _duration;
     
     bool _scrubbing;
     bool _switchingToPIP;
@@ -97,6 +99,8 @@
             [strongSelf play];
         };
         
+        _pipHeaderView = [[TGModernGalleryPIPHeaderView alloc] init];
+        
         _footerView = [[TGModernGalleryVideoFooterView alloc] init];
         _footerView.playPressed = ^
         {
@@ -107,6 +111,16 @@
         {
             __strong TGModernGalleryNewVideoItemView *strongSelf = weakSelf;
             [strongSelf pause];
+        };
+        _footerView.backwardPressed = ^
+        {
+            __strong TGModernGalleryNewVideoItemView *strongSelf = weakSelf;
+            [strongSelf backwardPressed];
+        };
+        _footerView.forwardPressed = ^
+        {
+            __strong TGModernGalleryNewVideoItemView *strongSelf = weakSelf;
+            [strongSelf forwardPressed];
         };
         
         _playerView = [[TGModernGalleryVideoPlayerView alloc] init];
@@ -163,7 +177,10 @@
     _autoplayAfterDownload = false;
     
     if ([self footerView] == _footerView)
+    {
         [self footerView].hidden = true;
+        //[self detachScrubberView];
+    }
     
     [_stateDisposable dispose];
     _stateDisposable = nil;
@@ -184,7 +201,10 @@
     [_playerView reset];
     
     if ([self footerView] == _footerView)
+    {
         [self footerView].hidden = true;
+//        [self attachScrubberView];
+    }
     
     CGSize dimensions = CGSizeZero;
     NSTimeInterval duration = 0.0;
@@ -219,6 +239,7 @@
         }
     }
     
+    _footerView.duration = duration;
     _videoDimensions = dimensions;
     
     _disablePictureInPicture = false;
@@ -234,7 +255,7 @@
 - (void)_initializePlayerWithPath:(NSString *)videoPath duration:(NSTimeInterval)duration synchronously:(bool)synchronously
 {
     [_scrubbingInterfaceView setDuration:duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
-    [_scrubbingInterfaceView setPictureInPictureEnabled:false];
+    [_pipHeaderView setPictureInPictureEnabled:false];
     
     _playerView.initialFrame = CGRectMake(0, 0, _videoDimensions.width, _videoDimensions.height);
     
@@ -339,7 +360,7 @@
 
 - (UIView *)headerView
 {
-    return _scrubbingInterfaceView;
+    return _pipHeaderView;
 }
 
 - (UIView *)footerView
@@ -356,6 +377,12 @@
         if ([self footerView] == _footerView)
             [self footerView].hidden = true;
         [self setDefaultFooterHidden:false];
+        
+        [self detachScrubberView];
+    }
+    else
+    {
+        [self attachScrubberView];
     }
 }
 
@@ -381,6 +408,21 @@
         [[self defaultFooterView] setContentHidden:hidden];
     else
         [self defaultFooterView].hidden = hidden;
+}
+
+- (void)attachScrubberView
+{
+    if (_scrubbingInterfaceView.superview != nil)
+        return;
+    
+    if ([[self defaultFooterView] respondsToSelector:@selector(setCustomContentView:)])
+        [[self defaultFooterView] setCustomContentView:_scrubbingInterfaceView];
+}
+
+- (void)detachScrubberView
+{
+    if ([[self defaultFooterView] respondsToSelector:@selector(setCustomContentView:)])
+        [[self defaultFooterView] setCustomContentView:nil];
 }
 
 #pragma mark - 
@@ -418,6 +460,22 @@
     [[self _playerView] pauseVideo];
     
     _actionButton.hidden = true;
+}
+
+- (void)backwardPressed
+{
+    NSTimeInterval positionSeconds = MAX(0.0, [self _playerView].state.position - 15.0);
+    [[self _playerView] seekToPosition:positionSeconds];
+    
+    [_scrubbingInterfaceView setDuration:[self _playerView].state.duration currentTime:positionSeconds isPlaying:[self _playerView].state.isPlaying isPlayable:true animated:false];
+}
+
+- (void)forwardPressed
+{
+    NSTimeInterval positionSeconds = MIN([self _playerView].state.duration, [self _playerView].state.position + 15.0);
+    [[self _playerView] seekToPosition:positionSeconds];
+    
+    [_scrubbingInterfaceView setDuration:[self _playerView].state.duration currentTime:positionSeconds isPlaying:[self _playerView].state.isPlaying isPlayable:true animated:false];
 }
 
 - (void)loadAndPlay
@@ -477,7 +535,7 @@
 {
     _mediaAvailable = available;
     
-    [_scrubbingInterfaceView setPictureInPictureEnabled:available && !_disablePictureInPicture];
+    [_pipHeaderView setPictureInPictureEnabled:available && !_disablePictureInPicture];
 }
 
 - (void)setProgressVisible:(bool)progressVisible value:(float)value animated:(bool)animated

@@ -8,11 +8,14 @@
 
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGTokenView : UIButton <UIKeyInput>
 
 @property (nonatomic, strong) NSString *label;
 @property (nonatomic) CGFloat preferredWidth;
 
 @property (nonatomic, strong) id tokenId;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @end

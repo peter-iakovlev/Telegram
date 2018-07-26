@@ -13,7 +13,7 @@
 
 #import "TGGenericPeerGalleryGroupItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 #import <LegacyComponents/TGProgressWindow.h>
 
 #import <LegacyComponents/TGMediaAssetsLibrary.h>
@@ -58,6 +58,9 @@
 
 - (void)_transitionCompleted
 {
+    if (_peerId == 777000 || _peerId == 333000)
+        return;
+    
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         [ActionStageInstance() watchForPath:[[NSString alloc] initWithFormat:@"/tg/profilePhotos/(%" PRId64 ")", _peerId] watcher:self];
@@ -191,6 +194,7 @@
 {
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
     __weak TGUserAvatarGalleryModel *weakSelf = self;
+    __weak TGGenericPeerMediaGalleryActionsAccessoryView *weakAccessoryView = accessoryView;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
         if ([item isKindOfClass:[TGUserAvatarGalleryItem class]])
@@ -212,12 +216,12 @@
                     }
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
                     
-                    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
                     {
                         __strong TGUserAvatarGalleryModel *strongSelf = weakSelf;
                         if ([action isEqualToString:@"save"])
                             [strongSelf _commitSaveItemToCameraRoll:item];
-                    } target:strongSelf] showInView:actionSheetView];
+                    } target:strongSelf] showFromRect:[weakAccessoryView convertRect:weakAccessoryView.bounds toView:actionSheetView] inView:actionSheetView animated:true];
                 }
             }
         }

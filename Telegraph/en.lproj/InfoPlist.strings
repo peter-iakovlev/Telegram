@@ -1,7 +1,5 @@
 /* Localized versions of Info.plist keys */
 
-"CFBundleDisplayName" = "Telegram";
-
 "NSContactsUsageDescription" = "Telegram will continuously upload your contacts to its heavily encrypted cloud servers to let you connect with your friends across all your devices.";
 "NSLocationWhenInUseUsageDescription" = "When you send your location to your friends, Telegram needs access to show them a map.";
 "NSCameraUsageDescription" = "We need this so that you can take and share photos and videos.";

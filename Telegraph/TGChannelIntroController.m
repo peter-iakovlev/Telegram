@@ -6,6 +6,8 @@
 
 #import "TGCreateGroupController.h"
 
+#import "TGPresentation.h"
+
 @interface TGChannelIntroController ()
 {
     TGModernButton *_backButton;
@@ -22,29 +24,24 @@
 {
     [super loadView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
-    static dispatch_once_t onceToken;
-    static UIImage *arrowImage = nil;
-    dispatch_once(&onceToken, ^
-    {
-        UIImage *image = TGImageNamed(@"NavigationBackArrow");
-        UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
-        CGContextSetBlendMode (context, kCGBlendModeSourceAtop);
-        CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-        CGContextFillRect(context, CGRectMake(0, 0, image.size.width, image.size.height));
-        
-        arrowImage = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *image = TGImageNamed(@"NavigationBackArrow");
+    UIGraphicsBeginImageContextWithOptions(image.size, false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    [image drawInRect:CGRectMake(0, 0, image.size.width, image.size.height)];
+    CGContextSetBlendMode (context, kCGBlendModeSourceAtop);
+    CGContextSetFillColorWithColor(context, self.presentation.pallete.accentColor.CGColor);
+    CGContextFillRect(context, CGRectMake(0, 0, image.size.width, image.size.height));
+    
+    UIImage *arrowImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
     
     _backButton = [[TGModernButton alloc] initWithFrame:CGRectZero];
     _backButton.exclusiveTouch = true;
     _backButton.titleLabel.font = TGSystemFontOfSize(17);
     [_backButton setTitle:TGLocalized(@"Common.Back") forState:UIControlStateNormal];
-    [_backButton setTitleColor:TGAccentColor()];
+    [_backButton setTitleColor:self.presentation.pallete.accentColor];
     [_backButton addTarget:self action:@selector(backButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_backButton];
     
@@ -59,7 +56,7 @@
     _titleLabel = [[UILabel alloc] init];
     _titleLabel.backgroundColor = [UIColor clearColor];
     _titleLabel.font = TGSystemFontOfSize(21);
-    _titleLabel.textColor = [UIColor blackColor];
+    _titleLabel.textColor = self.presentation.pallete.textColor;
     _titleLabel.textAlignment = NSTextAlignmentCenter;
     _titleLabel.text = TGLocalized(@"ChannelIntro.Title");
     [self.view addSubview:_titleLabel];
@@ -76,7 +73,7 @@
     style.lineSpacing = 2;
     style.alignment = NSTextAlignmentCenter;
     [attrString addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, description.length)];
-    [attrString addAttribute:NSForegroundColorAttributeName value:UIColorRGB(0x8e8e93) range:NSMakeRange(0, description.length)];
+    [attrString addAttribute:NSForegroundColorAttributeName value:self.presentation.pallete.secondaryTextColor range:NSMakeRange(0, description.length)];
     [attrString addAttribute:NSFontAttributeName value:TGSystemFontOfSize(16) range:NSMakeRange(0, description.length)];
     _descriptionLabel.attributedText = attrString;
     
@@ -84,7 +81,7 @@
     _createButton.exclusiveTouch = true;
     _createButton.backgroundColor = [UIColor clearColor];
     _createButton.titleLabel.font = TGSystemFontOfSize(21);
-    [_createButton setTitleColor:TGAccentColor()];
+    [_createButton setTitleColor:self.presentation.pallete.accentColor];
     [_createButton setTitle:TGLocalized(@"ChannelIntro.CreateChannel") forState:UIControlStateNormal];
     [_createButton addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_createButton];

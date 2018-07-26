@@ -6,6 +6,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGRecentSearchResultsTableView () <UITableViewDelegate, UITableViewDataSource>
 {
 }
@@ -19,12 +21,15 @@
     self = [super initWithFrame:frame style:style];
     if (self != nil)
     {
-        self.backgroundColor = [UIColor whiteColor];
-        
         self.delegate = self;
         self.dataSource = self;
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
 }
 
 - (CGFloat)tableView:(UITableView *)__unused tableView heightForHeaderInSection:(NSInteger)__unused section
@@ -43,7 +48,7 @@
     bool first = true;
     UIView *sectionView = [[UIView alloc] initWithFrame:CGRectMake(0, first ? 0 : -1, 10, first ? 10 : 11)];
     sectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    sectionView.backgroundColor = UIColorRGB(0xf7f7f7);
+    sectionView.backgroundColor = self.presentation.pallete.sectionHeaderBackgroundColor;
     [sectionContainer addSubview:sectionView];
     
     CGFloat separatorHeight = TGScreenPixel;
@@ -55,22 +60,21 @@
     UILabel *sectionLabel = [[UILabel alloc] init];
     sectionLabel.tag = 100;
     sectionLabel.backgroundColor = sectionView.backgroundColor;
-    sectionLabel.textColor = [UIColor blackColor];
+    sectionLabel.textColor = self.presentation.pallete.sectionHeaderTextColor;
     sectionLabel.numberOfLines = 1;
     
     [sectionContainer addSubview:sectionLabel];
     
-    sectionLabel.font = TGMediumSystemFontOfSize(17);
-    sectionLabel.text = TGLocalized(@"WebSearch.RecentSectionTitle");
-    sectionLabel.textColor = [UIColor blackColor];
+    sectionLabel.font = TGBoldSystemFontOfSize(12.0f);
+    sectionLabel.text = [TGLocalized(@"WebSearch.RecentSectionTitle") uppercaseString];
     [sectionLabel sizeToFit];
-    sectionLabel.frame = CGRectMake(14.0f + _safeAreaInset.left, 3.0f + TGScreenPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
+    sectionLabel.frame = CGRectMake(14.0f + _safeAreaInset.left, 6.0f + TGScreenPixel, sectionLabel.frame.size.width, sectionLabel.frame.size.height);
     
     TGModernButton *clearButton = [[TGModernButton alloc] init];
     [clearButton setTitle:TGLocalized(@"WebSearch.RecentSectionClear") forState:UIControlStateNormal];
-    [clearButton setTitleColor:UIColorRGB(0x8e8e93)];
+    [clearButton setTitleColor:self.presentation.pallete.secondaryTextColor];
     clearButton.tag = 200;
-    clearButton.titleLabel.font = TGSystemFontOfSize(14.0f);
+    clearButton.titleLabel.font = TGSystemFontOfSize(12);
     [clearButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 8.0f, 0.0f, 8.0f)];
     [clearButton addTarget:self action:@selector(clearButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [clearButton sizeToFit];
@@ -117,9 +121,8 @@
 {
     TGRecentSearchResultsCell *cell = (TGRecentSearchResultsCell *)[tableView dequeueReusableCellWithIdentifier:@"TGRecentSearchResultsCell"];
     if (cell == nil)
-    {
         cell = [[TGRecentSearchResultsCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TGRecentSearchResultsCell"];
-    }
+    cell.presentation = self.presentation;
     
     [cell setTitle:_items[indexPath.row]];
     

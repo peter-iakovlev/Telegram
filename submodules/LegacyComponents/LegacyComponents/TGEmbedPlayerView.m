@@ -64,6 +64,11 @@
 
 - (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal
 {
+    return [self initWithWebPageAttachment:webPage thumbnailSignal:nil alternateCachePathSignal:nil];
+}
+
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal alternateCachePathSignal:(SSignal *)__unused alternateCachePathSignal
+{
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
     {
@@ -73,7 +78,7 @@
         _loadProgressValue = [[SVariable alloc] init];
         
         _webPage = webPage;
-        _state = [TGEmbedPlayerState stateWithPlaying:false duration:0.0 position:0.0 downloadProgress:0.0f];
+        _state = [TGEmbedPlayerState stateWithPlaying:false duration:0.0 position:0.0 downloadProgress:0.0f buffering:false];
         
         TGEmbedPlayerControlsType controlsType = [self _controlsType];
         if (controlsType != TGEmbedPlayerControlsTypeNone)
@@ -194,7 +199,6 @@
     [_jsQueue dispatchSync:^
     {
         wkWebView.navigationDelegate = nil;
-        [wkWebView removeObserver:self forKeyPath:@"estimatedProgress"];
     }];
     
     _uiWebView.delegate = nil;
@@ -222,6 +226,20 @@
     
     [_controlsView showLargePlayButton:true];
     [self insertSubview:_dimWrapperView belowSubview:_controlsView];
+}
+
+- (void)setDisableControls:(bool)disableControls {
+    _disableControls = disableControls;
+    if (disableControls) {
+        for (UIView *view in [_dimWrapperView.subviews copy]) {
+            if (view != _coverView) {
+                view.alpha = 0.0f;
+                view.hidden = true;
+            }
+        }
+        _controlsView.hidden = true;
+        _dimView.hidden = true;
+    }
 }
 
 - (void)_setupAudioSessionIfNeeded
@@ -447,15 +465,6 @@
         else
             [_wkWebView loadHTMLString:embedHTML baseURL:[self _baseURL]];
     }];
-    
-    [_wkWebView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
-    if ([keyPath isEqualToString:@"estimatedProgress"] && object == _wkWebView)
-        return;
-    else
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
 }
 
 - (void)webView:(WKWebView *)__unused webView didStartProvisionalNavigation:(WKNavigation *)__unused navigation
@@ -829,7 +838,6 @@
 - (void)_cleanWebView
 {
     _wkWebView.navigationDelegate = nil;
-    [_wkWebView removeObserver:self forKeyPath:@"estimatedProgress"];
     [_wkWebView removeFromSuperview];
     _wkWebView = nil;
     
@@ -899,6 +907,42 @@
     } else {
         return nil;
     }
+}
+
++ (bool)hasNativeSupportForX:(TGWebPageMediaAttachment *)webPage {
+    static dispatch_once_t onceToken;
+    static NSArray *playerViewClasses;
+    dispatch_once(&onceToken, ^
+    {
+        playerViewClasses = @
+        [
+         [TGEmbedYoutubePlayerView class],
+         /*[TGEmbedVimeoPlayerView class],
+         [TGEmbedCoubPlayerView class],
+         [TGEmbedVKPlayerView class],
+         [TGEmbedVinePlayerView class],
+         [TGEmbedInstagramPlayerView class],
+         [TGEmbedSoundCloudPlayerView class],
+         [TGEmbedTwitchPlayerView class],
+         [TGEmbedVideoPlayerView class]*/
+         ];
+    });
+    
+    if (iosMajorVersion() >= 8)
+    {
+        for (Class playerViewClass in playerViewClasses)
+        {
+            if ([playerViewClass _supportsWebPage:webPage])
+            {
+                if (playerViewClass == [TGEmbedVideoPlayerView class])
+                    return false;
+                
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 @end

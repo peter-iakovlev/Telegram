@@ -6,6 +6,8 @@
 #import "TGWorkerTask.h"
 #import "TGMediaPreviewTask.h"
 
+#import "TGPhotoThumbnailDataSource.h"
+
 #import <LegacyComponents/TGMemoryImageCache.h>
 
 #import <LegacyComponents/TGRemoteImageView.h>
@@ -228,51 +230,7 @@ static ASQueue *taskManagementQueue()
 
 + (TGDataResource *)resultForUnavailableImage:(bool)isFlat cornerRadius:(int)cornerRadius position:(int)position
 {
-    static TGDataResource *normalData = nil;
-    static NSMutableDictionary *flatDatas = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        normalData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, 0) decoded:true];
-        flatDatas = [[NSMutableDictionary alloc] init];
-    });
-    
-    if (isFlat)
-    {
-        TGDataResource *flatData = flatDatas[@(cornerRadius)];
-        if (flatData == nil)
-        {
-            if (cornerRadius == 0)
-            {
-                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false, 0) decoded:true];
-            }
-            else
-            {
-                flatData = [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, 0) decoded:true];
-            }
-            
-            flatDatas[@(cornerRadius)] = flatData;
-        }
-        return flatData;
-    }
-    else
-    {
-        if (isFlat)
-        {
-            if (cornerRadius == 0)
-            {
-                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], false, position) decoded:true];
-            }
-            else
-            {
-                return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentWithCornerRadiusImage([UIColor whiteColor], false, cornerRadius, position) decoded:true];
-            }
-        }
-        else
-        {
-            return [[TGDataResource alloc] initWithImage:TGAverageColorAttachmentImage([UIColor whiteColor], true, position) decoded:true];
-        }
-    }
+    return [TGPhotoThumbnailDataSource resultForUnavailableImage:isFlat cornerRadius:cornerRadius position:position];
 }
 
 - (id)loadAttributeSyncForUri:(NSString *)uri attribute:(NSString *)attribute

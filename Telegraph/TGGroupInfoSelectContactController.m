@@ -53,7 +53,7 @@
     {
         cell = [[TGGroupInfoContactListCreateLinkCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TGGroupInfoContactListCreateLinkCell"];
     }
-    
+    cell.presentation = self.presentation;
     return cell;
 }
 

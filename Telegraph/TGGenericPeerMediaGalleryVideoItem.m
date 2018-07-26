@@ -97,6 +97,15 @@
     return self;
 }
 
+- (NSArray *)textCheckingResults
+{
+    if (_textCheckingResults != nil)
+        return _textCheckingResults;
+    
+    _textCheckingResults = [TGMessage textCheckingResultsForText:_caption highlightMentionsAndTags:true highlightCommands:false entities:_entities];
+    return _textCheckingResults;
+}
+
 - (BOOL)isEqual:(id)object
 {
     if (![super isEqual:object])

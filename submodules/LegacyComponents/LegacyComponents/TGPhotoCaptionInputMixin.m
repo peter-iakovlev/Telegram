@@ -40,6 +40,12 @@
     [_inputPanel removeFromSuperview];
 }
 
+- (void)setAllowEntities:(bool)allowEntities
+{
+    _allowEntities = allowEntities;
+    _inputPanel.allowEntities = allowEntities;
+}
+
 - (void)createInputPanelIfNeeded
 {
     if (_inputPanel != nil)
@@ -49,6 +55,7 @@
     
     CGSize screenSize = parentView.frame.size;
     _inputPanel = [[TGMediaPickerCaptionInputPanel alloc] initWithKeyCommandController:_keyCommandController frame:CGRectMake(0, 0, screenSize.width, [_inputPanel heightForInputFieldHeight:0])];
+    _inputPanel.allowEntities = _allowEntities;
     _inputPanel.bottomMargin = 0;
     _inputPanel.delegate = self;
     
@@ -76,13 +83,13 @@
 
 - (void)setCaption:(NSString *)caption
 {
-    [self setCaption:caption animated:false];
+    [self setCaption:caption entities:nil animated:false];
 }
 
-- (void)setCaption:(NSString *)caption animated:(bool)animated
+- (void)setCaption:(NSString *)caption entities:(NSArray *)entities animated:(bool)animated
 {
     _caption = caption;
-    [self.inputPanel setCaption:caption animated:animated];
+    [self.inputPanel setCaption:caption entities:entities animated:animated];
 }
 
 - (void)setCaptionPanelHidden:(bool)hidden animated:(bool)__unused animated
@@ -140,14 +147,14 @@
     [self enableDismissal];
 }
 
-- (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)__unused inputPanel text:(NSString *)text
+- (void)inputPanelRequestedSetCaption:(TGMediaPickerCaptionInputPanel *)__unused inputPanel text:(NSString *)text entities:(NSArray *)entities
 {
     [TGViewController enableAutorotation];
     
     _dismissView.hidden = true;
     
     if (self.finishedWithCaption != nil)
-        self.finishedWithCaption(text);
+        self.finishedWithCaption(text, entities);
 }
 
 - (void)inputPanelMentionEntered:(TGMediaPickerCaptionInputPanel *)__unused inputTextPanel mention:(NSString *)mention startOfLine:(bool)__unused startOfLine

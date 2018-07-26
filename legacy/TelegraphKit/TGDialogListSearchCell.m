@@ -5,6 +5,7 @@
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
 #import "TGColor.h"
+#import "TGPresentation.h"
 
 @interface TGDialogListSearchCell ()
 {
@@ -68,25 +69,11 @@
         _avatarView.fadeTransition = true;
         [self.contentView addSubview:_avatarView];
         
-        _verifiedIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ChannelVerifiedIconSmall.png"]];
+        _verifiedIcon = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 14.0f)];
         _verifiedIcon.hidden = true;
         [self.contentView addSubview:_verifiedIcon];
         
-        static UIImage *unreadBackground = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(20.0f, 20.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            CGContextSetFillColorWithColor(context, UIColorRGB(0x0f94f3).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 20.0f, 20.0f));
-            
-            unreadBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:10.0f topCapHeight:0.0f];
-            UIGraphicsEndImageContext();
-        });
-        
-        _unreadCountBackgrond = [[UIImageView alloc] initWithImage:unreadBackground];
+        _unreadCountBackgrond = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 20.0f, 20.0f)];
         
         [self.contentView addSubview:_unreadCountBackgrond];
         
@@ -104,6 +91,26 @@
 - (void)dealloc
 {
     [_channelDisposable dispose];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (_presentation == presentation)
+        return;
+    
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    
+    _separatorLayer.backgroundColor = presentation.pallete.separatorColor.CGColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    
+    _titleLabelFirst.textColor = presentation.pallete.dialogTitleColor;
+    _titleLabelSecond.textColor = presentation.pallete.dialogTitleColor;
+    _subtitleLabel.textColor = presentation.pallete.secondaryTextColor;
+    _unreadCountBackgrond.image = presentation.images.dialogBadgeImage;
+    _unreadCountLabel.textColor = presentation.pallete.dialogBadgeTextColor;
+    _verifiedIcon.image = presentation.images.dialogVerifiedIcon;
 }
 
 - (SMetaDisposable *)channelDisposable
@@ -161,14 +168,8 @@
     
     _subtitleLabel.attributedText = _attributedSubtitleText;
     
-    static UIColor *titleColor = nil;
-    static UIColor *encryptedTitleColor = nil;
-    static dispatch_once_t onceToken1;
-    dispatch_once(&onceToken1, ^
-    {
-        titleColor = [UIColor blackColor];
-        encryptedTitleColor = UIColorRGB(0x00a629);
-    });
+    UIColor *titleColor = self.presentation.pallete.dialogTitleColor;
+    UIColor *encryptedTitleColor = self.presentation.pallete.dialogEncryptedColor;
     
     _titleLabelFirst.textColor = _isEncrypted ? encryptedTitleColor : titleColor;
     _titleLabelSecond.textColor = _isEncrypted ? encryptedTitleColor : titleColor;
@@ -177,29 +178,12 @@
     
     _verifiedIcon.hidden = _attributedSubtitleText.length == 0 || !_isVerified;
     
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken2;
-    dispatch_once(&onceToken2, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];
     if (_isSavedMessages)
     {
         [_avatarView loadSavedMessagesWithSize:CGSizeMake(40.0f, 40.0f) placeholder:placeholder];
     }
-    else if (_avatarUrl != nil)
+    else if (_avatarUrl != nil && !_hasExplicitContent)
     {
         _avatarView.fadeTransitionDuration = animated ? 0.14 : 0.3;
         if (![_avatarUrl isEqualToString:_avatarView.currentUrl])
@@ -354,8 +338,8 @@
     if (selected)
     {
         CGRect frame = self.selectedBackgroundView.frame;
-        frame.origin.y = true ? -1 : 0;
-        frame.size.height = self.frame.size.height + (true ? 1 : 0);
+        frame.origin.y = -1;
+        frame.size.height = self.frame.size.height + 1;
         self.selectedBackgroundView.frame = frame;
         
         [self adjustOrdering];
@@ -369,8 +353,8 @@
     if (highlighted)
     {
         CGRect frame = self.selectedBackgroundView.frame;
-        frame.origin.y = true ? -1 : 0;
-        frame.size.height = self.frame.size.height + (true ? 1 : 0);
+        frame.origin.y = -1;
+        frame.size.height = self.frame.size.height + 1;
         self.selectedBackgroundView.frame = frame;
         
         [self adjustOrdering];
@@ -419,11 +403,6 @@
 - (CGRect)textContentFrame
 {
     return self.bounds;
-//    CGRect frame = self.bounds;
-//    frame.origin.x = CGRectGetMaxX(_avatarView.frame) + _avatarView.frame.origin.x;
-//    frame.size.width -= frame.origin.x;
-//    
-//    return frame;
 }
 
 @end

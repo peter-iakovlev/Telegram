@@ -5,7 +5,7 @@
 #import "TGPreparedAssetVideoMessage.h"
 #import "TGPreparedLocalImageMessage.h"
 
-#import "TLInputSingleMedia.h"
+#import "TLInputSingleMedia$inputSingleMedia.h"
 
 @interface TGMediaPostingContext ()
 {
@@ -209,6 +209,8 @@
         TLInputSingleMedia$inputSingleMedia *singleMedia = [[TLInputSingleMedia$inputSingleMedia alloc] init];
         singleMedia.media = _mediaForMessages[@(message.randomId)];
         singleMedia.random_id = message.randomId;
+        singleMedia.message = message.text;
+        singleMedia.entities = message.entities;
         [multiMedia addObject:singleMedia];
     }
     return multiMedia;

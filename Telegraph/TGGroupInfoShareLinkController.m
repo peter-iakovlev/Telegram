@@ -9,7 +9,7 @@
 #import "TGCommentCollectionItem.h"
 #import "TGButtonCollectionItem.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 #import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGChannelManagementSignals.h"
@@ -141,13 +141,13 @@ static NSString *updatedLink(NSString *link) {
 {
     [[UIPasteboard generalPasteboard] setString:_linkItem.text];
     
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.CopyAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.CopyAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
 }
 
 - (void)revokePressed
 {
     __weak TGGroupInfoShareLinkController *weakSelf = self;
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Text") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Revoke") completionBlock:^(bool okButtonPressed)
+    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Text") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Revoke") completionBlock:^(bool okButtonPressed)
     {
         __strong TGGroupInfoShareLinkController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -155,7 +155,7 @@ static NSString *updatedLink(NSString *link) {
             if (okButtonPressed)
                 [strongSelf _revokeLink];
         }
-    }] show];
+    }];
 }
 
 - (void)_revokeLink
@@ -180,7 +180,7 @@ static NSString *updatedLink(NSString *link) {
             if (strongSelf != nil)
                 [strongSelf _setLink:link];
             
-            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         }]];
     } else {
         __weak TGGroupInfoShareLinkController *weakSelf = self;
@@ -196,7 +196,7 @@ static NSString *updatedLink(NSString *link) {
             if (strongSelf != nil)
                 [strongSelf _setLink:link];
             
-            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"GroupInfo.InviteLink.RevokeAlert.Success") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         }]];
     }
 }

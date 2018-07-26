@@ -36,8 +36,8 @@
 
 #import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGAlertView.h"
-#import "TGActionSheet.h"
+#import "TGCustomAlertView.h"
+#import "TGCustomActionSheet.h"
 
 #import <LegacyComponents/TGModernGalleryController.h>
 #import "TGGroupAvatarGalleryItem.h"
@@ -76,6 +76,10 @@
 #import "TGShareMenu.h"
 #import "TGSendMessageSignals.h"
 
+#import <SafariServices/SafariServices.h>
+#import "TGOpenInMenu.h"
+#import "TGPresentation.h"
+
 @interface TGChannelInfoController () <TGGroupInfoSelectContactControllerDelegate, TGAlertSoundControllerDelegate, ASWatcher>
 {
     bool _editing;
@@ -108,6 +112,7 @@
     TGSwitchCollectionItem *_signMessagesItem;
     
     TGCollectionMenuSection *_deleteChannelSection;
+    TGButtonCollectionItem *_deleteChannelItem;
     
     TGCollectionMenuSection *_notificationsAndMediaSection;
     TGUserInfoVariantCollectionItem *_notificationsItem;
@@ -115,6 +120,7 @@
     TGVariantCollectionItem *_soundItem;
     TGUserInfoVariantCollectionItem *_sharedMediaItem;
     
+    NSMutableDictionary *_defaultNotificationSettings;
     NSMutableDictionary *_groupNotificationSettings;
     NSInteger _sharedMediaCount;
     
@@ -162,7 +168,7 @@
         _groupInfoItem.isChannel = true;
         
         _setGroupPhotoItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.UpdatePhotoItem") action:@selector(setGroupPhotoPressed)];
-        _setGroupPhotoItem.titleColor = TGAccentColor();
+        _setGroupPhotoItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
         _setGroupPhotoItem.deselectAutomatically = true;
         
         NSMutableArray *infoSectionItems = [[NSMutableArray alloc] init];
@@ -182,7 +188,14 @@
                 [strongSelf followLink:link];
             }
         };
+        _aboutItem.holdLink = ^(NSString *link) {
+            TGChannelInfoController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf holdLink:link];
+            }
+        };
         _linkItem = [[TGUserInfoUsernameCollectionItem alloc] initWithLabel:TGLocalized(@"Channel.LinkItem") username:linkText];
+        _linkItem.lastInList = true;
         _linkItem.action = @selector(sharePressed);
         _infoSection = [[TGCollectionMenuSection alloc] initWithItems:@[_aboutItem, _linkItem]];
         _infoSection.insets = UIEdgeInsetsMake(1.0f, 0.0f, 22.0f, 0.0f);
@@ -191,14 +204,14 @@
         reportChannelItem.deselectAutomatically = true;
         
         _leaveItem = [[TGUserInfoButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.LeaveChannel") action:@selector(leavePressed)];
-        _leaveItem.titleColor = TGDestructiveAccentColor();
+        _leaveItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
         _leaveItem.deselectAutomatically = true;
         _leaveSection = [[TGCollectionMenuSection alloc] initWithItems:@[reportChannelItem, _leaveItem]];
         
-        TGButtonCollectionItem *deleteChannelItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannel") action:@selector(deleteChannelPressed)];
-        deleteChannelItem.titleColor = TGDestructiveAccentColor();
-        deleteChannelItem.deselectAutomatically = true;
-        _deleteChannelSection = [[TGCollectionMenuSection alloc] initWithItems:@[deleteChannelItem]];
+        _deleteChannelItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannel") action:@selector(deleteChannelPressed)];
+        _deleteChannelItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
+        _deleteChannelItem.deselectAutomatically = true;
+        _deleteChannelSection = [[TGCollectionMenuSection alloc] initWithItems:@[_deleteChannelItem]];
         
         _infoManagementItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.Management") variant:@"" action:@selector(infoManagementPressed)];
         _infoBlacklistItem = [[TGUserInfoVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Info.BlackList") variant:@"" action:@selector(infoBlacklistPressed)];
@@ -264,6 +277,9 @@
              [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId64 ")", _peerId] watcher:self];
              [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId64 ",cachedOnly)", _peerId] options:@{@"peerId": @(_peerId), @"accessHash": @(accessHash)} watcher:self];
              
+             [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 ")", INT_MAX - 2] watcher:self];
+             [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%d,cachedOnly)", INT_MAX - 2] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:INT_MAX - 2] forKey:@"peerId"] watcher:self];
+             
              NSArray *changeTitleActions = [ActionStageInstance() rejoinActionsWithGenericPathNow:@"/tg/conversation/@/changeTitle/@" prefix:[NSString stringWithFormat:@"/tg/conversation/(%" PRId64 ")", _peerId] watcher:self];
              NSArray *changeAvatarActions = [ActionStageInstance() rejoinActionsWithGenericPathNow:@"/tg/conversation/@/updateAvatar/@" prefix:[NSString stringWithFormat:@"/tg/conversation/(%" PRId64 ")", _peerId] watcher:self];
              
@@ -321,6 +337,18 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _leaveItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
+    _deleteChannelItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
+    _setGroupPhotoItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
+    
+    self.view.backgroundColor = _editing ? self.presentation.pallete.collectionMenuBackgroundColor : self.presentation.pallete.backgroundColor;
+    self.collectionView.backgroundColor = self.presentation.pallete.backgroundColor;
+}
+
 - (void)_setupSections:(bool)editing {
     while (self.menuSections.sections.count != 0) {
         [self.menuSections deleteSection:0];
@@ -373,7 +401,7 @@
             [self.menuSections addSection:_deleteChannelSection];
         }
         
-        self.collectionView.backgroundColor = [TGInterfaceAssets listsBackgroundColor];
+        self.collectionView.backgroundColor = self.presentation.pallete.collectionMenuBackgroundColor;
     } else {
         _groupInfoItem.transparent = true;
         [_groupInfoSection deleteItem:_setGroupPhotoItem];
@@ -412,7 +440,7 @@
         if (_conversation.kind == TGConversationKindPersistentChannel) {
             [self.menuSections addSection:_leaveSection];
         }
-        self.collectionView.backgroundColor = [UIColor whiteColor];
+        self.collectionView.backgroundColor = self.presentation.pallete.backgroundColor;
     }
     
     [self.collectionView reloadData];
@@ -439,8 +467,8 @@
 {
     [super _resetCollectionView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
-    self.collectionView.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
+    self.collectionView.backgroundColor = self.presentation.pallete.backgroundColor;
     [self.collectionView setAllowEditingCells:false animated:false];
 }
 
@@ -502,7 +530,7 @@
                     [progressWindow dismiss:true];
                 });
             }] startWithNext:nil error:^(__unused id error) {
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             } completed:^{
                 block();
             }];
@@ -562,7 +590,12 @@
         strongSelf->_avatarMixin = nil;
     };
     _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        __strong TGChannelInfoController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
         TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        searchController.presentation = strongSelf.presentation;
         
         __weak TGMediaAssetsController *weakAssetsController = assetsController;
         __weak TGWebSearchController *weakController = searchController;
@@ -662,6 +695,7 @@
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsEnable") action:@"enable"]];
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsDefault") action:@"default"]];
     
     NSArray *muteIntervals = @[
                                @(1 * 60 * 60),
@@ -677,12 +711,14 @@
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsDisable") action:@"disable"]];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
     
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGChannelInfoController *controller, NSString *action)
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(TGChannelInfoController *controller, NSString *action)
       {
           if ([action isEqualToString:@"enable"])
-              [controller _commitEnableNotifications:true orMuteFor:0];
+              [controller _commitEnableNotifications:@true orMuteFor:0];
+          else if ([action isEqualToString:@"default"])
+              [controller _commitEnableNotifications:nil orMuteFor:0];
           else if ([action isEqualToString:@"disable"])
-              [controller _commitEnableNotifications:false orMuteFor:0];
+              [controller _commitEnableNotifications:@false orMuteFor:0];
           else if (![action isEqualToString:@"cancel"])
           {
               [controller _commitEnableNotifications:false orMuteFor:[action intValue]];
@@ -690,29 +726,35 @@
       } target:self] showInView:self.view];
 }
 
-- (void)_commitEnableNotifications:(bool)enable orMuteFor:(int)muteFor
+- (void)_commitEnableNotifications:(NSNumber *)enable orMuteFor:(int)muteFor
 {
-    int muteUntil = 0;
+    NSNumber *muteUntil = nil;
     if (muteFor == 0)
     {
         if (enable)
-            muteUntil = 0;
-        else
-            muteUntil = INT_MAX;
+            muteUntil = enable.boolValue ? @0: @(INT32_MAX);
     }
     else
     {
-        muteUntil = (int)([[TGTelegramNetworking instance] approximateRemoteTime] + muteFor);
+        muteUntil = @((int)([[TGTelegramNetworking instance] approximateRemoteTime] + muteFor));
     }
     
-    if (muteUntil != [_groupNotificationSettings[@"muteUntil"] intValue])
+    if (!TGObjectCompare(muteUntil, _groupNotificationSettings[@"muteUntil"]))
     {
-        _groupNotificationSettings[@"muteUntil"] = @(muteUntil);
+        if (muteUntil)
+            _groupNotificationSettings[@"muteUntil"] = muteUntil;
+        else
+            [_groupNotificationSettings removeObjectForKey:@"muteUntil"];
+        
+        if (muteUntil == nil)
+            muteUntil = @(INT32_MIN);
+        
         static int actionId = 0;
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(userInfoControllerMute%d)", _peerId, actionId++] options:@{@"peerId": @(_peerId), @"accessHash": @(_conversation.accessHash), @"muteUntil": @(muteUntil)} watcher:TGTelegraphInstance];
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(userInfoControllerMute%d)", _peerId, actionId++] options:@{@"peerId": @(_peerId), @"accessHash": @(_conversation.accessHash), @"muteUntil": muteUntil} watcher:TGTelegraphInstance];
         [self _updateNotificationItems:false];
     }
 }
+
 - (void)_commitUpdateTitle:(NSString *)title
 {
     [_groupInfoItem setUpdatingTitle:title];
@@ -733,7 +775,7 @@
 {
     __weak typeof(self) weakSelf = self;
     
-    [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"GroupInfo.DeleteAndExitConfirmation") actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"GroupInfo.DeleteAndExitConfirmation") actions:@[
                                                                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.DeleteAndExit") action:@"leave" type:TGActionSheetActionTypeDestructive],
                                                                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
                                                                                                         ] actionBlock:^(__unused id target, NSString *action)
@@ -771,7 +813,7 @@
 
 - (void)soundPressed
 {
-    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") soundInfoList:[self _soundInfoListForSelectedSoundId:[_groupNotificationSettings[@"soundId"] intValue]]];
+    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"GroupInfo.Sound") soundInfoList:[self _soundInfoListForSelectedSoundId:_groupNotificationSettings[@"soundId"]] defaultId:_defaultNotificationSettings[@"soundId"]];
     alertSoundController.delegate = self;
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[alertSoundController] navigationBarClass:[TGWhiteNavigationBar class]];
@@ -786,10 +828,19 @@
 
 - (void)alertSoundController:(TGAlertSoundController *)__unused alertSoundController didFinishPickingWithSoundInfo:(NSDictionary *)soundInfo
 {
-    if (soundInfo[@"soundId"] != nil && [soundInfo[@"soundId"] intValue] >= 0 && [soundInfo[@"soundId"] intValue] != [_groupNotificationSettings[@"soundId"] intValue])
+    if (!TGObjectCompare(soundInfo[@"soundId"], _groupNotificationSettings[@"soundId"]))
     {
-        int soundId = [soundInfo[@"soundId"] intValue];
-        _groupNotificationSettings[@"soundId"] = @(soundId);
+        int soundId = 0;
+        if (soundInfo[@"soundId"] != nil)
+        {
+            _groupNotificationSettings[@"soundId"] = soundInfo[@"soundId"];
+            soundId = [soundInfo[@"soundId"] intValue];
+        }
+        else
+        {
+            [_groupNotificationSettings removeObjectForKey:@"soundId"];
+            soundId = INT32_MIN;
+        }
         [self _updateNotificationItems:false];
         
         static int actionId = 0;
@@ -797,26 +848,9 @@
     }
 }
 
-- (NSString *)soundNameFromId:(int)soundId
-{
-    if (soundId == 0 || soundId == 1)
-        return [TGAppDelegateInstance modernAlertSoundTitles][soundId];
-    
-    if (soundId >= 2 && soundId <= 9)
-        return [TGAppDelegateInstance classicAlertSoundTitles][MAX(0, soundId - 2)];
-    
-    if (soundId >= 100 && soundId <= 111)
-        return [TGAppDelegateInstance modernAlertSoundTitles][soundId - 100 + 2];
-    return @"";
-}
-
-- (NSArray *)_soundInfoListForSelectedSoundId:(int)selectedSoundId
+- (NSArray *)_soundInfoListForSelectedSoundId:(NSNumber *)selectedSoundId
 {
     NSMutableArray *infoList = [[NSMutableArray alloc] init];
-    
-    int defaultSoundId = 1;
-    [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 2 soundId:&defaultSoundId muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:NULL];
-    NSString *defaultSoundTitle = [self soundNameFromId:defaultSoundId];
     
     int index = -1;
     for (NSString *soundName in [TGAppDelegateInstance modernAlertSoundTitles])
@@ -824,22 +858,19 @@
         index++;
         
         int soundId = 0;
-        bool isDefault = false;
         
         if (index == 1)
-        {
             soundId = 1;
-            isDefault = true;
-        }
         else if (index == 0)
             soundId = 0;
         else
-            soundId = index + 100 - 2;
+            soundId = index + 100 - 1;
         
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
-        dict[@"title"] = isDefault ? [[NSString alloc] initWithFormat:@"%@ (%@)", soundName, defaultSoundTitle] : soundName;
-        dict[@"selected"] = @(selectedSoundId == soundId);
-        dict[@"soundName"] = [[NSString alloc] initWithFormat:@"%d", isDefault ? defaultSoundId : soundId];
+        dict[@"title"] = soundName;
+        if (selectedSoundId != nil)
+            dict[@"selected"] = @(selectedSoundId.intValue == soundId);
+        dict[@"soundName"] = [[NSString alloc] initWithFormat:@"%d", soundId];
         dict[@"soundId"] = @(soundId);
         dict[@"groupId"] = @(0);
         [infoList addObject:dict];
@@ -854,7 +885,8 @@
         
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
         dict[@"title"] = soundName;
-        dict[@"selected"] = @(selectedSoundId == soundId);
+        if (selectedSoundId != nil)
+            dict[@"selected"] = @(selectedSoundId.intValue == soundId);
         dict[@"soundName"] =  [[NSString alloc] initWithFormat:@"%d", soundId];
         dict[@"soundId"] = @(soundId);
         dict[@"groupId"] = @(1);
@@ -872,14 +904,17 @@
     _muteExpirationTimer = nil;
     
     NSString *variant = TGLocalized(@"UserInfo.NotificationsEnabled");
-    int muteUntil = [_groupNotificationSettings[@"muteUntil"] intValue];
-    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
+    NSNumber *muteUntil = _groupNotificationSettings[@"muteUntil"];
+    if (muteUntil == nil)
+        muteUntil = _defaultNotificationSettings[@"muteUntil"];
+    
+    if (muteUntil.intValue <= [[TGTelegramNetworking instance] approximateRemoteTime])
     {
         variant = TGLocalized(@"UserInfo.NotificationsEnabled");
     }
     else
     {
-        int muteExpiration = muteUntil - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+        int muteExpiration = muteUntil.intValue - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
         if (muteExpiration >= 7 * 24 * 60 * 60)
             variant = TGLocalized(@"UserInfo.NotificationsDisabled");
         else
@@ -893,21 +928,30 @@
     [_notificationsItem setVariant:variant];
     [_editingNotificationsItem setVariant:variant];
     
-    int groupSoundId = [[_groupNotificationSettings objectForKey:@"soundId"] intValue];
-    _soundItem.variant = [self soundNameFromId:groupSoundId];
+    bool isDefault = false;
+    NSNumber *groupSoundId = _groupNotificationSettings[@"soundId"];
+    if (groupSoundId == nil) {
+        groupSoundId = _defaultNotificationSettings[@"soundId"];
+        isDefault = true;
+    }
+    
+    NSString *soundName = [TGAlertSoundController soundNameFromId:groupSoundId.intValue];
+    _soundItem.variant = isDefault ? [NSString stringWithFormat:TGLocalized(@"UserInfo.NotificationsDefaultSound"), soundName] : soundName;
 }
 
 - (void)updateMuteExpiration
 {
     NSString *variant = TGLocalized(@"UserInfo.NotificationsEnabled");
-    int muteUntil = [_groupNotificationSettings[@"muteUntil"] intValue];
-    if (muteUntil <= [[TGTelegramNetworking instance] approximateRemoteTime])
+    NSNumber *muteUntil = _groupNotificationSettings[@"muteUntil"];
+    if (muteUntil == nil)
+        muteUntil = _defaultNotificationSettings[@"muteUntil"];
+    if (muteUntil.intValue <= [[TGTelegramNetworking instance] approximateRemoteTime])
     {
         variant = TGLocalized(@"UserInfo.NotificationsEnabled");
     }
     else
     {
-        int muteExpiration = muteUntil - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
+        int muteExpiration = muteUntil.intValue - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
         variant = [TGStringUtils stringForRemainingMuteInterval:muteExpiration];
     }
     
@@ -1128,7 +1172,7 @@
     }
     else if ([action isEqualToString:@"showUpdatingAvatarOptions"])
     {
-        [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+        [[[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
                                                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoStop") action:@"stop" type:TGActionSheetActionTypeDestructive],
                                                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
                                                             ] actionBlock:^(TGChannelInfoController *controller, NSString *action)
@@ -1181,17 +1225,23 @@
 
 - (void)actorCompleted:(int)status path:(NSString *)path result:(id)result
 {
-    if ([path hasPrefix:@"/tg/peerSettings/"])
+    if ([path hasPrefix:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 "", INT_MAX - 2]])
+    {
+        TGDispatchOnMainThread(^
+        {
+            _defaultNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+            [self _updateNotificationItems:false];
+        });
+    }
+    else if ([path hasPrefix:@"/tg/peerSettings/"])
     {
         if (status == ASStatusSuccess)
         {
-            NSDictionary *notificationSettings = ((SGraphObjectNode *)result).object;
-            
             TGDispatchOnMainThread(^
-                                   {
-                                       _groupNotificationSettings = [notificationSettings mutableCopy];
-                                       [self _updateNotificationItems:false];
-                                   });
+            {
+                _groupNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+                [self _updateNotificationItems:false];
+            });
         }
     }
     else if ([path hasPrefix:[[NSString alloc] initWithFormat:@"/tg/conversation/(%" PRId64 ")/changeTitle/", _conversation.conversationId]])
@@ -1294,7 +1344,7 @@
 - (void)leavePressed {
     __weak typeof(self) weakSelf = self;
     
-    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ChannelInfo.ConfirmLeave") action:@"leave" type:TGActionSheetActionTypeDestructive],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
         ] actionBlock:^(__unused id target, NSString *action)
@@ -1367,7 +1417,7 @@
 - (void)deleteChannelPressed {
     __weak typeof(self) weakSelf = self;
     
-    [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannelConfirmation") actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannelConfirmation") actions:@[
                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ChannelInfo.DeleteChannel") action:@"leave" type:TGActionSheetActionTypeDestructive],
                                                         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
                                                         ] actionBlock:^(__unused id target, NSString *action)
@@ -1382,10 +1432,11 @@
 
 - (void)reportChannelPressed {
     __weak TGChannelInfoController *weakSelf = self;
-    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonSpam") action:@"spam"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonViolence") action:@"violence"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonPornography") action:@"pornography"],
+        [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonCopyright") action:@"copyright"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ReportPeer.ReasonOther") action:@"other"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]] actionBlock:^(__unused id target, NSString *action) {
         __strong TGChannelInfoController *strongSelf = weakSelf;
@@ -1398,6 +1449,8 @@
                     reason = TGReportPeerReasonViolence;
                 } else if ([action isEqualToString:@"pornography"]) {
                     reason = TGReportPeerReasonPornography;
+                } else if ([action isEqualToString:@"copyright"]) {
+                    reason = TGReportPeerReasonCopyright;
                 } else if ([action isEqualToString:@"other"]) {
                     reason = TGReportPeerReasonOther;
                 }
@@ -1411,27 +1464,14 @@
                             [progressWindow dismiss:true];
                         });
                     }] startWithNext:nil error:^(__unused id error) {
-                        if (NSClassFromString(@"UIAlertController") != nil) {
-                            
-                        } else {
-                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-                        }
+                        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                     } completed:^{
                         __strong TGChannelInfoController *strongSelf = weakSelf;
                         if (strongSelf != nil) {
                             [strongSelf dismissViewControllerAnimated:true completion:nil];
                         }
                         
-                        if (NSClassFromString(@"UIAlertController") != nil) {
-                            UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") preferredStyle:UIAlertControllerStyleAlert];
-                            
-                            UIAlertAction *doneAction = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:nil];
-                            [alertVC addAction:doneAction];
-                            
-                            [strongSelf presentViewController:alertVC animated:true completion:nil];
-                        } else {
-                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-                        }
+                        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"ReportPeer.AlertSuccess") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                     }];
                 };
                 
@@ -1474,12 +1514,18 @@
     {
         NSString *hashtag = [link substringFromIndex:@"hashtag://".length];
         [[TGInterfaceManager instance] displayHashtagOverview:[@"#" stringByAppendingString:hashtag] conversationId:_conversation.conversationId];
-    } else {
+    }
+    else if ([link hasPrefix:@"cashtag://"])
+    {
+        NSString *cashtag = [link substringFromIndex:@"cashtag://".length];
+        [[TGInterfaceManager instance] displayHashtagOverview:[@"$" stringByAppendingString:cashtag] conversationId:_conversation.conversationId];
+    }
+    else {
         @try {
             NSURL *url = [NSURL URLWithString:link];
             if (url != nil) {
                 if ([url.host.lowercaseString isEqualToString:@"telegra.ph"]) {
-                    [TGAppDelegateInstance handleOpenInstantView:link];
+                    [TGAppDelegateInstance handleOpenInstantView:link disableActions:false];
                 } else {
                     [[UIApplication sharedApplication] openURL:url];
                 }
@@ -1524,6 +1570,120 @@
         
         TGOverlayControllerWindow *controllerWindow = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:self contentController:controller];
         controllerWindow.hidden = false;
+    }
+}
+
+- (void)holdLink:(NSString *)url
+{
+    if (url.length == 0)
+        return;
+
+    if ([url hasPrefix:@"tel:"])
+    {
+        TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:url.length < 70 ? url : [[url substringToIndex:70] stringByAppendingString:@"..."] actions:@
+        [
+         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.PhoneCall") action:@"call"],
+         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogCopy") action:@"copy"],
+         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
+         ] actionBlock:^(__unused TGChannelInfoController *controller, NSString *action)
+        {
+            if ([action isEqualToString:@"call"])
+            {
+                [TGAppDelegateInstance performPhoneCall:[NSURL URLWithString:url]];
+            }
+            else if ([action isEqualToString:@"copy"])
+            {
+                UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+                if (pasteboard != nil)
+                {
+                    NSString *copyString = url;
+                    if ([url hasPrefix:@"mailto:"])
+                        copyString = [url substringFromIndex:7];
+                    else if ([url hasPrefix:@"tel:"])
+                        copyString = [url substringFromIndex:4];
+                    [pasteboard setString:copyString];
+                }
+            }
+        } target:self];
+        [actionSheet showInView:self.view];
+    }
+    else
+    {
+        NSString *displayString = url;
+        if ([url hasPrefix:@"hashtag://"])
+            displayString = [@"#" stringByAppendingString:[url substringFromIndex:@"hashtag://".length]];
+        else if ([url hasPrefix:@"cashtag://"])
+            displayString = [@"$" stringByAppendingString:[url substringFromIndex:@"cashtag://".length]];
+        else if ([url hasPrefix:@"mention://"])
+            displayString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
+        
+        
+        NSURL *link = [NSURL URLWithString:url];
+        if (link.scheme.length == 0)
+            link = [NSURL URLWithString:[@"http://" stringByAppendingString:url]];
+        
+        bool useOpenIn = false;
+        bool isWeblink = false;
+        if ([link.scheme isEqualToString:@"http"] || [link.scheme isEqualToString:@"https"])
+        {
+            isWeblink = true;
+            if ([TGOpenInMenu hasThirdPartyAppsForURL:link])
+                useOpenIn = true;
+        }
+        
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        if (useOpenIn)
+        {
+            TGActionSheetAction *openInAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.FileOpenIn") action:@"openIn"];
+            openInAction.disableAutomaticSheetDismiss = true;
+            [actions addObject:openInAction];
+        }
+        else
+        {
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogOpen") action:@"open"]];
+        }
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogCopy") action:@"copy"]];
+        
+        if (isWeblink && iosMajorVersion() >= 7)
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.AddToReadingList") action:@"addToReadingList"]];
+        
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+        
+        TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:displayString.length < 70 ? displayString : [[displayString substringToIndex:70] stringByAppendingString:@"..."] actions:actions menuController:nil advancedActionBlock:^(TGMenuSheetController *menuController, TGChannelInfoController *controller, NSString *action)
+        {
+            if ([action isEqualToString:@"open"])
+            {
+                [controller followLink:url];
+            }
+            else if ([action isEqualToString:@"openIn"])
+            {
+                [TGOpenInMenu presentInParentController:self menuController:menuController title:TGLocalized(@"Map.OpenIn") url:link buttonTitle:nil buttonAction:nil sourceView:self.view sourceRect:nil barButtonItem:nil];
+            }
+            else if ([action isEqualToString:@"copy"])
+            {
+                UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+                if (pasteboard != nil)
+                {
+                    NSString *copyString = url;
+                    if ([url hasPrefix:@"mailto:"])
+                        copyString = [url substringFromIndex:7];
+                    else if ([url hasPrefix:@"tel:"])
+                        copyString = [url substringFromIndex:4];
+                    else if ([url hasPrefix:@"hashtag://"])
+                        copyString = [@"#" stringByAppendingString:[url substringFromIndex:@"hashtag://".length]];
+                    else if ([url hasPrefix:@"cashtag://"])
+                        copyString = [@"$" stringByAppendingString:[url substringFromIndex:@"cashtag://".length]];
+                    else if ([url hasPrefix:@"mention://"])
+                        copyString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
+                    [pasteboard setString:copyString];
+                }
+            }
+            else if ([action isEqualToString:@"addToReadingList"])
+            {
+                [[SSReadingList defaultReadingList] addReadingListItemWithURL:[NSURL URLWithString:url] title:@"" previewText:nil error:NULL];
+            }
+        } target:self];
+        [actionSheet showInView:self.view];
     }
 }
 

@@ -17,7 +17,7 @@
 #import "TGSwitchCollectionItem.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGSelectContactController.h"
 #import "TGGroupInfoShareLinkController.h"
@@ -211,12 +211,12 @@ typedef enum {
     
     if (!_isPrivate && (_usernameItem.username.length == 0 || _usernameState != TGUsernameControllerUsernameStateValid)) {
         __weak TGSetupChannelAfterCreationController *weakSelf = self;
-        [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.Setup.PublicNoLink") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
+        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Setup.PublicNoLink") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
             __strong TGSetupChannelAfterCreationController *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 [strongSelf->_usernameItem becomeFirstResponder];
             }
-        }] show];
+        }];
         return;
     }
     

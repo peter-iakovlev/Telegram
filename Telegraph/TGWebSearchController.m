@@ -53,7 +53,7 @@
 
 #import <LegacyComponents/TGMediaPickerGalleryModel.h>
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import <LegacyComponents/TGMediaAssetsLibrary.h>
 
@@ -72,6 +72,8 @@
 #import <LegacyComponents/TGMediaPickerLayoutMetrics.h>
 
 #import "TGLegacyComponentsContext.h"
+
+#import "TGPresentation.h"
 
 @interface TGWebSearchController () <TGSearchBarDelegate, ASWatcher, UICollectionViewDataSource, UICollectionViewDelegate>
 {
@@ -296,10 +298,10 @@
     [super loadView];
     
     self.view.clipsToBounds = true;
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
     _collectionContainer = [[UIView alloc] initWithFrame:self.view.bounds];
-    _collectionContainer.backgroundColor = [UIColor whiteColor];
+    _collectionContainer.backgroundColor = self.view.backgroundColor;
     _collectionContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_collectionContainer];
     
@@ -308,6 +310,7 @@
     CGSize frameSize = self.view.bounds.size;
     _collectionLayout = [[TGModernMediaListLayout alloc] init];
     _collectionView = [[TGModernMediaCollectionView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, frameSize.height) collectionViewLayout:_collectionLayout];
+    _collectionView.backgroundColor = self.view.backgroundColor;
     if (iosMajorVersion() >= 11)
         _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.alwaysBounceVertical = true;
@@ -320,6 +323,9 @@
     [_collectionContainer addSubview:_collectionView];
     
     _recentSearchResultsTableView = [[TGRecentSearchResultsTableView alloc] initWithFrame:_collectionView.frame style:UITableViewStylePlain];
+    _recentSearchResultsTableView.presentation = self.presentation;
+    _recentSearchResultsTableView.backgroundColor = self.view.backgroundColor;
+    _recentSearchResultsTableView.separatorColor = self.presentation.pallete.separatorColor;
     _recentSearchResultsTableView.safeAreaInset = safeAreaInset;
     if (iosMajorVersion() >= 11)
         _recentSearchResultsTableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
@@ -353,6 +359,7 @@
         _scopeButtonTitles = @[TGLocalized(@"WebSearch.Images"), TGLocalized(@"WebSearch.GIFs"), TGLocalized(@"WebSearch.RecentSectionTitle")];
     
     _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, frameSize.width, 0.0f) style:TGSearchBarStyleHeader];
+    [_searchBar setPallete:self.presentation.searchBarPallete];
     _searchBar.safeAreaInset = safeAreaInset;
     _searchBar.customScopeButtonTitles = _scopeButtonTitles;
     _searchBar.scopeBarCollapsed = _embedded;
@@ -371,14 +378,14 @@
     {
         _toolbarView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, self.view.frame.size.height - 44.0f - safeAreaInset.bottom, self.view.frame.size.width, 44.0f + safeAreaInset.bottom)];
         _toolbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-        _toolbarView.backgroundColor = UIColorRGBA(0xf7f7f7, 1.0f);
+        _toolbarView.backgroundColor = self.presentation.pallete.barBackgroundColor;
         UIView *stripeView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _toolbarView.frame.size.width, TGScreenPixel)];
-        stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
+        stripeView.backgroundColor = self.presentation.pallete.barSeparatorColor;
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_toolbarView addSubview:stripeView];
         [self.view addSubview:_toolbarView];
         
-        _toolbarLogoView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"GiphyToolbarLogo.png"]];
+        _toolbarLogoView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"GiphyToolbarLogo.png"), self.presentation.pallete.secondaryTextColor)];
         _toolbarLogoView.frame = CGRectMake(CGFloor((_toolbarView.frame.size.width - _toolbarLogoView.frame.size.width) / 2.0f), 9.0f, _toolbarLogoView.frame.size.width, _toolbarLogoView.frame.size.height);
         _toolbarLogoView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         _toolbarLogoView.hidden = _searchBar.selectedScopeButtonIndex != [self gifsScopeIndex];
@@ -389,7 +396,7 @@
         _clearButton.hidden = _searchBar.selectedScopeButtonIndex != [self recentScopeIndex] || _recentSearchResults.count == 0;
         _clearButton.exclusiveTouch = true;
         [_clearButton setTitle:TGLocalized(@"WebSearch.RecentSectionClear") forState:UIControlStateNormal];
-        [_clearButton setTitleColor:TGAccentColor()];
+        [_clearButton setTitleColor:self.presentation.pallete.navigationButtonColor];
         _clearButton.titleLabel.font = TGSystemFontOfSize(17);
         _clearButton.contentEdgeInsets = UIEdgeInsetsMake(0, 10, 0, 0);
         [_clearButton sizeToFit];
@@ -401,7 +408,7 @@
         _doneButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, 40, 44)];
         _doneButton.exclusiveTouch = true;
         [_doneButton setTitle:TGLocalized(@"MediaPicker.Send") forState:UIControlStateNormal];
-        [_doneButton setTitleColor:TGAccentColor()];
+        [_doneButton setTitleColor:self.presentation.pallete.navigationButtonColor];
         _doneButton.titleLabel.font = TGMediumSystemFontOfSize(17);
         _doneButton.contentEdgeInsets = UIEdgeInsetsMake(0, 27, 0, 10);
         [_doneButton sizeToFit];
@@ -411,22 +418,11 @@
         _doneButton.enabled = false;
         [_toolbarView addSubview:_doneButton];
         
-        static UIImage *countBadgeBackground = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(22.0f, 22.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 22.0f, 22.0f));
-            countBadgeBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:11.0f topCapHeight:11.0f];
-            UIGraphicsEndImageContext();
-        });
-        _countBadge = [[UIImageView alloc] initWithImage:countBadgeBackground];
+        _countBadge = [[UIImageView alloc] initWithImage:self.presentation.images.mediaBadgeImage];
         _countBadge.alpha = 0.0f;
         _countLabel = [[UILabel alloc] init];
         _countLabel.backgroundColor = [UIColor clearColor];
-        _countLabel.textColor = [UIColor whiteColor];
+        _countLabel.textColor = self.presentation.pallete.accentContrastColor;
         _countLabel.font = TGLightSystemFontOfSize(14);
         [_countBadge addSubview:_countLabel];
         [_doneButton addSubview:_countBadge];
@@ -1055,7 +1051,7 @@
             focusItem = galleryItem;
     }];
 
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:_context items:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled hasTimer:false inhibitDocumentCaptions:false hasSelectionPanel:false recipientName:self.recipientName];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:_context items:galleryItems focusItem:focusItem selectionContext:item.selectionContext editingContext:_editingContext hasCaptions:self.captionsEnabled allowCaptionEntities:self.allowCaptionEntities hasTimer:false onlyCrop:false inhibitDocumentCaptions:false hasSelectionPanel:false hasCamera:false recipientName:self.recipientName];
     model.suggestionContext = self.suggestionContext;
     model.controller = modernGallery;
     model.externalSelectionCount = ^NSInteger
@@ -1097,13 +1093,13 @@
         
         [strongSelf->_editingContext setImage:resultImage thumbnailImage:thumbnailImage forItem:editableItem synchronous:true];
     };
-    model.saveItemCaption = ^(id<TGMediaEditableItem> editableItem, NSString *caption)
+    model.saveItemCaption = ^(id<TGMediaEditableItem> editableItem, NSString *caption, NSArray *entities)
     {
         __strong TGWebSearchController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
-        [strongSelf->_editingContext setCaption:caption forItem:editableItem];
+        [strongSelf->_editingContext setCaption:caption entities:entities forItem:editableItem];
         
         if (item.selectionContext != nil && caption.length > 0 && [editableItem conformsToProtocol:@protocol(TGMediaSelectableItem)])
             [item.selectionContext setItem:(id<TGMediaSelectableItem>)editableItem selected:true];
@@ -1447,7 +1443,7 @@
     
     TGActionSheetAction *confirmAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"WebSearch.RecentSectionClear") action:@"confirm" type:TGActionSheetActionTypeDestructive];
     TGActionSheetAction *cancelAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel];
-    TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:TGLocalized(@"WebSearch.RecentClearConfirmation") actions:@[ confirmAction, cancelAction ] actionBlock:^(__unused id target, NSString *action)
+    TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"WebSearch.RecentClearConfirmation") actions:@[ confirmAction, cancelAction ] actionBlock:^(__unused id target, NSString *action)
     {
         if ([action isEqualToString:@"confirm"])
         {
@@ -1496,17 +1492,19 @@
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
-- (NSArray *)selectedItemSignals:(id (^)(id, NSString *))imageDescriptionGenerator
+- (NSArray *)selectedItemSignals:(id (^)(id, NSString *, NSArray *))imageDescriptionGenerator
 {
     NSMutableArray *resultSignals = [[NSMutableArray alloc] init];
     
     for (id<TGWebSearchResult> item in _selectedItems)
     {
         NSString *caption = nil;
+        NSArray *entites = nil;
         id<TGMediaEditAdjustments> adjustments = nil;
         if ([item conformsToProtocol:@protocol(TGMediaEditableItem)])
         {
             caption = [_editingContext captionForItem:(id<TGMediaEditableItem>)item];
+            entites = [_editingContext entitiesForItem:(id<TGMediaEditableItem>)item];
             adjustments = [_editingContext adjustmentsForItem:(id<TGMediaEditableItem>)item];
         }
         if (caption.length == 0)
@@ -1551,11 +1549,11 @@
                     @"image": item,
                     @"stickers": stickers
                 };
-                generatedItem = imageDescriptionGenerator(dictItem, caption);
+                generatedItem = imageDescriptionGenerator(dictItem, caption, entites);
             }
             else
             {
-                generatedItem = imageDescriptionGenerator(item, caption);
+                generatedItem = imageDescriptionGenerator(item, caption, entites);
             }
             if (generatedItem == nil)
                 return [SSignal complete];

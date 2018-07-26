@@ -379,30 +379,6 @@ static std::map<int64_t, int> gidToColor;
     return image;
 }
 
-+ (UIImage *)profileAvatarPlaceholderGeneric
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        image = [UIImage imageNamed:@"ProfilePhotoPlaceholderGeneric.png"];
-    return image;
-}
-
-+ (UIImage *)profileAvatarPlaceholderEmpty
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        TGStretchableImageInCenterWithName(@"ProfilePhotoPlaceholder.png", image);
-    return image;
-}
-
-+ (UIImage *)profileGroupAvatarPlaceholder
-{
-    static UIImage *image = nil;
-    if (image == nil)
-        TGStretchableImageInCenterWithName(@"ProfilePhotoPlaceholder.png", image);
-    return image;
-}
-
 + (UIImage *)actionButton
 {
     static UIImage *image = nil;

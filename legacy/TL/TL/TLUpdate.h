@@ -16,6 +16,7 @@
 @class TLPrivacyKey;
 @class TLMessage;
 @class TLPeer;
+@class TLDialogPeer;
 @class TLContactLink;
 @class TLWebPage;
 @class TLMessageGroup;
@@ -24,6 +25,7 @@
 @class TLMessageMedia;
 @class TLLangPackDifference;
 @class TLLangPackLanguage;
+@class TLFeedPosition;
 
 @interface TLUpdate : NSObject <TLObject>
 
@@ -443,7 +445,7 @@
 @interface TLUpdate$updateDialogPinned : TLUpdate
 
 @property (nonatomic) int32_t flags;
-@property (nonatomic, retain) TLPeer *peer;
+@property (nonatomic, retain) TLDialogPeer *peer;
 
 @end
 
@@ -495,3 +497,19 @@
 
 @end
 
+@interface TLUpdate$updateReadFeedMeta : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic) int32_t feed_id;
+@property (nonatomic, retain) TLFeedPosition *max_position;
+@property (nonatomic) int32_t unread_count;
+@property (nonatomic) int32_t unread_muted_count;
+
+@end
+
+@interface TLUpdate$updateDialogUnreadMark : TLUpdate
+
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) TLDialogPeer *peer;
+
+@end

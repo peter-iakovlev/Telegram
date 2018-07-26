@@ -39,6 +39,11 @@
     [super unbindView];
 }
 
+- (void)resignFirstResponder
+{
+    [((TGPhoneCodeCollectionItemView *)self.boundView) resignCodeFieldFirstResponder];
+}
+
 - (void)becomeFirstResponder
 {
     [((TGPhoneCodeCollectionItemView *)self.boundView) makeCodeFieldFirstResponder];

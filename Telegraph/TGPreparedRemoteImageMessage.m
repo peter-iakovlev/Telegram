@@ -6,7 +6,7 @@
 
 @implementation TGPreparedRemoteImageMessage
 
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash imageInfo:(TGImageInfo *)imageInfo text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -20,7 +20,8 @@
         _imageId = imageId;
         _accessHash = accessHash;
         _imageInfo = imageInfo;
-        _caption = caption;
+        self.text = text;
+        self.entities = entities;
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
         self.replyMarkup = replyMarkup;
@@ -35,6 +36,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -42,7 +44,6 @@
     imageAttachment.imageId = _imageId;
     imageAttachment.accessHash = _accessHash;
     imageAttachment.imageInfo = _imageInfo;
-    imageAttachment.caption = _caption;
     [attachments addObject:imageAttachment];
     
     if (self.replyMessage != nil)
@@ -64,6 +65,7 @@
     }
     
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
     
     return message;
 }

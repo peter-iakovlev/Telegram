@@ -14,6 +14,7 @@
 @protocol TGTabBarDelegate <NSObject>
 
 - (void)tabBarSelectedItem:(int)index;
+- (void)tabBarLongPressedItem:(int)index;
 
 @end
 
@@ -154,7 +155,11 @@
     
     _imageView.image = image;
     if (_imageView.highlighted)
+    {
         _imageView.highlightedImage = TGTintedImage(image, presentation.pallete.tabActiveIconColor);
+        _imageView.highlighted = false;
+        _imageView.highlighted = true;
+    }
     else
         _imageView.highlightedImage = nil;
     
@@ -276,10 +281,11 @@
 @end
 
 
-@interface TGTabBar : UIView
+@interface TGTabBar : UIView <UIGestureRecognizerDelegate>
 {
     bool _skipNextLayout;
     
+    NSNumber *_unreadArrowUp;
     int _callsCount;
     int _messagesCount;
 }
@@ -345,6 +351,20 @@
         
         for (TGTabBarButton *button in _tabButtons)
             [self addSubview:button];
+        
+        UILongPressGestureRecognizer *pressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handlePress:)];
+        pressGestureRecognizer.minimumPressDuration = 0.0;
+        pressGestureRecognizer.allowableMovement = 1.0f;
+        pressGestureRecognizer.delegate = self;
+        [self addGestureRecognizer:pressGestureRecognizer];
+        
+        UILongPressGestureRecognizer *longPressGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        longPressGestureRecognizer.minimumPressDuration = 0.25;
+        longPressGestureRecognizer.allowableMovement = 1.0f;
+        longPressGestureRecognizer.delegate = self;
+        [_chatsButton addGestureRecognizer:longPressGestureRecognizer];
+        
+        [pressGestureRecognizer requireGestureRecognizerToFail:longPressGestureRecognizer];
     }
     return self;
 }
@@ -357,13 +377,9 @@
     _stripeView.backgroundColor = presentation.pallete.barSeparatorColor;
     
     [_contactsButton setImage:presentation.images.tabBarContactsIcon presentation:presentation];
-    [_chatsButton setImage:presentation.images.tabBarChatsIcon presentation:presentation];
+    [self updateArrow];
     [_settingsButton setImage:presentation.images.tabBarSettingsIcon presentation:presentation];
     [_callsButton setImage:presentation.images.tabBarCallsIcon presentation:presentation];
-    
-    _chatsButton = [[TGTabBarButton alloc] initWithImage:presentation.images.tabBarChatsIcon title:TGLocalized(@"DialogList.TabTitle") presentation:presentation];
-    _settingsButton = [[TGTabBarButton alloc] initWithImage:presentation.images.tabBarSettingsIcon title:TGLocalized(@"Settings.TabTitle") presentation:presentation];
-    _callsButton = [[TGTabBarButton alloc] initWithImage:presentation.images.tabBarCallsIcon title:TGLocalized(@"Calls.TabTitle") presentation:presentation];
     
     [_messagesBadge setPresentation:presentation];
     [_callsBadge setPresentation:presentation];
@@ -424,25 +440,47 @@
     {
         [button setSelected:((int)index == selectedIndex)];
     }];
+    
+    [self updateArrow];
 }
 
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+- (void)handlePress:(UILongPressGestureRecognizer *)gestureRecognizer
 {
-    [super touchesBegan:touches withEvent:event];
-    
-    UITouch *touch = [touches anyObject];
-    NSInteger buttonsCount = _callsHidden ? 3 : 4;
-    CGPoint location = [touch locationInView:self];
-    if (location.y > [TGTabBar tabBarHeight:_landscape])
-        return;
-    
-    int index = MAX(0, MIN((int)buttonsCount - 1, (int)(location.x / (self.frame.size.width / buttonsCount))));
-    if (buttonsCount == 3 && index > 0)
-        index += 1;
-    [self setSelectedIndex:index];
-    
-    __strong id<TGTabBarDelegate> delegate = _tabDelegate;
-    [delegate tabBarSelectedItem:index];
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
+    {
+        NSInteger buttonsCount = _callsHidden ? 3 : 4;
+        CGPoint location = [gestureRecognizer locationInView:gestureRecognizer.view];
+        if (location.y > [TGTabBar tabBarHeight:_landscape])
+            return;
+        
+        if (_safeAreaInset.bottom > FLT_EPSILON && self.frame.size.height - location.y < _safeAreaInset.bottom + 4.0f)
+            return;
+        
+        int index = MAX(0, MIN((int)buttonsCount - 1, (int)(location.x / (self.frame.size.width / buttonsCount))));
+        if (buttonsCount == 3 && index > 0)
+            index += 1;
+        [self setSelectedIndex:index];
+        
+        __strong id<TGTabBarDelegate> delegate = _tabDelegate;
+        [delegate tabBarSelectedItem:index];
+    }
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gestureRecognizer
+{
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan)
+    {
+        __strong id<TGTabBarDelegate> delegate = _tabDelegate;
+        [delegate tabBarLongPressedItem:2];
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)__unused gestureRecognizer
+{
+    if (gestureRecognizer.view == self)
+        return true;
+    else
+        return _selectedIndex == 2;
 }
 
 - (void)setMissedCallsCount:(int)callsCount
@@ -477,6 +515,28 @@
     
     _messagesCount = unreadCount;
     [self updateCounts];
+    [self updateArrow];
+}
+
+- (void)setUnreadArrowUp:(NSNumber *)arrowUp
+{
+    _unreadArrowUp = arrowUp;
+    [self updateArrow];
+}
+
+- (void)updateArrow
+{
+    if (_selectedIndex == 2 && _unreadArrowUp != nil)
+    {
+        if (_unreadArrowUp.boolValue)
+            [_chatsButton setImage:self.presentation.images.tabBarChatsUpIcon presentation:self.presentation];
+        else
+            [_chatsButton setImage:self.presentation.images.tabBarChatsDownIcon presentation:self.presentation];
+    }
+    else
+    {
+        [_chatsButton setImage:self.presentation.images.tabBarChatsIcon presentation:self.presentation];
+    }
 }
 
 - (void)updateCounts
@@ -759,6 +819,15 @@
     return true;
 }
 
+- (void)tabBarLongPressedItem:(int)index
+{
+    if ((int)self.selectedIndex == index)
+    {
+        if ([self.selectedViewController respondsToSelector:@selector(scrollToTop)])
+            [self.selectedViewController performSelector:@selector(scrollToTop)];
+    }
+}
+
 - (void)tabBarSelectedItem:(int)index
 {
     if ((int)self.selectedIndex != index)
@@ -854,10 +923,15 @@
     [_customTabBar setMissedCallsCount:callsCount];
 }
 
+- (void)setUnreadArrow:(NSNumber *)up
+{
+    [_customTabBar setUnreadArrowUp:up];
+}
+
 - (void)setUnreadCount:(int)unreadCount
 {
     _unreadCount = unreadCount;
-    [_customTabBar setUnreadCount:unreadCount];
+    [_customTabBar setUnreadCount:_unreadCount];
 }
 
 - (void)localizationUpdated
@@ -906,7 +980,7 @@
         return UIStatusBarStyleLightContent;
     else {
         if (iosMajorVersion() >= 7) {
-            return [super preferredStatusBarStyle];
+            return _presentation.pallete.isDark ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
         } else {
             return UIStatusBarStyleDefault;
         }

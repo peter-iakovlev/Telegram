@@ -14,6 +14,7 @@
 
 @interface TGNativeAudioPlayer ()
 {
+    CGFloat _rate;
     AVPlayerItem *_currentItem;
     TGObserverProxy *_didPlayToEndObserver;
 }
@@ -27,6 +28,8 @@
     self = [super initWithMusic:music controlAudioSession:controlAudioSession];
     if (self != nil)
     {
+        _rate = 1.0f;
+        
         __autoreleasing NSError *error = nil;
         NSString *realPath = path;
         NSArray *audioExtensions = @[@"mp3", @"aac", @"m4a", @"mov", @"mp4"];
@@ -81,7 +84,10 @@
             CMTime targetTime = CMTimeMakeWithSeconds(position, NSEC_PER_SEC);
             [_currentItem seekToTime:targetTime toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
         }
+        if (iosMajorVersion() >= 7)
+            _currentItem.audioTimePitchAlgorithm = AVAudioTimePitchAlgorithmTimeDomain;
         [_player play];
+        _player.rate = (float)_rate;
     }];
 }
 
@@ -101,6 +107,15 @@
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
         [_player pause];
+    }];
+}
+
+- (void)setRate:(CGFloat)rate
+{
+    [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
+    {
+        _rate = rate;
+        [_player setRate:(float)rate];
     }];
 }
 

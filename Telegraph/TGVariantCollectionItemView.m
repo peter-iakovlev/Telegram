@@ -14,6 +14,7 @@
     CGFloat _minLeftPadding;
     bool _flexibleLayout;
     
+    UIColor *_customTitleColor;
     UIColor *_customVariantColor;
 }
 
@@ -48,7 +49,7 @@
 {
     [super setPresentation:presentation];
     
-    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _titleLabel.textColor = _customTitleColor ?: presentation.pallete.collectionMenuTextColor;
     _variantLabel.textColor = _customVariantColor ?: presentation.pallete.collectionMenuVariantColor;
     _disclosureIndicator.image = presentation.images.collectionMenuDisclosureIcon;
 }
@@ -58,6 +59,12 @@
     _titleLabel.text = title;
     [self setNeedsLayout];
     [_titleLabel setNeedsDisplay];
+}
+
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _customTitleColor = titleColor;
+    _titleLabel.textColor = titleColor == nil ? self.presentation.pallete.collectionMenuTextColor : titleColor;
 }
 
 - (void)setVariant:(NSString *)variant variantColor:(UIColor *)variantColor
@@ -101,7 +108,9 @@
 
 - (void)setEnabled:(bool)enabled {
     self.userInteractionEnabled = enabled;
-    _titleLabel.textColor = enabled ? self.presentation.pallete.collectionMenuTextColor : [self.presentation.pallete.collectionMenuTextColor colorWithAlphaComponent:0.56f];
+    
+    UIColor *color = _customTitleColor ?: self.presentation.pallete.collectionMenuTextColor;
+    _titleLabel.textColor = enabled ? color : [color colorWithAlphaComponent:0.56f];
 }
 
 - (void)setHideArrow:(bool)hideArrow {
@@ -142,7 +151,7 @@
     
     CGFloat indicatorSpacing = _disclosureIndicator.hidden ? 0.0f : 10.0f;
     CGFloat labelSpacing = 8.0f;
-    CGFloat availableWidth = bounds.size.width - disclosureWidth - 15.0f - startingX - indicatorSpacing - self.safeAreaInset.right;
+    CGFloat availableWidth = bounds.size.width - disclosureWidth - 12.0f - startingX - indicatorSpacing - self.safeAreaInset.right;
     
     CGFloat titleY =  CGFloor((bounds.size.height - titleSize.height) / 2.0f) + TGRetinaPixel;
     CGFloat variantY =  CGFloor((bounds.size.height - variantSize.height) / 2.0f) + TGRetinaPixel;
@@ -161,6 +170,7 @@
         CGFloat variantOffset = startingX + availableWidth - variantSize.width;
         if (_minLeftPadding > FLT_EPSILON) {
             variantOffset = MAX(startingX + titleSize.width + 4.0, _minLeftPadding + self.safeAreaInset.left);
+            variantSize = CGSizeMake(availableWidth - variantOffset, variantSize.height);
         }
         _variantLabel.frame = CGRectMake(variantOffset, variantY, variantSize.width, variantSize.height);
     }
@@ -174,7 +184,11 @@
     else
     {
         CGFloat variantWidth = CGFloor(availableWidth / 2.0f) - labelSpacing;
-        _variantLabel.frame = CGRectMake(startingX + availableWidth - variantWidth, variantY, variantWidth, variantSize.height);
+        CGFloat variantOffset = startingX + availableWidth - variantWidth;
+        if (_minLeftPadding > FLT_EPSILON) {
+            variantOffset = MAX(startingX + titleSize.width + 4.0, _minLeftPadding + self.safeAreaInset.left);
+        }
+        _variantLabel.frame = CGRectMake(variantOffset, variantY, variantWidth, variantSize.height);
         CGFloat titleWidth = MIN(titleSize.width, availableWidth - variantWidth - labelSpacing);
         _titleLabel.frame = CGRectMake(startingX, titleY, titleWidth, titleSize.height);
     }

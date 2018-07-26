@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import <thirdparty/AFNetworking/AFHTTPRequestOperation.h>
+@class AFHTTPRequestOperation;
 
 typedef void (^TGRawHttpRequestCompletionBlock)(NSData *response);
 

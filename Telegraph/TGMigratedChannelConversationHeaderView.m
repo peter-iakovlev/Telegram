@@ -6,6 +6,8 @@
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
+#import "TGPresentation.h"
+
 @interface TGMigratedChannelConversationHeaderView () {
     UIImageView *_backgrounView;
     
@@ -27,12 +29,12 @@
         _context = context;
         _title = title;
         
-        _backgrounView = [[UIImageView alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackground]];
+        _backgrounView = [[UIImageView alloc] initWithImage:context.presentation.images.chatSystemBackground];
         [self addSubview:_backgrounView];
         
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
-        _titleLabel.textColor = [UIColor whiteColor];
+        _titleLabel.textColor = context.presentation.pallete.chatSystemTextColor;
         _titleLabel.font = TGMediumSystemFontOfSize(14.0f);
         _titleLabel.numberOfLines = 0;
         _titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
@@ -47,7 +49,7 @@
         
         _subtitleLabel = [[UILabel alloc] init];
         _subtitleLabel.backgroundColor = [UIColor clearColor];
-        _subtitleLabel.textColor = [UIColor whiteColor];
+        _subtitleLabel.textColor = context.presentation.pallete.chatSystemTextColor;
         _subtitleLabel.font = TGMediumSystemFontOfSize(14.0f);
         _subtitleLabel.numberOfLines = 0;
         _subtitleLabel.lineBreakMode = NSLineBreakByWordWrapping;
@@ -55,7 +57,7 @@
         
         _textLabel = [[UILabel alloc] init];
         _textLabel.backgroundColor = [UIColor clearColor];
-        _textLabel.textColor = [UIColor whiteColor];
+        _textLabel.textColor = context.presentation.pallete.chatSystemTextColor;
         _textLabel.font = TGSystemFontOfSize(14.0f);
         _textLabel.numberOfLines = 0;
         _textLabel.lineBreakMode = NSLineBreakByWordWrapping;

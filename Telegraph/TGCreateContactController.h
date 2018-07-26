@@ -6,9 +6,10 @@
  * Copyright Peter Iakovlev, 2013.
  */
 
-#import "TGUserInfoController.h"
+#import "TGVCardUserInfoController.h"
 
 @class TGCreateContactController;
+@class TGContactMediaAttachment;
 
 @protocol TGCreateContactControllerDelegate <NSObject>
 
@@ -18,14 +19,14 @@
 
 @end
 
-@interface TGCreateContactController : TGUserInfoController
+@interface TGCreateContactController : TGVCardUserInfoController
 
 @property (nonatomic, weak) id<TGCreateContactControllerDelegate> delegate;
 
 - (instancetype)init;
-- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber;
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber;
-- (instancetype)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber existingUid:(int32_t)existingUid;
-- (instancetype)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber existingNativeContactId:(int)existingNativeContactId;
+- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber attachment:(TGContactMediaAttachment *)attachment;
+- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber attachment:(TGContactMediaAttachment *)attachment;
+- (instancetype)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber existingUid:(int32_t)existingUid attachment:(TGContactMediaAttachment *)attachment;
+- (instancetype)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber existingNativeContactId:(int)existingNativeContactId attachment:(TGContactMediaAttachment *)attachment modal:(bool)modal;
 
 @end

@@ -9,7 +9,7 @@
 #import "TGDatabase.h"
 #import "TGInterfaceManager.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 #import <LegacyComponents/TGTimerTarget.h>
 
 #import "TGCallSession.h"
@@ -26,6 +26,8 @@
 #import "TGCallAudioRouteButtonItemView.h"
 
 #import "TGLegacyComponentsContext.h"
+
+#import "TGPresentation.h"
 
 @interface TGCallController ()
 {
@@ -406,12 +408,12 @@
     {
         UIImage *icon = nil;
         if (route.isLoudspeaker)
-            icon = [UIImage imageNamed:@"CallRouteSpeaker"];
+            icon = TGImageNamed(@"CallRouteSpeaker");
         else if (route.isBluetooth)
-            icon = [UIImage imageNamed:@"CallRouteBluetooth"];
+            icon = TGImageNamed(@"CallRouteBluetooth");
         
         if (icon != nil)
-            icon = TGTintedImage(icon, TGAccentColor());
+            icon = TGTintedImage(icon, TGPresentation.current.pallete.accentColor);
         
         __weak TGCallController *weakSelf = self;
         TGCallAudioRouteButtonItemView *routeItem = [[TGCallAudioRouteButtonItemView alloc] initWithTitle:route.name icon:icon selected:route == _activeAudioRoute action:^
@@ -527,7 +529,7 @@
 
 + (void)presentRatingAlertView:(int64_t)callId accessHash:(int64_t)accessHash presentTabAlert:(bool)presentTabAlert
 {
-    TGCallRatingView *ratingView = [[TGCallRatingView alloc] init];
+    TGCallRatingView *ratingView = [[TGCallRatingView alloc] initWithPresentation:TGPresentation.current];
     __weak TGCallRatingView *weakRatingView = ratingView;
     TGCallAlertView *alertView = [TGCallAlertView presentAlertWithTitle:TGLocalized(@"Calls.RatingTitle") message:nil customView:ratingView cancelButtonTitle:TGLocalized(@"Calls.NotNow") doneButtonTitle:TGLocalized(@"Calls.SubmitRating") completionBlock:^(bool done)
     {
@@ -596,7 +598,7 @@
     if ([text rangeOfString:@"%@"].location != NSNotFound)
         text = [NSString stringWithFormat:text, _peer.displayFirstName];
     
-    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+    [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
 }
 
 - (NSString *)_localizedStringForError:(NSString *)error

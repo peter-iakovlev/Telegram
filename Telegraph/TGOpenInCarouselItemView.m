@@ -12,6 +12,9 @@
     
     UILabel *_titleLabel;
     UICollectionView *_collectionView;
+    
+    TGMenuSheetPallete *_pallete;
+    UIImage *_cornersImage;
 }
 @end
 
@@ -60,6 +63,48 @@
     _collectionView.delegate = nil;
 }
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _pallete = pallete;
+    
+    _titleLabel.textColor = pallete.textColor;
+    _titleLabel.backgroundColor = pallete.backgroundColor;
+    _collectionView.backgroundColor = pallete.backgroundColor;
+    
+    CGFloat radius = 16.0f;
+    CGRect rect = CGRectMake(0, 0, radius * 2 + 1.0f, radius * 2 + 1.0f);
+    
+    UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    CGContextSaveGState(context);
+    
+    CGContextSetFillColorWithColor(context, pallete.backgroundColor.CGColor);
+    CGContextFillRect(context, rect);
+    
+    CGContextSetBlendMode(context, kCGBlendModeClear);
+    
+    CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
+    CGContextFillEllipseInRect(context, rect);
+    
+    CGContextRestoreGState(context);
+    
+    CGContextSetStrokeColorWithColor(context, pallete.separatorColor.CGColor);
+    CGContextSetLineWidth(context, 0.5f);
+    CGContextStrokeEllipseInRect(context, CGRectInset(rect, 0.5f, 0.5f));
+    
+    _cornersImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(radius, radius, radius, radius)];
+    
+    UIGraphicsEndImageContext();
+    
+    for (TGOpenInCarouselCell *cell in _collectionView.visibleCells)
+    {
+        [cell setCornersImage:_cornersImage];
+    }
+}
+
 #pragma mark - 
 
 - (NSInteger)collectionView:(UICollectionView *)__unused collectionView numberOfItemsInSection:(NSInteger)__unused section
@@ -71,8 +116,10 @@
 {
     TGOpenInCarouselCell *cell = (TGOpenInCarouselCell *)[collectionView dequeueReusableCellWithReuseIdentifier:TGOpenInCarouselCellIdentifier forIndexPath:indexPath];
     
+    cell.pallete = _pallete;
     TGOpenInAppItem *appItem = (TGOpenInAppItem *)_appItems[indexPath.row];
     [cell setAppItem:appItem];
+    [cell setCornersImage:_cornersImage];
     
     return cell;
 }

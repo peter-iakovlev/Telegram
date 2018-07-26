@@ -22,3 +22,8 @@
 
 @end
 
+@interface TLcontacts_TopPeers$contacts_topPeersDisabled : TLcontacts_TopPeers
+
+
+@end
+

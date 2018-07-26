@@ -30,13 +30,15 @@
 @property (nonatomic, retain) NSString *phone_number;
 @property (nonatomic, retain) NSString *first_name;
 @property (nonatomic, retain) NSString *last_name;
+@property (nonatomic, retain) NSString *vcard;
 
 @end
 
-@interface TLInputMedia$inputMediaPhoto : TLInputMedia
+@interface TLInputMedia$inputMediaPhotoMeta : TLInputMedia
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLInputPhoto *n_id;
-@property (nonatomic, retain) NSString *caption;
+@property (nonatomic) int32_t ttl_seconds;
 
 @end
 
@@ -47,22 +49,27 @@
 
 @end
 
-@interface TLInputMedia$inputMediaDocument : TLInputMedia
+@interface TLInputMedia$inputMediaDocumentMeta : TLInputMedia
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLInputDocument *n_id;
-@property (nonatomic, retain) NSString *caption;
+@property (nonatomic) int32_t ttl_seconds;
 
 @end
 
-@interface TLInputMedia$inputMediaPhotoExternal : TLInputMedia
+@interface TLInputMedia$inputMediaPhotoExternalMeta : TLInputMedia
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSString *url;
+@property (nonatomic) int32_t ttl_seconds;
 
 @end
 
-@interface TLInputMedia$inputMediaDocumentExternal : TLInputMedia
+@interface TLInputMedia$inputMediaDocumentExternalMeta : TLInputMedia
 
-@property (nonatomic, retain) TLInputFile *url;
+@property (nonatomic) int32_t flags;
+@property (nonatomic, retain) NSString *url;
+@property (nonatomic) int32_t ttl_seconds;
 
 @end
 
@@ -76,7 +83,6 @@
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic, retain) TLInputFile *file;
-@property (nonatomic, retain) NSString *caption;
 @property (nonatomic, retain) NSArray *stickers;
 @property (nonatomic) int32_t ttl_seconds;
 
@@ -89,7 +95,6 @@
 @property (nonatomic, retain) TLInputFile *thumb;
 @property (nonatomic, retain) NSString *mime_type;
 @property (nonatomic, retain) NSArray *attributes;
-@property (nonatomic, retain) NSString *caption;
 @property (nonatomic, retain) NSArray *stickers;
 @property (nonatomic) int32_t ttl_seconds;
 

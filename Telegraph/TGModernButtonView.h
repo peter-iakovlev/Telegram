@@ -9,6 +9,8 @@
 #import "TGModernView.h"
 #import <LegacyComponents/TGModernButton.h>
 
+@class TGPresentation;
+
 @interface TGModernButtonView : TGModernButton <TGModernView>
 
 - (void)setBackgroundImage:(UIImage *)backgroundImage;
@@ -18,6 +20,6 @@
 - (void)setImage:(UIImage *)image;
 - (void)setHighlightedImage:(UIImage *)highlightedImage;
 - (void)setSupplementaryIcon:(UIImage *)supplementaryIcon;
-- (void)setDisplayProgress:(bool)displayProgress animated:(bool)animated;
+- (void)setDisplayProgress:(bool)displayProgress animated:(bool)animated presentation:(TGPresentation *)presentation;
 
 @end

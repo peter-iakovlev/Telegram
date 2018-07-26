@@ -12,13 +12,13 @@
 #import "TL/TLMetaScheme.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGDatabase.h"
 
 #import "TGNetworkOverridesController.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import <MessageUI/MessageUI.h>
 
@@ -86,10 +86,6 @@
         TGCollectionMenuSection *databaseSection = [[TGCollectionMenuSection alloc] initWithItems:@[databaseItem]];
         [self.menuSections addSection:databaseSection];
         
-        TGButtonCollectionItem *fetchDebugIpsItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Fetch IPs" action:@selector(fetchDebugIps)];
-        TGCollectionMenuSection *fetchDebugIpsItemSection = [[TGCollectionMenuSection alloc] initWithItems:@[fetchDebugIpsItem]];
-        [self.menuSections addSection:fetchDebugIpsItemSection];
-        
         TGButtonCollectionItem *clearCacheItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Wipe Cache" action:@selector(clearCachePressed)];
         clearCacheItem.deselectAutomatically = true;
         TGCollectionMenuSection *clearCacheSection = [[TGCollectionMenuSection alloc] initWithItems:@[clearCacheItem]];
@@ -106,6 +102,10 @@
         
         TGButtonCollectionItem *resetCallsTabItem = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Calls Tab" action:@selector(resetCallsTabPressed)];
         resetCallsTabItem.deselectAutomatically = true;
+        
+        TGButtonCollectionItem *dropFeeds = [[TGButtonCollectionItem alloc] initWithTitle:@"Reset Feeds" action:@selector(resetFeedsPressed)];
+        dropFeeds.deselectAutomatically = true;
+        
         TGCollectionMenuSection *callsSection = [[TGCollectionMenuSection alloc] initWithItems:@[resetCallsTabItem, versionItem]];
         [self.menuSections addSection:callsSection];
     }
@@ -118,7 +118,7 @@
 
 - (void)sendLogsButtonPressed
 {
-    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:@"Forward via Telegram" action:@"tg"],
         [[TGActionSheetAction alloc] initWithTitle:@"Forward via Mail" action:@"mail"],
         [[TGActionSheetAction alloc] initWithTitle:@"Cancel" action:@"cancel" type:TGActionSheetActionTypeCancel]
@@ -171,7 +171,7 @@
             }
             else
             {
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.EmailNotConfiguredError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.EmailNotConfiguredError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         }
     } target:self] showInView:self.view];
@@ -227,7 +227,7 @@
                 [TGDatabaseInstance() applyPts:currentState.pts date:currentState.date seq:currentState.seq qts:currentState.qts unreadCount:state.unread_count];
                 TGDispatchOnMainThread(^
                 {
-                    [[[TGAlertView alloc] initWithTitle:nil message:@"Unread count corrected" cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:@"Unread count corrected" cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 });
             }
         } synchronous:false];
@@ -269,6 +269,11 @@
     [[NSUserDefaults standardUserDefaults] synchronize];
     
     [TGDatabaseInstance() setCustomProperty:@"checkedLocalization" value:nil];
+    [TGDatabaseInstance() setCustomProperty:@"didDisplayProxyAdNotice" value:nil];
+}
+
+- (void)resetFeedsPressed {
+    [TGDatabaseInstance() _dropFeeds];
 }
 
 - (void)mailComposeController:(MFMailComposeViewController *)__unused controller didFinishWithResult:(MFMailComposeResult)__unused result error:(NSError *)__unused error
@@ -299,18 +304,6 @@
 
 - (void)walPressed {
     [TGDatabaseInstance() switchToWal];
-}
-
-- (void)fetchDebugIps {
-    TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-    [progressWindow show:true];
-    [[[TGAccountSignals fetchBackupIps:false] onDispose:^{
-        TGDispatchOnMainThread(^{
-            [progressWindow dismiss:true];
-        });
-    }] startWithNext:nil completed:^{
-        
-    }];
 }
 
 - (void)clearCachePressed {

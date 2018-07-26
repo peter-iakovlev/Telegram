@@ -1,6 +1,7 @@
 #import <LegacyComponents/TGModernConversationAssociatedInputPanel.h>
 
 @class TGMessage;
+@class TGPresentation;
 
 @interface TGModenConcersationReplyAssociatedPanel : TGModernConversationAssociatedInputPanel
 

@@ -8,93 +8,6 @@
 
 static const float luminanceThreshold = 0.8f;
 
-static UIImage *clockFrameWithColor(UIColor *color)
-{
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(11.0f, 11.0f), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGFloat lineWidth = 1.25f;
-    CGContextSetStrokeColorWithColor(context, color.CGColor);
-    CGContextStrokeEllipseInRect(context, CGRectMake(lineWidth / 2.0f, lineWidth / 2.0f, 11.0f - lineWidth, 11.0f - lineWidth));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
-}
-
-static UIImage *clockMinWithColor(UIColor *color)
-{
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(2.0f, 5.0f), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGFloat lineWidth = 1.25f;
-    CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillRect(context, CGRectMake(lineWidth / 2.0f, lineWidth / 2.0f, 2.0f - lineWidth, 5.0f - lineWidth));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
-}
-
-static UIImage *clockHourWithColor(UIColor *color)
-{
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(4.0f, 2.0f), false, 0.0f);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
-    CGFloat lineWidth = 1.25f;
-    CGContextSetFillColorWithColor(context, color.CGColor);
-    CGContextFillRect(context, CGRectMake(lineWidth / 2.0f, lineWidth / 2.0f, 4.0f - lineWidth, 2.0f - lineWidth));
-    
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return image;
-}
-
-static CGImageRef clockFrameImage(CGFloat luminance)
-{
-    static CGImageRef lightImage = NULL;
-    static CGImageRef darkImage = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lightImage = CGImageRetain(clockFrameWithColor(UIColorRGBA(0x525252, 0.6f)).CGImage);
-        darkImage = CGImageRetain(clockFrameWithColor([UIColor whiteColor]).CGImage);
-    });
-    
-    return luminance >= luminanceThreshold ? lightImage : darkImage;
-}
-
-static CGImageRef clockMinImage(CGFloat luminance)
-{
-    static CGImageRef lightImage = NULL;
-    static CGImageRef darkImage = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lightImage = CGImageRetain(clockMinWithColor(UIColorRGBA(0x525252, 0.6f)).CGImage);
-        darkImage = CGImageRetain(clockMinWithColor([UIColor whiteColor]).CGImage);
-    });
-    
-    return luminance >= luminanceThreshold ? lightImage : darkImage;
-}
-
-static CGImageRef clockHourImage(CGFloat luminance)
-{
-    static CGImageRef lightImage = NULL;
-    static CGImageRef darkImage = NULL;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        lightImage = CGImageRetain(clockHourWithColor(UIColorRGBA(0x525252, 0.6f)).CGImage);
-        darkImage = CGImageRetain(clockHourWithColor([UIColor whiteColor]).CGImage);
-    });
-    
-    return luminance >= luminanceThreshold ? lightImage : darkImage;
-}
-
 @interface TGMessageImageViewTimestampLayer : CALayer
 
 @end
@@ -115,7 +28,9 @@ static CGImageRef clockHourImage(CGFloat luminance)
 {
     TGStaticBackdropAreaData *_backdropArea;
     
+    bool _serviceStyle;
     UIColor *_timestampColor;
+    UIColor *_timestampTextColor;
     NSString *_timestampString;
     NSString *_signatureString;
     bool _displayCheckmarks;
@@ -213,9 +128,9 @@ static CGImageRef clockHourImage(CGFloat luminance)
         {
             if (_clockFrameLayer != nil)
             {
-                _clockFrameLayer.contents = (__bridge id)clockFrameImage(currentLuminance);
-                _clockMinLayer.contents = (__bridge id)clockMinImage(currentLuminance);
-                _clockHourLayer.contents = (__bridge id)clockHourImage(currentLuminance);
+                _clockFrameLayer.contents = (__bridge id)[self frameImage];
+                _clockMinLayer.contents = (__bridge id)[self minuteImage];
+                _clockHourLayer.contents = (__bridge id)[self hourImage];
             }
         }
         
@@ -227,8 +142,25 @@ static CGImageRef clockHourImage(CGFloat luminance)
 {
     _presentation = presentation;
     
-    _chechmarkFirstLayer.contents = (__bridge id)presentation.images.chatDeliveredIconMedia.CGImage;
-    _chechmarkSecondLayer.contents = (__bridge id)presentation.images.chatReadIconMedia.CGImage;
+    _chechmarkFirstLayer.contents = (__bridge id)[self deliveredIconImage].CGImage;
+    _chechmarkSecondLayer.contents = (__bridge id)[self readIconImage].CGImage;
+    
+    [self setNeedsDisplay];
+}
+
+- (UIImage *)viewsIconImage
+{
+    return _serviceStyle ? _presentation.images.chatStickerMessageViewsIcon : _presentation.images.chatMediaMessageViewsIcon;
+}
+
+- (UIImage *)deliveredIconImage
+{
+    return _serviceStyle ? _presentation.images.chatDeliveredIconSticker : _presentation.images.chatDeliveredIconMedia;
+}
+
+- (UIImage *)readIconImage
+{
+    return _serviceStyle ? _presentation.images.chatReadIconSticker : _presentation.images.chatReadIconMedia;
 }
 
 - (void)setTimestampColor:(UIColor *)timestampColor
@@ -240,6 +172,26 @@ static CGImageRef clockHourImage(CGFloat luminance)
     }
 }
 
+- (void)setTimestampTextColor:(UIColor *)timestampTextColor
+{
+    if (_timestampTextColor != timestampTextColor)
+    {
+        _timestampTextColor = timestampTextColor;
+        [self setNeedsDisplay];
+    }
+}
+
+- (void)setServiceStyle:(bool)serviceStyle
+{
+    if (_serviceStyle != serviceStyle)
+    {
+        _serviceStyle = serviceStyle;
+        [self setNeedsDisplay];
+        
+        _chechmarkFirstLayer.contents = (__bridge id)[self deliveredIconImage].CGImage;
+        _chechmarkSecondLayer.contents = (__bridge id)[self readIconImage].CGImage;
+    }
+}
 
 + (NSString *)stringForCount:(int32_t)count {
     if (count < 0)
@@ -383,26 +335,39 @@ static CGImageRef clockHourImage(CGFloat luminance)
     return animation;
 }
 
+- (CGImageRef)frameImage
+{
+    return _presentation.images.chatClockFrameIconMedia.CGImage;
+}
+
+- (CGImageRef)hourImage
+{
+    return _presentation.images.chatClockHourIconMedia.CGImage;
+}
+
+- (CGImageRef)minuteImage
+{
+    return _presentation.images.chatClockMinuteIconMedia.CGImage;
+}
+
 - (void)_addProgress
 {
-    CGFloat luminance = 0.0f;//_backdropArea.luminance;
-    
     [CATransaction begin];
     [CATransaction setDisableActions:true];
     _clockFrameLayer = [self _dequeueLayer];
-    _clockFrameLayer.contents = (__bridge id)clockFrameImage(luminance);
+    _clockFrameLayer.contents = (__bridge id)[self frameImage];
     _clockFrameLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
-    _clockFrameLayer.bounds = CGRectMake(0.0f, 0.0f, 11.0f, 11.0f);
+    _clockFrameLayer.bounds = CGRectMake(0.0f, 0.0f, 15.0f, 15.0f);
     
     _clockMinLayer = [self _dequeueLayer];
-    _clockMinLayer.contents = (__bridge id)clockMinImage(luminance);
-    _clockMinLayer.anchorPoint = CGPointMake(0.5f, 4.0f / 5.0f);
-    _clockMinLayer.bounds = CGRectMake(0.0f, 0.0f, 2.0f, 5.0f);
+    _clockMinLayer.contents = (__bridge id)[self minuteImage];
+    _clockMinLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
+    _clockMinLayer.bounds = CGRectMake(0.0f, 0.0f, 15.0f, 15.0f);
     
     _clockHourLayer = [self _dequeueLayer];
-    _clockHourLayer.contents = (__bridge id)clockHourImage(luminance);
-    _clockHourLayer.anchorPoint = CGPointMake(1.0f / 4.0f, 0.5f);
-    _clockHourLayer.bounds = CGRectMake(0.0f, 0.0f, 4.0f, 2.0f);
+    _clockHourLayer.contents = (__bridge id)[self hourImage];
+    _clockHourLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
+    _clockHourLayer.bounds = CGRectMake(0.0f, 0.0f, 15.0f, 15.0f);
     [self updateProgressPosition];
     [CATransaction commit];
     
@@ -418,9 +383,9 @@ static CGImageRef clockHourImage(CGFloat luminance)
     if (_clockFrameLayer != nil) {
         CGPoint position = CGPointZero;
         if (_viewsString != nil) {
-            position = CGPointMake(self.bounds.size.width - [self timestampStringSize].width - 6.0f - 17.5f + 11.0f / 2.0f, 3.5f + 11.0f / 2.0f);;
+            position = CGPointMake(self.bounds.size.width - [self timestampStringSize].width - 6.0f - 19.0f - TGScreenPixel + 15.0f / 2.0f, 1.0f + TGScreenPixel + 15.0f / 2.0f);;
         } else {
-            position = CGPointMake(self.bounds.size.width - 17.5f + 11.0f / 2.0f, 3.5f + 11.0f / 2.0f);
+            position = CGPointMake(self.bounds.size.width - 19.0f - TGScreenPixel + 15.0f / 2.0f, 1.0f + TGScreenPixel + 15.0f / 2.0f);
         }
         _clockFrameLayer.position = position;
         _clockMinLayer.position = position;
@@ -456,7 +421,7 @@ static CGImageRef clockHourImage(CGFloat luminance)
     [CATransaction setDisableActions:true];
     
     _chechmarkFirstLayer = [self _dequeueLayer];
-    _chechmarkFirstLayer.contents = (__bridge id)_presentation.images.chatDeliveredIconMedia.CGImage;
+    _chechmarkFirstLayer.contents = (__bridge id)[self deliveredIconImage].CGImage;
     _chechmarkFirstLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
     _chechmarkFirstLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 11.0f);
     _chechmarkFirstLayer.position = CGPointMake(self.bounds.size.width - 15.0f, 9.5f);
@@ -473,7 +438,7 @@ static CGImageRef clockHourImage(CGFloat luminance)
     [CATransaction setDisableActions:true];
     
     _chechmarkSecondLayer = [self _dequeueLayer];
-    _chechmarkSecondLayer.contents = (__bridge id)_presentation.images.chatReadIconMedia.CGImage;
+    _chechmarkSecondLayer.contents = (__bridge id)[self readIconImage].CGImage;
     _chechmarkSecondLayer.anchorPoint = CGPointMake(0.5f, 0.5f);
     _chechmarkSecondLayer.bounds = CGRectMake(0.0f, 0.0f, 12.0f, 11.0f);
     _chechmarkSecondLayer.position = CGPointMake(self.bounds.size.width - 11.0f, 9.5f);
@@ -534,7 +499,11 @@ static CGImageRef clockHourImage(CGFloat luminance)
         _signatureStringSize = [_signatureString sizeWithFont:[self timestampFont]];
         _signatureStringSize.width = MIN(_maxWidth - 8.0f - _timestampStringSize.width - (_displayCheckmarks ? 20.0f : 0.0f) - (_viewsString.length == 0 ? 0 : 40.0f), _signatureStringSize.width);
         if (_signatureString != nil) {
-            _signatureStringSize.width += 8.0f;
+            if ([_signatureString isEqualToString:TGLocalized(@"Conversation.MessageEditedLabel")]) {
+                _signatureStringSize.width += 5.0f;
+            } else {
+                _signatureStringSize.width += 8.0f;
+            }
         }
         _timestampStringSize.width += _signatureStringSize.width;
     }
@@ -616,7 +585,7 @@ static CGImageRef clockHourImage(CGFloat luminance)
     
     CGContextSetBlendMode(context, kCGBlendModeNormal);
     
-    UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : [UIColor whiteColor];
+    UIColor *textColor = luminance > luminanceThreshold ? UIColorRGBA(0x525252, 0.6f) : _timestampTextColor;
     
     CGContextSetFillColorWithColor(context, textColor.CGColor);
     CGContextSetStrokeColorWithColor(context, textColor.CGColor);
@@ -626,13 +595,7 @@ static CGImageRef clockHourImage(CGFloat luminance)
         if (!_displayCheckmarks || _checkmarkValue != 0) {
             viewsWidth = [self viewsWidth];
             
-            static UIImage *viewsImage = nil;
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^{
-                viewsImage = TGImageNamed(@"MessageInlineViewCountIconMedia.png");
-            });
-            
-            [viewsImage drawAtPoint:CGPointMake(backgroundRect.origin.x + 6.0f, backgroundRect.origin.y + 5.0f)];
+            [[self viewsIconImage] drawAtPoint:CGPointMake(backgroundRect.origin.x + 6.0f, backgroundRect.origin.y + 5.0f)];
             
             [_viewsString drawAtPoint:CGPointMake(backgroundRect.origin.x + 23.0f, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
             
@@ -643,16 +606,17 @@ static CGImageRef clockHourImage(CGFloat luminance)
     }
     
     if (_signatureString != nil) {
-        [_signatureString drawInRect:CGRectMake(backgroundRect.origin.x + viewsWidth + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f, _signatureStringSize.width, _signatureStringSize.height) withFont:[self timestampFont] lineBreakMode:NSLineBreakByTruncatingTail];
+        CGFloat origin = ([_signatureString isEqualToString:TGLocalized(@"Conversation.MessageEditedLabel")]) ? 9.0f : 6.0f;
+        [_signatureString drawInRect:CGRectMake(backgroundRect.origin.x + viewsWidth + 6.0f - TGScreenPixel, backgroundRect.origin.y + 2.0f, _signatureStringSize.width, _signatureStringSize.height) withFont:[self timestampFont] lineBreakMode:NSLineBreakByTruncatingTail];
     }
     
-    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + viewsWidth + _signatureStringSize.width + 6.0f - TGRetinaPixel, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
+    [_timestampString drawAtPoint:CGPointMake(backgroundRect.origin.x + viewsWidth + _signatureStringSize.width + 6.0f - TGScreenPixel, backgroundRect.origin.y + 2.0f) withFont:[self timestampFont]];
     
     if (_displayCheckmarks && _viewsString == nil)
     {
         if (_checkmarkDisplayValue >= 1)
         {
-            CGImageRef checkmarkImage = _presentation.images.chatDeliveredIconMedia.CGImage;
+            CGImageRef checkmarkImage = [self deliveredIconImage].CGImage;
             if (checkmarkImage != NULL)
             {
                 CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f, 4.0f, 12.0f, 11.0f);
@@ -671,7 +635,7 @@ static CGImageRef clockHourImage(CGFloat luminance)
         
         if (_checkmarkDisplayValue >= 2)
         {
-            CGImageRef checkmarkImage = _presentation.images.chatReadIconMedia.CGImage;
+            CGImageRef checkmarkImage = [self readIconImage].CGImage;
             if (checkmarkImage != NULL)
             {
                 CGRect checkmarkFrame = CGRectMake(backgroundRect.origin.x + backgroundRect.size.width - 21.0f + 4.0f, 4.0f, 12.0f, 11.0f);

@@ -10,11 +10,14 @@
 
 #import "TGLoginCountriesController.h"
 
+#import "TGPresentation.h"
+
 @interface TGCountryAndPhoneCollectionItemView () <UITextFieldDelegate>
 {
     UIButton *_countryButton;
     TGTextField *_countryTextField;
     TGTextField *_phoneTextField;
+    UIImageView *_disclosureIndicator;
 }
 
 @end
@@ -26,56 +29,7 @@
     self = [super initWithFrame:frame];
     if (self != nil)
     {
-        UIImage *buttonImage = nil;
-        UIImage *buttonHighlightedImage = nil;
-        for (int i = 0; i < 2; i++)
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(50.0f, 51.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            if (i == 0)
-            {
-                CGFloat lineWidth = TGScreenPixel;
-                CGFloat verticalOffset = 44.0f;
-                CGContextSetLineWidth(context, lineWidth);
-                CGContextSetStrokeColorWithColor(context, TGSeparatorColor().CGColor);
-                CGContextBeginPath(context);
-                CGContextMoveToPoint(context, 16.0f, verticalOffset + lineWidth / 2.0f);
-                CGContextAddLineToPoint(context, 32.0f, verticalOffset + lineWidth / 2.0f);
-                CGContextAddLineToPoint(context, 32.0f + 6.0f + lineWidth / 2.0f, verticalOffset + lineWidth / 2.0f + 6.0f + lineWidth / 2.0f);
-                CGContextAddLineToPoint(context, 32.0f + 12.0f + lineWidth / 2.0f, verticalOffset + lineWidth / 2.0f);
-                CGContextAddLineToPoint(context, 50.0f, verticalOffset + lineWidth / 2.0f);
-                CGContextStrokePath(context);
-            }
-            else
-            {
-                CGFloat lineWidth = TGScreenPixel;
-                CGFloat verticalOffset = 44.0f;
-                CGContextSetFillColorWithColor(context, TGSelectionColor().CGColor);
-                CGContextSetStrokeColorWithColor(context, TGSeparatorColor().CGColor);
-                CGContextBeginPath(context);
-                CGContextMoveToPoint(context, 0.0f, verticalOffset + lineWidth);
-                CGContextAddLineToPoint(context, 32.0f, verticalOffset + lineWidth);
-                CGContextAddLineToPoint(context, 32.0f + 6.0f + lineWidth, verticalOffset + 6.0f + lineWidth);
-                CGContextAddLineToPoint(context, 32.0f + 12.0f + lineWidth, verticalOffset + lineWidth);
-                CGContextAddLineToPoint(context, 50.0f, verticalOffset + lineWidth);
-                CGContextAddLineToPoint(context, 50.0f, 0.0f);
-                CGContextAddLineToPoint(context, 0.0f, 0.0f);
-                CGContextClosePath(context);
-                CGContextFillPath(context);
-            }
-            
-            UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:49.0f topCapHeight:0.0f];
-            if (i == 0)
-                buttonImage = image;
-            else
-                buttonHighlightedImage = image;
-            UIGraphicsEndImageContext();
-        }
-        
         _countryButton = [[UIButton alloc] init];
-        [_countryButton setBackgroundImage:buttonImage forState:UIControlStateNormal];
-        [_countryButton setBackgroundImage:buttonHighlightedImage forState:UIControlStateHighlighted];
         [_countryButton setTitle:@"Lithuania" forState:UIControlStateNormal];
         _countryButton.titleLabel.font = TGSystemFontOfSize(17.0f);
         [_countryButton setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
@@ -84,10 +38,10 @@
         [_countryButton addTarget:self action:@selector(countryButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_countryButton];
         
-        UIImageView *disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
-        disclosureIndicator.frame = (CGRect){{_countryButton.frame.size.width - 15.0f - disclosureIndicator.frame.size.width, 15.0f}, disclosureIndicator.frame.size};
-        disclosureIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
-        [_countryButton addSubview:disclosureIndicator];
+        _disclosureIndicator = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 8.0f, 14.0f)];
+        _disclosureIndicator.frame = (CGRect){{_countryButton.frame.size.width - 15.0f - _disclosureIndicator.frame.size.width, 15.0f}, _disclosureIndicator.frame.size};
+        _disclosureIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
+        [_countryButton addSubview:_disclosureIndicator];
         
         _countryTextField = [[TGTextField alloc] init];
         _countryTextField.font = TGSystemFontOfSize(17.0f);
@@ -105,6 +59,7 @@
         _phoneTextField.textAlignment = NSTextAlignmentLeft;
         _phoneTextField.textColor = [UIColor blackColor];
         _phoneTextField.placeholder = TGLocalized(@"ChangePhoneNumberNumber.NumberPlaceholder");
+        _phoneTextField.placeholderFont = _phoneTextField.font;
         _phoneTextField.keyboardType = UIKeyboardTypeNumberPad;
         _phoneTextField.delegate = self;
         [self addSubview:_phoneTextField];
@@ -137,6 +92,72 @@
         [self updateCountry];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    [_countryButton setTitleColor:presentation.pallete.collectionMenuTextColor forState:UIControlStateNormal];
+    _disclosureIndicator.image = presentation.images.collectionMenuDisclosureIcon;
+    
+    UIImage *buttonImage = nil;
+    UIImage *buttonHighlightedImage = nil;
+    for (int i = 0; i < 2; i++)
+    {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(50.0f, 51.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        
+        if (i == 0)
+        {
+            CGFloat lineWidth = TGScreenPixel;
+            CGFloat verticalOffset = 44.0f;
+            CGContextSetLineWidth(context, lineWidth);
+            CGContextSetStrokeColorWithColor(context, presentation.pallete.collectionMenuSeparatorColor.CGColor);
+            CGContextBeginPath(context);
+            CGContextMoveToPoint(context, 16.0f, verticalOffset + lineWidth / 2.0f);
+            CGContextAddLineToPoint(context, 32.0f, verticalOffset + lineWidth / 2.0f);
+            CGContextAddLineToPoint(context, 32.0f + 6.0f + lineWidth / 2.0f, verticalOffset + lineWidth / 2.0f + 6.0f + lineWidth / 2.0f);
+            CGContextAddLineToPoint(context, 32.0f + 12.0f + lineWidth / 2.0f, verticalOffset + lineWidth / 2.0f);
+            CGContextAddLineToPoint(context, 50.0f, verticalOffset + lineWidth / 2.0f);
+            CGContextStrokePath(context);
+        }
+        else
+        {
+            CGFloat lineWidth = TGScreenPixel;
+            CGFloat verticalOffset = 44.0f;
+            CGContextSetFillColorWithColor(context, presentation.pallete.collectionMenuCellSelectionColor.CGColor);
+            CGContextSetStrokeColorWithColor(context, presentation.pallete.collectionMenuSeparatorColor.CGColor);
+            CGContextBeginPath(context);
+            CGContextMoveToPoint(context, 0.0f, verticalOffset + lineWidth);
+            CGContextAddLineToPoint(context, 32.0f, verticalOffset + lineWidth);
+            CGContextAddLineToPoint(context, 32.0f + 6.0f + lineWidth, verticalOffset + 6.0f + lineWidth);
+            CGContextAddLineToPoint(context, 32.0f + 12.0f + lineWidth, verticalOffset + lineWidth);
+            CGContextAddLineToPoint(context, 50.0f, verticalOffset + lineWidth);
+            CGContextAddLineToPoint(context, 50.0f, 0.0f);
+            CGContextAddLineToPoint(context, 0.0f, 0.0f);
+            CGContextClosePath(context);
+            CGContextFillPath(context);
+        }
+        
+        UIImage *image = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:49.0f topCapHeight:0.0f];
+        if (i == 0)
+            buttonImage = image;
+        else
+            buttonHighlightedImage = image;
+        UIGraphicsEndImageContext();
+    }
+    
+    [_countryButton setBackgroundImage:buttonImage forState:UIControlStateNormal];
+    [_countryButton setBackgroundImage:buttonHighlightedImage forState:UIControlStateHighlighted];
+    
+    _countryTextField.textColor = presentation.pallete.collectionMenuTextColor;
+    _countryTextField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _countryTextField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
+    
+    _phoneTextField.textColor = presentation.pallete.collectionMenuTextColor;
+    _phoneTextField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _phoneTextField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
 }
 
 - (void)layoutSubviews
@@ -462,6 +483,7 @@
 - (void)countryButtonPressed
 {
     TGLoginCountriesController *countriesController = [[TGLoginCountriesController alloc] init];
+    countriesController.presentation = self.presentation;
     __weak TGCountryAndPhoneCollectionItemView *weakSelf = self;
     countriesController.countrySelected = ^(int code, NSString *name, __unused NSString *countryId)
     {

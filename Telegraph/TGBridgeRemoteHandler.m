@@ -4,7 +4,7 @@
 #import "TGInterfaceManager.h"
 #import "TGModernConversationController.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @implementation TGBridgeRemoteHandler
 
@@ -39,13 +39,11 @@
                 }
                 else
                 {
-                    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"WatchRemote.AlertTitle") message:TGLocalized(@"WatchRemote.AlertText") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"WatchRemote.AlertOpen") completionBlock:^(bool okButtonPressed)
+                    [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"WatchRemote.AlertTitle") message:TGLocalized(@"WatchRemote.AlertText") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"WatchRemote.AlertOpen") completionBlock:^(bool okButtonPressed)
                     {
                         if (okButtonPressed)
-                        {
                             [self navigateToPeerId:remoteSubscription.peerId messageId:remoteSubscription.messageId startMedia:remoteSubscription.autoPlay];
-                        }
-                    }] show];
+                    }];
                 }
             }
         });
@@ -61,9 +59,9 @@
     TGModernConversationController *controller = [[TGInterfaceManager instance] currentControllerWithPeerId:peerId];
     if (controller != nil)
     {
-        [controller scrollToMessage:messageId sourceMessageId:0 animated:true];
+        [controller scrollToMessage:messageId peerId:0 sourceMessageId:0 animated:true];
         if (startMedia)
-            [controller openMediaFromMessage:messageId instant:false];
+            [controller openMediaFromMessage:messageId peerId:0 instant:false];
     }
     else
     {
@@ -74,7 +72,7 @@
         {
             TGDispatchAfter(0.8f, dispatch_get_main_queue(), ^
             {
-                [controller openMediaFromMessage:messageId instant:false];
+                [controller openMediaFromMessage:messageId peerId:0 instant:false];
             });
         }
     }

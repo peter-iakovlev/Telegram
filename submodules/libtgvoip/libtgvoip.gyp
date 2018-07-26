@@ -28,12 +28,8 @@
         'sources': [
           '<(tgvoip_src_loc)/BlockingQueue.cpp',
           '<(tgvoip_src_loc)/BlockingQueue.h',
-          '<(tgvoip_src_loc)/BufferInputStream.cpp',
-          '<(tgvoip_src_loc)/BufferInputStream.h',
-          '<(tgvoip_src_loc)/BufferOutputStream.cpp',
-          '<(tgvoip_src_loc)/BufferOutputStream.h',
-          '<(tgvoip_src_loc)/BufferPool.cpp',
-          '<(tgvoip_src_loc)/BufferPool.h',
+          '<(tgvoip_src_loc)/Buffers.cpp',
+          '<(tgvoip_src_loc)/Buffers.h',
           '<(tgvoip_src_loc)/CongestionControl.cpp',
           '<(tgvoip_src_loc)/CongestionControl.h',
           '<(tgvoip_src_loc)/EchoCanceller.cpp',
@@ -50,7 +46,9 @@
           '<(tgvoip_src_loc)/OpusEncoder.h',
           '<(tgvoip_src_loc)/threading.h',
           '<(tgvoip_src_loc)/VoIPController.cpp',
+          '<(tgvoip_src_loc)/VoIPGroupController.cpp',
           '<(tgvoip_src_loc)/VoIPController.h',
+          '<(tgvoip_src_loc)/PrivateDefines.h',
           '<(tgvoip_src_loc)/VoIPServerConfig.cpp',
           '<(tgvoip_src_loc)/VoIPServerConfig.h',
           '<(tgvoip_src_loc)/audio/AudioInput.cpp',
@@ -61,6 +59,8 @@
           '<(tgvoip_src_loc)/audio/Resampler.h',
           '<(tgvoip_src_loc)/NetworkSocket.cpp',
           '<(tgvoip_src_loc)/NetworkSocket.h',
+          '<(tgvoip_src_loc)/PacketReassembler.cpp',
+          '<(tgvoip_src_loc)/PacketReassembler.h',
 
           # Windows
           '<(tgvoip_src_loc)/os/windows/NetworkSocketWinsock.cpp',
@@ -271,6 +271,7 @@
               'defines': [
                 'WEBRTC_POSIX',
                 'WEBRTC_MAC',
+                'TARGET_OS_OSX',
               ],
               'conditions': [
                 [ '"<(official_build_target)" == "mac32"', {
@@ -280,7 +281,7 @@
                   },
                   'include_dirs': [
                     '/usr/local/macold/include/c++/v1',
-                    '<(DEPTH)/../../../Libraries/macold/openssl-1.0.1h/include',
+                    '<(DEPTH)/../../../Libraries/macold/openssl/include',
                   ],
                 }, {
                   'xcode_settings': {
@@ -288,7 +289,7 @@
                     'CLANG_CXX_LIBRARY': 'libc++',
                   },
                   'include_dirs': [
-                    '<(DEPTH)/../../../Libraries/openssl-xcode/include',
+                    '<(DEPTH)/../../../Libraries/openssl/include',
                   ],
                 }]
               ]
@@ -296,7 +297,7 @@
           ],
           [
             '"<(OS)" == "win"', {
-              'msbuild_toolset': 'v140',
+              'msbuild_toolset': 'v141',
               'defines': [
                 'NOMINMAX',
                 '_USING_V110_SDK71_',
@@ -334,7 +335,7 @@
                     '_DEBUG',
                   ],
                   'include_dirs': [
-                    '<(DEPTH)/../../../Libraries/openssl_debug/Debug/include',
+                    '<(DEPTH)/../../../Libraries/openssl/Debug/include',
                   ],
                   'msvs_settings': {
                     'VCCLCompilerTool': {
@@ -381,8 +382,12 @@
               'defines': [
                 'WEBRTC_POSIX',
               ],
-              'cflags_cc': [
-                '-msse2',
+              'conditions': [
+                [ '"<!(uname -m)" == "i686"', {
+                  'cflags_cc': [
+                    '-msse2',
+                  ],
+                }]
               ],
               'direct_dependent_settings': {
                 'libraries': [

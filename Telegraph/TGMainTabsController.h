@@ -14,6 +14,7 @@
 
 - (void)setIgnoreKeyboardFrameChange:(bool)ignore restoringFocus:(bool)restoringFocus;
 
+- (void)setUnreadArrow:(NSNumber *)up;
 - (void)setUnreadCount:(int)unreadCount;
 - (void)setMissedCallsCount:(int)callsCount;
 

@@ -12,9 +12,11 @@
 #import "TGAccountSettingsController.h"
 #import "TGRecentCallsController.h"
 #import "TGMainTabsController.h"
+#import "TGModernConversationController.h"
 
 #import "TGCallStatusBarView.h"
 #import "TGVolumeBarView.h"
+#import "TGProxyWindow.h"
 
 #import "TGPresentation.h"
 
@@ -31,7 +33,6 @@
     SMetaDisposable *_callDisposable;
     
     id<SDisposable> _presentationDisposable;
-    TGPresentation *_presentation;
 }
 
 @end
@@ -59,6 +60,7 @@
         _dialogListController.presentation = _presentation;
         
         _contactsController = [[TGContactsController alloc] initWithContactsMode:TGContactsModeMainContacts | TGContactsModeRegistered | TGContactsModePhonebook | TGContactsModeSortByLastSeen];
+        _contactsController.presentation = _presentation;
         
         _accountSettingsController = [[TGAccountSettingsController alloc] initWithUid:0];
         
@@ -113,8 +115,49 @@
 {
     _presentation = presentation;
     
+    if (self.isViewLoaded)
+        self.view.backgroundColor = presentation.pallete.collectionMenuBackgroundColor;
+    
+    _mainView.presentation = presentation;
+    
+    [(TGNavigationBar *)_masterNavigationController.navigationBar setPallete:presentation.navigationBarPallete];
+    [(TGNavigationBar *)_detailNavigationController.navigationBar setPallete:presentation.navigationBarPallete];
     [_mainTabsController setPresentation:presentation];
+    [_contactsController setPresentation:presentation];
+    [_callsController setPresentation:presentation];
     [_dialogListController setPresentation:presentation];
+    
+    if ([self.presentedViewController isKindOfClass:[TGNavigationController class]])
+    {
+        TGNavigationController *navController = (TGNavigationController *)self.presentedViewController;
+        [(TGNavigationBar *)navController.navigationBar setPallete:presentation.navigationBarPallete];
+    
+        for (UIViewController *controller in navController.viewControllers)
+        {
+            if ([controller respondsToSelector:@selector(setPresentation:)])
+                [controller performSelector:@selector(setPresentation:) withObject:presentation];
+        }
+        
+        if ([navController respondsToSelector:@selector(setPresentation:)])
+            [navController performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+    
+    for (UIViewController *controller in _detailNavigationController.viewControllers)
+    {
+        if ([controller respondsToSelector:@selector(setPresentation:)])
+            [controller performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+    
+    if (_contactsController.presentedViewController != nil)
+    {
+        if ([_contactsController.presentedViewController respondsToSelector:@selector(setPresentation:)])
+            [_contactsController.presentedViewController performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+    
+    [TGProgressWindow setDarkStyle:presentation.pallete.isDark];
+    [TGProxyWindow setDarkStyle:presentation.pallete.isDark];
+    
+    _volumeBarView.presentation = presentation;
 }
 
 - (bool)shouldAutorotate {
@@ -128,9 +171,10 @@
 {
     [super loadView];
     
-    self.view.backgroundColor = UIColorRGB(0xefeff4);
+    self.view.backgroundColor = self.presentation.pallete.collectionMenuBackgroundColor;
     
     _mainView = [[TGTabletMainView alloc] initWithFrame:self.view.bounds];
+    _mainView.presentation = self.presentation;
     _mainView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_mainView];
     
@@ -166,6 +210,7 @@
             _volumeBarView = [[TGVolumeBarView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 16.0f + inset)];
             _volumeBarView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
             _volumeBarView.safeAreaInset = self.controllerSafeAreaInset;
+            _volumeBarView.presentation = self.presentation;
         });
     }
 }

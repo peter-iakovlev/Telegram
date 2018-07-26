@@ -18,6 +18,7 @@
 
 #import "TGGifKeyboardBalancedLayout.h"
 
+#import <LegacyComponents/TGSearchBar.h>
 #import <LegacyComponents/TGMenuView.h>
 #import <LegacyComponents/TGTimerTarget.h>
 
@@ -45,8 +46,11 @@
 #import "TGStickersSignals.h"
 #import "TGMaskStickersSignals.h"
 #import "TGRecentGifsSignal.h"
+#import "TGEmojiSuggestions.h"
 
 #import "TGLegacyComponentsContext.h"
+
+#import "TGPresentation.h"
 
 static const CGFloat preloadInset = 160.0f;
 static const CGFloat gifInset = 128.0f;
@@ -58,8 +62,16 @@ typedef enum {
     TGStickerKeyboardViewModeTrendingLast
 } TGStickerKeyboardViewMode;
 
-@interface TGStickerKeyboardView () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGGifKeyboardBalancedLayoutDelegate, UIGestureRecognizerDelegate>
+@interface TGStickerKeyboardCollectionView : UICollectionView
+
+@property (nonatomic, assign) bool blockScrolling;
+- (void)setForcedContentOffset:(CGPoint)contentOffset animated:(bool)animated;
+
+@end
+
+@interface TGStickerKeyboardView () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, TGGifKeyboardBalancedLayoutDelegate, UIGestureRecognizerDelegate, TGSearchBarDelegate>
 {
+    bool _didScroll;
     id<SDisposable> _stickerPacksDisposable;
     id<SDisposable> _updatedFeaturedStickerPacksDisposable;
     SPipe *_pinPipe;
@@ -74,9 +86,30 @@ typedef enum {
     UICollectionView *_trendingCollectionView;
     UICollectionViewFlowLayout *_trendingCollectionLayout;
     
-    UICollectionView *_collectionView;
+    TGStickerKeyboardCollectionView *_collectionView;
     UICollectionViewFlowLayout *_collectionLayout;
     NSMapTable *_visibleCollectionReusableHeaderViews;
+    
+    bool _shouldScrollToHideSearchBar;
+    CGFloat _draggingStartOffset;
+    bool _searchActive;
+    TGSearchBar *_searchBar;
+    UIView *_searchWrapperView;
+    UIImageView *_searchMaskView;
+    UICollectionView *_searchCollectionView;
+    UICollectionViewFlowLayout *_searchCollectionLayout;
+    SMetaDisposable *_queryDisposable;
+    SMetaDisposable *_searchDisposable;
+    NSArray *_searchLocalStickerPacks;
+    NSArray *_searchRemoteStickerPacks;
+    NSMapTable *_searchVisibleCollectionReusableHeaderViews;
+    SMetaDisposable *_emojiDisposable;
+    NSArray *_searchEmojiQuery;
+    UIImageView *_stickersPlaceholderImageView;
+    UILabel *_stickersPlaceholderLabel;
+    SVariable *_searchEmojiStickers;
+    
+    bool _autorotationWasEnabled;
     
     UIView *_topStripe;
     
@@ -107,6 +140,12 @@ typedef enum {
     
     UIPanGestureRecognizer *_panRecognizer;
     TGForceTouchGestureRecognizer *_forceTouchRecognizer;
+    
+    UIPanGestureRecognizer *_trendingPanRecognizer;
+    TGForceTouchGestureRecognizer *_trendingForceTouchRecognizer;
+    
+    UIPanGestureRecognizer *_searchPanRecognizer;
+    TGForceTouchGestureRecognizer *_searchForceTouchRecognizer;
     
     UIPanGestureRecognizer *_tabPanRecognizer;
     
@@ -140,6 +179,7 @@ typedef enum {
 @implementation TGStickerKeyboardView
 
 @synthesize safeAreaInset = _safeAreaInset;
+@synthesize presentation = _presentation;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -177,7 +217,7 @@ typedef enum {
         self.clipsToBounds = true;
         
         _collectionLayout = [[UICollectionViewFlowLayout alloc] init];
-        _collectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
+        _collectionView = [[TGStickerKeyboardCollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_collectionLayout];
         if (iosMajorVersion() >= 11)
             _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.delegate = self;
@@ -188,13 +228,13 @@ typedef enum {
         _collectionView.showsVerticalScrollIndicator = false;
         _collectionView.alwaysBounceVertical = true;
         _collectionView.delaysContentTouches = false;
-        _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset, 0.0f, preloadInset, 0.0f);
+        _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset + [self searchBarInset], 0.0f, preloadInset, 0.0f);
         [_collectionView registerClass:[TGStickerCollectionViewCell class] forCellWithReuseIdentifier:@"TGStickerCollectionViewCell"];
         [_collectionView registerClass:[TGStickerGroupPackCell class] forCellWithReuseIdentifier:@"TGStickerGroupPackCell"];
         [_collectionView registerClass:[TGStickerCollectionHeader class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader"];
         [self addSubview:_collectionView];
         _visibleCollectionReusableHeaderViews = [NSMapTable mapTableWithKeyOptions:NSMapTableStrongMemory valueOptions:NSMapTableWeakMemory];
-        
+    
         _trendingCollectionLayout = [[UICollectionViewFlowLayout alloc] init];
         _trendingCollectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_trendingCollectionLayout];
         _trendingCollectionView.delegate = self;
@@ -210,8 +250,17 @@ typedef enum {
         [_trendingCollectionView registerClass:[TGTrendingStickerPackKeyboardCell class] forCellWithReuseIdentifier:@"TGTrendingStickerPackKeyboardCell"];
         [self addSubview:_trendingCollectionView];
         
+        UILongPressGestureRecognizer *trendingTapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleTrendingStickerPress:)];
+        trendingTapRecognizer.minimumPressDuration = 0.25;
+        [_trendingCollectionView addGestureRecognizer:trendingTapRecognizer];
+        
+        _trendingPanRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleTrendingStickerPan:)];
+        _trendingPanRecognizer.delegate = self;
+        _trendingPanRecognizer.cancelsTouchesInView = false;
+        [_trendingCollectionView addGestureRecognizer:_trendingPanRecognizer];
+        
         _gifsCollectionLayout = [[TGGifKeyboardBalancedLayout alloc] init];
-        _gifsCollectionLayout.preferredRowSize = TGIsPad() ? 115.0f : 93.0f;
+        _gifsCollectionLayout.preferredRowSize = TGIsPad() ? 145.0f : 93.0f;
         _gifsCollectionLayout.sectionInset = UIEdgeInsetsZero;
         _gifsCollectionLayout.minimumInteritemSpacing = 0.5f;
         _gifsCollectionLayout.minimumLineSpacing = 0.5f;
@@ -227,6 +276,70 @@ typedef enum {
         _gifsCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset, 0.0f);
         [_gifsCollectionView registerClass:[TGGifKeyboardCell class] forCellWithReuseIdentifier:@"TGGifKeyboardCell"];
         [self addSubview:_gifsCollectionView];
+        
+        if (_style == TGStickerKeyboardViewDefaultStyle)
+        {
+            _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectZero style:TGSearchBarStyleKeyboard];
+            _searchBar.delegate = self;
+            _searchBar.placeholder = TGLocalized(@"Stickers.Search");
+            [_searchBar sizeToFit];
+            _searchBar.delayActivity = false;
+            [_searchBar customCancelButton];
+            [_collectionView addSubview:_searchBar];
+            
+            _queryDisposable = [[SMetaDisposable alloc] init];
+            _searchDisposable = [[SMetaDisposable alloc] init];
+            _emojiDisposable = [[SMetaDisposable alloc] init];
+            _searchEmojiStickers = [[SVariable alloc] init];
+        
+            _searchWrapperView = [[UIView alloc] init];
+            _searchWrapperView.backgroundColor = self.backgroundColor;
+            _searchWrapperView.clipsToBounds = true;
+            _searchWrapperView.hidden = true;
+            [self addSubview:_searchWrapperView];
+            
+            _searchCollectionLayout = [[UICollectionViewFlowLayout alloc] init];
+            _searchCollectionView = [[UICollectionView alloc] initWithFrame:CGRectZero collectionViewLayout:_searchCollectionLayout];
+            _searchCollectionView.delegate = self;
+            _searchCollectionView.dataSource = self;
+            _searchCollectionView.backgroundColor = [UIColor clearColor];
+            _searchCollectionView.opaque = false;
+            _searchCollectionView.showsHorizontalScrollIndicator = false;
+            _searchCollectionView.showsVerticalScrollIndicator = false;
+            _searchCollectionView.alwaysBounceVertical = true;
+            _searchCollectionView.delaysContentTouches = false;
+            _searchCollectionView.contentInset = UIEdgeInsetsMake(preloadInset, 0.0f, preloadInset, 0.0f);
+            [_searchCollectionView registerClass:[TGStickerCollectionViewCell class] forCellWithReuseIdentifier:@"TGStickerCollectionViewCell"];
+            [_searchCollectionView registerClass:[TGTrendingStickerPackKeyboardCell class] forCellWithReuseIdentifier:@"TGTrendingStickerPackKeyboardCell"];
+            [_searchCollectionView registerClass:[TGStickerCollectionHeader class] forSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader"];
+            [_searchWrapperView addSubview:_searchCollectionView];
+            _searchVisibleCollectionReusableHeaderViews = [NSMapTable mapTableWithKeyOptions:NSMapTableStrongMemory valueOptions:NSMapTableWeakMemory];
+            
+            _searchMaskView = [[UIImageView alloc] init];
+            [_searchWrapperView addSubview:_searchMaskView];
+            
+            UILongPressGestureRecognizer *searchtapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleSearchStickerPress:)];
+            searchtapRecognizer.minimumPressDuration = 0.25;
+            [_searchCollectionView addGestureRecognizer:searchtapRecognizer];
+            
+            _searchPanRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSearchStickerPan:)];
+            _searchPanRecognizer.delegate = self;
+            _searchPanRecognizer.cancelsTouchesInView = false;
+            [_searchCollectionView addGestureRecognizer:_searchPanRecognizer];
+            
+            _stickersPlaceholderImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 90.0f, 90.0f)];
+            _stickersPlaceholderImageView.hidden = true;
+            [_searchWrapperView addSubview:_stickersPlaceholderImageView];
+            
+            _stickersPlaceholderLabel = [[UILabel alloc] init];
+            _stickersPlaceholderLabel.backgroundColor = [UIColor clearColor];
+            _stickersPlaceholderLabel.font = TGMediumSystemFontOfSize(14.0f);
+            _stickersPlaceholderLabel.text = TGLocalized(@"Stickers.NoStickersFound");
+            _stickersPlaceholderLabel.textAlignment = NSTextAlignmentCenter;
+            _stickersPlaceholderLabel.hidden = true;
+            [_stickersPlaceholderLabel sizeToFit];
+            [_searchWrapperView addSubview:_stickersPlaceholderLabel];
+        }
         
         UILongPressGestureRecognizer *tapRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleStickerPress:)];
         tapRecognizer.minimumPressDuration = 0.25;
@@ -245,7 +358,7 @@ typedef enum {
             if (strongSelf != nil) {
                 bool fromGifs = strongSelf->_mode != TGStickerKeyboardViewModeStickers;
                 [strongSelf setMode:TGStickerKeyboardViewModeStickers];
-                [strongSelf scrollToSection:index fromGifs:fromGifs];
+                [strongSelf scrollToSection:index fromGifs:fromGifs animated:true];
             }
         };
         _tabPanel.navigateToGifs = ^{
@@ -305,7 +418,6 @@ typedef enum {
             [self addSubview:_topStripe];
         
         [self setupSignals];
-        
         _updatedFeaturedStickerPacksDisposable = [[TGStickersSignals updatedFeaturedStickerPacks] startWithNext:nil];
         
         _gifPreviewHandle = [TGPreviewMenu setupPreviewControllerForView:_gifsCollectionView configurator:^TGItemPreviewController *(CGPoint gestureLocation) {
@@ -398,15 +510,84 @@ typedef enum {
     [_accumulatedReadFeaturedPackIdsTimer invalidate];
 }
 
+- (CGFloat)searchBarInset
+{
+    return _style == TGStickerKeyboardViewDefaultStyle ? 50.0f : 0.0f;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    [_searchBar setPallete:presentation.keyboardSearchBarPallete];
+    _tabPanel.pallete = presentation.stickerKeyboardPallete;
+    self.backgroundColor = presentation.pallete.chatInputKeyboardBackgroundColor;
+    _searchWrapperView.backgroundColor = self.backgroundColor;
+    
+    _stickersPlaceholderImageView.image = presentation.images.chatStickersPlaceholderImage;
+    _stickersPlaceholderLabel.textColor = presentation.pallete.chatInputButtonColor;
+    
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(2.0f, 10.0f), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    UIColor *whiteColor = self.backgroundColor;
+    
+    CGColorRef colors[2] = {
+        CGColorRetain(whiteColor.CGColor),
+        CGColorRetain([whiteColor colorWithAlphaComponent:0.0f].CGColor)
+    };
+    
+    CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);
+    CGFloat locations[2] = {0.0f, 1.0f};
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGGradientRef gradient = CGGradientCreateWithColors(colorSpace, colorsArray, (CGFloat const *)&locations);
+    
+    CFRelease(colorsArray);
+    CFRelease(colors[0]);
+    CFRelease(colors[1]);
+    
+    CGColorSpaceRelease(colorSpace);
+    
+    CGContextDrawLinearGradient(context, gradient, CGPointMake(0.0f, 0.0f), CGPointMake(0.0f, 10.0f), 0);
+    
+    CFRelease(gradient);
+    
+    UIImage *maskImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    _searchMaskView.image = maskImage;
+    
+    for (UICollectionViewCell *cell in _collectionView.visibleCells)
+    {
+        if ([cell respondsToSelector:@selector(setPresentation:)])
+            [cell performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+    
+    for (UICollectionViewCell *cell in _trendingCollectionView.visibleCells)
+    {
+        if ([cell respondsToSelector:@selector(setPresentation:)])
+            [cell performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+    
+    for (UICollectionViewCell *cell in _searchCollectionView.visibleCells)
+    {
+        if ([cell respondsToSelector:@selector(setPresentation:)])
+            [cell performSelector:@selector(setPresentation:) withObject:presentation];
+    }
+}
+
 - (void)updateInsets
 {
     CGFloat tabPanelHeight = 45.0f;
     if (_style == TGStickerKeyboardViewDefaultStyle)
         tabPanelHeight -= 3.0f;
     
-    _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset, 0.0f, preloadInset + _safeAreaInset.bottom, 0.0f);
+    _collectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + preloadInset + [self searchBarInset], 0.0f, preloadInset + _safeAreaInset.bottom, 0.0f);
     _trendingCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset + _safeAreaInset.bottom, 0.0f);
     _gifsCollectionView.contentInset = UIEdgeInsetsMake(tabPanelHeight + gifInset, 0.0f, gifInset + _safeAreaInset.bottom, 0.0f);
+    
+    _searchCollectionView.contentInset = UIEdgeInsetsMake(preloadInset, 0.0f, preloadInset + _safeAreaInset.bottom, 0.0f);
 }
 
 - (void)setChannelInfoSignal:(SSignal *)channelInfoSignal
@@ -500,7 +681,7 @@ typedef enum {
     [pinVar set:_pinPipe.signalProducer()];
     _pinPipe.sink(@true);
     
-    SSignal *combinedSignal = [SSignal combineSignals:@[(iosMajorVersion() >= 8 && !TGIsPad() && _style == TGStickerKeyboardViewDefaultStyle) ? [TGRecentGifsSignal recentGifs] : [SSignal single:@[]], [TGStickersSignals stickerPacks], [TGRecentStickersSignal recentStickers], [TGFavoriteStickersSignal favoriteStickers], groupStickersSignal, pinVar.signal]];
+    SSignal *combinedSignal = [SSignal combineSignals:@[(iosMajorVersion() >= 8 && _style == TGStickerKeyboardViewDefaultStyle) ? [TGRecentGifsSignal recentGifs] : [SSignal single:@[]], [[TGStickersSignals stickerPacks] startOn:[SQueue concurrentDefaultQueue]], [TGRecentStickersSignal recentStickers], [TGFavoriteStickersSignal favoriteStickers], groupStickersSignal, pinVar.signal]];
     
     __weak TGStickerKeyboardView *weakSelf = self;
     _stickerPacksDisposable = [[combinedSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *combinedResult)
@@ -550,7 +731,7 @@ typedef enum {
         }
         
         NSMutableArray *reversedRecentStickers = [[NSMutableArray alloc] init];
-        for (id item in [combinedResult[2] reverseObjectEnumerator]) {
+        for (id item in [combinedResult[2][@"documents"] reverseObjectEnumerator]) {
             TGDocumentMediaAttachment *document = (TGDocumentMediaAttachment *)item;
             
             if (![favoriteStickerIds containsObject:@(document.documentId)]) {
@@ -714,6 +895,24 @@ typedef enum {
         if (![_forceTouchRecognizer forceTouchAvailable])
             _forceTouchRecognizer.enabled = false;
     }
+    if (_trendingForceTouchRecognizer == nil)
+    {
+        _trendingForceTouchRecognizer = [[TGForceTouchGestureRecognizer alloc] initWithTarget:self action:@selector(handleForceTouch:)];
+        _trendingForceTouchRecognizer.delegate = self;
+        [_trendingCollectionView addGestureRecognizer:_trendingForceTouchRecognizer];
+        
+        if (![_trendingForceTouchRecognizer forceTouchAvailable])
+            _trendingForceTouchRecognizer.enabled = false;
+    }
+    if (_searchForceTouchRecognizer == nil)
+    {
+        _searchForceTouchRecognizer = [[TGForceTouchGestureRecognizer alloc] initWithTarget:self action:@selector(handleForceTouch:)];
+        _searchForceTouchRecognizer.delegate = self;
+        [_searchCollectionView addGestureRecognizer:_searchForceTouchRecognizer];
+        
+        if (![_searchForceTouchRecognizer forceTouchAvailable])
+            _searchForceTouchRecognizer.enabled = false;
+    }
 }
 
 - (void)sizeToFitForWidth:(CGFloat)width
@@ -771,11 +970,17 @@ typedef enum {
 
 - (void)layoutForSize:(CGSize)size
 {
-    _tabPanel.frame = CGRectMake(0.0f, 0.0f, size.width, _tabPanel.frame.size.height);
-    [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    if (!_collectionView.blockScrolling)
+    {
+        _tabPanel.frame = CGRectMake(0.0f, 0.0f, size.width, _tabPanel.frame.size.height);
+        [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    }
     
     CGFloat left = _safeAreaInset.left;
     CGFloat width = size.width - _safeAreaInset.left - _safeAreaInset.right;
+    
+    _searchBar.frame = CGRectMake(0.0f, -50.0f, width, [_searchBar baseHeight]);
+    _searchMaskView.frame = CGRectMake(0.0f, 0.0, self.frame.size.width, 10.0f);
     
     if (_mode == TGStickerKeyboardViewModeStickers) {
         _collectionView.frame = CGRectMake(left, -preloadInset, width, size.height + preloadInset * 2.0f);
@@ -794,8 +999,27 @@ typedef enum {
     [_gifsCollectionLayout invalidateLayout];
     [_trendingCollectionLayout invalidateLayout];
     
+    _searchWrapperView.frame = CGRectMake(left, 96.0f, width, size.height - 96.0f);
+    _searchCollectionView.frame = CGRectMake(0.0f, -preloadInset + 8.0f, width, size.height + preloadInset * 2.0f - 96.0f);
+    [_searchCollectionLayout invalidateLayout];
+    
+    CGFloat placeholderCenter = floor((_searchWrapperView.frame.size.height - [TGStickerKeyboardView preferredHeight:false]) / 2.0f);
+    _stickersPlaceholderImageView.frame = CGRectMake(floor((_searchWrapperView.frame.size.width - _stickersPlaceholderImageView.frame.size.width) / 2.0f), placeholderCenter - 50.0f, _stickersPlaceholderImageView.frame.size.width, _stickersPlaceholderImageView.frame.size.height);
+    _stickersPlaceholderLabel.frame = CGRectMake((_searchWrapperView.frame.size.width - _stickersPlaceholderLabel.frame.size.width) / 2.0f, placeholderCenter + 50.0f, _stickersPlaceholderLabel.frame.size.width, _stickersPlaceholderLabel.frame.size.height);
+    
     CGFloat stripeHeight = TGScreenPixel;
     _topStripe.frame = CGRectMake(0.0f, 0.0f, size.width, stripeHeight);
+    
+    if (_expanded && _collectionView.blockScrolling)
+        [_collectionView setForcedContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:false];
+    
+    [self resetInitialScrollPosition];
+}
+
+- (void)resetInitialScrollPosition
+{
+    if (_searchBar != nil && !_expanded && _collectionView.contentOffset.y < -_collectionView.contentInset.top + 130.0f + FLT_EPSILON && _tabPanRecognizer.state != UIGestureRecognizerStateChanged)
+        _collectionView.contentOffset = CGPointMake(0.0f, -_collectionView.contentInset.top + 50.0f);
 }
 
 - (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView
@@ -806,6 +1030,8 @@ typedef enum {
         return 1;
     } else if (collectionView == _collectionView) {
         return 4 + _stickerPacks.count;
+    } else if (collectionView == _searchCollectionView) {
+        return _searchLocalStickerPacks.count + 1;
     } else {
         return 0;
     }
@@ -838,6 +1064,12 @@ typedef enum {
             return ((TGStickerPack *)_stickerPacks[section - 3]).documents.count;
         }
         return 0;
+    } else if (collectionView == _searchCollectionView) {
+        if (_searchLocalStickerPacks.count > 0 && section != (NSInteger)_searchLocalStickerPacks.count) {
+            return ((TGStickerPack *)_searchLocalStickerPacks[section]).documents.count;
+        } else {
+            return _searchRemoteStickerPacks.count;
+        }
     } else {
         return 0;
     }
@@ -849,6 +1081,12 @@ typedef enum {
         return CGSizeMake(30.0f, 30.0f);
     } else if (collectionView == _trendingCollectionView) {
         return CGSizeMake(collectionViewLayout.collectionView.bounds.size.width, 124.0f);
+    } else if (collectionView == _searchCollectionView) {
+        if (_searchLocalStickerPacks.count > 0 && indexPath.section != (NSInteger)_searchLocalStickerPacks.count) {
+            return CGSizeMake(62.0f, 62.0f);
+        } else {
+            return CGSizeMake(collectionViewLayout.collectionView.bounds.size.width, 124.0f);
+        }
     } else {
         if (((indexPath.section == 2 && !_groupStickersUnpinned) || (indexPath.section == [self lastGroupSection] && _groupStickersUnpinned)) && _groupDocuments.count == 0 && _showGroupPlaceholder) {
             NSString *text = TGLocalized(@"Stickers.GroupStickersHelp");
@@ -867,6 +1105,15 @@ typedef enum {
         return UIEdgeInsetsZero;
     } else if (collectionView == _trendingCollectionView) {
         return UIEdgeInsetsZero;
+    } else if (collectionView == _searchCollectionView) {
+        if (_searchLocalStickerPacks.count > 0 && section != (NSInteger)_searchLocalStickerPacks.count) {
+            CGFloat topInset = 8.0f;
+            CGFloat inset = 12.0f;
+            CGFloat sideInset = (collectionView.frame.size.width < 330.0f) ? 3.0f : inset;
+            return UIEdgeInsetsMake(topInset, sideInset, inset, sideInset);
+        } else {
+            return UIEdgeInsetsZero;
+        }
     } else {
         CGFloat topInset = 8.0f;
         CGFloat inset = 12.0f;
@@ -925,7 +1172,11 @@ typedef enum {
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
-    if (scrollView == _collectionView || scrollView == _trendingCollectionView || (scrollView == _gifsCollectionView && _mode == TGStickerKeyboardViewModeGifs))
+    if (scrollView == _searchCollectionView && scrollView.isTracking)
+    {
+        [_searchBar resignFirstResponder];
+    }
+    else if (scrollView == _collectionView || scrollView == _trendingCollectionView || (scrollView == _gifsCollectionView && _mode == TGStickerKeyboardViewModeGifs))
     {
         CGFloat delta = scrollView.contentOffset.y - _lastContentOffset;
         _lastContentOffset = scrollView.contentOffset.y;
@@ -946,7 +1197,7 @@ typedef enum {
             tabPanelFrame.origin.y = MAX(-_tabPanel.frame.size.height, MIN(0.0f, tabPanelFrame.origin.y));
         }
         
-        if (_expanded)
+        if (_expanded && !_collectionView.blockScrolling)
             tabPanelFrame.origin.y = 0.0f;
         
         _tabPanel.frame = tabPanelFrame;
@@ -955,6 +1206,11 @@ typedef enum {
         if (!_ignoreSetSection && _mode != TGStickerKeyboardViewModeGifs) {
             [self updateCurrentSection];
         }
+    }
+    
+    if (scrollView == _collectionView) {
+        if (scrollView.isTracking)
+            _didScroll = true;
     }
     
     if (scrollView == _gifsCollectionView) {
@@ -986,6 +1242,8 @@ typedef enum {
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
     if (scrollView == _collectionView) {
+        _draggingStartOffset = scrollView.contentOffset.y;
+        
         _ignoreSetSection = false;
         [self updateCurrentSection];
     }
@@ -1015,6 +1273,36 @@ typedef enum {
                  _tabPanel.frame = frame;
                  [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
              } completion:nil];
+        }
+    }
+}
+
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)__unused velocity targetContentOffset:(inout CGPoint *)targetContentOffset
+{
+    if (_searchBar == nil)
+        return;
+    
+    if (scrollView == _collectionView)
+    {
+        if (targetContentOffset != NULL)
+        {
+            if (targetContentOffset->y > -scrollView.contentInset.top - FLT_EPSILON && targetContentOffset->y < -scrollView.contentInset.top + 50.0f + FLT_EPSILON)
+            {
+                if (_draggingStartOffset < -scrollView.contentInset.top + 25.0f)
+                {
+                    if (targetContentOffset->y < -scrollView.contentInset.top + 50.0f * 0.2)
+                        targetContentOffset->y = -scrollView.contentInset.top;
+                    else
+                        targetContentOffset->y = -scrollView.contentInset.top + 50.0f;
+                }
+                else
+                {
+                    if (targetContentOffset->y < -scrollView.contentInset.top + 50.0f * 0.8)
+                        targetContentOffset->y = -scrollView.contentInset.top;
+                    else
+                        targetContentOffset->y = -scrollView.contentInset.top + 50.0f;
+                }
+            }
         }
     }
 }
@@ -1097,9 +1385,32 @@ typedef enum {
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath
 {
-    if (collectionView == _collectionView && [kind isEqualToString:UICollectionElementKindSectionHeader])
+    if (collectionView == _searchCollectionView && [kind isEqualToString:UICollectionElementKindSectionHeader])
     {
+        if (indexPath.section < (NSInteger)_searchLocalStickerPacks.count)
+        {
+            TGStickerCollectionHeader *view = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader" forIndexPath:indexPath];
+            view.presentation = self.presentation;
+            
+            NSString *title = [_searchLocalStickerPacks[indexPath.section] title];
+            view.title = title;
+            
+            [_searchVisibleCollectionReusableHeaderViews setObject:view forKey:indexPath];
+            
+            return view;
+        }
+        else
+        {
+            return nil;
+        }
+    }
+    else if (collectionView == _collectionView && [kind isEqualToString:UICollectionElementKindSectionHeader])
+    {
+        if (indexPath.section == 0)
+            return nil;
+        
         TGStickerCollectionHeader *view = [collectionView dequeueReusableSupplementaryViewOfKind:UICollectionElementKindSectionHeader withReuseIdentifier:@"TGStickerCollectionHeader" forIndexPath:indexPath];
+        view.presentation = self.presentation;
         
         NSString *title = nil;
         switch (indexPath.section) {
@@ -1134,11 +1445,11 @@ typedef enum {
     return nil;
 }
 
-- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout referenceSizeForHeaderInSection:(NSInteger)__unused section
+- (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout referenceSizeForHeaderInSection:(NSInteger)section
 {
     if (collectionView == _collectionView)
     {
-        if (section == 0 && _favoriteDocuments.count == 0)
+        if (section == 0)
             return CGSizeZero;
         else if (section == 1 && _recentDocuments.count == 0)
             return CGSizeZero;
@@ -1148,6 +1459,17 @@ typedef enum {
             return CGSizeZero;
         
         return CGSizeMake(collectionView.bounds.size.width, 23.0f);
+    }
+    else if (collectionView == _searchCollectionView)
+    {
+        if (_searchLocalStickerPacks.count > 0 && section != (NSInteger)_searchLocalStickerPacks.count) {
+            if ([_searchLocalStickerPacks.firstObject title] == nil)
+                return CGSizeZero;
+            else
+                return CGSizeMake(collectionView.bounds.size.width, 23.0f);
+        } else {
+            return CGSizeZero;
+        }
     }
     return CGSizeZero;
 }
@@ -1162,6 +1484,7 @@ typedef enum {
         return cell;
     } else if (collectionView == _trendingCollectionView) {
         TGTrendingStickerPackKeyboardCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGTrendingStickerPackKeyboardCell" forIndexPath:indexPath];
+        cell.presentation = self.presentation;
         TGStickerPack *pack = _trendingStickerPacks[indexPath.item];
         [cell setStickerPack:pack];
         bool installed = true;
@@ -1187,10 +1510,47 @@ typedef enum {
             }
         };
         return cell;
+    } else if (collectionView == _searchCollectionView) {
+        if (_searchLocalStickerPacks.count > 0 && indexPath.section != (NSInteger)_searchLocalStickerPacks.count) {
+            TGStickerCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerCollectionViewCell" forIndexPath:indexPath];
+            TGDocumentMediaAttachment *document = ((TGStickerPack *)_searchLocalStickerPacks[indexPath.section]).documents[indexPath.item];
+            [cell setDocumentMedia:document];
+            return cell;
+        } else {
+            TGTrendingStickerPackKeyboardCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGTrendingStickerPackKeyboardCell" forIndexPath:indexPath];
+            cell.presentation = self.presentation;
+            TGStickerPack *pack = _searchRemoteStickerPacks[indexPath.item];
+            [cell setStickerPack:pack];
+            bool installed = true;
+            bool unread = false;
+            if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                TGStickerPackIdReference *reference = (TGStickerPackIdReference *)pack.packReference;
+                installed = [_installedTrendingStickerPacks containsObject:@(reference.packId)];
+                unread = [_unreadTrendingStickerPacks containsObject:@(reference.packId)];
+            }
+            cell.installed = installed;
+            cell.unread = unread;
+            __weak TGStickerKeyboardView *weakSelf = self;
+            cell.install = ^{
+                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf installStickerPack:pack];
+                }
+            };
+            cell.info = ^{
+                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf endEditing:true];
+                    [strongSelf previewStickerPack:pack sticker:nil];
+                }
+            };
+            return cell;
+        }
     } else {
         if (((indexPath.section == 2 && !_groupStickersUnpinned) || (indexPath.section == [self lastGroupSection] && _groupStickersUnpinned)) && _groupDocuments.count == 0 && _showGroupPlaceholder) {
             __weak TGStickerKeyboardView *weakSelf = self;
             TGStickerGroupPackCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGStickerGroupPackCell" forIndexPath:indexPath];
+            cell.presentation = self.presentation;
             cell.pressed = ^{
                 __strong TGStickerKeyboardView *strongSelf = weakSelf;
                 if (strongSelf != nil && strongSelf->_openGroupStickerPackSettings) {
@@ -1215,6 +1575,34 @@ typedef enum {
             _gifSelected(_recentGifs[indexPath.row]);
         }
     } else if (collectionView == _trendingCollectionView) {
+    } else if (collectionView == _searchCollectionView) {
+        [self endEditing:true];
+        
+        if (_searchLocalStickerPacks.count > 0 && indexPath.section != (NSInteger)_searchLocalStickerPacks.count) {
+            TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
+            if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                return;
+            
+            if ([cell isEnabled])
+            {
+                [cell setDisabledTimeout];
+                
+                TGDocumentMediaAttachment *document = ((TGStickerPack *)_searchLocalStickerPacks[indexPath.section]).documents[indexPath.item];
+                if (_stickerSelected)
+                    _stickerSelected(document);
+                
+                NSUInteger i = 0;
+                for (TGStickerPack *pack in _stickerPacks)
+                {
+                    if ([pack.packReference isEqual:document.stickerPackReference])
+                    {
+                        [self scrollToSection:3 + i fromGifs:false animated:false];
+                        break;
+                    }
+                    i++;
+                }
+            }
+        }
     } else {
         TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)[collectionView cellForItemAtIndexPath:indexPath];
         if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
@@ -1233,12 +1621,13 @@ typedef enum {
 
 - (void)scrollToSection:(NSUInteger)section
 {
-    [self scrollToSection:section fromGifs:false];
+    [self scrollToSection:section fromGifs:false animated:true];
 }
 
-- (void)scrollToSection:(NSUInteger)section fromGifs:(bool)fromGifs
+- (void)scrollToSection:(NSUInteger)section fromGifs:(bool)fromGifs animated:(bool)animated
 {
     _ignoreSetSection = false;
+    _didScroll = true;
     
     [_tabPanel setCurrentStickerPackIndex:section animated:false];
     
@@ -1261,7 +1650,7 @@ typedef enum {
         CGFloat verticalOffset = y - [self collectionView:_collectionView layout:_collectionLayout minimumLineSpacingForSectionAtIndex:section] - [self collectionView:_collectionView layout:_collectionLayout referenceSizeForHeaderInSection:section].height;
         CGFloat effectiveInset = preloadInset;
         if (_expanded)
-            effectiveInset = _collectionView.contentInset.top;
+            effectiveInset = effectiveInset + 45.0f;
         
         CGFloat contentOffset = verticalOffset - effectiveInset;
         if (contentOffset > _collectionView.contentSize.height - _collectionView.frame.size.height + _collectionView.contentInset.bottom) {
@@ -1273,7 +1662,7 @@ typedef enum {
         }
         
         _ignoreSetSection = true;
-        [_collectionView setContentOffset:CGPointMake(0.0f, contentOffset) animated:true];
+        [_collectionView setContentOffset:CGPointMake(0.0f, contentOffset) animated:animated];
     };
     
     if (section == 0)
@@ -1281,12 +1670,12 @@ typedef enum {
         if (_favoriteDocuments.count != 0)
         {
             _ignoreSetSection = true;
-            [_collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionTop animated:true];
+            [_collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0] atScrollPosition:UICollectionViewScrollPositionTop animated:animated];
         }
         else
         {
             _ignoreSetSection = true;
-            [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:true];
+            [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:animated];
         }
     }
     else if (section == 1)
@@ -1340,9 +1729,15 @@ typedef enum {
     _favoriteDocuments = favoriteStickers;
     _groupDocuments = groupStickers;
     
+    bool shouldRestoreSearchFocus = _searchBar.isFirstResponder;
     [_collectionView reloadData];
+    if (shouldRestoreSearchFocus)
+        [_searchBar becomeFirstResponder];
     
     [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
+    
+    if (!_didScroll)
+        [self resetInitialScrollPosition];
 }
 
 - (void)setRecentGifs:(NSArray *)recentGifs {
@@ -1405,7 +1800,6 @@ typedef enum {
     }
     
     _trendingStickerPacks = trendingStickerPacks;
-    
     [_trendingCollectionView reloadData];
     
     [_tabPanel setStickerPacks:_stickerPacks showRecent:_recentDocuments.count != 0 showFavorite:_favoriteDocuments.count != 0 showGroup:[self showGroupStickers] showGroupLast:[self showGroupStickersLast] showGifs:_recentGifs.count != 0 showTrendingFirst:[self showTrendingFirst] showTrendingLast:[self showTrendingLast]];
@@ -1429,7 +1823,8 @@ typedef enum {
     }
     
     _installedTrendingStickerPacks = installedTrendingPacks;
-    for (id cell in [_trendingCollectionView visibleCells]) {
+    
+    void (^processCell)(id) = ^(id cell) {
         if ([cell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]]) {
             TGTrendingStickerPackKeyboardCell *packCell = cell;
             bool installed = true;
@@ -1439,6 +1834,14 @@ typedef enum {
             }
             packCell.installed = installed;
         }
+    };
+    
+    for (id cell in [_trendingCollectionView visibleCells]) {
+        processCell(cell);
+    }
+    
+    for (id cell in [_searchCollectionView visibleCells]) {
+        processCell(cell);
     }
 }
 
@@ -1516,6 +1919,9 @@ typedef enum {
 {
     if (_previewController != nil)
     {
+        if (_searchBar.isFirstResponder)
+            [_searchBar resignFirstResponder];
+        
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
         
         bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
@@ -1732,15 +2138,563 @@ typedef enum {
 {
     if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateRecognized)
     {
+        [self presentActions];
+        
         TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
-        
-        bool isFaved = [TGFavoriteStickersSignal isFaved:previewView.item];
-        [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
-        
-        [previewView presentActions];
-        
         if (fabs(CFAbsoluteTimeGetCurrent() - previewView.lastFeedbackTime) > 0.6)
             AudioServicesPlaySystemSound(1519);
+    }
+}
+
+- (void)handleTrendingStickerPress:(UILongPressGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateBegan)
+    {
+        CGPoint point = [recognizer locationInView:_trendingCollectionView];
+        
+        for (NSIndexPath *indexPath in [_trendingCollectionView indexPathsForVisibleItems])
+        {
+            TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)[_trendingCollectionView cellForItemAtIndexPath:indexPath];
+            if (![trendingCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                continue;
+            
+            if (CGRectContainsPoint(trendingCell.frame, point))
+            {
+                [trendingCell enumerateCells:^(TGStickerCollectionViewCell *cell)
+                {
+                    CGPoint location = [_trendingCollectionView convertPoint:point toView:cell];
+                    if (CGRectContainsPoint(cell.bounds, location))
+                    {
+                        
+                        TGViewController *parentViewController = _parentViewController;
+                        if (parentViewController != nil)
+                        {
+                            TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
+                            if ((NSInteger)TGScreenSize().height == 736)
+                                previewView.eccentric = false;
+                            if (!_trendingForceTouchRecognizer.enabled)
+                                [self startActionsTimer];
+                            
+                            __weak TGStickerKeyboardView *weakSelf = self;
+                            __weak TGStickerItemPreviewView *weakPreviewView = previewView;
+                            NSMutableArray *actions = [[NSMutableArray alloc] init];
+                            TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
+                            {
+                                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                if (strongSelf == nil || strongPreviewView == nil)
+                                    return;
+                                
+                                [strongPreviewView performCommit];
+                                
+                                TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                {
+                                    if (strongSelf->_stickerSelected)
+                                        strongSelf->_stickerSelected(strongPreviewView.item);
+                                });
+                            }];
+                            [actions addObject:sendItem];
+                            
+                            TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                            {
+                                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                if (strongSelf == nil || strongPreviewView == nil)
+                                    return;
+                                
+                                [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                                [strongPreviewView performDismissal];
+                            }];
+                            [actions addObject:faveItem];
+                            _faveItem = faveItem;
+                            
+                            TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
+                            {
+                                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                if (strongSelf == nil || strongPreviewView == nil)
+                                    return;
+                                
+                                [strongPreviewView performDismissal];
+                                
+                                TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                {
+                                    [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
+                                });
+                            }];
+                            [actions addObject:viewItem];
+                            
+                            TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
+                            {
+                                __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                if (strongPreviewView == nil)
+                                    return;
+                                
+                                [strongPreviewView performDismissal];
+                            }];
+                            [actions addObject:cancelItem];
+                            
+                            [previewView setupWithMainItemViews:nil actionItemViews:actions];
+                            
+                            TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentViewController previewView:previewView];
+                            _previewController = controller;
+                            
+                            controller.sourcePointForItem = ^(id item)
+                            {
+                                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                if (strongSelf == nil)
+                                    return CGPointZero;
+                                
+                                for (NSIndexPath *indexPath in [strongSelf->_trendingCollectionView indexPathsForVisibleItems])
+                                {
+                                    TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)[strongSelf->_trendingCollectionView cellForItemAtIndexPath:indexPath];
+                                    if (![trendingCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                                        continue;
+                                    
+                                    TGStickerCollectionViewCell *cell = [trendingCell cellForDocument:item];
+                                    if (cell != nil)
+                                        return [trendingCell convertPoint:cell.center toView:nil];
+                                }
+                                
+                                return CGPointZero;
+                            };
+                            
+                            TGDocumentMediaAttachment *sticker = cell.documentMedia;
+                            TGStickerPack *stickerPack = trendingCell.stickerPack;
+                            if (stickerPack == nil)
+                                stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                            
+                            [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                            
+                            [cell setHighlightedWithBounce:true];
+                            
+                            if (previewView.presentActionsImmediately)
+                            {
+                                bool isFaved = [TGFavoriteStickersSignal isFaved:sticker];
+                                [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+                            }
+                        }
+                    }
+                }];
+            }
+        }
+    }
+    else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+        
+        for (TGTrendingStickerPackKeyboardCell *cell in [_trendingCollectionView visibleCells])
+        {
+            if ([cell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                [cell clearHighlight];
+        }
+        TGItemPreviewController *controller = _previewController;
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        [controller dismiss];
+    }
+}
+
+- (void)handleTrendingStickerPan:(UIPanGestureRecognizer *)gestureRecognizer
+{
+    if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateChanged)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        if (_actionsTimer != nil)
+            [self startActionsTimer];
+        
+        CGPoint point = [gestureRecognizer locationInView:_trendingCollectionView];
+        CGPoint relativePoint = [gestureRecognizer locationInView:self];
+        
+        if (CGRectContainsPoint(CGRectOffset(_trendingCollectionView.frame, 0, preloadInset), relativePoint))
+        {
+            for (NSIndexPath *indexPath in [_trendingCollectionView indexPathsForVisibleItems])
+            {
+                TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)[_trendingCollectionView cellForItemAtIndexPath:indexPath];
+                if (![trendingCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                    continue;
+                
+                if (CGRectContainsPoint(trendingCell.frame, point))
+                {
+                    [trendingCell enumerateCells:^(TGStickerCollectionViewCell *cell)
+                    {
+                        CGPoint location = [_trendingCollectionView convertPoint:point toView:cell];
+                        if (CGRectContainsPoint(cell.bounds, location))
+                        {
+                            TGDocumentMediaAttachment *sticker = cell.documentMedia;
+                            TGStickerPack *stickerPack = trendingCell.stickerPack;
+                            if (stickerPack == nil)
+                                stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                            if (sticker != nil)
+                                [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                            
+                            [cell setHighlightedWithBounce:true];
+                        }
+                        else
+                        {
+                            [cell setHighlightedWithBounce:false];
+                        }
+                    }];
+                }
+                else
+                {
+                    [trendingCell clearHighlight];
+                }
+            }
+        }
+    }
+}
+
+- (void)handleSearchStickerPress:(UILongPressGestureRecognizer *)recognizer
+{
+    if (recognizer.state == UIGestureRecognizerStateBegan)
+    {
+        CGPoint point = [recognizer locationInView:_searchCollectionView];
+        
+        for (NSIndexPath *indexPath in [_searchCollectionView indexPathsForVisibleItems])
+        {
+            UICollectionViewCell *baseCell = (TGStickerCollectionViewCell *)[_searchCollectionView cellForItemAtIndexPath:indexPath];
+            if ([baseCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+            {
+                TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)baseCell;
+                if (CGRectContainsPoint(trendingCell.frame, point))
+                {
+                    [trendingCell enumerateCells:^(TGStickerCollectionViewCell *cell)
+                    {
+                        CGPoint location = [_searchCollectionView convertPoint:point toView:cell];
+                        if (CGRectContainsPoint(cell.bounds, location))
+                        {
+                            TGViewController *parentViewController = _parentViewController;
+                            if (parentViewController != nil)
+                            {
+                                TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
+                                if ((NSInteger)TGScreenSize().height == 736)
+                                    previewView.eccentric = false;
+                                if (!_searchForceTouchRecognizer.enabled)
+                                    [self startActionsTimer];
+                                
+                                __weak TGStickerKeyboardView *weakSelf = self;
+                                __weak TGStickerItemPreviewView *weakPreviewView = previewView;
+                                NSMutableArray *actions = [[NSMutableArray alloc] init];
+                                TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
+                                {
+                                    __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                    __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                    if (strongSelf == nil || strongPreviewView == nil)
+                                        return;
+                                    
+                                    [strongPreviewView performCommit];
+                                    
+                                    TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                    {
+                                        if (strongSelf->_stickerSelected)
+                                            strongSelf->_stickerSelected(strongPreviewView.item);
+                                    });
+                                }];
+                                [actions addObject:sendItem];
+                                
+                                TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                                {
+                                    __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                    __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                    if (strongSelf == nil || strongPreviewView == nil)
+                                        return;
+                                    
+                                    [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                                    [strongPreviewView performDismissal];
+                                }];
+                                [actions addObject:faveItem];
+                                _faveItem = faveItem;
+                                
+                                TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
+                                {
+                                    __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                    __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                    if (strongSelf == nil || strongPreviewView == nil)
+                                        return;
+                                    
+                                    [strongPreviewView performDismissal];
+                                    
+                                    TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                                    {
+                                        [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
+                                    });
+                                }];
+                                [actions addObject:viewItem];
+                                
+                                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
+                                {
+                                    __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                                    if (strongPreviewView == nil)
+                                        return;
+                                    
+                                    [strongPreviewView performDismissal];
+                                }];
+                                [actions addObject:cancelItem];
+                                
+                                [previewView setupWithMainItemViews:nil actionItemViews:actions];
+                                
+                                TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentViewController previewView:previewView];
+                                _previewController = controller;
+                                
+                                controller.sourcePointForItem = ^CGPoint(id item)
+                                {
+                                    __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                                    if (strongSelf == nil)
+                                        return CGPointZero;
+                                    
+                                    for (NSIndexPath *indexPath in [strongSelf->_searchCollectionView indexPathsForVisibleItems])
+                                    {
+                                        TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)[strongSelf->_searchCollectionView cellForItemAtIndexPath:indexPath];
+                                        if (![trendingCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                                            continue;
+                                        
+                                        TGStickerCollectionViewCell *cell = [trendingCell cellForDocument:item];
+                                        if (cell != nil)
+                                            return [trendingCell convertPoint:cell.center toView:nil];
+                                    }
+                                    
+                                    return CGPointZero;
+                                };
+                                
+                                TGDocumentMediaAttachment *sticker = cell.documentMedia;
+                                TGStickerPack *stickerPack = trendingCell.stickerPack;
+                                if (stickerPack == nil)
+                                    stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                                
+                                [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                                
+                                [cell setHighlightedWithBounce:true];
+                                
+                                if (previewView.presentActionsImmediately)
+                                {
+                                    bool isFaved = [TGFavoriteStickersSignal isFaved:sticker];
+                                    [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+                                }
+                            }
+                        }
+                    }];
+                }
+            }
+            else if ([baseCell isKindOfClass:[TGStickerCollectionViewCell class]])
+            {
+                TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)baseCell;
+                if (CGRectContainsPoint(cell.frame, point))
+                {
+                    TGViewController *parentViewController = _parentViewController;
+                    if (parentViewController != nil)
+                    {
+                        TGStickerItemPreviewView *previewView = [[TGStickerItemPreviewView alloc] initWithContext:[TGLegacyComponentsContext shared] frame:CGRectZero];
+                        if ((NSInteger)TGScreenSize().height == 736)
+                            previewView.eccentric = false;
+                        if (!_searchForceTouchRecognizer.enabled)
+                            [self startActionsTimer];
+                        
+                        __weak TGStickerKeyboardView *weakSelf = self;
+                        __weak TGStickerItemPreviewView *weakPreviewView = previewView;
+                        NSMutableArray *actions = [[NSMutableArray alloc] init];
+                        TGMenuSheetButtonItemView *sendItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"ShareMenu.Send") type:TGMenuSheetButtonTypeSend action:^
+                        {
+                            __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                            if (strongSelf == nil || strongPreviewView == nil)
+                                return;
+                            
+                            [strongPreviewView performCommit];
+                            
+                            TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                            {
+                                if (strongSelf->_stickerSelected)
+                                    strongSelf->_stickerSelected(strongPreviewView.item);
+                            });
+                        }];
+                        [actions addObject:sendItem];
+                        
+                        TGMenuSheetButtonItemView *faveItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Stickers.AddToFavorites") type:TGMenuSheetButtonTypeDefault action:^
+                        {
+                            __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                            if (strongSelf == nil || strongPreviewView == nil)
+                                return;
+                            
+                            [TGFavoriteStickersSignal setSticker:strongPreviewView.item faved:![TGFavoriteStickersSignal isFaved:strongPreviewView.item]];
+                            [strongPreviewView performDismissal];
+                        }];
+                        [actions addObject:faveItem];
+                        _faveItem = faveItem;
+                        
+                        TGMenuSheetButtonItemView *viewItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"StickerPack.ViewPack") type:TGMenuSheetButtonTypeDefault action:^
+                        {
+                            __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                            if (strongSelf == nil || strongPreviewView == nil)
+                                return;
+                            
+                            [strongPreviewView performDismissal];
+                            
+                            TGDispatchAfter(0.2, dispatch_get_main_queue(), ^
+                            {
+                                [strongSelf viewPack:strongPreviewView.stickerPack sticker:strongPreviewView.item recent:strongPreviewView.recent];
+                            });
+                        }];
+                        [actions addObject:viewItem];
+                        
+                        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeDefault action:^
+                        {
+                            __strong TGStickerItemPreviewView *strongPreviewView = weakPreviewView;
+                            if (strongPreviewView == nil)
+                                return;
+                            
+                            [strongPreviewView performDismissal];
+                        }];
+                        [actions addObject:cancelItem];
+                        
+                        [previewView setupWithMainItemViews:nil actionItemViews:actions];
+                        
+                        TGItemPreviewController *controller = [[TGItemPreviewController alloc] initWithContext:[TGLegacyComponentsContext shared] parentController:parentViewController previewView:previewView];
+                        _previewController = controller;
+                        
+                        controller.sourcePointForItem = ^(id item)
+                        {
+                            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                            if (strongSelf == nil)
+                                return CGPointZero;
+                            
+                            for (TGStickerCollectionViewCell *cell in strongSelf->_searchCollectionView.visibleCells)
+                            {
+                                if (![cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                                    continue;
+                                
+                                if ([cell.documentMedia isEqual:item])
+                                {
+                                    NSIndexPath *indexPath = [strongSelf->_searchCollectionView indexPathForCell:cell];
+                                    if (indexPath != nil)
+                                        return [strongSelf->_searchCollectionView convertPoint:cell.center toView:nil];
+                                }
+                            }
+                            
+                            return CGPointZero;
+                        };
+                        
+                        TGStickerPack *stickerPack = _searchLocalStickerPacks[indexPath.section];
+                        TGDocumentMediaAttachment *sticker = stickerPack.documents[indexPath.row];
+                        if (stickerPack.packReference == nil)
+                            stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                        
+                        [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                        
+                        [cell setHighlightedWithBounce:true];
+                        
+                        if (previewView.presentActionsImmediately)
+                        {
+                            bool isFaved = [TGFavoriteStickersSignal isFaved:sticker];
+                            [_faveItem setTitle:isFaved ? TGLocalized(@"Stickers.RemoveFromFavorites") : TGLocalized(@"Stickers.AddToFavorites")];
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+        }
+    }
+    else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled)
+    {
+        [_actionsTimer invalidate];
+        _actionsTimer = nil;
+        
+        for (UICollectionViewCell *cell in [_searchCollectionView visibleCells])
+        {
+            if ([cell isKindOfClass:[TGStickerCollectionViewCell class]])
+                [(TGStickerCollectionViewCell *)cell setHighlightedWithBounce:false];
+            else if ([cell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                [(TGTrendingStickerPackKeyboardCell *)cell clearHighlight];
+        }
+        TGItemPreviewController *controller = _previewController;
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        [controller dismiss];
+    }
+}
+
+- (void)handleSearchStickerPan:(UIPanGestureRecognizer *)gestureRecognizer
+{
+    if (_previewController != nil && gestureRecognizer.state == UIGestureRecognizerStateChanged)
+    {
+        TGStickerItemPreviewView *previewView = (TGStickerItemPreviewView *)_previewController.previewView;
+        if (previewView.isLocked)
+            return;
+        
+        if (_actionsTimer != nil)
+            [self startActionsTimer];
+        
+        CGPoint point = [gestureRecognizer locationInView:_searchCollectionView];
+        CGPoint relativePoint = [gestureRecognizer locationInView:self];
+        
+        if (CGRectContainsPoint(CGRectOffset(_searchCollectionView.frame, 0, preloadInset), relativePoint))
+        {
+            for (NSIndexPath *indexPath in [_searchCollectionView indexPathsForVisibleItems])
+            {
+                UICollectionViewCell *baseCell = [_searchCollectionView cellForItemAtIndexPath:indexPath];
+                if ([baseCell isKindOfClass:[TGTrendingStickerPackKeyboardCell class]])
+                {
+                    TGTrendingStickerPackKeyboardCell *trendingCell = (TGTrendingStickerPackKeyboardCell *)baseCell;
+                    if (CGRectContainsPoint(trendingCell.frame, point))
+                    {
+                        [trendingCell enumerateCells:^(TGStickerCollectionViewCell *cell)
+                        {
+                            CGPoint location = [_searchCollectionView convertPoint:point toView:cell];
+                            if (CGRectContainsPoint(cell.bounds, location))
+                            {
+                                TGDocumentMediaAttachment *sticker = cell.documentMedia;
+                                TGStickerPack *stickerPack = trendingCell.stickerPack;
+                                if (stickerPack == nil)
+                                    stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                                if (sticker != nil)
+                                    [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                                
+                                [cell setHighlightedWithBounce:true];
+                            }
+                            else
+                            {
+                                [cell setHighlightedWithBounce:false];
+                            }
+                        }];
+                    }
+                    else
+                    {
+                        [trendingCell clearHighlight];
+                    }
+                }
+                else if ([baseCell isKindOfClass:[TGStickerCollectionViewCell class]])
+                {
+                    TGStickerCollectionViewCell *cell = (TGStickerCollectionViewCell *)baseCell;
+                    
+                    if (CGRectContainsPoint(cell.frame, point))
+                    {
+                        TGStickerPack *stickerPack = _searchLocalStickerPacks[indexPath.section];
+                        TGDocumentMediaAttachment *sticker = stickerPack.documents[indexPath.row];
+                        if (stickerPack.packReference == nil)
+                            stickerPack = [TGDatabaseInstance() stickerPackForReference:sticker.stickerPackReference].stickerPack;
+                        
+                        if (sticker != nil)
+                            [previewView setSticker:sticker stickerPack:stickerPack recent:false];
+                        [cell setHighlightedWithBounce:true];
+                    }
+                    else
+                    {
+                        [cell setHighlightedWithBounce:false];
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1820,10 +2774,22 @@ typedef enum {
     if (gestureRecognizer == _forceTouchRecognizer || otherGestureRecognizer == _forceTouchRecognizer)
         return true;
     
+    if (gestureRecognizer == _searchPanRecognizer || otherGestureRecognizer == _searchPanRecognizer)
+        return true;
+    
+    if (gestureRecognizer == _searchForceTouchRecognizer || otherGestureRecognizer == _searchForceTouchRecognizer)
+        return true;
+    
+    if (gestureRecognizer == _trendingPanRecognizer || otherGestureRecognizer == _trendingPanRecognizer)
+        return true;
+    
     return false;
 }
 
 - (void)setMode:(TGStickerKeyboardViewMode)mode {
+    if (_searchActive)
+        return;
+    
     if (_mode != mode) {
         _mode = mode;
         
@@ -1893,10 +2859,17 @@ typedef enum {
 }
 
 - (void)installStickerPack:(TGStickerPack *)stickerPack {
+    bool scrollToNewPack = false;
+    if (_searchActive) {
+        [self searchBarCancelButtonClicked:(UISearchBar *)_searchBar];
+        scrollToNewPack = true;
+    }
+    
+    __weak TGStickerKeyboardView *weakSelf = self;
     __weak TGViewController *weakParentController = _parentViewController;
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
     [progressWindow showWithDelay:0.1];
-    SSignal *installStickerPackAndGetArchivedSignal = false ? [TGStickersSignals installStickerPackAndGetArchived:stickerPack.packReference] : [TGStickersSignals installStickerPackAndGetArchived:stickerPack.packReference];
+    SSignal *installStickerPackAndGetArchivedSignal = [TGStickersSignals installStickerPackAndGetArchived:stickerPack.packReference];
     [[[installStickerPackAndGetArchivedSignal deliverOn:[SQueue mainQueue]] onDispose:^{
         TGDispatchOnMainThread(^{
             [progressWindow dismiss:true];
@@ -1915,6 +2888,11 @@ typedef enum {
                 };
                 previewWindow.hidden = false;
             }
+        }
+        
+        if (scrollToNewPack) {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            [strongSelf scrollToSection:3];
         }
     }];
 }
@@ -1943,6 +2921,26 @@ typedef enum {
 
     CGRect sourceRect = CGRectMake(CGFloor(self.bounds.size.width / 2.0f), [UIScreen mainScreen].bounds.size.height, 0.0f, 0.0f);
     
+    void (^stickerPackAdded)(id<TGStickerPackReference>) = nil;
+    void (^stickerPackRemoved)(id<TGStickerPackReference>) = nil;
+    void (^linkOpened)(void) = nil;
+    if (_searchActive)
+    {
+        stickerPackAdded = ^(__unused id<TGStickerPackReference> pack)
+        {
+            [self searchBarCancelButtonClicked:(UISearchBar *)_searchBar];
+            [self scrollToSection:3];
+        };
+        stickerPackRemoved = ^(__unused id<TGStickerPackReference> pack)
+        {
+            [self searchBarCancelButtonClicked:(UISearchBar *)_searchBar];
+        };
+        linkOpened = ^
+        {
+            [self searchBarCancelButtonClicked:(UISearchBar *)_searchBar];
+        };
+    }
+    
     id<TGStickerPackReference> packReference = stickerPack == nil ? sticker.stickerPackReference : nil;
     [TGStickersMenu presentWithParentController:parentViewController packReference:packReference stickerPack:stickerPack showShareAction:false sendSticker:^(TGDocumentMediaAttachment *document) {
         __strong TGStickerKeyboardView *strongSelf = weakSelf;
@@ -1951,9 +2949,9 @@ typedef enum {
                 strongSelf.stickerSelected(document);
             }
         }
-    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
+    } stickerPackRemoved:stickerPackRemoved stickerPackAdded:stickerPackAdded stickerPackHidden:nil linkOpened:linkOpened stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
         return sourceRect;
-    } centered:true existingController:nil];
+    } centered:true existingController:nil expanded:_expanded];
 }
 
 - (void)collectionView:(UICollectionView *)collectionView willDisplayCell:(UICollectionViewCell *)__unused cell forItemAtIndexPath:(NSIndexPath *)indexPath {
@@ -2011,8 +3009,19 @@ typedef enum {
     _expanded = expanded;
     [_tabPanel setExpanded:expanded];
     
-    _tabPanel.frame = CGRectMake(_tabPanel.frame.origin.x, 0.0f, _tabPanel.frame.size.width, _tabPanel.frame.size.height);
-    [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    if (!_collectionView.blockScrolling)
+    {
+        _tabPanel.frame = CGRectMake(_tabPanel.frame.origin.x, 0.0f, _tabPanel.frame.size.width, _tabPanel.frame.size.height);
+        [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+    }
+    
+    if (_searchBar != nil)
+    {
+        if (!expanded)
+            [self searchEnded];
+        else if (_collectionView.contentOffset.y < -_collectionView.contentInset.top + 130.0f + FLT_EPSILON)
+            _collectionView.contentOffset = CGPointMake(0.0f, -_collectionView.contentInset.top);
+    }
 }
 
 - (void)updateExpanded
@@ -2058,6 +3067,298 @@ typedef enum {
 - (bool)isGif
 {
     return _mode == TGStickerKeyboardViewModeGifs;
+}
+
+
+
+
+- (BOOL)searchBarShouldBeginEditing:(TGSearchBar *)__unused searchBar
+{
+    if (_mode != TGStickerKeyboardViewModeStickers)
+        return false;
+    
+    _searchActive = true;
+    
+    _collectionView.blockScrolling = true;
+    [_collectionView setForcedContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top) animated:false];
+    
+    [_searchBar setShowsCancelButton:true animated:true];
+    
+    [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+    {
+        CGRect frame = _tabPanel.frame;
+        frame.origin.y = -_tabPanel.frame.size.height;
+        
+        _tabPanel.frame = frame;
+        [self setMaskWithTabPanelOffset:_tabPanel.frame.origin.y];
+        
+        [self layoutForSize:self.frame.size];
+    } completion:nil];
+    
+    if (self.requestedCollapse != nil)
+        self.requestedCollapse(true);
+    
+    if (self.requestedExpand != nil)
+        self.requestedExpand(true);
+ 
+    _searchWrapperView.hidden = false;
+    
+    return true;
+}
+
+- (void)searchBarTextDidBeginEditing:(TGSearchBar *)__unused searchBar
+{
+    [_collectionView setContentOffset:CGPointMake(0.0f, -_collectionView.contentInset.top)];
+    [self setSearchQuery:nil];
+    
+    _autorotationWasEnabled = [TGViewController autorotationAllowed];
+    [TGViewController disableAutorotation];
+}
+
+- (void)searchBar:(TGSearchBar *)__unused searchBar textDidChange:(NSString *)searchText
+{
+    if (!searchBar.maybeCustomTextField.isFirstResponder)
+        return;
+    
+    SSignal *signal = [SSignal complete];
+    if ([searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0)
+        signal = [signal delay:0.4 onQueue:[SQueue mainQueue]];
+                  
+    __weak TGStickerKeyboardView *weakSelf = self;
+    [_queryDisposable setDisposable:[signal startWithNext:nil completed:^
+    {
+        __strong TGStickerKeyboardView *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf setSearchQuery:searchText];
+    }]];
+}
+
+- (void)searchBar:(TGSearchBar *)__unused searchBar willChangeHeight:(CGFloat)__unused newHeight
+{
+    
+}
+
+- (void)searchBarCancelButtonClicked:(TGSearchBar *)__unused searchBar
+{
+    [self searchEnded];
+    
+    if (self.requestedExpand != nil)
+        self.requestedExpand(false);
+}
+
+- (void)setSearchQuery:(NSString *)query
+{
+    query = [query lowercaseString];
+    [_searchCollectionView setContentOffset:CGPointMake(0.0f, -_searchCollectionView.contentInset.top) animated:false];
+    
+    bool isSingleEmoji = false;
+    NSString *keyString = nil;
+    if (query.length > 0)
+    {
+        isSingleEmoji = [query containsSingleEmoji];
+        keyString = [[query emojiArray:true] firstObject];
+        if (keyString.length == 0)
+            isSingleEmoji = false;
+    }
+    
+    __weak TGStickerKeyboardView *weakSelf = self;
+    if (query.length == 0)
+    {
+        [_searchDisposable setDisposable:[[[[TGStickersSignals stickerPacks] startOn:[SQueue concurrentDefaultQueue]] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *dict)
+        {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            NSMutableSet<NSNumber *> *installedPacks = [[NSMutableSet alloc] init];
+            for (TGStickerPack *pack in dict[@"packs"]) {
+                if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                    int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
+                    [installedPacks addObject:@(packId)];
+                }
+            }
+            
+            NSMutableArray *trendingPacks = [[NSMutableArray alloc] init];
+            for (TGStickerPack *pack in dict[@"featuredPacks"]) {
+                if ([pack.packReference isKindOfClass:[TGStickerPackIdReference class]]) {
+                    int64_t packId = ((TGStickerPackIdReference *)pack.packReference).packId;
+                    if (![installedPacks containsObject:@(packId)]) {
+                        [trendingPacks addObject:pack];
+                    }
+                }
+            }
+            
+            [strongSelf setSearchLocalStickerPacks:trendingPacks.count == 0 ? dict[@"packs"] : @[] remoteStickerPacks:trendingPacks];
+        }]];
+        
+        _searchEmojiQuery = nil;
+        [_searchEmojiStickers set:[SSignal single:nil]];
+    }
+    else if (isSingleEmoji)
+    {
+        _searchBar.showActivity = true;
+        
+        [_searchDisposable setDisposable:[[[[[TGStickersSignals stickersForEmojis:@[keyString] includeRemote:true updateRemoteCached:false] filter:^bool(NSDictionary *stickers)
+        {
+            return stickers != nil;
+        }] deliverOn:[SQueue mainQueue]] onDispose:^
+        {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                strongSelf->_searchBar.showActivity = false;
+        }] startWithNext:^(NSDictionary *next)
+        {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            NSArray *stickers = nil;
+            if ([next[@"emojis"] firstObject] != nil)
+                stickers = [next[@"emojis"] firstObject][@"documents"];
+            
+            NSMutableArray *packs = [[NSMutableArray alloc] init];
+            if (stickers.count > 0)
+            {
+                [packs addObject:[[TGStickerPack alloc] initWithPackReference:nil title:nil stickerAssociations:nil documents:stickers packHash:0 hidden:false isMask:false isFeatured:false installedDate:0]];
+            }
+            [strongSelf setSearchLocalStickerPacks:packs remoteStickerPacks:[next[@"final"] boolValue] ? @[] : nil];
+        }]];
+        
+        _searchEmojiQuery = nil;
+        [_searchEmojiStickers set:[SSignal single:nil]];
+    }
+    else
+    {
+        _searchBar.showActivity = true;
+        
+        SSignal *emojiSignal = [[SSignal defer:^SSignal *
+        {
+            NSArray *emojiArray = [TGEmojiSuggestions suggestionsForQuery:query];
+            return [SSignal single:emojiArray];
+        }] startOn:[SQueue concurrentDefaultQueue]];
+        
+        emojiSignal = [emojiSignal map:^id(NSArray *entries)
+        {
+            NSMutableArray *emojis = [[NSMutableArray alloc] init];
+            for (TGAlphacodeEntry *entry in entries)
+            {
+                [emojis addObject:entry.emoji];
+            }
+            return [emojis subarrayWithRange:NSMakeRange(0, MIN(5, (int)emojis.count))];
+        }];
+        
+        [_emojiDisposable setDisposable:[[emojiSignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *emojis)
+        {
+            __strong TGStickerKeyboardView *strongSelf = weakSelf;
+            if (strongSelf == nil)
+                return;
+            
+            if (![emojis isEqualToArray:strongSelf->_searchEmojiQuery])
+            {
+                strongSelf->_searchEmojiQuery = emojis;
+                [strongSelf->_searchEmojiStickers set:[TGStickersSignals stickersForEmojis:emojis includeRemote:true updateRemoteCached:false]];
+            }
+            
+            SSignal *signal = [[[strongSelf->_searchEmojiStickers.signal filter:^bool(id value) {
+                return value != nil;
+            }] take:1] mapToSignal:^SSignal *(NSDictionary *emojiResults)
+            {
+                return [[TGStickersSignals searchStickersWithQuery:query] map:^id(NSDictionary *searchResults)
+                {
+                    return @[ emojiResults, searchResults ];
+                }];
+            }];
+            
+            [strongSelf->_searchDisposable setDisposable:[[[signal deliverOn:[SQueue mainQueue]] onDispose:^
+            {
+                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    strongSelf->_searchBar.showActivity = false;
+            }] startWithNext:^(NSArray *next)
+            {
+                __strong TGStickerKeyboardView *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    NSDictionary *emojiResults = next.firstObject;
+                    NSDictionary *searchResults = next.lastObject;
+                    
+                    NSMutableArray *localPacks = [[NSMutableArray alloc] init];
+                    for (NSDictionary *set in emojiResults[@"emojis"])
+                    {
+                        NSString *emoji = set[@"emoji"];
+                        NSArray *stickers = set[@"documents"];
+                        if (stickers.count == 0)
+                            continue;
+                        
+                        TGStickerPack *pack = [[TGStickerPack alloc] initWithPackReference:nil title:emoji stickerAssociations:nil documents:stickers packHash:0 hidden:false isMask:false isFeatured:false installedDate:0];
+                        [localPacks addObject:pack];
+                    }
+                    
+                    [localPacks addObjectsFromArray:searchResults[@"local"]];
+                    [strongSelf setSearchLocalStickerPacks:localPacks remoteStickerPacks:searchResults[@"remote"]];
+                }
+            }]];
+        }]];
+    }
+}
+
+- (void)setSearchLocalStickerPacks:(NSArray *)localStickerPacks remoteStickerPacks:(NSArray *)remoteStickerPacks
+{
+    if (localStickerPacks.count + remoteStickerPacks.count == 0 && remoteStickerPacks == nil)
+        return;
+    
+    _searchLocalStickerPacks = localStickerPacks;
+    _searchRemoteStickerPacks = remoteStickerPacks;
+    
+    [_searchCollectionView reloadData];
+    
+    bool placeholderHidden = (_searchLocalStickerPacks.count + _searchRemoteStickerPacks.count > 0) || _searchRemoteStickerPacks == nil;
+    _stickersPlaceholderImageView.hidden = placeholderHidden;
+    _stickersPlaceholderLabel.hidden = placeholderHidden;
+}
+
+- (void)searchEnded
+{
+    _searchActive = false;
+    _searchWrapperView.hidden = true;
+    
+    [_searchBar setShowsCancelButton:false animated:true];
+    _collectionView.blockScrolling = false;
+    
+    if ([_searchBar isFirstResponder])
+        [_searchBar resignFirstResponder];
+    if (_searchBar.maybeCustomTextField != nil)
+        [_searchBar setText:@""];
+    
+    if (self.requestedCollapse != nil)
+        self.requestedCollapse(false);
+    
+    if (_autorotationWasEnabled)
+        [TGViewController enableAutorotation];
+}
+
+@end
+
+
+@implementation TGStickerKeyboardCollectionView
+
+- (void)setContentOffset:(CGPoint)contentOffset
+{
+    if (self.blockScrolling)
+        return;
+    [super setContentOffset:contentOffset];
+}
+
+- (void)setContentOffset:(CGPoint)contentOffset animated:(bool)animated
+{
+    if (self.blockScrolling)
+        return;
+    [super setContentOffset:contentOffset animated:animated];
+}
+
+- (void)setForcedContentOffset:(CGPoint)contentOffset animated:(bool)animated
+{
+    [super setContentOffset:contentOffset animated:animated];
 }
 
 @end

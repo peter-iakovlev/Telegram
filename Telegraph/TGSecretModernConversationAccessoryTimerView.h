@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 
 @class TGSecretModernConversationAccessoryTimerView;
+@class TGPresentation;
 
 @protocol TGSecretModernConversationAccessoryTimerViewDelegate <NSObject>
 
@@ -20,8 +21,8 @@
 
 @interface TGSecretModernConversationAccessoryTimerView : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, weak) id<TGSecretModernConversationAccessoryTimerViewDelegate> delegate;
-
 @property (nonatomic) NSInteger timerValue;
 
 @end

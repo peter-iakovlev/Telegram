@@ -18,13 +18,15 @@
 @interface TGAlertSoundController ()
 {
     NSArray *_soundInfoList;
+    TGCheckCollectionItem *_defaultCheckItem;
+    NSNumber *_defaultSoundId;
 }
 
 @end
 
 @implementation TGAlertSoundController
 
-- (id)initWithTitle:(NSString *)title soundInfoList:(NSArray *)soundInfoList
+- (id)initWithTitle:(NSString *)title soundInfoList:(NSArray *)soundInfoList defaultId:(NSNumber *)defaultId
 {
     self = [super init];
     if (self != nil)
@@ -33,6 +35,7 @@
         [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
         [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
         
+        _defaultSoundId = defaultId;
         _soundInfoList = soundInfoList;
         
         NSMutableArray *alertTonesSectionItems = [[NSMutableArray alloc] init];
@@ -41,6 +44,7 @@
         NSMutableArray *classicTonesSectionItems = [[NSMutableArray alloc] init];
         [classicTonesSectionItems addObject:[[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.ClassicTones")]];
 
+        bool hasSelected = false;
         for (int groupId = 0; groupId < 2; groupId++)
         {
             int index = -1;
@@ -51,12 +55,19 @@
                 if ([desc[@"groupId"] intValue] != groupId)
                     continue;
                 
-                TGCheckCollectionItem *checkItem = [[TGCheckCollectionItem alloc] initWithTitle:desc[@"title"] action:@selector(alertTonePressed:)];
+                if (groupId == 0 && index == 1 && defaultId != nil)
+                {
+                    _defaultCheckItem = [[TGCheckCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"UserInfo.NotificationsDefaultSound"), [TGAlertSoundController soundNameFromId:defaultId.intValue]] action:@selector(alertTonePressed:)];
+                    [alertTonesSectionItems addObject:_defaultCheckItem];
+                }
                 
+                TGCheckCollectionItem *checkItem = [[TGCheckCollectionItem alloc] initWithTitle:desc[@"title"] action:@selector(alertTonePressed:)];
                 if (index == 1)
                     checkItem.requiresFullSeparator = true;
                 
                 [checkItem setIsChecked:[desc[@"selected"] boolValue]];
+                if (checkItem.isChecked)
+                    hasSelected = true;
                 
                 if (groupId == 0)
                     [alertTonesSectionItems addObject:checkItem];
@@ -64,6 +75,9 @@
                     [classicTonesSectionItems addObject:checkItem];
             }
         }
+        
+        if (!hasSelected)
+            _defaultCheckItem.isChecked = true;
         
         TGCollectionMenuSection *alertTonesSection = [[TGCollectionMenuSection alloc] initWithItems:alertTonesSectionItems];
         
@@ -81,6 +95,17 @@
     return self;
 }
 
++ (NSString *)soundNameFromId:(int)soundId
+{
+    if (soundId == 0 || soundId == 1)
+        return [TGAppDelegateInstance modernAlertSoundTitles][soundId];
+    if (soundId >= 2 && soundId <= 9)
+        return [TGAppDelegateInstance classicAlertSoundTitles][MAX(0, soundId - 2)];
+    if (soundId >= 100 && soundId <= 111)
+        return [TGAppDelegateInstance modernAlertSoundTitles][soundId - 100 + 1];
+    return @"";
+}
+
 - (void)cancelPressed
 {
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
@@ -88,14 +113,11 @@
 
 - (void)donePressed
 {
-    int soundId = [self _selectedSoundId];
+    NSNumber *soundId = [self _selectedSoundId];
     
-    if (soundId != -1)
-    {
-        id<TGAlertSoundControllerDelegate> delegate = _delegate;
-        if ([delegate respondsToSelector:@selector(alertSoundController:didFinishPickingWithSoundInfo:)])
-            [delegate alertSoundController:self didFinishPickingWithSoundInfo:_soundInfoList[soundId]];
-    }
+    id<TGAlertSoundControllerDelegate> delegate = _delegate;
+    if ([delegate respondsToSelector:@selector(alertSoundController:didFinishPickingWithSoundInfo:)])
+        [delegate alertSoundController:self didFinishPickingWithSoundInfo:soundId ? _soundInfoList[soundId.intValue] : nil];
     
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
@@ -106,17 +128,36 @@
     if (indexPath != nil)
     {
         [self _selectItem:checkCollectionItem];
-        [self _playSoundWithId:[self soundIdFromItemIndexPath:indexPath]];
+        if (checkCollectionItem == _defaultCheckItem)
+        {
+            if (_defaultSoundId.intValue != 0)
+                [TGAppDelegateInstance playNotificationSound:[NSString stringWithFormat:@"%d", _defaultSoundId.intValue]];
+        }
+        else
+        {
+            [self _playSoundWithId:[self soundIdFromItemIndexPath:indexPath]];
+        }
     }
 }
 
 - (int)soundIdFromItemIndexPath:(NSIndexPath *)indexPath
 {
-    return (int)(indexPath.section == 0 ? (indexPath.row - 1) : (indexPath.row - 1 + ((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1));
+    if (indexPath.section == 0)
+    {
+        if (_defaultCheckItem != nil && indexPath.row > 1)
+            return (indexPath.row - 2);
+        else
+            return (indexPath.row - 1);
+    } else {
+        return (indexPath.row - 1 + ((TGCollectionMenuSection *)self.menuSections.sections[0]).items.count - 1) - (_defaultCheckItem != nil ? 1 : 0);
+    }
 }
 
-- (int)_selectedSoundId
+- (NSNumber *)_selectedSoundId
 {
+    if (_defaultCheckItem.isChecked)
+        return nil;
+    
     for (int sectionIndex = 0; sectionIndex < (int)self.menuSections.sections.count; sectionIndex++)
     {
         int index = -1;
@@ -127,12 +168,12 @@
             if ([item isKindOfClass:[TGCheckCollectionItem class]])
             {
                 if (((TGCheckCollectionItem *)item).isChecked)
-                    return [self soundIdFromItemIndexPath:[NSIndexPath indexPathForItem:index inSection:sectionIndex]];
+                    return @([self soundIdFromItemIndexPath:[NSIndexPath indexPathForItem:index inSection:sectionIndex]]);
             }
         }
     }
     
-    return -1;
+    return nil;
 }
 
 - (void)_selectItem:(TGCheckCollectionItem *)checkCollectionItem

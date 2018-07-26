@@ -3,18 +3,22 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
+@class TLDocument;
 
 @interface TLhelp_AppUpdate : NSObject <TLObject>
 
 
 @end
 
-@interface TLhelp_AppUpdate$help_appUpdate : TLhelp_AppUpdate
+@interface TLhelp_AppUpdate$help_appUpdateMeta : TLhelp_AppUpdate
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic) int32_t n_id;
-@property (nonatomic) bool critical;
-@property (nonatomic, retain) NSString *url;
+@property (nonatomic, retain) NSString *version;
 @property (nonatomic, retain) NSString *text;
+@property (nonatomic, retain) NSArray *entities;
+@property (nonatomic, retain) TLDocument *document;
+@property (nonatomic, retain) NSString *url;
 
 @end
 

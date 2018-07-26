@@ -10,9 +10,13 @@
 
 #import "TGDateLabel.h"
 
+@class TGPresentation;
+
 @interface TGContactCellContents : UIView
 
 @property (nonatomic) bool highlighted;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic, strong) UIFont *titleFont;
 @property (nonatomic, strong) UIFont *titleBoldFont;

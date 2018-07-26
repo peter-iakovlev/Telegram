@@ -27,9 +27,9 @@ NSString *const TGVinePlayerCallbackOnPlayback = @"onPlayback";
 
 @implementation TGEmbedVinePlayerView
 
-- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal alternateCachePathSignal:(SSignal *)alternateCachePathSignal
 {
-    self = [super initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal];
+    self = [super initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal alternateCachePathSignal:alternateCachePathSignal];
     if (self != nil)
     {
         _videoId = [TGEmbedVinePlayerView _vineVideoIdFromText:webPage.embedUrl];
@@ -44,6 +44,9 @@ NSString *const TGVinePlayerCallbackOnPlayback = @"onPlayback";
 - (void)_watermarkAction
 {
     [super _watermarkAction];
+    
+    if (self.onWatermarkAction != nil)
+        self.onWatermarkAction();
     
     NSString *videoId =  _videoId;
     

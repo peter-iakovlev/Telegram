@@ -190,7 +190,7 @@
                     CGFloat w = round((maxSize.height - 2 * spacing) / (1.0f / photos[1].aspectRatio + 1.0f /  photos[2].aspectRatio + 1.0f / photos[3].aspectRatio));
                     CGFloat h0 = TGScreenPixelFloor(w / photos[1].aspectRatio);
                     CGFloat h1 = TGScreenPixelFloor(w / photos[2].aspectRatio);
-                    CGFloat h2 = h - h0 - h1 - 2 *spacing;
+                    CGFloat h2 = h - h0 - h1 - 2 * spacing;
                     w = MAX(minWidth, MIN(maxSize.width - w0 - spacing, w));
                     photos[1].layoutFrame = CGRectMake(w0 + spacing, 0.0f, w, h0);
                     photos[1].positionFlags = TGMessageGroupPositionRight | TGMessageGroupPositionTop;
@@ -216,7 +216,7 @@
                 else
                     croppedRatio = MIN(1.0f, aspectRatio);
                 
-                croppedRatio = MAX(0.66667f, MIN(1.7f, croppedRatio));
+                croppedRatio = MAX(0.66667f, MIN(2.75f, croppedRatio));
                 [croppedRatios addObject:@(croppedRatio)];
             }
             
@@ -225,6 +225,8 @@
                 CGFloat ratioSum = 0.0f;
                 for (NSNumber *ratio in ratios)
                     ratioSum += ratio.floatValue;
+                if (ratioSum < FLT_EPSILON)
+                    ratioSum = 1.0f;
                 return @((maxSize.width - (ratios.count - 1) * spacing) / ratioSum);
             };
  
@@ -466,12 +468,12 @@
                 [imageAttachment.imageInfo imageUrlForSizeLargerThanSize:CGSizeMake(1000.0f, 1000.0f) actualSize:&dimensions];
             
             _imageSize = dimensions;
-            _aspectRatio = _imageSize.width / _imageSize.height;
+            _aspectRatio = _imageSize.height > 0 ? _imageSize.width / _imageSize.height : 1.0f;
         }
         else if (videoAttachment != nil)
         {
             _imageSize = videoAttachment.dimensions;
-            _aspectRatio = _imageSize.width / _imageSize.height;
+            _aspectRatio = _imageSize.height > 0 ? _imageSize.width / _imageSize.height : 1.0f;
         }
         else
         {

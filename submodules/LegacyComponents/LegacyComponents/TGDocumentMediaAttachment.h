@@ -1,14 +1,9 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
+
 
 #import <LegacyComponents/TGMediaAttachment.h>
 
 #import <LegacyComponents/TGImageInfo.h>
+#import <LegacyComponents/TGMediaOriginInfo.h>
 
 #import <LegacyComponents/TGDocumentAttributeFilename.h>
 #import <LegacyComponents/TGDocumentAttributeAnimated.h>
@@ -39,6 +34,8 @@
 @property (nonatomic, strong) NSString *caption;
 
 @property (nonatomic, readonly) NSArray *textCheckingResults;
+
+@property (nonatomic, strong) TGMediaOriginInfo *originInfo;
 
 - (NSString *)safeFileName;
 + (NSString *)safeFileNameForFileName:(NSString *)fileName;

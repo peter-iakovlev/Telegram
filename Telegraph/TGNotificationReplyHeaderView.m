@@ -70,8 +70,7 @@ const CGFloat TGNotificationReplyHeaderHeight = 29.0f;
             {
                 case TGImageMediaAttachmentType:
                 {
-                    TGImageMediaAttachment *imageAttachment = (TGImageMediaAttachment *)subAttachment;
-                    NSString *text = imageAttachment.caption;
+                    NSString *text = attachment.replyMessage.caption;
                     if (text.length == 0)
                         text = TGLocalized(@"Message.Photo");
                     
@@ -82,7 +81,7 @@ const CGFloat TGNotificationReplyHeaderHeight = 29.0f;
                 case TGVideoMediaAttachmentType:
                 {
                     TGVideoMediaAttachment *videoAttachment = (TGVideoMediaAttachment *)subAttachment;
-                    NSString *text = videoAttachment.caption;
+                    NSString *text = attachment.replyMessage.caption;
                     if (videoAttachment.roundMessage)
                         text = TGLocalized(@"Message.VideoMessage");
                     else if (text.length == 0)

@@ -32,3 +32,10 @@
 
 @end
 
+@interface TLInputFileLocation$inputSecureFileLocation : TLInputFileLocation
+
+@property (nonatomic) int64_t n_id;
+@property (nonatomic) int64_t access_hash;
+
+@end
+

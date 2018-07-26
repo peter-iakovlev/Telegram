@@ -64,7 +64,6 @@
     object.online_cloud_timeout_ms = metaObject->getInt32((int32_t)0x97f00373);
     object.notify_cloud_delay_ms = metaObject->getInt32((int32_t)0x58eb0cde);
     object.notify_default_delay_ms = metaObject->getInt32((int32_t)0xffe3a208);
-    object.chat_big_size = metaObject->getInt32((int32_t)0xbb094b49);
     object.push_chat_period_ms = metaObject->getInt32((int32_t)0x6755b26f);
     object.push_chat_limit = metaObject->getInt32((int32_t)0x68adc403);
     object.saved_gifs_limit = metaObject->getInt32((int32_t)0xc5b5cecd);
@@ -82,7 +81,6 @@
     object.me_url_prefix = metaObject->getString((int32_t)0xf0f97064);
     object.suggested_lang_code = metaObject->getString((int32_t)0x71655114);
     object.lang_pack_version = metaObject->getInt32((int32_t)0xa3b7dbcd);
-    object.disabled_features = metaObject->getArray((int32_t)0x4f56c735);
     return object;
 }
 
@@ -177,12 +175,6 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.notify_default_delay_ms;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xffe3a208, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.chat_big_size;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xbb094b49, value));
     }
     {
         TLConstructedValue value;
@@ -285,12 +277,6 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.lang_pack_version;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xa3b7dbcd, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeVector;
-        value.nativeObject = self.disabled_features;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4f56c735, value));
     }
 }
 

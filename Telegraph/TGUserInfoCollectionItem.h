@@ -26,6 +26,7 @@
 @property (nonatomic) CGSize avatarOffset;
 @property (nonatomic) CGSize nameOffset;
 @property (nonatomic, strong) NSString *customStatus;
+@property (nonatomic) bool multilineName;
 
 - (void)setUser:(TGUser *)user animated:(bool)animated;
 - (void)setEditing:(bool)editing animated:(bool)animated;

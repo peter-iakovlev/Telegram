@@ -8,7 +8,7 @@
 #import "TGCommentCollectionItem.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGChannelAboutSetupController () {
     TGConversation *_conversation;
@@ -108,7 +108,7 @@
             [_updateAboutDisposable setDisposable:[[[[TGChannelManagementSignals updateChannelAbout:_conversation.conversationId accessHash:_conversation.accessHash about:_inputItem.text] deliverOn:[SQueue mainQueue]] onDispose:^{
                 [progressWindow dismiss:true];
             }] startWithNext:nil error:^(__unused id error) {
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Login.UnknownError") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             } completed:^{
                 __strong TGChannelAboutSetupController *strongSelf = weakSelf;
                 if (strongSelf != nil) {

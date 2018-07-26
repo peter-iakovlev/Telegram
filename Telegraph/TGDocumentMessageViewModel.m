@@ -28,6 +28,8 @@
 
 #import "TGReusableLabel.h"
 
+#import "TGPresentation.h"
+
 @interface TGDocumentMessageViewModel () <TGMessageImageViewDelegate>
 {
     NSString *_legacyThumbnailCacheUri;
@@ -71,7 +73,8 @@ static CTFontRef textFontForSize(CGFloat size)
     self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
-        _textCheckingResults = document.textCheckingResults;
+        _authorPeerId = message.fromUid;
+        _textCheckingResults = message.textCheckingResults;
         
         CGSize dimensions = CGSizeZero;
         _legacyThumbnailCacheUri = [document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
@@ -113,22 +116,9 @@ static CTFontRef textFontForSize(CGFloat size)
             filePreviewUri = previewUri;
         }
         
-        static UIColor *incomingNameColor = nil;
-        static UIColor *outgoingNameColor = nil;
-        static UIColor *incomingSizeColor = nil;
-        static UIColor *outgoingSizeColor = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            incomingNameColor = UIColorRGB(0x0b8bed);
-            outgoingNameColor = UIColorRGB(0x3faa3c);
-            incomingSizeColor = UIColorRGB(0x999999);
-            outgoingSizeColor = UIColorRGB(0x6fb26a);
-        });
-        
         _titleText = document.fileName;
         
-        _documentNameModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:_incomingAppearance ? incomingNameColor : outgoingNameColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:145.0f truncateInTheMiddle:true];
+        _documentNameModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:_incomingAppearance ? _context.presentation.pallete.chatIncomingAccentColor : _context.presentation.pallete.chatOutgoingAccentColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:145.0f truncateInTheMiddle:true];
         [_contentModel addSubmodel:_documentNameModel];
         
         NSString *sizeString = @"";
@@ -150,25 +140,30 @@ static CTFontRef textFontForSize(CGFloat size)
         }
         
         _sizeText = sizeString;
-        
-        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
-        static dispatch_once_t onceToken2;
-        dispatch_once(&onceToken2, ^
-        {
-            assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
-        });
-        
-        _textModel = [[TGModernTextViewModel alloc] initWithText:document.caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+
+        _textModel = [[TGModernTextViewModel alloc] initWithText:message.caption font:textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize)];
+        _textModel.underlineAllLinks = _incomingAppearance ? _context.presentation.pallete.underlineAllIncomingLinks : _context.presentation.pallete.underlineAllOutgoingLinks;
         _textModel.textCheckingResults = _textCheckingResults;
-        _textModel.textColor = [assetsSource messageTextColor];
+        _textModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingTextColor : _context.presentation.pallete.chatOutgoingTextColor;
+        _textModel.linkColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingLinkColor : _context.presentation.pallete.chatOutgoingLinkColor;
         if (message.isBroadcast)
             _textModel.additionalTrailingWidth += 10.0f;
         [_contentModel addSubmodel:_textModel];
         
-        _documentSizeModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:!_incomingAppearance ? outgoingSizeColor : incomingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:145.0f];
+        _documentSizeModel = [[TGModernLabelViewModel alloc] initWithText:@"" textColor:_incomingAppearance ? _context.presentation.pallete.chatIncomingSubtextColor : _context.presentation.pallete.chatOutgoingSubtextColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:145.0f];
         [_contentModel addSubmodel:_documentSizeModel];
         
-        if (filePreviewUri.length != 0)
+        [self updateIconWithUri:filePreviewUri];
+    }
+    return self;
+}
+
+- (bool)updateIconWithUri:(NSString *)filePreviewUri
+{
+    bool rebind = false;
+    if (filePreviewUri.length != 0)
+    {
+        if (_imageModel == nil)
         {
             _imageModel = [[TGMessageImageViewModel alloc] initWithUri:filePreviewUri];
             _imageModel.skipDrawInContext = true;
@@ -176,18 +171,32 @@ static CTFontRef textFontForSize(CGFloat size)
             _imageModel.overlayDiameter = 44.0f;
             _imageModel.frame = CGRectMake(0.0f, 0.0f, 74.0f, 74.0f);
             [self addSubmodel:_imageModel];
+            rebind = true;
         }
-        else
+        _imageModel.hidden = false;
+        
+        [self removeSubmodel:_iconModel viewStorage:nil];
+        _iconModel = nil;
+    }
+    else
+    {
+        if (_iconModel == nil)
         {
             _iconModel = [[TGDocumentMessageIconModel alloc] init];
+            _iconModel.presentation = _context.presentation;
             _iconModel.skipDrawInContext = true;
             _iconModel.frame = CGRectMake(0.0f, 0.0f, 60.0f, 60.0f);
-            _iconModel.fileName = document.fileName;
+            _iconModel.fileName = _titleText;
             _iconModel.incoming = _incomingAppearance;
             [self addSubmodel:_iconModel];
+            rebind = true;
         }
+        _iconModel.hidden = false;
+        
+        [self removeSubmodel:_imageModel viewStorage:nil];
+        _imageModel = nil;
     }
-    return self;
+    return rebind;
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
@@ -201,7 +210,7 @@ static CTFontRef textFontForSize(CGFloat size)
         if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
             document = (TGDocumentMediaAttachment *)attachment;
-            currentTextCheckingResults = document.textCheckingResults;
+            currentTextCheckingResults = message.textCheckingResults;
             break;
         }
     }
@@ -227,18 +236,87 @@ static CTFontRef textFontForSize(CGFloat size)
         sizeString = [[NSString alloc] initWithFormat:TGLocalized(@"Conversation.Bytes"), (int)(int)(document.size)];
     }
     
-    if (!TGStringCompare(_textModel.text, document.caption)) {
+    if (!TGStringCompare(_textModel.text, message.caption)) {
         _textCheckingResults = currentTextCheckingResults;
         
-        _textModel.text = document.caption;
+        _textModel.text = message.caption;
         _textModel.textCheckingResults = currentTextCheckingResults;
         if (sizeUpdated != NULL)
             *sizeUpdated = true;
     }
     
     _sizeText = sizeString;
+    
+    bool rebind = false;
+    CGSize dimensions;
+    NSString *newLegacyThumbnailCacheUri = [document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:&dimensions];
+    if (![newLegacyThumbnailCacheUri isEqualToString:_legacyThumbnailCacheUri])
+    {
+        _titleText = document.fileName;
+        
+        [_contentModel setNeedsSubmodelContentsUpdate];
+        _legacyThumbnailCacheUri = newLegacyThumbnailCacheUri;
+        rebind = [self updateImage:document dimensions:dimensions];
+        if (sizeUpdated != NULL)
+            *sizeUpdated = true;
+    }
+    
+    
+    if (rebind) {
+        UIView *container = _backgroundModel.boundView.superview;
+        [self unbindView:viewStorage];
+        
+        [self bindViewToContainer:container viewStorage:viewStorage];
+        
+        [_contentModel setNeedsSubmodelContentsUpdate];
+        [_contentModel updateSubmodelContentsIfNeeded];
+    }
+    
     if (sizeUpdated != NULL)
         *sizeUpdated = true;
+}
+
+- (bool)updateImage:(TGDocumentMediaAttachment *)document dimensions:(CGSize)dimensions
+{
+    bool rebind = false;
+    if ((document.documentId != 0 || document.localDocumentId != 0) && _legacyThumbnailCacheUri.length != 0)
+    {
+        NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"file-thumbnail://?"];
+        if (document.documentId != 0)
+            [previewUri appendFormat:@"id=%" PRId64 "", document.documentId];
+        else
+            [previewUri appendFormat:@"local-id=%" PRId64 "", document.localDocumentId];
+        
+        [previewUri appendFormat:@"&file-name=%@", [document.fileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+        
+        CGSize thumbnailSize = CGSizeMake(86.0f, 86.0f);
+        CGSize renderSize = CGSizeZero;
+        if (dimensions.width < dimensions.height)
+        {
+            renderSize.height = CGFloor((dimensions.height * thumbnailSize.width / dimensions.width));
+            renderSize.width = thumbnailSize.width;
+        }
+        else
+        {
+            renderSize.width = CGFloor((dimensions.width * thumbnailSize.height / dimensions.height));
+            renderSize.height = thumbnailSize.height;
+        }
+        
+        [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)thumbnailSize.width, (int)thumbnailSize.height, (int)renderSize.width, (int)renderSize.height];
+        
+        [previewUri appendString:@"&rounded=1"];
+        
+        if (_legacyThumbnailCacheUri != nil)
+            [previewUri appendFormat:@"&legacy-thumbnail-cache-url=%@", [TGStringUtils stringByEscapingForURL:_legacyThumbnailCacheUri]];
+        
+        _imageModel.uri = previewUri;
+        
+        rebind = [self updateIconWithUri:previewUri];
+    }
+    else if (_legacyThumbnailCacheUri.length == 0) {
+        rebind = [self updateIconWithUri:nil];
+    }
+    return rebind;
 }
 
 - (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay
@@ -287,8 +365,10 @@ static CTFontRef textFontForSize(CGFloat size)
     else
     {
         [_imageModel setOverlayType:TGMessageImageViewOverlayNone animated:animated];
-        
         [_iconModel setOverlayType:TGMessageImageViewOverlayPlay animated:animated];
+        
+        [_imageModel setProgress:0.0f animated:false];
+        [_iconModel setProgress:0.0f animated:false];
     }
 }
 
@@ -458,15 +538,15 @@ static CTFontRef textFontForSize(CGFloat size)
 {
     if (_mediaIsAvailable)
     {
-        [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+        [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
     }
     else
-        [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+        [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)cancelMediaDownload
 {
-    [_context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid)}];
+    [_context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)layoutForContainerSize:(CGSize)containerSize
@@ -700,10 +780,10 @@ static CTFontRef textFontForSize(CGFloat size)
             if (linkCandidate != nil)
                 [_context.companionHandle requestAction:@"openLinkWithOptionsRequested" options:@{@"url": linkCandidate}];
             else
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
         }
         else if (recognizer.doubleTapped)
-            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
         else if (linkCandidate != nil)
             [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid)}];
         else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {

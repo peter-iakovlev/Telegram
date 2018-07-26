@@ -24,6 +24,7 @@
 #import "TGWebPageMediaAttachment+Telegraph.h"
 #import "TGDocumentMediaAttachment+Telegraph.h"
 #import "TGImageMediaAttachment+Telegraph.h"
+#import "TGWebDocument+Telegraph.h"
 
 #import "TLMessages_BotResults$botResults.h"
 
@@ -52,7 +53,7 @@
 #import "TLBotInlineResult$botInlineMediaResult.h"
 
 #import "TGAppDelegate.h"
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TLRPCmessages_getBotCallbackAnswer.h"
 #import "TLRPCmessages_sendMedia_manual.h"
@@ -324,7 +325,7 @@
     }];
 }
 
-+ (SSignal *)userLocationForInlineBot:(int32_t)userId {
++ (SSignal *)userLocationForInlineBot:(int32_t)userId force:(bool)force {
     return [[SSignal defer:^SSignal *{
         static NSMutableDictionary *disabledTimestamps = nil;
         static dispatch_once_t onceToken;
@@ -338,14 +339,14 @@
         }
         
         NSData *data = [TGDatabaseInstance() conversationCustomPropertySync:userId name:murMurHash32(@"botLocationAccessGranted")];
-        
-        if (data != nil) {
+    
+        if (data != nil || force) {
             return [SSignal single:@true];
         } else if (disabledTimestamp > CFAbsoluteTimeGetCurrent() - 10.0 * 60.0) {
             return [SSignal single:@false];
         } else {
             return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
-                [TGAlertView presentAlertWithTitle:TGLocalized(@"Conversation.ShareBotLocationConfirmationTitle") message:TGLocalized(@"Conversation.ShareInlineBotLocationConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Conversation.ShareBotLocationConfirmationTitle") message:TGLocalized(@"Conversation.ShareInlineBotLocationConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
                     if (okButtonPressed) {
                         int8_t one = 1;
                         [TGDatabaseInstance() setConversationCustomProperty:userId name:murMurHash32(@"botLocationAccessGranted") value:[NSData dataWithBytes:&one length:1]];
@@ -358,7 +359,7 @@
                         [subscriber putNext:@false];
                         [subscriber putCompletion];
                     }
-                }];
+                } disableKeyboardWorkaround:false];
                 
                 return nil;
             }] startOn:[SQueue mainQueue]];
@@ -374,14 +375,14 @@
     }];
 }
 
-+ (SSignal *)botContextResultForUserId:(int32_t)userId peerId:(int64_t)peerId accessHash:(int64_t)accessHash query:(NSString *)query geoPoint:(SSignal *)__unused geoPoint offset:(NSString *)offset {
++ (SSignal *)botContextResultForUserId:(int32_t)userId peerId:(int64_t)peerId accessHash:(int64_t)accessHash query:(NSString *)query geoPoint:(SSignal *)__unused geoPoint offset:(NSString *)offset forceAllowLocation:(bool)forceAllowLocation {
     return [[TGDatabaseInstance() modify:^id{
         return [TGDatabaseInstance() loadUser:userId];
     }] mapToSignal:^SSignal *(TGUser *user) {
         if (user != nil) {
             SSignal *geoSignal = [SSignal single:nil];
             if (user.botInlineGeo) {
-                geoSignal = [[self userLocationForInlineBot:userId] take:1];
+                geoSignal = [[self userLocationForInlineBot:userId force:forceAllowLocation] take:1];
             }
             return [geoSignal mapToSignal:^SSignal *(CLLocation *location) {
                 TLRPCmessages_getInlineBotResults *getContextBotResults = [[TLRPCmessages_getInlineBotResults alloc] init];
@@ -439,7 +440,7 @@
                     SSignal *ensuredGeoSignal = [[[TGTelegramNetworking instance] requestSignal:getContextBotResults] catch:^SSignal *(id error) {
                         NSString *errorType = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
                         if ([errorType isEqual:@"BOT_INLINE_GEO_REQUIRED"]) {
-                            SSignal *geoSignal = [[self userLocationForInlineBot:userId] take:1];
+                            SSignal *geoSignal = [[self userLocationForInlineBot:userId force:forceAllowLocation] take:1];
                             return [geoSignal mapToSignal:^SSignal *(CLLocation *location) {
                                 TLRPCmessages_getInlineBotResults *getContextBotResults = [[TLRPCmessages_getInlineBotResults alloc] init];
                                 TLInputUser$inputUser *inputUser = [[TLInputUser$inputUser alloc] init];
@@ -481,7 +482,7 @@
                                 [array addObject:[[TGBotContextMediaResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id type:concreteResult.type photo:photo document:document title:concreteResult.title resultDescription:concreteResult.n_description sendMessage:[self parseBotContextSendMessage:concreteResult.send_message]]];
                             } else if ([item isKindOfClass:[TLBotInlineResult$botInlineResult class]]) {
                                 TLBotInlineResult$botInlineResult *concreteResult = (TLBotInlineResult$botInlineResult *)item;
-                                [array addObject:[[TGBotContextExternalResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id sendMessage:[self parseBotContextSendMessage:concreteResult.send_message] url:concreteResult.url displayUrl:concreteResult.url type:concreteResult.type title:concreteResult.title pageDescription:concreteResult.n_description thumbUrl:concreteResult.thumb_url originalUrl:concreteResult.content_url contentType:concreteResult.content_type size:CGSizeMake(concreteResult.w, concreteResult.h) duration:concreteResult.duration]];
+                                [array addObject:[[TGBotContextExternalResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id sendMessage:[self parseBotContextSendMessage:concreteResult.send_message] url:concreteResult.url displayUrl:concreteResult.url type:concreteResult.type title:concreteResult.title pageDescription:concreteResult.n_description thumb:[[TGWebDocument alloc] initWithTL:concreteResult.thumb] content:[[TGWebDocument alloc] initWithTL:concreteResult.content]]];
                             }
                         }
                         
@@ -519,7 +520,7 @@
         if (concreteMessage.reply_markup != nil) {
             replyMarkup = [self botReplyMarkupForMarkup:concreteMessage.reply_markup userId:0 messageId:0 hidePreviousMarkup:NULL forceReply:NULL onlyIfRelevantToUser:NULL];
         }
-        return [[TGBotContextResultSendMessageAuto alloc] initWithCaption:((TLBotInlineMessage$botInlineMessageMediaAuto *)message).caption replyMarkup:replyMarkup];
+        return [[TGBotContextResultSendMessageAuto alloc] initWithText:((TLBotInlineMessage$botInlineMessageMediaAuto *)message).message entities:[TGMessage parseTelegraphEntities:((TLBotInlineMessage$botInlineMessageMediaAuto *)message).entities] replyMarkup:replyMarkup];
     } else if ([message isKindOfClass:[TLBotInlineMessage$botInlineMessageText class]]) {
         TLBotInlineMessage$botInlineMessageText *concreteMessage = (TLBotInlineMessage$botInlineMessageText *)message;
         TGBotReplyMarkup *replyMarkup = nil;
@@ -552,7 +553,7 @@
             locationMediaAttachment.latitude = concreteGeo.lat;
             locationMediaAttachment.longitude = concreteGeo.n_long;
             
-            TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:concreteMessage.title address:concreteMessage.address provider:concreteMessage.provider venueId:concreteMessage.venue_id type:nil];
+            TGVenueAttachment *venue = [[TGVenueAttachment alloc] initWithTitle:concreteMessage.title address:concreteMessage.address provider:concreteMessage.provider venueId:concreteMessage.venue_id type:concreteMessage.venue_type];
             
             locationMediaAttachment.venue = venue;
             
@@ -569,6 +570,7 @@
         contactAttachment.firstName = concreteMessage.first_name;
         contactAttachment.lastName = concreteMessage.last_name;
         contactAttachment.phoneNumber = concreteMessage.phone_number;
+        contactAttachment.vcard = concreteMessage.vcard;
         
         TGBotReplyMarkup *replyMarkup = nil;
         if (concreteMessage.reply_markup != nil) {

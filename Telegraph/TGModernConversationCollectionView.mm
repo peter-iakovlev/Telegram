@@ -238,6 +238,21 @@
     [super setBounds:bounds];
 }
 
+- (void)updatePresentation
+{
+    TGPresentation *presentation = nil;
+    if ([self.delegate respondsToSelector:@selector(presentation)])
+        presentation = [(id<TGModernConversationCollectionViewDelegate>)self.delegate presentation];
+    
+    for (UIView *view in self.subviews)
+    {
+        if ([view isKindOfClass:[TGModernDateHeaderView class]])
+            [(TGModernDateHeaderView *)view setPresentation:presentation];
+        else if ([view isKindOfClass:[TGModernUnreadHeaderView class]])
+            [(TGModernUnreadHeaderView *)view setPresentation:presentation];
+    }
+}
+
 - (void)reloadData
 {
     _lastRelativeBoundsReport = FLT_MAX;
@@ -331,6 +346,10 @@
     auto lowerIt = std::lower_bound(pAttributes->begin(), pAttributes->end(), lowerAttributes, TGDecorationViewAttrubutesComparator());
     auto upperIt = std::upper_bound(pAttributes->begin(), pAttributes->end(), upperAttributes, TGDecorationViewAttrubutesComparator());
     
+    TGPresentation *presentation = nil;
+    if ([self.delegate respondsToSelector:@selector(presentation)])
+        presentation = [(id<TGModernConversationCollectionViewDelegate>)self.delegate presentation];
+    
     if (lowerIt != pAttributes->end())
     {
         for (auto it = lowerIt; it != upperIt; it++)
@@ -346,7 +365,7 @@
                     {
                         TGModernDateHeaderView *view = (TGModernDateHeaderView *)[_viewStorage dequeueViewWithIdentifier:@"_date" viewStateIdentifier:[[NSString alloc] initWithFormat:@"date/%d", it->index]];
                         if (view == nil)
-                            view = [[TGModernDateHeaderView alloc] initWithFrame:it->frame];
+                            view = [[TGModernDateHeaderView alloc] initWithFrame:it->frame presentation:presentation];
                         view.frame = it->frame;
                         view.alpha = 1.0f;
                         [view setDate:it->index];
@@ -358,7 +377,7 @@
                     {
                         TGModernUnreadHeaderView *view = (TGModernUnreadHeaderView *)[_viewStorage dequeueViewWithIdentifier:@"_unread" viewStateIdentifier:nil];
                         if (view == nil)
-                            view = [[TGModernUnreadHeaderView alloc] initWithFrame:it->frame];
+                            view = [[TGModernUnreadHeaderView alloc] initWithFrame:it->frame presentation:presentation];
                         view.frame = it->frame;
                         view.alpha = 1.0f;
                         _currentVisibleDecorationViews[it->index] = view;

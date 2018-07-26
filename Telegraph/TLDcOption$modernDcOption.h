@@ -6,5 +6,6 @@
 @property (nonatomic) int32_t n_id;
 @property (nonatomic, strong) NSString *ip_address;
 @property (nonatomic) int32_t port;
+@property (nonatomic, strong) NSData *secret;
 
 @end

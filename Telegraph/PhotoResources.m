@@ -8,6 +8,8 @@
 #import "TGImageInfo+Telegraph.h"
 
 #import "ImageResourceDatas.h"
+#import "TGPassportFile.h"
+#import "TGPassportSignals.h"
 
 #import "DrawingContext.h"
 #import "TransformImageView.h"
@@ -74,16 +76,6 @@ static id<MediaResource> videoThumbnailResource(TGVideoMediaAttachment *video, C
     }
 }
 
-/*static id<MediaResource> documentThumbnailResource(TGDocumentMediaAttachment *document, CGSize *resultingSize) {
-    int fileSize = 0;
-    NSString *url = [document.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:resultingSize resultingFileSize:&fileSize];
-    if (url != nil) {
-        return imageUrlResource(url, fileSize, url, nil);
-    } else {
-        return nil;
-    }
-}*/
-
 id<MediaResource> imageFullSizeResource(TGImageMediaAttachment *image, CGSize *resultingSize) {
     int fileSize = 0;
     NSString *url = [image.imageInfo closestImageUrlWithSize:CGSizeMake(1136.0f, 1136.0f) resultingSize:resultingSize resultingFileSize:&fileSize];
@@ -104,6 +96,14 @@ id<MediaResource> videoFullSizeResource(TGVideoMediaAttachment *video) {
         int32_t fileSize = [[urlComponents objectAtIndex:4] intValue];
         
         return [[CloudDocumentMediaResource alloc] initWithDatacenterId:datacenterId fileId:videoId accessHash:accessHash size:fileSize == 0 ? nil : @(fileSize) mediaType:@(TGNetworkMediaTypeTagVideo)];
+    } else {
+        return nil;
+    }
+}
+
+id<MediaResource> secureResource(TGPassportFile *file, bool thumbnail) {
+    if (file != nil) {
+        return [[CloudSecureMediaResource alloc] initWithDatacenterId:file.dcId fileId:file.fileId accessHash:file.accessHash size:@(file.size) fileHash:file.fileHash thumbnail:thumbnail mediaType:@(TGNetworkMediaTypeTagDocument)];
     } else {
         return nil;
     }
@@ -211,6 +211,106 @@ static SSignal *videoMediaDatas(MediaBox *mediaBox, TGVideoMediaAttachment *vide
                     return [fullSizePath map:^id(NSString *fullSizePath) {
                         return [[FileResourceDatas alloc] initWithThumbnail:thumbnailData fullSizePath:fullSizePath];
                     }];
+                }];
+            }
+        }];
+    } else {
+        return [SSignal fail:nil];
+    }
+}
+
+SSignal *secureMediaDatas(MediaBox *mediaBox, TGPassportFile *file, bool thumbnail) {
+    id<MediaResource> thumnbnailResource = secureResource(file, true);
+    id<MediaResource> fullSizeResource = secureResource(file, false);
+    
+    if (thumnbnailResource != nil && fullSizeResource != nil) {
+        SSignal *maybeThumbnail = [mediaBox resourceData:thumnbnailResource pathExtension:nil];
+        SSignal *maybeFullSize = [mediaBox resourceData:fullSizeResource pathExtension:nil];
+        
+        return [[[SSignal combineSignals:@[maybeThumbnail, maybeFullSize]] take:1] mapToSignal:^SSignal *(NSArray *maybeData) {
+            ResourceData *maybeThumbnailData = maybeData.firstObject;
+            ResourceData *maybeFullData = maybeData.lastObject;
+            
+            if (maybeFullData.complete) {
+                NSData *fullSizeData = nil;
+                NSData *thumbnailData = nil;
+                if (maybeThumbnailData.complete)
+                {
+                    NSData *data = [NSData dataWithContentsOfFile:maybeThumbnailData.path options:0 error:nil];
+                    thumbnailData = [TGPassportSignals decryptedDataWithData:data dataHash:file.fileHash dataSecret:file.fileSecret keepPadding:false];
+                }
+                else
+                {
+                    fullSizeData = [NSData dataWithContentsOfFile:maybeFullData.path options:0 error:nil];
+                    
+                    UIImage *image = [[UIImage alloc] initWithData:fullSizeData];
+                    CGFloat thumbnailSide = 60.0f * TGScreenScaling();
+                    CGSize thumbnailSize = TGFitSize(image.size, CGSizeMake(thumbnailSide, thumbnailSide));
+                    UIImage *thumbnailImage = TGScaleImageToPixelSize(image, thumbnailSize);
+                    thumbnailData = UIImageJPEGRepresentation(thumbnailImage, 60);
+                    
+                    NSData *paddedThumbnailData = [TGPassportSignals paddedDataForEncryption:thumbnailData];
+                    NSData *encryptedThumbnailData = [TGPassportSignals encrypted:true data:paddedThumbnailData hash:file.fileHash secret:file.fileSecret];
+                    
+                    ResourceStorePaths *paths = [mediaBox storePathsForId:thumnbnailResource.resourceId];
+                    [encryptedThumbnailData writeToFile:paths.complete atomically:true];
+                }
+                
+                if (thumbnail)
+                {
+                    return [SSignal single:[[ImageResourceDatas alloc] initWithThumbnail:thumbnailData fullSize:nil complete:true]];
+                }
+                else
+                {
+                    SSignal *signal = [SSignal defer:^SSignal *
+                    {
+                        NSData *data = fullSizeData ?: [NSData dataWithContentsOfFile:maybeFullData.path options:0 error:nil];
+                        data = [TGPassportSignals decryptedDataWithData:data dataHash:file.fileHash dataSecret:file.fileSecret keepPadding:false];
+                        return [SSignal single:[[ImageResourceDatas alloc] initWithThumbnail:nil fullSize:data complete:true]];
+                    }];
+                
+                    if (thumbnailData != nil)
+                        signal = [[SSignal single:[[ImageResourceDatas alloc] initWithThumbnail:thumbnailData fullSize:nil complete:true]] then:signal];
+                    return signal;
+                }
+            } else {
+                SSignal *fetchedFullSize = [mediaBox fetchedResource:fullSizeResource];
+                SSignal *fullSizeData = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber) {
+                    id<SDisposable> fetchedFullSizeDisposable = [fetchedFullSize startWithNext:nil];
+                    id<SDisposable> fullSizeDisposable = [[mediaBox resourceData:fullSizeResource pathExtension:nil] startWithNext:^(ResourceData *next) {
+                        [subscriber putNext:(next.size == 0 || !next.complete) ? nil : [NSData dataWithContentsOfFile:next.path options:0 error:nil]];
+                    } error:^(id error) {
+                        [subscriber putError:error];
+                    } completed:^{
+                        [subscriber putCompletion];
+                    }];
+                    return [[SBlockDisposable alloc] initWithBlock:^{
+                        [fetchedFullSizeDisposable dispose];
+                        [fullSizeDisposable dispose];
+                    }];
+                }];
+                
+                return [fullSizeData map:^id(NSData *fullSizeData) {
+                    if (fullSizeData != nil)
+                        fullSizeData = [TGPassportSignals decryptedDataWithData:fullSizeData dataHash:file.fileHash dataSecret:file.fileSecret keepPadding:false];
+                    
+                    NSData *thumbnailData = nil;
+                    if (fullSizeData != nil)
+                    {
+                        UIImage *image = [[UIImage alloc] initWithData:fullSizeData];
+                        CGFloat thumbnailSide = 60.0f * TGScreenScaling();
+                        CGSize thumbnailSize = TGFitSize(image.size, CGSizeMake(thumbnailSide, thumbnailSide));
+                        UIImage *thumbnailImage = TGScaleImageToPixelSize(image, thumbnailSize);
+                        thumbnailData = UIImageJPEGRepresentation(thumbnailImage, 60);
+                        
+                        NSData *paddedThumbnailData = [TGPassportSignals paddedDataForEncryption:thumbnailData];
+                        NSData *encryptedThumbnailData = [TGPassportSignals encrypted:true data:paddedThumbnailData hash:file.fileHash secret:file.fileSecret];
+                        
+                        ResourceStorePaths *paths = [mediaBox storePathsForId:thumnbnailResource.resourceId];
+                        [encryptedThumbnailData writeToFile:paths.complete atomically:true];
+                    }
+                    
+                    return [[ImageResourceDatas alloc] initWithThumbnail:thumbnailData fullSize:fullSizeData complete:fullSizeData != nil];
                 }];
             }
         }];
@@ -416,4 +516,187 @@ SSignal *videoMediaTransform(MediaBox *mediaBox, TGVideoMediaAttachment *video) 
         };
         return [transform copy];
     }];
+}
+
+
+
+SSignal *secureMediaTransform(MediaBox *mediaBox, TGPassportFile *file, bool thumbnail) {
+    return [secureMediaDatas(mediaBox, file, thumbnail) map:^id(ImageResourceDatas *datas) {
+        DrawingContext *(^transform)(TransformImageArguments *) = ^DrawingContext *(TransformImageArguments *arguments) {
+            DrawingContext *context = nil;
+            
+            CGSize boundingSize = arguments.boundingSize;
+            CGSize fittedSize = TGScaleToFill(arguments.imageSize, boundingSize);
+            CGRect fittedRect = CGRectMake((boundingSize.width - fittedSize.width) / 2.0f, (boundingSize.height - fittedSize.height) / 2.0f, fittedSize.width, fittedSize.height);
+            
+            CGSize (^imageSizeForSource)(CGImageSourceRef) = ^CGSize(CGImageSourceRef imageSource)
+            {
+                NSMutableDictionary *options = [[NSMutableDictionary alloc] init];;
+                [options setObject:@false forKey:(__bridge id)kCGImageSourceShouldCache];
+                NSDictionary *properties = (__bridge NSDictionary *)CGImageSourceCopyPropertiesAtIndex(imageSource, 0, (__bridge CFDictionaryRef)options);
+                if (properties != nil) {
+                    NSNumber *width = [properties objectForKey:(__bridge id)kCGImagePropertyPixelWidth];
+                    NSNumber *height = [properties objectForKey:(__bridge id)kCGImagePropertyPixelHeight];
+                    if (width != nil && height != nil)
+                    return CGSizeMake(width.floatValue, height.floatValue);
+                }
+                return CGSizeZero;
+            };
+            
+            UIImage *fullSizeImage = nil;
+            CGSize fullImageSize = CGSizeZero;
+            if (datas.fullSize != nil && datas.complete) {
+                CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)datas.fullSize, nil);
+                fullImageSize = imageSizeForSource(imageSource);
+                if (fullImageSize.width > FLT_EPSILON) {
+                    if (boundingSize.width > FLT_EPSILON) {
+                        fittedSize = TGScaleToFit(fullImageSize, boundingSize);
+                        boundingSize = fittedSize;
+                    }
+                    else {
+                        boundingSize = fullImageSize;
+                        fittedSize = fullImageSize;
+                    }
+                    fittedRect = CGRectMake(0.0f, 0.0f, fittedSize.width, fittedSize.height);
+                }
+                
+                context = [[DrawingContext alloc] initWithSize:boundingSize scale:0.0f clear:true];
+                
+                NSMutableDictionary *options = [[NSMutableDictionary alloc] init];
+                [options setObject:@(MAX(fittedSize.width * context.scale, fittedSize.height * context.scale)) forKey:(__bridge id)kCGImageSourceThumbnailMaxPixelSize];
+                [options setObject:@true forKey:(__bridge id)kCGImageSourceCreateThumbnailFromImageAlways];
+                
+                if (imageSource != nil) {
+                    CGImageRef cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, (__bridge CFDictionaryRef)options);
+                    if (cgImage != nil) {
+                        CFRelease(imageSource);
+                        fullSizeImage = [[UIImage alloc] initWithCGImage:cgImage];
+                        CFRelease(cgImage);
+                    } else {
+                        cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil);
+                        CFRelease(imageSource);
+                        if (cgImage != nil) {
+                            fullSizeImage = [[UIImage alloc] initWithCGImage:cgImage];
+                            CFRelease(cgImage);
+                        }
+                    }
+                }
+            }
+            
+            UIImage *thumbnailImage = nil;
+            if (datas.fullSize == nil && datas.thumbnail != nil) {
+                CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)datas.thumbnail, nil);
+                
+                fullImageSize = imageSizeForSource(imageSource);
+                if (fullImageSize.width > FLT_EPSILON) {
+                    if (boundingSize.width > FLT_EPSILON) {
+                        fittedSize = TGScaleToFit(fullImageSize, boundingSize);
+                        boundingSize = fittedSize;
+                    }
+                    else {
+                        boundingSize = fullImageSize;
+                        fittedSize = fullImageSize;
+                    }
+                    fittedRect = CGRectMake(0.0f, 0.0f, fittedSize.width, fittedSize.height);
+                }
+                
+                if (imageSource != nil) {
+                    CGImageRef cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil);
+                    CFRelease(imageSource);
+                    if (cgImage != nil) {
+                        thumbnailImage = [[UIImage alloc] initWithCGImage:cgImage];
+                        CFRelease(cgImage);
+                    }
+                }
+            }
+            
+            if (context == nil)
+                context = [[DrawingContext alloc] initWithSize:(thumbnailImage || fullSizeImage) ? boundingSize : CGSizeMake(1, 1) scale:0.0f clear:true];
+            
+            if (thumbnailImage != nil && !thumbnail) {
+                CGSize blurContextSize = thumbnailImage.size;
+                DrawingContext *blurContext = [[DrawingContext alloc] initWithSize:blurContextSize scale:1.0f clear:false];
+                [blurContext withFlippedContext:^(CGContextRef context) {
+                    CGContextSetInterpolationQuality(context, kCGInterpolationNone);
+                    CGContextSetBlendMode(context, kCGBlendModeCopy);
+                    CGContextDrawImage(context, CGRectMake(0.0f, 0.0f, thumbnailImage.size.width, thumbnailImage.size.height), thumbnailImage.CGImage);
+                }];
+                telegramFastBlur((int32_t)blurContextSize.width, (int32_t)blurContextSize.height, (int32_t)blurContext.bytesPerRow, blurContext.bytes);
+                thumbnailImage = [blurContext generateImage];
+            }
+            
+            [context withFlippedContext:^(CGContextRef context) {
+                if (arguments.cornerRadius > FLT_EPSILON) {
+                    CGContextBeginPath(context);
+                    CGRect rect = CGRectMake(0.0f, 0.0f, boundingSize.width, boundingSize.height);
+                    addRoundedRectToPath(context, rect, (float)arguments.cornerRadius, (float)arguments.cornerRadius);
+                    CGContextClosePath(context);
+                    CGContextClip(context);
+                }
+                
+                CGContextSetBlendMode(context, kCGBlendModeCopy);
+                
+                if (thumbnailImage != nil) {
+                    CGContextSetInterpolationQuality(context, kCGInterpolationLow);
+                    CGContextDrawImage(context, fittedRect, thumbnailImage.CGImage);
+                }
+                
+                if (fullSizeImage != nil) {
+                    CGContextSetInterpolationQuality(context, kCGInterpolationDefault);
+                    CGContextDrawImage(context, fittedRect, fullSizeImage.CGImage);
+                }
+            }];
+            
+            return context;
+        };
+        
+        return [transform copy];
+    }];
+}
+
+SSignal *secureUploadThumbnailTransform(UIImage *image) {
+    DrawingContext *(^transform)(TransformImageArguments *) = ^DrawingContext *(TransformImageArguments *arguments) {
+        DrawingContext *context = nil;
+        
+        CGSize boundingSize = arguments.boundingSize;
+        CGSize fittedSize = TGScaleToFill(arguments.imageSize, boundingSize);
+        CGRect fittedRect = CGRectMake((boundingSize.width - fittedSize.width) / 2.0f, (boundingSize.height - fittedSize.height) / 2.0f, fittedSize.width, fittedSize.height);
+        
+        CGSize fullImageSize = image.size;
+        if (fullImageSize.width > FLT_EPSILON) {
+            if (boundingSize.width > FLT_EPSILON) {
+                fittedSize = TGScaleToFit(fullImageSize, boundingSize);
+                boundingSize = fittedSize;
+            }
+            else {
+                boundingSize = fullImageSize;
+                fittedSize = fullImageSize;
+            }
+            fittedRect = CGRectMake(0.0f, 0.0f, fittedSize.width, fittedSize.height);
+        }
+        
+        if (context == nil)
+            context = [[DrawingContext alloc] initWithSize:boundingSize scale:0.0f clear:true];
+        
+        [context withFlippedContext:^(CGContextRef context) {
+            if (arguments.cornerRadius > FLT_EPSILON) {
+                CGContextBeginPath(context);
+                CGRect rect = CGRectMake(0.0f, 0.0f, boundingSize.width, boundingSize.height);
+                addRoundedRectToPath(context, rect, (float)arguments.cornerRadius, (float)arguments.cornerRadius);
+                CGContextClosePath(context);
+                CGContextClip(context);
+            }
+            
+            CGContextSetBlendMode(context, kCGBlendModeCopy);
+            
+            if (image != nil) {
+                CGContextSetInterpolationQuality(context, kCGInterpolationLow);
+                CGContextDrawImage(context, fittedRect, image.CGImage);
+            }
+        }];
+        
+        return context;
+    };
+    
+    return [SSignal single:[transform copy]];
 }

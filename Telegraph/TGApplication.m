@@ -33,7 +33,7 @@
     return _gameShareDict;
 }
 
-- (NSString *)telegramMeLinkFromText:(NSString *)text startPrivatePayload:(__autoreleasing NSString **)startPrivatePayload startGroupPayload:(__autoreleasing NSString **)startGroupPayload gamePayload:(__autoreleasing NSString **)gamePayload
+- (NSString *)telegramMeLinkFromText:(NSString *)text startPrivatePayload:(__autoreleasing NSString **)startPrivatePayload startGroupPayload:(__autoreleasing NSString **)startGroupPayload gamePayload:(__autoreleasing NSString **)gamePayload groupedSingle:(bool *)groupedSingle
 {
     NSString *pattern = @"https?:\\/\\/(telegram\\.me|t\\.me|telegram\\.dog)\\/([a-zA-Z0-9_\\/]+)(\\?.*)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:NSRegularExpressionCaseInsensitive error:NULL];
@@ -43,18 +43,26 @@
         NSString *arguments = ([match numberOfRanges] >= 3 && [match rangeAtIndex:3].location != NSNotFound) ? [[text substringWithRange:[match rangeAtIndex:3]] substringFromIndex:1] : nil;
         if (arguments.length != 0)
         {
-            NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:arguments];
-            if (dict.count == 1 && (dict[@"start"] != nil || dict[@"startgroup"] || dict[@"game"]))
+            if ([arguments isEqualToString:@"single"])
             {
-                if (startPrivatePayload)
-                    *startPrivatePayload = dict[@"start"];
-                if (startGroupPayload)
-                    *startGroupPayload = dict[@"startgroup"];
-                if (gamePayload)
-                    *gamePayload = dict[@"game"];
+                if (groupedSingle)
+                    *groupedSingle = true;
             }
             else
-                return nil;
+            {
+                NSDictionary *dict = [TGStringUtils argumentDictionaryInUrlString:arguments];
+                if (dict.count == 1 && (dict[@"start"] != nil || dict[@"startgroup"] || dict[@"game"]))
+                {
+                    if (startPrivatePayload)
+                        *startPrivatePayload = dict[@"start"];
+                    if (startGroupPayload)
+                        *startGroupPayload = dict[@"startgroup"];
+                    if (gamePayload)
+                        *gamePayload = dict[@"game"];
+                }
+                else
+                    return nil;
+            }
         }
         return [text substringWithRange:[match rangeAtIndex:2]];
     }
@@ -117,6 +125,20 @@
     return nil;
 }
 
+- (NSString *)proxyLinkFromText:(NSString *)text {
+    NSString *pattern = @"(https|http)?:\\/\\/(telegram|t)\\.me\\/proxy\\?(.*)$";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:NULL];
+    NSTextCheckingResult *match = [regex firstMatchInString:text options:0 range:NSMakeRange(0, [text length])];
+    if (match != nil) {
+        NSString *arguments = ([match numberOfRanges] >= 3 && [match rangeAtIndex:3].location != NSNotFound) ? [text substringWithRange:[match rangeAtIndex:3]] : nil;
+        if (arguments.length != 0) {
+            return arguments;
+        }
+    }
+    
+    return nil;
+}
+
 - (NSString *)socksLinkFromText:(NSString *)text {
     NSString *pattern = @"(https|http)?:\\/\\/(telegram|t)\\.me\\/socks\\?(.*)$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:pattern options:0 error:NULL];
@@ -149,7 +171,12 @@
     if ([absolutePrefixString hasPrefix:@"tel:"] || [absolutePrefixString hasPrefix:@"facetime:"])
     {
         [TGAppDelegateInstance performPhoneCall:url];
-        
+        return true;
+    }
+    
+    if ([url.scheme isEqualToString:@"tg"] || [url.scheme isEqualToString:@"telegram"])
+    {
+        [(TGAppDelegate *)self.delegate handleOpenDocument:url animated:true];
         return true;
     }
     
@@ -273,7 +300,8 @@
     NSString *startPrivatePayload = nil;
     NSString *startGroupPayload = nil;
     NSString *gamePayload = nil;
-    NSString *telegramMeLink = [self telegramMeLinkFromText:rawAbsoluteString startPrivatePayload:&startPrivatePayload startGroupPayload:&startGroupPayload gamePayload:&gamePayload];
+    bool groupedSingle = false;
+    NSString *telegramMeLink = [self telegramMeLinkFromText:rawAbsoluteString startPrivatePayload:&startPrivatePayload startGroupPayload:&startGroupPayload gamePayload:&gamePayload groupedSingle:&groupedSingle];
     if (telegramMeLink.length != 0 && ![telegramMeLink isEqualToString:@"iv"])
     {
         NSString *domainName = telegramMeLink;
@@ -289,6 +317,9 @@
         } else {
             internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://resolve?domain=%@&post=%@", domainName, postId];
         }
+        
+        if (groupedSingle)
+             [internalUrl appendString:@"&single"];
         
         if (startPrivatePayload.length != 0 || startGroupPayload.length != 0 || gamePayload != nil)
         {
@@ -313,6 +344,13 @@
     NSString *socksLink = [self socksLinkFromText:rawAbsoluteString];
     if (socksLink.length != 0) {
         NSMutableString *internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://socks?%@", socksLink];
+        [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
+        return true;
+    }
+    
+    NSString *proxyLink = [self proxyLinkFromText:rawAbsoluteString];
+    if (proxyLink.length != 0) {
+        NSMutableString *internalUrl = [[NSMutableString alloc] initWithFormat:@"tg://proxy?%@", proxyLink];
         [(TGAppDelegate *)self.delegate handleOpenDocument:[NSURL URLWithString:internalUrl] animated:true];
         return true;
     }

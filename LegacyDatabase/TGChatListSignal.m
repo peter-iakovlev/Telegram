@@ -4,31 +4,31 @@
 
 @implementation TGChatListSignal
 
-+ (TGFileLocation *)fileLocationWithApiLocation:(Api73_FileLocation *)location
++ (TGFileLocation *)fileLocationWithApiLocation:(Api82_FileLocation *)location
 {
-    if ([location isKindOfClass:[Api73_FileLocation_fileLocation class]])
+    if ([location isKindOfClass:[Api82_FileLocation_fileLocation class]])
     {
-        Api73_FileLocation_fileLocation *concreteLocation = (Api73_FileLocation_fileLocation *)location;
+        Api82_FileLocation_fileLocation *concreteLocation = (Api82_FileLocation_fileLocation *)location;
         return [[TGFileLocation alloc] initWithDatacenterId:[concreteLocation.dcId intValue] volumeId:[[concreteLocation volumeId] longLongValue] localId:[concreteLocation.localId intValue] secret:[concreteLocation.secret longLongValue]];
     }
     return nil;
 }
 
-+ (TGFileLocation *)fileLocationWithUserProfilePhoto:(Api73_UserProfilePhoto *)photo
++ (TGFileLocation *)fileLocationWithUserProfilePhoto:(Api82_UserProfilePhoto *)photo
 {
-    if ([photo isKindOfClass:[Api73_UserProfilePhoto_userProfilePhoto class]])
+    if ([photo isKindOfClass:[Api82_UserProfilePhoto_userProfilePhoto class]])
     {
-        Api73_UserProfilePhoto_userProfilePhoto *concretePhoto = (Api73_UserProfilePhoto_userProfilePhoto *)photo;
+        Api82_UserProfilePhoto_userProfilePhoto *concretePhoto = (Api82_UserProfilePhoto_userProfilePhoto *)photo;
         return [self fileLocationWithApiLocation:concretePhoto.photoSmall];
     }
     return nil;
 }
 
-+ (TGUserModel *)userModelWithApiUser:(Api73_User *)user
++ (TGUserModel *)userModelWithApiUser:(Api82_User *)user
 {
-    if ([user isKindOfClass:[Api73_User_user class]])
+    if ([user isKindOfClass:[Api82_User_user class]])
     {
-        Api73_User_user *concreteUser = (Api73_User_user *)user;
+        Api82_User_user *concreteUser = (Api82_User_user *)user;
         
         bool isSelf = [concreteUser.flags intValue] & (1 << 10);
         
@@ -38,33 +38,50 @@
     return nil;
 }
 
-+ (SSignal *)remoteChatListWithContext:(TGShareContext *)context offsetDate:(int32_t)offsetDate offsetPeer:(Api73_InputPeer *)offsetPeer offsetMessageId:(int32_t)offsetMessageId limit:(NSUInteger)limit
++ (SSignal *)remoteChatListWithContext:(TGShareContext *)context offsetDate:(int32_t)offsetDate offsetPeer:(Api82_InputPeer *)offsetPeer offsetMessageId:(int32_t)offsetMessageId limit:(NSUInteger)limit
 {
-    return [[context function:[Api73 messages_getDialogsWithFlags:@(0) offsetDate:@(offsetDate) offsetId:@(offsetMessageId) offsetPeer:offsetPeer limit:@(limit)]] map:^id(Api73_messages_Dialogs *dialogs)
+    return [[context function:[Api82 messages_getDialogsWithFlags:@(0) offsetDate:@(offsetDate) offsetId:@(offsetMessageId) offsetPeer:offsetPeer limit:@(limit) phash:@0]] map:^id(Api82_messages_Dialogs *dialogz)
     {
         NSMutableArray *chatModels = [[NSMutableArray alloc] init];
         NSMutableArray *userModels = [[NSMutableArray alloc] init];
         
-        for (Api73_Dialog *dialog in dialogs.dialogs)
+        NSArray *dialogs = nil;
+        NSArray *chats = nil;
+        NSArray *users = nil;
+        NSArray *messages = nil;
+        
+        if ([dialogz isKindOfClass:[Api82_messages_Dialogs_messages_dialogs class]]) {
+            dialogs = ((Api82_messages_Dialogs_messages_dialogs *)dialogz).dialogs;
+            chats = ((Api82_messages_Dialogs_messages_dialogs *)dialogz).chats;
+            users = ((Api82_messages_Dialogs_messages_dialogs *)dialogz).users;
+            messages = ((Api82_messages_Dialogs_messages_dialogs *)dialogz).messages;
+        } else if ([dialogz isKindOfClass:[Api82_messages_Dialogs_messages_dialogsSlice class]]) {
+            dialogs = ((Api82_messages_Dialogs_messages_dialogsSlice *)dialogz).dialogs;
+            chats = ((Api82_messages_Dialogs_messages_dialogsSlice *)dialogz).chats;
+            users = ((Api82_messages_Dialogs_messages_dialogsSlice *)dialogz).users;
+            messages = ((Api82_messages_Dialogs_messages_dialogsSlice *)dialogz).messages;
+        }
+        
+        for (Api82_Dialog *dialog in dialogs)
         {
-            if ([dialog.peer isKindOfClass:[Api73_Peer_peerChat class]])
+            if ([dialog.peer isKindOfClass:[Api82_Peer_peerChat class]])
             {
-                Api73_Peer_peerChat *peerChat = (Api73_Peer_peerChat *)dialog.peer;
-                for (Api73_Chat *chat in dialogs.chats)
+                Api82_Peer_peerChat *peerChat = (Api82_Peer_peerChat *)dialog.peer;
+                for (Api82_Chat *chat in chats)
                 {
                     if ([chat.pid isEqual:peerChat.chatId])
                     {
-                        if ([chat isKindOfClass:[Api73_Chat_chat class]])
+                        if ([chat isKindOfClass:[Api82_Chat_chat class]])
                         {
-                            Api73_Chat_chat *concreteChat = (Api73_Chat_chat *)chat;
+                            Api82_Chat_chat *concreteChat = (Api82_Chat_chat *)chat;
                             if (([concreteChat.flags intValue] & (1 << 5)) != 0) {
                                 continue;
                             }
                             
                             TGFileLocation *avatarLocation = nil;
-                            if ([concreteChat.photo isKindOfClass:[Api73_ChatPhoto_chatPhoto class]])
+                            if ([concreteChat.photo isKindOfClass:[Api82_ChatPhoto_chatPhoto class]])
                             {
-                                avatarLocation = [self fileLocationWithApiLocation:((Api73_ChatPhoto_chatPhoto *)concreteChat.photo).photoSmall];
+                                avatarLocation = [self fileLocationWithApiLocation:((Api82_ChatPhoto_chatPhoto *)concreteChat.photo).photoSmall];
                             }
                             [chatModels addObject:[[TGGroupChatModel alloc] initWithGroupId:[concreteChat.pid intValue] title:concreteChat.title avatarLocation:avatarLocation]];
                         }
@@ -72,10 +89,10 @@
                     }
                 }
             }
-            else if ([dialog.peer isKindOfClass:[Api73_Peer_peerUser class]])
+            else if ([dialog.peer isKindOfClass:[Api82_Peer_peerUser class]])
             {
-                Api73_Peer_peerUser *peerUser = (Api73_Peer_peerUser *)dialog.peer;
-                for (Api73_User *user in dialogs.users)
+                Api82_Peer_peerUser *peerUser = (Api82_Peer_peerUser *)dialog.peer;
+                for (Api82_User *user in users)
                 {
                     if ([user.pid isEqual:peerUser.userId])
                     {
@@ -89,20 +106,20 @@
                     }
                 }
             }
-            else if ([dialog.peer isKindOfClass:[Api73_Peer_peerChannel class]])
+            else if ([dialog.peer isKindOfClass:[Api82_Peer_peerChannel class]])
             {
-                Api73_Peer_peerChannel *peerChannel = (Api73_Peer_peerChannel *)dialog.peer;
-                for (Api73_Chat *chat in dialogs.chats)
+                Api82_Peer_peerChannel *peerChannel = (Api82_Peer_peerChannel *)dialog.peer;
+                for (Api82_Chat *chat in chats)
                 {
                     if ([chat.pid isEqual:peerChannel.channelId])
                     {
-                        if ([chat isKindOfClass:[Api73_Chat_channel class]])
+                        if ([chat isKindOfClass:[Api82_Chat_channel class]])
                         {
-                            Api73_Chat_channel *concreteChannel = (Api73_Chat_channel *)chat;
+                            Api82_Chat_channel *concreteChannel = (Api82_Chat_channel *)chat;
                             TGFileLocation *avatarLocation = nil;
-                            if ([concreteChannel.photo isKindOfClass:[Api73_ChatPhoto_chatPhoto class]])
+                            if ([concreteChannel.photo isKindOfClass:[Api82_ChatPhoto_chatPhoto class]])
                             {
-                                avatarLocation = [self fileLocationWithApiLocation:((Api73_ChatPhoto_chatPhoto *)concreteChannel.photo).photoSmall];
+                                avatarLocation = [self fileLocationWithApiLocation:((Api82_ChatPhoto_chatPhoto *)concreteChannel.photo).photoSmall];
                             }
                             NSInteger flags = concreteChannel.flags.intValue;
                             bool isGroup = (flags & (1 << 8));
@@ -123,35 +140,35 @@
         
         NSDictionary *nextRequestOffset = @{};
         
-        if (dialogs.dialogs.count != 0) {
-            Api73_Dialog *lastDialog = dialogs.dialogs.lastObject;
+        if (dialogs.count != 0) {
+            Api82_Dialog *lastDialog = dialogs.lastObject;
             int32_t peerId = 0;
-            if ([lastDialog.peer isKindOfClass:[Api73_Peer_peerUser class]]) {
-                peerId = [((Api73_Peer_peerUser *)lastDialog.peer).userId intValue];
-            } else if ([lastDialog.peer isKindOfClass:[Api73_Peer_peerChat class]]) {
-                peerId = [((Api73_Peer_peerChat *)lastDialog.peer).chatId intValue];
-            } else if ([lastDialog.peer isKindOfClass:[Api73_Peer_peerChannel class]]) {
-                peerId = [((Api73_Peer_peerChannel *)lastDialog.peer).channelId intValue];
+            if ([lastDialog.peer isKindOfClass:[Api82_Peer_peerUser class]]) {
+                peerId = [((Api82_Peer_peerUser *)lastDialog.peer).userId intValue];
+            } else if ([lastDialog.peer isKindOfClass:[Api82_Peer_peerChat class]]) {
+                peerId = [((Api82_Peer_peerChat *)lastDialog.peer).chatId intValue];
+            } else if ([lastDialog.peer isKindOfClass:[Api82_Peer_peerChannel class]]) {
+                peerId = [((Api82_Peer_peerChannel *)lastDialog.peer).channelId intValue];
             }
             
             if (peerId != 0) {
-                for (Api73_Message *message in dialogs.messages) {
-                    if ([message isKindOfClass:[Api73_Message_message class]]) {
-                        Api73_Message_message *concreteMessage = (Api73_Message_message *)message;
+                for (Api82_Message *message in messages) {
+                    if ([message isKindOfClass:[Api82_Message_message class]]) {
+                        Api82_Message_message *concreteMessage = (Api82_Message_message *)message;
                         
                         int32_t messagePeerId = 0;
-                        Api73_InputPeer *messagePeer = [Api73_InputPeer inputPeerEmpty];
+                        Api82_InputPeer *messagePeer = [Api82_InputPeer inputPeerEmpty];
                         
-                        if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerUser class]]) {
+                        if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerUser class]]) {
                             if (([concreteMessage.flags intValue] & 2) != 0) {
-                                messagePeerId = [((Api73_Peer_peerUser *)concreteMessage.toId).userId intValue];
+                                messagePeerId = [((Api82_Peer_peerUser *)concreteMessage.toId).userId intValue];
                             } else {
                                 messagePeerId = [concreteMessage.fromId intValue];
                             }
-                        } else if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerChat class]]) {
-                            messagePeerId = [((Api73_Peer_peerChat *)concreteMessage.toId).chatId intValue];
-                        } else if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerChannel class]]) {
-                            messagePeerId = [((Api73_Peer_peerChannel *)concreteMessage.toId).channelId intValue];
+                        } else if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerChat class]]) {
+                            messagePeerId = [((Api82_Peer_peerChat *)concreteMessage.toId).chatId intValue];
+                        } else if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerChannel class]]) {
+                            messagePeerId = [((Api82_Peer_peerChannel *)concreteMessage.toId).channelId intValue];
                         }
                         
                         if (messagePeerId == peerId) {
@@ -159,22 +176,22 @@
                                 nextRequestOffset = @{@"offsetDate": @([concreteMessage.date intValue]), @"offsetPeer": messagePeer, @"offsetMessageId": @([concreteMessage.pid intValue])};
                             }
                         }
-                    } else if ([message isKindOfClass:[Api73_Message_messageService class]]) {
-                        Api73_Message_messageService *concreteMessage = (Api73_Message_messageService *)message;
+                    } else if ([message isKindOfClass:[Api82_Message_messageService class]]) {
+                        Api82_Message_messageService *concreteMessage = (Api82_Message_messageService *)message;
                         
                         int32_t messagePeerId = 0;
-                        Api73_InputPeer *messagePeer = [Api73_InputPeer inputPeerEmpty];
+                        Api82_InputPeer *messagePeer = [Api82_InputPeer inputPeerEmpty];
                         
-                        if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerUser class]]) {
+                        if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerUser class]]) {
                             if (([concreteMessage.flags intValue] & 2) != 0) {
-                                messagePeerId = [((Api73_Peer_peerUser *)concreteMessage.toId).userId intValue];
+                                messagePeerId = [((Api82_Peer_peerUser *)concreteMessage.toId).userId intValue];
                             } else {
                                 messagePeerId = [concreteMessage.fromId intValue];
                             }
-                        } else if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerChat class]]) {
-                            messagePeerId = [((Api73_Peer_peerChat *)concreteMessage.toId).chatId intValue];
-                        } else if ([concreteMessage.toId isKindOfClass:[Api73_Peer_peerChannel class]]) {
-                            messagePeerId = [((Api73_Peer_peerChannel *)concreteMessage.toId).channelId intValue];
+                        } else if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerChat class]]) {
+                            messagePeerId = [((Api82_Peer_peerChat *)concreteMessage.toId).chatId intValue];
+                        } else if ([concreteMessage.toId isKindOfClass:[Api82_Peer_peerChannel class]]) {
+                            messagePeerId = [((Api82_Peer_peerChannel *)concreteMessage.toId).channelId intValue];
                         }
                         
                         if (messagePeerId == peerId) {
@@ -193,7 +210,7 @@
 
 + (SSignal *)remoteChatListWithContext:(TGShareContext *)context
 {
-    return [[self remoteChatListWithContext:context offsetDate:0 offsetPeer:[Api73_InputPeer inputPeerEmpty] offsetMessageId:0 limit:32] mapToSignal:^SSignal *(NSDictionary *chats) {
+    return [[self remoteChatListWithContext:context offsetDate:0 offsetPeer:[Api82_InputPeer inputPeerEmpty] offsetMessageId:0 limit:32] mapToSignal:^SSignal *(NSDictionary *chats) {
         SSignal *nextSignal = [SSignal complete];
         NSDictionary *nextRequestOffset = chats[@"nextRequestOffset"];
         if (nextRequestOffset.count != 0) {

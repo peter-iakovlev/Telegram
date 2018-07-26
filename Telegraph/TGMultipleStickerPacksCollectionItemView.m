@@ -68,6 +68,7 @@ static const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
     bool _failed;
     
     NSArray<TGStickerPack *> *_stickerPacks;
+    TGMenuSheetPallete *_pallete;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -341,6 +342,11 @@ static const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
 
 #pragma mark -
 
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _pallete = pallete;
+}
+
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)__unused collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)__unused indexPath {
     return CGSizeMake(collectionView.bounds.size.width, TGStickersCollectionItemHeight);
 }
@@ -348,6 +354,7 @@ static const CGFloat TGStickersCollectionErrorLabelMargin = 23.0f;
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     TGMultipleStickerPacksCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"TGMultipleStickerPacksCell" forIndexPath:indexPath];
+    cell.pallete = _pallete;
     //[cell setAltTick:_altTimerTick];
     //[cell setSticker:_stickerPack.documents[indexPath.row] associations:_stickerPack.stickerAssociations];
     [cell setStickerPack:_stickerPacks[indexPath.row]];

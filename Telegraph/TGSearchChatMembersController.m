@@ -5,6 +5,8 @@
 
 #import "TGDatabase.h"
 
+#import "TGPresentation.h"
+
 @interface TGSearchChatMembersController () {
     int64_t _peerId;
     int64_t _accessHash;
@@ -95,7 +97,7 @@
 - (void)loadView {
     [super loadView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
     __weak TGSearchChatMembersController *weakSelf = self;
     _controllerView = [[TGSearchChatMembersControllerView alloc] initWithFrame:self.view.bounds updateNavigationBarHidden:^(bool hidden, bool animated) {
@@ -108,7 +110,7 @@
         if (strongSelf != nil && strongSelf->_completion) {
             strongSelf->_completion(user, member);
         }
-    }];
+    } presentation:self.presentation];
     _controllerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_controllerView];
     

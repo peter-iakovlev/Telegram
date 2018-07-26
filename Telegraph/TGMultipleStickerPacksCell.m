@@ -8,6 +8,8 @@
 
 #import <LegacyComponents/TGStickerCollectionViewCell.h>
 
+#import <LegacyComponents/TGMenuSheetController.h>
+
 static CGFloat preloadInset = 64.0f;
 
 @interface TGMultipleStickerPacksCell () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout> {
@@ -104,6 +106,12 @@ static CGFloat preloadInset = 64.0f;
         [self.contentView addSubview:_dotView];
     }
     return self;
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _titleLabel.textColor = pallete.textColor;
+    _countLabel.textColor = pallete.secondaryTextColor;
 }
 
 - (void)setStickerPack:(TGStickerPack *)stickerPack {

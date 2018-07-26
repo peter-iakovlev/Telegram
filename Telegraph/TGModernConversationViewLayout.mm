@@ -157,10 +157,10 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
 
 - (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight viewStorage:(TGModernViewStorage *)viewStorage
 {
-    return [TGModernConversationViewLayout layoutAttributesForItems:items containerWidth:containerWidth maxHeight:maxHeight dateOffset:_dateOffset decorationViewAttributes:decorationViewAttributes contentHeight:contentHeight unreadMessageRange:((TGModernConversationCollectionView *)self.collectionView).unreadMessageRange viewStorage:viewStorage cachedGroupedLayouts:_cachedGroupedLayouts];
+    return [TGModernConversationViewLayout layoutAttributesForItems:items containerWidth:containerWidth maxHeight:maxHeight dateOffset:_dateOffset decorationViewAttributes:decorationViewAttributes contentHeight:contentHeight unreadMessageRange:((TGModernConversationCollectionView *)self.collectionView).unreadMessageRange viewStorage:viewStorage cachedGroupedLayouts:_cachedGroupedLayouts inhibitDateHeaders:self.inhibitDateHeaders];
 }
 
-+ (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight dateOffset:(int)dateOffset decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight unreadMessageRange:(TGMessageRange)unreadMessageRange viewStorage:(TGModernViewStorage *)viewStorage cachedGroupedLayouts:(NSMutableDictionary *)cachedGroupedLayouts
++ (NSArray *)layoutAttributesForItems:(NSArray *)items containerWidth:(CGFloat)containerWidth maxHeight:(CGFloat)maxHeight dateOffset:(int)dateOffset decorationViewAttributes:(std::vector<TGDecorationViewAttrubutes> *)decorationViewAttributes contentHeight:(CGFloat *)contentHeight unreadMessageRange:(TGMessageRange)unreadMessageRange viewStorage:(TGModernViewStorage *)viewStorage cachedGroupedLayouts:(NSMutableDictionary *)cachedGroupedLayouts inhibitDateHeaders:(bool)inhibitDateHeaders
 {
     NSMutableArray *layoutAttributes = [[NSMutableArray alloc] init];
     
@@ -184,6 +184,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
     bool unreadRangeIsEmpty = TGMessageRangeIsEmpty(unreadMessageRange);
     
     NSMutableDictionary *groupedLayouts = [[NSMutableDictionary alloc] init];
+    NSMutableSet *completedGroups = [[NSMutableSet alloc] init];
     
     int groupCollapseFlags = 0;
     int64_t lastGroupedId = 0;
@@ -194,7 +195,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         if (!unreadRangeIsEmpty)
         {
             int messageDate = (int32_t)messageItem->_message.date;
-            bool currentInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, ABS(messageItem->_message.mid), messageDate);
+            bool currentInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, messageItem->_message.fromUid, ABS(messageItem->_message.mid), messageDate);
             if (lastInsideUnreadRange && !currentInsideUnreadRange && !didAddUnreadHeader)
             {
                 didAddUnreadHeader = true;
@@ -224,6 +225,9 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
             collapseFlags |= TGModernConversationItemCollapseBottom;
         
         int64_t groupedId = messageItem->_message.groupedId;
+        if ([completedGroups containsObject:@(groupedId)])
+            continue;
+        
         if (groupedId != lastGroupedId)
         {
             if (groupedId != 0)
@@ -242,7 +246,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
                             if (lastCollapse && !unreadRangeIsEmpty)
                             {
                                 int nextMessageDate = (int32_t)nextItem->_message.date;
-                                bool nextInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, nextItem->_message.mid, nextMessageDate);
+                                bool nextInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, nextItem->_message.fromUid, nextItem->_message.mid, nextMessageDate);
                                 if (lastInsideUnreadRange && !nextInsideUnreadRange)
                                     lastCollapse = false;
                             }
@@ -279,7 +283,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
                     if (lastCollapse && !unreadRangeIsEmpty)
                     {
                         int nextMessageDate = (int32_t)nextItem->_message.date;
-                        bool nextInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, nextItem->_message.mid, nextMessageDate);
+                        bool nextInsideUnreadRange = TGMessageRangeContains(unreadMessageRange, nextItem->_message.fromUid, nextItem->_message.mid, nextMessageDate);
                         if (lastInsideUnreadRange && !nextInsideUnreadRange)
                             lastCollapse = false;
                     }
@@ -294,17 +298,30 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
         CGFloat groupHeight = 0.0f;
         if (groupedId != 0)
         {
+            NSMutableArray *groupedMessageItems = [[NSMutableArray alloc] init];
+            NSMutableDictionary *indexes = [[NSMutableDictionary alloc] init];
             TGMessageGroupedLayout *groupedLayout = groupedLayouts[@(groupedId)];
             if (groupedLayout == nil)
             {
                 NSMutableArray *groupedMessages = [[NSMutableArray alloc] initWithObjects:messageItem->_message, nil];
+                indexes[@(messageItem->_message.mid)] = @(index);
+                [groupedMessageItems addObject:messageItem];
+                int32_t lastCurrentGroupMid = messageItem->_message.mid;
                 for (int groupIndex = index + 1; groupIndex < count; groupIndex++)
                 {
                     TGMessageModernConversationItem *groupItem = items[groupIndex];
-                    if (groupItem->_message.groupedId != groupedId)
-                        break;
-                    
-                    [groupedMessages insertObject:groupItem->_message atIndex:0];
+                    if (groupItem->_message.groupedId == groupedId)
+                    {
+                        [groupedMessages insertObject:groupItem->_message atIndex:0];
+                        [groupedMessageItems addObject:groupItem];
+                        indexes[@(groupItem->_message.mid)] = @(groupIndex);
+                        lastCurrentGroupMid = groupItem->_message.mid;
+                    }
+                    else
+                    {
+                        if (abs(groupItem->_message.mid - lastCurrentGroupMid) > 10)
+                            break;
+                    }
                 }
                 
                 if (groupedMessages.count > 1 && groupedMessages.count <= 10)
@@ -313,7 +330,7 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
                     if (cachedGroupedLayout == nil || cachedGroupedLayout.count != groupedMessages.count || [cachedGroupedLayout positionForMessageId:messageItem->_message.mid] == 0)
                     {
                         
-                        bool larger = (TGPeerIdIsUser(messageItem->_message.cid) || [messageItem.currentAuthorPeer isKindOfClass:[TGConversation class]]) && messageItem->_message.cid != TGTelegraphInstance.clientUserId;
+                        bool larger = !messageItem.isFeedItem && ((TGPeerIdIsUser(messageItem->_message.cid) || [messageItem.currentAuthorPeer isKindOfClass:[TGConversation class]]) && messageItem->_message.cid != TGTelegraphInstance.clientUserId);
                         groupedLayout = [[TGMessageGroupedLayout alloc] initWithMessages:groupedMessages larger:larger];
                         groupedLayouts[@(groupedId)] = groupedLayout;
                         
@@ -333,17 +350,34 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
             
             if (groupedLayout != nil)
             {
-                messageItem.collapseFlags = groupCollapseFlags;
-                [messageItem updateGroupedLayout:groupedLayout];
+                for (TGMessageModernConversationItem *groupItem in groupedMessageItems)
+                {
+                    NSInteger groupIndex = [indexes[@(groupItem->_message.mid)] integerValue];
+                    
+                    groupItem.collapseFlags = groupCollapseFlags;
+                    [groupItem updateGroupedLayout:groupedLayout];
+                    
+                    itemSize = [groupItem sizeForContainerSize:CGSizeMake(containerWidth, 0.0f) viewStorage:viewStorage];
+                    
+                    TGMessageGroupPositionFlags position = [groupedLayout positionForMessageId:groupItem->_message.mid];
+                    if (position & TGMessageGroupPositionTop && position & TGMessageGroupPositionLeft)
+                        groupHeight = itemSize.height;
+                    
+                    UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:[NSIndexPath indexPathForItem:groupIndex inSection:0]];
+                    attributes.frame = CGRectMake(0, currentHeight, itemSize.width, itemSize.height);
+                    attributes.zIndex = NSIntegerMax - groupIndex;
+                    [layoutAttributes addObject:attributes];
+                }
                 
-                itemSize = [messageItem sizeForContainerSize:CGSizeMake(containerWidth, 0.0f) viewStorage:viewStorage];
+                if (groupHeight > FLT_EPSILON)
+                    currentHeight += groupHeight;
                 
-                TGMessageGroupPositionFlags position = [groupedLayout positionForMessageId:messageItem->_message.mid];
-                if (position & TGMessageGroupPositionTop && position & TGMessageGroupPositionLeft)
-                    groupHeight = itemSize.height;
+                [completedGroups addObject:@(groupedId)];
             }
             else
             {
+                groupedId = 0;
+                
                 messageItem.collapseFlags = collapseFlags;
                 [messageItem updateGroupedLayout:nil];
                 
@@ -356,21 +390,21 @@ static inline CGFloat addUnreadHeader(CGFloat currentHeight, CGFloat containerWi
             itemSize = [messageItem sizeForContainerSize:CGSizeMake(containerWidth, 0.0f) viewStorage:viewStorage];
         }
         
-        UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:[NSIndexPath indexPathForItem:index inSection:0]];
-        attributes.frame = CGRectMake(0, currentHeight, itemSize.width, itemSize.height);
-        attributes.zIndex = NSIntegerMax - index;
-        [layoutAttributes addObject:attributes];
-        
         if (groupedId == 0)
+        {
+            UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForCellWithIndexPath:[NSIndexPath indexPathForItem:index inSection:0]];
+            attributes.frame = CGRectMake(0, currentHeight, itemSize.width, itemSize.height);
+            attributes.zIndex = NSIntegerMax - index;
+            [layoutAttributes addObject:attributes];
+        
             currentHeight += itemSize.height;
-        else if (groupHeight > FLT_EPSILON)
-            currentHeight += groupHeight;
+        }
         
         if (currentHeight >= maxHeight)
             break;
     }
     
-    if (lastMessageDay != INT_MIN && index == (int)items.count)
+    if (lastMessageDay != INT_MIN && index == (int)items.count && !inhibitDateHeaders)
         currentHeight += addDate(currentHeight, containerWidth, lastMessageDay, decorationViewAttributes);
     
     if (lastInsideUnreadRange)

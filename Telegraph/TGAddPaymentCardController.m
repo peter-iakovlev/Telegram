@@ -16,7 +16,7 @@
 #import "TGPaymentMethodController.h"
 #import "TGPaymentForm.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGLoginCountriesController.h"
 
@@ -234,8 +234,8 @@
                 if (strongSelf != nil) {
                     if (error) {
                         [progressWindow dismiss:true];
-                        [[[TGAlertView alloc] initWithTitle:nil message:error.localizedDescription cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okPressed) {
-                        }] show];
+                        [TGCustomAlertView presentAlertWithTitle:nil message:error.localizedDescription cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okPressed) {
+                        }];
                     } else {
                         [progressWindow dismiss:true];
                         NSString *last4 = token.card.last4;
@@ -255,6 +255,7 @@
 
 - (void)countryPressed {
     TGLoginCountriesController *countriesController = [[TGLoginCountriesController alloc] initWithCodes:false];
+    countriesController.presentation = self.presentation;
     __weak TGAddPaymentCardController *weakSelf = self;
     countriesController.countrySelected = ^(__unused int code, __unused NSString *name, NSString *countryId) {
         __strong TGAddPaymentCardController *strongSelf = weakSelf;
@@ -273,7 +274,7 @@
 - (void)setupTwoStepAuth {
     __block bool completed = false;
     __weak TGAddPaymentCardController *weakSelf = self;
-    TGFastTwoStepVerificationSetupController *controller = [[TGFastTwoStepVerificationSetupController alloc] initWithTwoStepConfig:[_twoStepConfig signal] completion:^(bool success) {
+    TGFastTwoStepVerificationSetupController *controller = [[TGFastTwoStepVerificationSetupController alloc] initWithTwoStepConfig:[_twoStepConfig signal] passport:false completion:^(bool success, __unused TGTwoStepConfig *config, __unused NSString *password) {
         __strong TGAddPaymentCardController *strongSelf = weakSelf;
         if (strongSelf != nil && success && !completed) {
             completed = true;

@@ -21,6 +21,7 @@
 
 @property (nonatomic, copy) void (^requestedExpand)(bool expand);
 @property (nonatomic, copy) void (^expandInteraction)(CGFloat offset);
+@property (nonatomic, copy) void (^requestedCollapse)(bool collapse);
 
 - (instancetype)initWithFrame:(CGRect)frame style:(TGStickerKeyboardViewStyle)style;
 

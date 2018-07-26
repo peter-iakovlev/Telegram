@@ -39,7 +39,7 @@
     [[TGDownloadManager instance] cancelItemsWithMessageIdsInArray:messageIds groupId:_peerId];
  
     if (TGPeerIdIsChannel(_peerId)) {
-        [TGDatabaseInstance() addMessagesToChannel:_peerId messages:nil deleteMessages:messageIds unimportantGroups:nil addedHoles:nil removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:false keepUnreadCounters:false changedMessages:nil];
+        [TGDatabaseInstance() addMessagesToChannel:_peerId messages:nil deleteMessages:messageIds unimportantGroups:nil addedHoles:nil removedHoles:nil removedUnimportantHoles:nil updatedMessageSortKeys:nil returnGroups:false keepUnreadCounters:false skipFeedUpdate:false changedMessages:nil];
         [TGDatabaseInstance() enqueueDeleteChannelMessages:_peerId messageIds:messageIds];
     } else {
         [TGDatabaseInstance() transactionRemoveMessagesInteractive:@{@(_peerId): messageIds} keepDates:false removeMessagesInteractiveForEveryone:[options[@"forEveryone"] boolValue] updateConversationDatas:nil];

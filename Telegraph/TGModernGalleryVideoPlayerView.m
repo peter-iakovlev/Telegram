@@ -289,6 +289,9 @@
 - (void)seekToPosition:(NSTimeInterval)position
 {
     [_player.currentItem seekToTime:CMTimeMake((int64_t)(position * 1000.0), 1000.0)];
+    
+    if (!self.state.playing)
+        [self positionTimerEvent];
 }
 
 - (void)seekToFractPosition:(CGFloat)position

@@ -2,6 +2,8 @@
 
 #import <SSignalKit/SSignalKit.h>
 
+@class TGPresentation;
+
 @interface TGPaymentPasswordEntryControllerView : UIView
 
 @property (nonatomic, copy) void (^dismiss)();
@@ -9,7 +11,7 @@
 
 @property (nonatomic) UIEdgeInsets insets;
 
-- (instancetype)initWithCardTitle:(NSString *)cardTitle;
+- (instancetype)initWithCardTitle:(NSString *)cardTitle presentation:(TGPresentation *)presentation;
 
 - (void)animateIn;
 - (void)animateOut:(void (^)())completion;

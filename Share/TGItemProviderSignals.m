@@ -10,6 +10,7 @@
 #import "TGMimeTypeMap.h"
 
 #import "TGContactModel.h"
+#import "TGVCard.h"
 
 @implementation TGItemProviderSignals
 
@@ -214,7 +215,7 @@
     }];
 }
 
-+ (SSignal *)detectRoundVideo:(AVAsset *)asset
++ (SSignal *)detectRoundVideo:(AVAsset *)asset maybeAnimoji:(bool)maybeAnimoji
 {
     SSignal *imageSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsriber)
     {
@@ -298,27 +299,57 @@
                 mimeType = @"application/octet-stream";
             
             NSString *software = nil;
+            NSString *description = nil;
             AVMetadataItem *softwareItem = [[AVMetadataItem metadataItemsFromArray:asset.metadata withKey:AVMetadataCommonKeySoftware keySpace:AVMetadataKeySpaceCommon] firstObject];
             if ([softwareItem isKindOfClass:[AVMetadataItem class]] && ([softwareItem.value isKindOfClass:[NSString class]]))
                 software = (NSString *)[softwareItem value];
+            
+            AVMetadataItem *descriptionItem = [[AVMetadataItem metadataItemsFromArray:asset.metadata withKey:AVMetadataCommonKeyDescription keySpace:AVMetadataKeySpaceCommon] firstObject];
+            if ([descriptionItem isKindOfClass:[AVMetadataItem class]] && ([descriptionItem.value isKindOfClass:[NSString class]]))
+                description = (NSString *)[descriptionItem value];
             
             bool isAnimation = false;
             if ([software hasPrefix:@"Boomerang"])
                 isAnimation = true;
             
-            if (isAnimation || fabs(dimensions.width - dimensions.height) > FLT_EPSILON)
+            bool maybeAnimoji = [self isAnimojiDescription:description] && (int)dimensions.width == 640 && (int)dimensions.height == 480;
+            if (isAnimation || (fabs(dimensions.width - dimensions.height) > FLT_EPSILON && !maybeAnimoji))
             {
                 return [SSignal single:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation)}];
             }
             else
             {
-                return [[self detectRoundVideo:asset] mapToSignal:^SSignal *(NSNumber *isRoundVideo)
+                return [[self detectRoundVideo:asset maybeAnimoji:maybeAnimoji] mapToSignal:^SSignal *(NSNumber *isRoundVideo)
                 {
-                    return [SSignal single:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @(isAnimation), @"isRoundMessage": isRoundVideo}];
+                    return [SSignal single:@{@"video": asset, @"mimeType": mimeType, @"isAnimation": @false, @"isRoundMessage": isRoundVideo}];
                 }];
             }
         }
     }];
+}
+
++ (bool)isAnimojiDescription:(NSString *)description
+{
+    if (description == nil)
+        return false;
+    
+    NSArray *animojiTypes = @
+    [
+     @"monkey",
+     @"robot",
+     @"cat",
+     @"dog",
+     @"alien",
+     @"fox",
+     @"poo",
+     @"pig",
+     @"panda",
+     @"rabbit",
+     @"chicken",
+     @"unicorn"
+    ];
+    
+    return [animojiTypes containsObject:description];
 }
 
 + (SSignal *)signalForUrlItemProvider:(NSItemProvider *)itemProvider
@@ -382,54 +413,32 @@
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeVCard options:nil completionHandler:^(NSData *vcard, NSError *error)
+        [itemProvider loadItemForTypeIdentifier:(NSString *)kUTTypeVCard options:nil completionHandler:^(NSData *vCardData, NSError *error)
         {
             if (error != nil)
                 [subscriber putError:nil];
             else
             {
-                CFDataRef vCardData = CFDataCreate(NULL, vcard.bytes, vcard.length);
-                ABAddressBookRef book = ABAddressBookCreate();
-                ABRecordRef defaultSource = ABAddressBookCopyDefaultSource(book);
-                CFArrayRef vCardPeople = ABPersonCreatePeopleInSourceWithVCardRepresentation(defaultSource, vCardData);
-                CFIndex index = 0;
-                ABRecordRef person = CFArrayGetValueAtIndex(vCardPeople, index);
-                
-                NSString *firstName = (__bridge_transfer NSString *)ABRecordCopyValue(person, kABPersonFirstNameProperty);
-                NSString *lastName = (__bridge_transfer NSString *)ABRecordCopyValue(person, kABPersonLastNameProperty);
-                
-                if (firstName.length == 0 && lastName.length == 0)
-                    lastName = (__bridge_transfer NSString *)ABRecordCopyValue(person, kABPersonOrganizationProperty);
-                
-                ABMultiValueRef phones = ABRecordCopyValue(person, kABPersonPhoneProperty);
-                
-                NSInteger phoneCount = (phones == NULL) ? 0 : ABMultiValueGetCount(phones);
-                NSMutableArray *personPhones = [[NSMutableArray alloc] initWithCapacity:phoneCount];
-                
-                for (CFIndex i = 0; i < phoneCount; i++)
+                TGVCard *vCard = [[TGVCard alloc] initWithData:vCardData];
+                if (vCard.phones.values.count > 0)
                 {
-                    NSString *number = (__bridge_transfer NSString *)ABMultiValueCopyValueAtIndex(phones, i);
-                    NSString *label = nil;
-                    
-                    CFStringRef valueLabel = ABMultiValueCopyLabelAtIndex(phones, i);
-                    if (valueLabel != NULL)
+                    NSMutableArray *phones = [[NSMutableArray alloc] init];
+                    for (TGVCardValueArrayItem *phone in vCard.phones.values)
                     {
-                        label = (__bridge_transfer NSString *)ABAddressBookCopyLocalizedLabel(valueLabel);
-                        CFRelease(valueLabel);
+                        TGPhoneNumberModel *phoneNumber = [[TGPhoneNumberModel alloc] initWithPhoneNumber:phone.value label:phone.label];
+                        [phones addObject:phoneNumber];
                     }
                     
-                    if (number.length != 0)
-                    {
-                        TGPhoneNumberModel *phoneNumber = [[TGPhoneNumberModel alloc] initWithPhoneNumber:number label:label];
-                        [personPhones addObject:phoneNumber];
-                    }
+                    TGContactModel *contact = [[TGContactModel alloc] initWithFirstName:vCard.firstName.value lastName:vCard.lastName.value phoneNumbers:phones vcard:vCard];
+                    [subscriber putNext:@{@"contact": contact}];
+                    [subscriber putCompletion];
                 }
-                if (phones != NULL)
-                    CFRelease(phones);
-                
-                TGContactModel *contact = [[TGContactModel alloc] initWithFirstName:firstName lastName:lastName phoneNumbers:personPhones];
-                [subscriber putNext:@{@"contact": contact}];
-                [subscriber putCompletion];
+                else
+                {
+                    NSString *fileName = [NSString stringWithFormat:@"%@.vcf", vCard.fileName];
+                    [subscriber putNext:@{@"data": vCardData, @"fileName": fileName, @"mimeType": @"text/vcard"}];
+                    [subscriber putCompletion];
+                }
             }
         }];
         

@@ -44,6 +44,8 @@ typedef struct {
 @property (nonatomic) bool isAdminLog;
 @property (nonatomic) bool adminLogIsGroup;
 
+@property (nonatomic) bool isFeed;
+
 @property (nonatomic) bool isSavedMessages;
 
 @property (nonatomic, strong) SSignal *playingAudioMessageStatus;
@@ -59,9 +61,9 @@ typedef struct {
 
 @property (nonatomic, copy) SSignal *(^liveLocationRemaining)(int32_t);
 
-- (bool)isFocusedOnMessage:(int32_t)messageId;
-- (bool)isMediaVisibleInMessage:(int32_t)messageId;
-- (bool)isMessageChecked:(int32_t)messageId;
+- (bool)isFocusedOnMessage:(int32_t)messageId peerId:(int64_t)peerId;
+- (bool)isMediaVisibleInMessage:(int32_t)messageId peerId:(int64_t)peerId;
+- (bool)isMessageChecked:(int32_t)messageId peerId:(int64_t)peerId;
 - (bool)isGroupChecked:(int64_t)groupedId;
 - (bool)isSecretMessageViewed:(int32_t)messageId;
 - (bool)isSecretMessageScreenshotted:(int32_t)messageId;

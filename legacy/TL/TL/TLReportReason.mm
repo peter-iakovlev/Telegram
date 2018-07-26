@@ -144,3 +144,29 @@
 
 @end
 
+@implementation TLReportReason$inputReportReasonCopyright : TLReportReason
+
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x9b89f93a;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x08d871e9;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)__unused metaObject
+{
+    TLReportReason$inputReportReasonCopyright *object = [[TLReportReason$inputReportReasonCopyright alloc] init];
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)__unused values
+{
+}
+
+
+@end
+

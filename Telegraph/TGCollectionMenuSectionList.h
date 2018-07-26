@@ -18,6 +18,7 @@
 - (void)insertSection:(TGCollectionMenuSection *)section atIndex:(NSUInteger)index;
 - (void)deleteSection:(NSUInteger)section;
 - (void)deleteSectionByReference:(TGCollectionMenuSection *)section;
+- (void)replaceSection:(NSUInteger)section withSection:(TGCollectionMenuSection *)newSection;
 
 - (void)addItemToSection:(NSUInteger)section item:(TGCollectionItem *)item;
 - (void)insertItem:(TGCollectionItem *)item toSection:(NSUInteger)section atIndex:(NSUInteger)index;

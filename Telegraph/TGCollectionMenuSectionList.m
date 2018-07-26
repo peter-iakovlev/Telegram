@@ -63,6 +63,14 @@
     [_sections removeObjectAtIndex:section];
 }
 
+- (void)replaceSection:(NSUInteger)section withSection:(TGCollectionMenuSection *)newSection
+{
+    if (_recordingChanges)
+        [_updateContext replaceSectionAtIndex:section];
+    
+    [_sections replaceObjectAtIndex:section withObject:newSection];
+}
+
 - (void)deleteSectionByReference:(TGCollectionMenuSection *)section {
     [_sections removeObject:section];
 }

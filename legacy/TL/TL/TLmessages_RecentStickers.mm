@@ -64,7 +64,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5ce20970;
+    return (int32_t)0x22f3afb3;
 }
 
 - (int32_t)TLconstructorName
@@ -76,7 +76,9 @@
 {
     TLmessages_RecentStickers$messages_recentStickers *object = [[TLmessages_RecentStickers$messages_recentStickers alloc] init];
     object.n_hash = metaObject->getInt32((int32_t)0xc152e470);
+    object.packs = metaObject->getArray((int32_t)0xfc361c6c);
     object.stickers = metaObject->getArray((int32_t)0x6863de1a);
+    object.dates = metaObject->getArray((int32_t)0xe1eb12cb);
     return object;
 }
 
@@ -91,8 +93,20 @@
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.packs;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfc361c6c, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
         value.nativeObject = self.stickers;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6863de1a, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.dates;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe1eb12cb, value));
     }
 }
 

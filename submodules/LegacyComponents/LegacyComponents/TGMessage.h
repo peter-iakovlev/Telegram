@@ -1,10 +1,4 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
+
 
 #import <Foundation/Foundation.h>
 
@@ -45,6 +39,7 @@ typedef enum {
 } TGMessageDeliveryState;
 
 #define TGMessageLocalMidBaseline 800000000
+#define TGMessageLocalMidEditBaseline 900000000
 
 typedef struct {
     uint8_t key[8 + 1 + 4 + 4];
@@ -254,6 +249,7 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 + (void)registerMediaAttachmentParser:(int)type parser:(id<TGMediaAttachmentParser>)parser;
 + (NSArray *)textCheckingResultsForText:(NSString *)text highlightMentionsAndTags:(bool)highlightMentionsAndTags highlightCommands:(bool)highlightCommands entities:(NSArray *)entities;
 + (NSArray *)entitiesForMarkedUpText:(NSString *)text resultingText:(__autoreleasing NSString **)resultingText;
++ (NSArray *)textCheckingResultsForText:(NSString *)text highlightMentionsAndTags:(bool)highlightMentionsAndTags highlightCommands:(bool)highlightCommands entities:(NSArray *)entities highlightAsExternalMentionsAndHashtags:(bool)highlightAsExternalMentionsAndHashtags;
 
 - (NSData *)serializeMediaAttachments:(bool)includeMeta;
 + (NSData *)serializeMediaAttachments:(bool)includeMeta attachments:(NSArray *)attachments;
@@ -273,6 +269,7 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 - (bool)hasUnreadContent;
 
 - (int32_t)actualDate;
+- (NSString *)caption;
 
 @end
 
@@ -291,3 +288,11 @@ static inline TGMessageSortKey TGTaggedMessageSortKeyExtract(NSData *data, int32
 
 @end
 
+@interface TGMessageIndex : NSObject
+
+@property (nonatomic, readonly) int64_t peerId;
+@property (nonatomic, readonly) int32_t messageId;
+
++ (instancetype)indexWithPeerId:(int64_t)peerId messageId:(int32_t)messageId;
+
+@end

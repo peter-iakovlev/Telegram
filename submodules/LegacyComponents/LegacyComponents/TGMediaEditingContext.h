@@ -9,6 +9,7 @@
 
 @optional
 @property (nonatomic, readonly) CGSize originalSize;
+@property (nonatomic, readonly) NSTimeInterval originalDuration;
 
 - (SSignal *)thumbnailImageSignal;
 - (SSignal *)screenImageSignal:(NSTimeInterval)position;
@@ -26,6 +27,7 @@
 @property (nonatomic, readonly) UIImageOrientation cropOrientation;
 @property (nonatomic, readonly) CGFloat cropLockedAspectRatio;
 @property (nonatomic, readonly) bool cropMirrored;
+@property (nonatomic, readonly) bool sendAsGif;
 @property (nonatomic, readonly) TGPaintingData *paintingData;
 
 - (bool)hasPainting;
@@ -58,8 +60,12 @@
 - (SSignal *)fullSizeImageUrlForItem:(id<TGMediaEditableItem>)item;
 
 - (NSString *)captionForItem:(NSObject<TGMediaEditableItem> *)item;
+- (NSArray *)entitiesForItem:(NSObject<TGMediaEditableItem> *)item;
+
 - (SSignal *)captionSignalForItem:(NSObject<TGMediaEditableItem> *)item;
-- (void)setCaption:(NSString *)caption forItem:(NSObject<TGMediaEditableItem> *)item;
+- (void)setCaption:(NSString *)caption entities:(NSArray *)entities forItem:(NSObject<TGMediaEditableItem> *)item;
+
+- (void)setForcedCaption:(NSString *)caption entities:(NSArray *)entities;
 
 - (NSObject<TGMediaEditAdjustments> *)adjustmentsForItem:(NSObject<TGMediaEditableItem> *)item;
 - (SSignal *)adjustmentsSignalForItem:(NSObject<TGMediaEditableItem> *)item;

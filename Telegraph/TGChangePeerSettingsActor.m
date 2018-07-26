@@ -25,23 +25,48 @@
         return;
     }
     
-    int currentSoundId = 0;
-    int currentMuteUntil = 0;
-    bool currentPreviewText = true;
-    bool currentMessagesMuted = false;
+    NSNumber *currentSoundId = nil;
+    NSNumber *currentMuteUntil = nil;
+    NSNumber *currentPreviewText = nil;
+    NSNumber *currentMessagesMuted = nil;
     [TGDatabaseInstance() loadPeerNotificationSettings:peerId soundId:&currentSoundId muteUntil:&currentMuteUntil previewText:&currentPreviewText messagesMuted:&currentMessagesMuted notFound:NULL];
     
-    NSNumber *nMuteUntil = [options objectForKey:@"muteUntil"];
     NSNumber *nSoundId = [options objectForKey:@"soundId"];
+    NSNumber *nMuteUntil = [options objectForKey:@"muteUntil"];
     NSNumber *nPreviewText = [options objectForKey:@"previewText"];
     NSNumber *nMessagesMuted = options[@"messagesMuted"];
     
+    NSNumber *peerSoundId = currentSoundId;
+    if (nSoundId != nil)
+        peerSoundId = nSoundId.intValue != INT32_MIN ? nSoundId : nil;
+    
+    NSNumber *peerMuteUntil = currentMuteUntil;
+    if (nMuteUntil != nil)
+        peerMuteUntil = nMuteUntil.intValue != INT32_MIN ? nMuteUntil : nil;
+    
+    NSNumber *peerPreviewText = currentPreviewText;
+    if (nPreviewText != nil)
+        peerPreviewText = nPreviewText.intValue != INT32_MIN ? nPreviewText : nil;
+    
+    NSNumber *messagesMuted = currentMessagesMuted;
+    if (nMessagesMuted != nil)
+        messagesMuted = nMessagesMuted.intValue != INT32_MIN ? nMessagesMuted : nil;
+    
     if (nMuteUntil != nil || nSoundId != nil || nPreviewText != nil || nMessagesMuted != nil)
     {
-        int serverSoundId = nSoundId != nil ? [nSoundId intValue] : currentSoundId;
-        [TGDatabaseInstance() storePeerNotificationSettings:peerId soundId:serverSoundId muteUntil:(nMuteUntil != nil ? [nMuteUntil intValue] : currentMuteUntil) previewText:(nPreviewText != nil ? [nPreviewText boolValue] : currentPreviewText) messagesMuted:[nMessagesMuted boolValue] writeToActionQueue:true completion:nil];
+        [TGDatabaseInstance() storePeerNotificationSettings:peerId soundId:peerSoundId muteUntil:peerMuteUntil previewText:peerPreviewText messagesMuted:messagesMuted writeToActionQueue:true completion:nil];
         
-        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerSettings/(%lld)", peerId] resource:[[SGraphObjectNode alloc] initWithObject:[[NSDictionary alloc] initWithObjectsAndKeys:[[NSNumber alloc] initWithInt:nSoundId != nil ? [nSoundId intValue] : currentSoundId], @"soundId", [[NSNumber alloc] initWithInt:nMuteUntil != nil ? [nMuteUntil intValue] : currentMuteUntil], @"muteUntil", [[NSNumber alloc] initWithBool:nPreviewText != nil ? [nPreviewText boolValue] : currentPreviewText], @"previewText", nMessagesMuted == nil ? @(currentMessagesMuted) : nMessagesMuted, @"messagesMuted", nil]]];
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        if (peerSoundId != nil)
+            dict[@"soundId"] = peerSoundId;
+        if (peerMuteUntil != nil)
+            dict[@"muteUntil"] = peerMuteUntil;
+        if (peerPreviewText != nil)
+            dict[@"previewText"] = peerPreviewText;
+        if (messagesMuted != nil)
+            dict[@"messagesMuted"] = messagesMuted;
+        
+        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerSettings/(%lld)", peerId] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
 
         [ActionStageInstance() requestActor:@"/tg/service/synchronizeserviceactions/(settings)" options:nil watcher:TGTelegraphInstance];
         

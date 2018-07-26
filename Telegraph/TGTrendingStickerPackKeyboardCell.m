@@ -8,6 +8,8 @@
 
 #import <LegacyComponents/TGStickerCollectionViewCell.h>
 
+#import "TGPresentation.h"
+
 @interface TGTrendingStickerPackKeyboardCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
     UILabel *_titleLabel;
     UILabel *_countLabel;
@@ -100,6 +102,18 @@
         [self.contentView addSubview:_dotView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _titleLabel.textColor = presentation.pallete.textColor;
+    _countLabel.textColor = presentation.pallete.secondaryTextColor;
+    
+    [_button setBackgroundImage:presentation.images.chatStickersAddButton forState:UIControlStateNormal];
+    [_button setTitleColor:presentation.pallete.accentColor];
+    _dotView.image = TGCircleImage(6.0f, presentation.pallete.accentColor);
 }
 
 - (void)setStickerPack:(TGStickerPack *)stickerPack {
@@ -200,6 +214,33 @@
 - (void)collectionView:(UICollectionView *)__unused collectionView didSelectItemAtIndexPath:(NSIndexPath *)__unused indexPath {
     if (_info)
         _info();
+}
+
+- (void)enumerateCells:(void (^)(TGStickerCollectionViewCell *))enumerationBlock
+{
+    for (TGStickerCollectionViewCell *cell in _collectionView.visibleCells)
+    {
+        enumerationBlock(cell);
+    }
+}
+
+- (TGStickerCollectionViewCell *)cellForDocument:(TGDocumentMediaAttachment *)document
+{
+    for (TGStickerCollectionViewCell *cell in _collectionView.visibleCells)
+    {
+        if (cell.documentMedia.documentId == document.documentId)
+            return cell;
+    }
+    return nil;
+}
+
+- (void)clearHighlight
+{
+    for (TGStickerCollectionViewCell *cell in [_collectionView visibleCells])
+    {
+        if ([cell isKindOfClass:[TGStickerCollectionViewCell class]])
+            [cell setHighlightedWithBounce:false];
+    }
 }
 
 @end

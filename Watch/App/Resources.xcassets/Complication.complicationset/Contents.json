@@ -7,6 +7,11 @@
     },
     {
       "idiom" : "watch",
+      "filename" : "Extra Large.imageset",
+      "role" : "extra-large"
+    },
+    {
+      "idiom" : "watch",
       "filename" : "Modular.imageset",
       "role" : "modular"
     },

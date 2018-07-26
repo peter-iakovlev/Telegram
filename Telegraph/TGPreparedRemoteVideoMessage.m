@@ -4,7 +4,7 @@
 
 @implementation TGPreparedRemoteVideoMessage
 
-- (instancetype)initWithVideoId:(int64_t)videoId accessHash:(int64_t)accessHash videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration videoInfo:(TGVideoInfo *)videoInfo thumbnailInfo:(TGImageInfo *)thumbnailInfo caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
+- (instancetype)initWithVideoId:(int64_t)videoId accessHash:(int64_t)accessHash videoSize:(CGSize)videoSize size:(int32_t)size duration:(NSTimeInterval)duration videoInfo:(TGVideoInfo *)videoInfo thumbnailInfo:(TGImageInfo *)thumbnailInfo text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -16,7 +16,8 @@
         _duration = duration;
         _videoInfo = videoInfo;
         _thumbnailInfo = thumbnailInfo;
-        _caption = caption;
+        self.text = text;
+        self.entities = entities;
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
     }
@@ -30,6 +31,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -53,6 +55,7 @@
     }
     
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
     
     return message;
 }
@@ -65,7 +68,6 @@
     videoAttachment.dimensions = _videoSize;
     videoAttachment.thumbnailInfo = _thumbnailInfo;
     videoAttachment.videoInfo = _videoInfo;
-    videoAttachment.caption = _caption;
     return videoAttachment;
 }
 

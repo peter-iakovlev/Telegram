@@ -4,7 +4,7 @@
 #import "TGCollectionMultilineInputItem.h"
 #import "TGButtonCollectionItem.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGNetworkOverridesController () {
     TGCollectionMultilineInputItem *_tcpPrefixItem;
@@ -52,7 +52,7 @@
     NSRegularExpression *tcpPrefixRegex = [[NSRegularExpression alloc] initWithPattern:@"^([0-9a-fA-F][0-9a-fA-F])?$" options:0 error:nil];
     
     if ([tcpPrefixRegex matchesInString:_tcpPrefixItem.text == nil ? @"" : _tcpPrefixItem.text options:0 range:NSMakeRange(0, _tcpPrefixItem.text.length)].count == 0) {
-        [[[TGAlertView alloc] initWithTitle:nil message:@"Invalid TCP payload prefix" cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:nil message:@"Invalid TCP payload prefix" cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
         
         return false;
     }
@@ -61,7 +61,7 @@
     for (int i = 0; i < (int)_datacenterAddressItems.count; i++) {
         NSString *text = ((TGCollectionMultilineInputItem *)_datacenterAddressItems[i]).text;
         if ([datacenterAddressListRegex matchesInString:text == nil ? @"" : text options:0 range:NSMakeRange(0, text.length)].count == 0) {
-            [[[TGAlertView alloc] initWithTitle:nil message:[NSString stringWithFormat:@"Invalid address for DC %d", i + 1] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:nil message:[NSString stringWithFormat:@"Invalid address for DC %d", i + 1] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             return false;
         }
     }

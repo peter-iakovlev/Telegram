@@ -24,6 +24,7 @@
 #import "TGChannelBannedRights+Telegraph.h"
 
 #import "TLRPCmessages_search.h"
+#import "TLRPCchannels_searchFeed.h"
 #import "TLChat$channel.h"
 
 NSString *const TGRecentSearchDefaultsKey = @"Telegram_recentSearch_peers";
@@ -63,17 +64,25 @@ const NSInteger TGRecentSearchLimit = 20;
             return result;
         }];
         
-        SSignal *searchUsersSignal = [[[self searchUsersAndChannels:query] deliverOn:[SQueue wrapConcurrentNativeQueue:[TGDatabaseInstance() databaseQueue]]] map:^id (NSArray *peers)
+        SSignal *searchUsersSignal = [[[self searchUsersAndChannels:query] deliverOn:[SQueue wrapConcurrentNativeQueue:[TGDatabaseInstance() databaseQueue]]] map:^id (NSDictionary *results)
         {
+            NSMutableArray *myResult = [[NSMutableArray alloc] init];
+            for (id item in results[@"myPeers"])
+            {
+                id mappedItem = itemMapping(item);
+                if (mappedItem != nil)
+                    [myResult addObject:mappedItem];
+            }
+            
             NSMutableArray *result = [[NSMutableArray alloc] init];
-            for (id item in peers)
+            for (id item in results[@"peers"])
             {
                 id mappedItem = itemMapping(item);
                 if (mappedItem != nil)
                     [result addObject:mappedItem];
             }
             
-            return result;
+            return @{ @"myResult": myResult, @"result": result };
         }];
         
         SSignal *searchMessagesSignal = [SSignal single:@[]];
@@ -101,7 +110,45 @@ const NSInteger TGRecentSearchLimit = 20;
         
         return [[SSignal combineSignals:@[searchDialogsSignal, searchUsersSignal, searchMessagesSignal]] map:^id (NSArray *results)
         {
-            NSMutableArray *globalResults = [[NSMutableArray alloc] initWithArray:results[1]];
+            NSMutableArray *localResults = [[NSMutableArray alloc] initWithArray:results[0]];
+            NSArray *additionalLocal = results[1][@"myResult"];
+            for (NSUInteger i = 0; i < additionalLocal.count; i++)
+            {
+                int64_t peerId = 0;
+                if ([additionalLocal[i] isKindOfClass:[TGUser class]]) {
+                    peerId = ((TGUser *)additionalLocal[i]).uid;
+                } else if ([additionalLocal[i] isKindOfClass:[TGConversation class]]) {
+                    peerId = ((TGConversation *)additionalLocal[i]).conversationId;
+                }
+                
+                bool found = false;
+                
+                for (id item in localResults)
+                {
+                    if ([item isKindOfClass:[TGConversation class]])
+                    {
+                        if (((TGConversation *)item).conversationId == peerId || ((TGConversation *)item).conversationId == TGTelegraphInstance.clientUserId)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    else if ([item isKindOfClass:[TGUser class]])
+                    {
+                        if (((TGUser *)item).uid == peerId || ((TGUser *)item).uid == TGTelegraphInstance.clientUserId)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!found)
+                    [localResults addObject:additionalLocal[i]];
+            }
+            
+            NSArray *global = results[1][@"result"];
+            NSMutableArray *globalResults = [[NSMutableArray alloc] initWithArray:global];
             for (NSUInteger i = 0; i < globalResults.count; i++)
             {
                 int64_t peerId = 0;
@@ -113,7 +160,7 @@ const NSInteger TGRecentSearchLimit = 20;
                 
                 bool found = false;
                 
-                for (id item in results[0])
+                for (id item in localResults)
                 {
                     if ([item isKindOfClass:[TGConversation class]])
                     {
@@ -139,7 +186,7 @@ const NSInteger TGRecentSearchLimit = 20;
                     i--;
                 }
             }
-            return @{@"dialogs": results[0], @"global": globalResults, @"messages": results[2]};
+            return @{@"dialogs": localResults, @"global": globalResults, @"messages": results[2]};
         }];
     }
 }
@@ -230,8 +277,25 @@ const NSInteger TGRecentSearchLimit = 20;
         
         [TGDatabaseInstance() updateChannels:conversations];
         
-        NSMutableArray *peers = [[NSMutableArray alloc] init];
+        NSMutableArray *myPeers = [[NSMutableArray alloc] init];
+        for (TLPeer *peer in result.my_results)
+        {
+            if ([peer isKindOfClass:[TLPeer$peerUser class]]) {
+                TGUser *user = [TGDatabaseInstance() loadUser:((TLPeer$peerUser *)peer).user_id];
+                if (user != nil)
+                    [myPeers addObject:user];
+            } else if ([peer isKindOfClass:[TLPeer$peerChannel class]]) {
+                TLPeer$peerChannel *peerChannel = (TLPeer$peerChannel *)peer;
+                int64_t peerId = TGPeerIdFromChannelId(peerChannel.channel_id);
+                TGConversation *conversation = [TGDatabaseInstance() loadChannels:@[@(peerId)]][@(peerId)];
+                conversation.chatParticipantCount = [channels[@(peerId)] participants_count];
+                if (conversation != nil) {
+                    [myPeers addObject:conversation];
+                }
+            }
+        }
         
+        NSMutableArray *peers = [[NSMutableArray alloc] init];
         for (TLPeer *peer in result.results)
         {
             if ([peer isKindOfClass:[TLPeer$peerUser class]]) {
@@ -249,13 +313,13 @@ const NSInteger TGRecentSearchLimit = 20;
             }
         }
         
-        return peers;
+        return @{ @"myPeers": myPeers, @"peers": peers };
     }];
     
-    if (query.length < 5)
-        return [SSignal single:@[]];
+    if (query.length < 3)
+        return [SSignal single:@{@"myPeers": @[], @"peers": @[]}];
     else
-        return [[SSignal single:@[]] then:remoteSignal];
+        return [[SSignal single:@{@"myPeers": @[], @"peers": @[]}] then:remoteSignal];
 }
 
 + (SSignal *)searchMessages:(NSString *)query peerId:(int64_t)peerId accessHash:(int64_t)accessHash userId:(int32_t)userId maxId:(int32_t)maxId limit:(int32_t)limit
@@ -273,6 +337,16 @@ const NSInteger TGRecentSearchLimit = 20;
             searchGlobal.limit = limit;
             
             requestBody = searchGlobal;
+        } else if (TGPeerIdIsAdminLog(peerId)) {
+            TLRPCchannels_searchFeed *searchFeed = [[TLRPCchannels_searchFeed alloc] init];
+            searchFeed.feed_id = TGAdminLogIdFromPeerId(peerId);
+            searchFeed.q = query;
+            searchFeed.offset_date = 0;
+            searchFeed.offset_id = maxId;
+            searchFeed.offset_peer = [[TLInputPeer$inputPeerEmpty alloc] init];
+            searchFeed.limit = limit;
+            
+            requestBody = searchFeed;
         } else {
             TLRPCmessages_search *search = [[TLRPCmessages_search alloc] init];
             search.peer = [TGTelegraphInstance createInputPeerForConversation:peerId accessHash:accessHash];
@@ -303,16 +377,23 @@ const NSInteger TGRecentSearchLimit = 20;
             
             NSMutableArray *combinedResults = [[NSMutableArray alloc] init];
             
-            [TGUserDataRequestBuilder executeUserDataUpdate:result.users];
-            
             NSMutableDictionary *chats = [[NSMutableDictionary alloc] init];
             
+            NSMutableArray *channels = [[NSMutableArray alloc] init];
             for (TLChat *chatDesc in result.chats)
             {
                 TGConversation *conversation = [[TGConversation alloc] initWithTelegraphChatDesc:chatDesc];
                 if (conversation != nil)
+                {
                     [chats setObject:conversation forKey:[[NSNumber alloc] initWithLongLong:conversation.conversationId]];
+                    
+                    if (conversation.isChannel) {
+                        [channels addObject:conversation];
+                    }
+                }
             }
+            
+            [TGDatabaseInstance() updateChannels:channels];
             
             NSUInteger totalCount = result.messages.count;
             if ([result isKindOfClass:[TLmessages_Messages$messages_messagesSlice class]]) {

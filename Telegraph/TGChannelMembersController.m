@@ -27,7 +27,7 @@
 
 #import "TGGroupInfoSelectContactController.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGChannelModeratorController.h"
 
@@ -36,7 +36,7 @@
 #import "TGVariantCollectionItem.h"
 #import "TGHeaderCollectionItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGChannelModeratorController.h"
 
@@ -59,6 +59,8 @@
 #import "TGCachedConversationData.h"
 
 #import "TGGroupInfoUserCell.h"
+
+#import "TGPresentation.h"
 
 @interface TGChannelMembersController () <ASWatcher, TGGroupInfoSelectContactControllerDelegate, UITableViewDelegate, UITableViewDataSource, TGSearchDisplayMixinDelegate, TGSearchBarDelegate> {
     TGConversation *_conversation;
@@ -119,7 +121,7 @@
         _searchDisposable = [[SMetaDisposable alloc] init];
         
         self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
-        
+                
         _searchItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(searchPressed)];
         
         switch (mode) {
@@ -160,9 +162,9 @@
             TGButtonCollectionItem *addMemberItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"GroupInfo.AddParticipant") action:@selector(addBlacklistPressed)];
             _inviteControlSection = [[TGCollectionMenuSection alloc] initWithItems:@[addMemberItem]];
             addMemberItem.leftInset = 65.0f;
-            addMemberItem.icon = TGImageNamed(@"ModernContactListAddMemberIcon.png");
+            addMemberItem.icon = self.presentation.images.contactsInviteIcon;
             addMemberItem.iconOffset = CGPointMake(3.0f, 0.0f);
-            addMemberItem.titleColor = TGAccentColor();
+            addMemberItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
             [self.menuSections addSection:_inviteControlSection];
         }
         
@@ -181,9 +183,9 @@
         TGHeaderCollectionItem *adminsTitleItem = [[TGHeaderCollectionItem alloc] initWithTitle:_conversation.isChannelGroup ? TGLocalized(@"ChannelMembers.GroupAdminsTitle") : TGLocalized(@"ChannelMembers.ChannelAdminsTitle")];
         TGButtonCollectionItem *addModeratorItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Management.AddModerator") action:@selector(addModeratorPressed)];
         addModeratorItem.leftInset = 65.0f;
-        addModeratorItem.icon = TGImageNamed(@"ModernContactListAddMemberIcon.png");
+        addModeratorItem.icon = self.presentation.images.contactsInviteIcon;
         addModeratorItem.iconOffset = CGPointMake(3.0f, 0.0f);
-        addModeratorItem.titleColor = TGAccentColor();
+        addModeratorItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
         addModeratorItem.deselectAutomatically = true;
         TGCommentCollectionItem *commentItem = [[TGCommentCollectionItem alloc] initWithFormattedText:_conversation.isChannelGroup ? TGLocalized(@"Group.Management.AddModeratorHelp") : TGLocalized(@"Channel.Management.AddModeratorHelp")];
         
@@ -617,17 +619,18 @@
     
     _searchBarOverlay = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.navigationController.view.frame.size.width, searchBarHeight)];
     _searchBarOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _searchBarOverlay.backgroundColor = UIColorRGB(0xf7f7f7);
+    _searchBarOverlay.backgroundColor = self.presentation.pallete.barBackgroundColor;
     _searchBarOverlay.userInteractionEnabled = false;
     
     _searchBarWrapper = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.navigationController.view.frame.size.width, searchBarHeight)];
     _searchBarWrapper.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _searchBarWrapper.backgroundColor = [UIColor whiteColor];
+    _searchBarWrapper.backgroundColor = self.presentation.pallete.backgroundColor;
     [self.view addSubview:_searchBarWrapper];
     
     [_searchBarWrapper addSubview:_searchBarOverlay];
     
     _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0.0f, safeAreaInset, _searchBarWrapper.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleHeader];
+    [_searchBar setPallete:self.presentation.searchBarPallete];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     _searchBar.customBackgroundView.image = nil;
     _searchBar.customActiveBackgroundView.image = nil;
@@ -640,7 +643,7 @@
     [_searchBarWrapper addSubview:_searchBar];
     
     UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, _searchBarWrapper.frame.size.height - TGScreenPixel, _searchBarWrapper.frame.size.width, TGScreenPixel)];
-    separatorView.backgroundColor = UIColorRGB(0xb2b2b2);
+    separatorView.backgroundColor = self.presentation.pallete.barSeparatorColor;
     separatorView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     [_searchBarWrapper addSubview:separatorView];
     
@@ -740,7 +743,8 @@
                                         } else if ([errorType isEqual:@"CHANNEL_ADMIN_INVITE_REQUIRED"]) {
                                             errorText = TGLocalized(@"Channel.Members.AddAdminErrorBlacklisted");
                                         }
-                                        [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                                        
+                                        [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                                     }
                                 } completed:^{
                                     __strong TGChannelMembersController *strongSelf = weakSelf;
@@ -1172,12 +1176,12 @@
                         case TGChannelMembersModeAdmins: {
                             if (member == nil) {
                                 if (strongSelf->_conversation.channelRole != TGChannelRoleCreator && !strongSelf->_conversation.everybodyCanAddMembers && !strongSelf->_conversation.channelAdminRights.canInviteUsers) {
-                                    [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddAdminErrorNotAMember") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                                    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddAdminErrorNotAMember") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                                     return;
                                 }
                             } else if (member.bannedRights.tlFlags != 0) {
                                 if (strongSelf->_conversation.channelRole != TGChannelRoleCreator && !strongSelf->_conversation.channelAdminRights.canBanUsers) {
-                                    [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddAdminErrorBlacklisted") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                                    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddAdminErrorBlacklisted") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                                     
                                     return;
                                 }
@@ -1196,6 +1200,7 @@
                 }
             }
         }];
+        searchController.presentation = self.presentation;
         
         TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[searchController] navigationBarClass:[TGWhiteNavigationBar class]];
         if ([self inPopover]) {
@@ -1213,7 +1218,7 @@
     TGGroupInfoSelectContactController *selectContactController = [[TGGroupInfoSelectContactController alloc] initWithContactsMode:contactsMode];
     selectContactController.deselectAutomatically = true;
     selectContactController.delegate = self;
-    
+    selectContactController.presentation = self.presentation;
     NSMutableArray *disabledUsers = [[NSMutableArray alloc] init];
     
     NSMutableArray *userIds = [[NSMutableArray alloc] init];
@@ -1269,7 +1274,7 @@
                                     NSString *format = conversation.isChannelGroup ? TGLocalized(@"Privacy.GroupsAndChannels.InviteToGroupError") : TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelError");
                                     errorText = [[NSString alloc] initWithFormat:format, user.displayFirstName, user.displayFirstName];
                                 }
-                                [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                                [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                             }
                         } completed:^{
                             __strong TGChannelMembersController *strongSelf = weakSelf;
@@ -1364,7 +1369,7 @@
                     NSString *format = conversation.isChannelGroup ? TGLocalized(@"Privacy.GroupsAndChannels.InviteToGroupError") : TGLocalized(@"Privacy.GroupsAndChannels.InviteToChannelError");
                     errorText = [[NSString alloc] initWithFormat:format, user.displayFirstName, user.displayFirstName];
                 }
-                [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             });
         }];
         
@@ -1396,7 +1401,7 @@
 
 - (void)whoCanAddMembersPressed {
     __weak TGChannelMembersController *weakSelf = self;
-    [[[TGActionSheet alloc] initWithTitle:nil actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ChannelMembers.WhoCanAddMembers.AllMembers") action:@"all"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"ChannelMembers.WhoCanAddMembers.Admins") action:@"admins"],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
@@ -1446,7 +1451,7 @@
                     case TGChannelMembersModeBannedAndRestricted: {
                         if (member.isCreator || member.adminRights.hasAnyRights) {
                             if (strongSelf->_conversation.channelRole != TGChannelRoleCreator && !member.adminCanManage) {
-                                [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddBannedErrorAdmin") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Members.AddBannedErrorAdmin") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                                 
                                 return;
                             }
@@ -1463,6 +1468,7 @@
                 }
             }
         }];
+        searchController.presentation = self.presentation;
         
         TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[searchController] navigationBarClass:[TGWhiteNavigationBar class]];
         if ([self inPopover]) {
@@ -1755,11 +1761,10 @@
     static NSString *cellIdentifier = @"TGGroupInfoUserCell";
     TGGroupInfoUserCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     if (cell == nil)
-    {
         cell = [[TGGroupInfoUserCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
-    }
-    
+    cell.presentation = self.presentation;
     TGGroupInfoUserCollectionItem *item = [self makeItem:user member:_searchResultsMemberDatas[@(user.uid)]];
+    item.presentation = self.presentation;
     [cell setItem:item];
     
     return cell;
@@ -1776,7 +1781,8 @@
 - (UITableView *)createTableViewForSearchMixin:(TGSearchDisplayMixin *)__unused searchMixin {
     UITableView *tableView = [[UITableView alloc] init];
     
-    tableView.backgroundColor = [UIColor whiteColor];
+    tableView.backgroundColor = self.presentation.pallete.backgroundColor;
+    tableView.separatorColor = self.presentation.pallete.separatorColor;
     tableView.dataSource = self;
     tableView.delegate = self;
     

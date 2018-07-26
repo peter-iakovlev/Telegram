@@ -5,7 +5,7 @@
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGApplication.h"
 
@@ -46,11 +46,11 @@
         _webPage = webPage;
         
         bool foundGallery = false;
-        bool isInstantGallery = [[webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[webPage.siteName lowercaseString] isEqualToString:@"twitter"];
+        bool isInstagram = [webPage.siteName.lowercaseString isEqualToString:@"instagram"];
+        bool isTwitter = [webPage.siteName.lowercaseString isEqualToString:@"twitter"];
+        bool isInstantGallery = [_webPage.pageType isEqualToString:@"telegram_album"] || isInstagram || isTwitter;
         if (isInstantGallery && webPage.instantPage != nil)
-        {
             foundGallery = [self setupWithWebPage:_webPage peerId:peerId messageId:messageId];
-        }
         
         if (!foundGallery)
         {
@@ -241,6 +241,12 @@
     
     _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
     __weak TGExternalGalleryModel *weakSelf = self;
+    _footerView.openLinkRequested = ^(NSString *url)
+    {
+        __strong TGExternalGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.openLinkRequested != nil)
+            strongSelf.openLinkRequested(url);
+    };
     _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
     {
         __strong TGExternalGalleryModel *strongSelf = weakSelf;
@@ -329,7 +335,7 @@
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
                     
                     if (actions.count > 1) {
-                        [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                        [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
                         {
                             if ([action isEqualToString:@"open"])
                             {

@@ -10,6 +10,15 @@
 
 #import <LegacyComponents/ActionStage.h>
 
+typedef enum {
+    TGDialogListStateNormal = 0,
+    TGDialogListStateConnecting = 1,
+    TGDialogListStateConnectingToProxy = 2,
+    TGDialogListStateUpdating = 3,
+    TGDialogListStateWaitingForNetwork = 4,
+    TGDialogListStateHasProxyIssues = 5,
+} TGDialogListState;
+
 @class TGDialogListController;
 
 @interface TGTelegraphDialogListCompanion : TGDialogListCompanion <ASWatcher>

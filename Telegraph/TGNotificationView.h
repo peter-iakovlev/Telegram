@@ -8,6 +8,8 @@
 @class TGDocumentMediaAttachment;
 @class TGModernViewInlineMediaContext;
 
+@class TGBotReplyMarkup;
+
 @interface TGNotificationView : UIView
 
 @property (nonatomic, copy) bool (^shouldExpandOnTap)(void);
@@ -18,6 +20,7 @@
 
 @property (nonatomic, copy) void (^hide)(bool animated);
 
+@property (nonatomic, copy) void (^activateCommand)(id action, NSInteger index);
 @property (nonatomic, copy) void (^sendTextMessage)(NSString *text);
 @property (nonatomic, copy) void (^sendSticker)(TGDocumentMediaAttachment *sticker);
 
@@ -39,6 +42,8 @@
 @property (nonatomic, assign) bool isHiding;
 @property (nonatomic, readonly) bool isExpanded;
 @property (nonatomic, assign) bool isRepliable;
+
+@property (nonatomic, strong) TGBotReplyMarkup *replyMarkup;
 
 @property (nonatomic, readonly) CGFloat expandedHeight;
 @property (nonatomic, readonly) CGFloat shrinkedHeight;

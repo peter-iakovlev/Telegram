@@ -73,6 +73,12 @@
 {
     __weak TGItemCollectionGalleryModel *weakSelf = self;
     _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
+    _footerView.openLinkRequested = ^(NSString *url)
+    {
+        __strong TGItemCollectionGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.openLinkRequested != nil)
+            strongSelf.openLinkRequested(url);
+    };
     _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
     {
         __strong TGItemCollectionGalleryModel *strongSelf = weakSelf;

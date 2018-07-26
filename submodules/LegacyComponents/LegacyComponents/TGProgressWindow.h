@@ -4,9 +4,14 @@
 
 @interface TGProgressWindowController : TGOverlayWindowViewController
 
-- (instancetype)init:(bool)light;
+- (instancetype)init;
+- (instancetype)initWithLight:(bool)light;
+
 - (void)show:(bool)animated;
-- (void)dismiss:(bool)animated completion:(void (^)())completion;
+- (void)dismiss:(bool)animated completion:(void (^)(void))completion;
+- (void)dismissWithSuccess:(void (^)(void))completion;
+
+- (void)updateLayout;
 
 @end
 
@@ -21,7 +26,7 @@
 - (void)dismiss:(bool)animated;
 - (void)dismissWithSuccess;
 
-+ (void)changeStyle;
++ (void)setDarkStyle:(bool)dark;
 
 @end
 

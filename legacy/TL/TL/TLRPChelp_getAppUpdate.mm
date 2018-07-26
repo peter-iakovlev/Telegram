@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xc812ac7e;
+    return (int32_t)0xae2de196;
 }
 
 - (int32_t)TLconstructorName
@@ -65,39 +65,11 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPChelp_getAppUpdate$help_getAppUpdate *object = [[TLRPChelp_getAppUpdate$help_getAppUpdate alloc] init];
-    object.device_model = metaObject->getString((int32_t)0x7baba117);
-    object.system_version = metaObject->getString((int32_t)0x18665337);
-    object.app_version = metaObject->getString((int32_t)0xe92d4c10);
-    object.lang_code = metaObject->getString((int32_t)0x2ccfcaf3);
     return object;
 }
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.device_model;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7baba117, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.system_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x18665337, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.app_version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe92d4c10, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.lang_code;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x2ccfcaf3, value));
-    }
 }
 
 

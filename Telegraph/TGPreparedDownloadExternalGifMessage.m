@@ -11,7 +11,7 @@
 
 @implementation TGPreparedDownloadExternalGifMessage
 
-- (instancetype)initWithSearchResult:(TGExternalGifSearchResult *)searchResult localDocumentId:(int64_t)localDocumentId mimeType:(NSString *)mimeType thumbnailInfo:(TGImageInfo *)thumbnailInfo attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
+- (instancetype)initWithSearchResult:(TGExternalGifSearchResult *)searchResult localDocumentId:(int64_t)localDocumentId mimeType:(NSString *)mimeType thumbnailInfo:(TGImageInfo *)thumbnailInfo attributes:(NSArray *)attributes text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
     self = [super init];
     if (self != nil) {
         _searchResult = searchResult;
@@ -19,7 +19,8 @@
         _mimeType = mimeType;
         _thumbnailInfo = thumbnailInfo;
         _attributes = attributes;
-        _caption = caption;
+        self.text = text;
+        self.entities = entities;
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
         self.replyMarkup = replyMarkup;
@@ -59,6 +60,8 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
+    message.entities = self.entities;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -69,7 +72,6 @@
     documentAttachment.thumbnailInfo = _thumbnailInfo;
     documentAttachment.documentUri = _searchResult.originalUrl;
     documentAttachment.attributes = _attributes;
-    documentAttachment.caption = _caption;
     
     [attachments addObject:documentAttachment];
     

@@ -126,6 +126,21 @@ static id<TGNavigationBarMusicPlayerProvider> _musicPlayerProvider;
     return _hiddenPipe.signalProducer();
 }
 
+- (void)setPallete:(TGNavigationBarPallete *)pallete
+{
+    _barBackgroundView.backgroundColor = pallete.backgroundColor;
+    _stripeView.backgroundColor = pallete.separatorColor;
+    self.tintColor = pallete.tintColor;
+    
+    NSMutableDictionary *attributes = [[NSMutableDictionary alloc] init];
+    attributes[UITextAttributeTextColor] = pallete.titleColor;
+    attributes[UITextAttributeTextShadowColor] = [UIColor clearColor];
+    if (iosMajorVersion() < 7)
+        attributes[UITextAttributeFont] = TGBoldSystemFontOfSize(17.0f);
+    
+    [self setTitleTextAttributes:attributes];
+}
+
 - (void)commonInit:(UIBarStyle)barStyle
 {
     _hiddenPipe = [[SPipe alloc] init];
@@ -139,7 +154,6 @@ static id<TGNavigationBarMusicPlayerProvider> _musicPlayerProvider;
     }
     
     CGFloat backgroundOverflow = iosMajorVersion() >= 7 ? 20.0f : 0.0f;
-    
     if (![self isKindOfClass:[TGTransparentNavigationBar class]])
     {
         _backgroundContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, -backgroundOverflow, self.bounds.size.width, backgroundOverflow + self.bounds.size.height)];
@@ -200,7 +214,7 @@ static id<TGNavigationBarMusicPlayerProvider> _musicPlayerProvider;
     if (_backgroundContainerView != nil)
     {
         CGFloat backgroundOverflow = iosMajorVersion() >= 7 ? 20.0f : 0.0f;
-        if (iosMajorVersion() >= 11 && self.superview.safeAreaInsets.top > 0)
+        if (iosMajorVersion() >= 11 && self.superview.safeAreaInsets.top > FLT_EPSILON)
             backgroundOverflow = self.superview.safeAreaInsets.top;
         
         _backgroundContainerView.frame = CGRectMake(0, -backgroundOverflow, self.bounds.size.width, backgroundOverflow + self.bounds.size.height);
@@ -577,3 +591,19 @@ static id<TGNavigationBarMusicPlayerProvider> _musicPlayerProvider;
 }
 
 @end
+
+
+@implementation TGNavigationBarPallete
+
++ (instancetype)palleteWithBackgroundColor:(UIColor *)backgroundColor separatorColor:(UIColor *)separatorColor titleColor:(UIColor *)titleColor tintColor:(UIColor *)tintColor
+{
+    TGNavigationBarPallete *pallete = [[TGNavigationBarPallete alloc] init];
+    pallete->_backgroundColor = backgroundColor;
+    pallete->_separatorColor = separatorColor;
+    pallete->_titleColor = titleColor;
+    pallete->_tintColor = tintColor;
+    return pallete;
+}
+
+@end
+

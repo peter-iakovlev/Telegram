@@ -22,6 +22,8 @@
 #import <LegacyComponents/TGVideoMessageScrubber.h>
 #import <LegacyComponents/TGModernGalleryVideoView.h>
 
+#import <LegacyComponents/TGModernConversationInputMicButton.h>
+
 #import "TGColor.h"
 #import "TGImageUtils.h"
 
@@ -66,7 +68,6 @@ typedef enum
     PGCameraVolumeButtonHandler *_buttonHandler;
     bool _autorotationWasEnabled;
     bool _dismissed;
-    bool _changing;
     bool _gpuAvailable;
     bool _locked;
     bool _positionChangeLocked;
@@ -135,6 +136,11 @@ typedef enum
 
 - (instancetype)initWithContext:(id<LegacyComponentsContext>)context assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)())transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface
 {
+    return [self initWithContext:context assets:assets transitionInView:transitionInView parentController:parentController controlsFrame:controlsFrame isAlreadyLocked:isAlreadyLocked liveUploadInterface:liveUploadInterface pallete:nil];
+}
+
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context assets:(TGVideoMessageCaptureControllerAssets *)assets transitionInView:(UIView *(^)())transitionInView parentController:(TGViewController *)parentController controlsFrame:(CGRect)controlsFrame isAlreadyLocked:(bool (^)(void))isAlreadyLocked liveUploadInterface:(id<TGLiveUploadInterface>)liveUploadInterface pallete:(TGModernConversationInputMicPallete *)pallete
+{
     self = [super initWithContext:context];
     if (self != nil)
     {
@@ -143,6 +149,7 @@ typedef enum
         self.isAlreadyLocked = isAlreadyLocked;
         _liveUploadInterface = liveUploadInterface;
         _assets = assets;
+        _pallete = pallete;
         
         _url = [TGVideoMessageCaptureController tempOutputPath];
         _queue = [[SQueue alloc] init];
@@ -185,6 +192,10 @@ typedef enum
     [_thumbnailsDisposable dispose];
     [[NSNotificationCenter defaultCenter] removeObserver:_didEnterBackgroundObserver];
     [_activityDisposable dispose];
+    id<SDisposable> currentAudioSession = _currentAudioSession;
+    [_queue dispatch:^{
+         [currentAudioSession dispose];
+    }];
 }
 
 + (NSURL *)tempOutputPath
@@ -204,13 +215,17 @@ typedef enum
     _wrapperView.clipsToBounds = true;
     [self.view addSubview:_wrapperView];
     
+    UIColor *curtainColor = [UIColor whiteColor];
+    if (self.pallete != nil && self.pallete.isDark)
+        curtainColor = [UIColor blackColor];
+    
     TGVideoMessageTransitionType type = [self _transitionType];
     CGRect fadeFrame = CGRectMake(0.0f, 0.0f, _wrapperView.frame.size.width, _wrapperView.frame.size.height);
     if (type != TGVideoMessageTransitionTypeLegacy)
     {
         UIBlurEffect *effect = nil;
         if (type == TGVideoMessageTransitionTypeSimplified)
-            effect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+            effect = [UIBlurEffect effectWithStyle:self.pallete.isDark ? UIBlurEffectStyleDark : UIBlurEffectStyleLight];
         
         _blurView = [[UIVisualEffectView alloc] initWithEffect:effect];
         [_wrapperView addSubview:_blurView];
@@ -223,7 +238,7 @@ typedef enum
         {
             _fadeView = [[UIView alloc] initWithFrame:fadeFrame];
             _fadeView.alpha = 0.0f;
-            _fadeView.backgroundColor = UIColorRGBA(0xffffff, 0.4f);
+            _fadeView.backgroundColor = [curtainColor colorWithAlphaComponent:0.4f];
             [_wrapperView addSubview:_fadeView];
         }
     }
@@ -231,7 +246,7 @@ typedef enum
     {
         _fadeView = [[UIView alloc] initWithFrame:fadeFrame];
         _fadeView.alpha = 0.0f;
-        _fadeView.backgroundColor = UIColorRGBA(0xffffff, 0.6f);
+        _fadeView.backgroundColor = [curtainColor colorWithAlphaComponent:0.6f];
         [_wrapperView addSubview:_fadeView];
     }
     
@@ -261,6 +276,7 @@ typedef enum
     }
     
     _ringView = [[TGVideoMessageRingView alloc] initWithFrame:CGRectMake((_circleWrapperView.frame.size.width - 234.0f) / 2.0f, (_circleWrapperView.frame.size.height - 234.0f) / 2.0f, 234.0f, 234.0f)];
+    _ringView.accentColor = self.pallete != nil ? self.pallete.buttonColor : TGAccentColor();
     [_circleWrapperView addSubview:_ringView];
     
     CGRect controlsFrame = _controlsFrame;
@@ -269,6 +285,7 @@ typedef enum
     controlsFrame.size.height = height;
     
     _controlsView = [[TGVideoMessageControls alloc] initWithFrame:controlsFrame assets:_assets];
+    _controlsView.pallete = self.pallete;
     _controlsView.clipsToBounds = true;
     _controlsView.parent = self;
     _controlsView.isAlreadyLocked = self.isAlreadyLocked;
@@ -311,17 +328,21 @@ typedef enum
     [self.view addSubview:_controlsView];
     
     _separatorView = [[UIView alloc] initWithFrame:CGRectMake(_controlsView.frame.origin.x, _controlsFrame.origin.y - TGScreenPixel, _controlsView.frame.size.width, TGScreenPixel)];
-    _separatorView.backgroundColor = UIColorRGB(0xb2b2b2);
+    _separatorView.backgroundColor = self.pallete != nil ? self.pallete.borderColor : UIColorRGB(0xb2b2b2);
     _separatorView.userInteractionEnabled = false;
     [self.view addSubview:_separatorView];
     
     if ([TGVideoCameraPipeline cameraPositionChangeAvailable])
     {
+        UIImage *switchImage = TGComponentsImageNamed(@"VideoRecordPositionSwitch");
+        if (self.pallete != nil)
+            switchImage = TGTintedImage(switchImage, self.pallete.buttonColor);
+        
         _switchButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 44.0f, 44.0f)];
         _switchButton.alpha = 0.0f;
         _switchButton.adjustsImageWhenHighlighted = false;
         _switchButton.adjustsImageWhenDisabled = false;
-        [_switchButton setImage:TGComponentsImageNamed(@"VideoRecordPositionSwitch") forState:UIControlStateNormal];
+        [_switchButton setImage:switchImage forState:UIControlStateNormal];
         [_switchButton addTarget:self action:@selector(changeCameraPosition) forControlEvents:UIControlEventTouchUpInside];
         [self.view addSubview:_switchButton];
     }
@@ -422,6 +443,10 @@ typedef enum
 
 - (void)viewWillAppear:(BOOL)animated
 {
+    if (self.ignoreAppearEvents) {
+        return;
+    }
+    
     [super viewWillAppear:animated];
     
     _capturePipeline.renderingEnabled = true;
@@ -443,6 +468,9 @@ typedef enum
 
 - (void)viewDidAppear:(BOOL)animated
 {
+    if (self.ignoreAppearEvents) {
+        return;
+    }
     [super viewDidAppear:animated];
     
     _autorotationWasEnabled = [TGViewController autorotationAllowed];
@@ -819,12 +847,10 @@ typedef enum
         }
     }
     
-    if (!_dismissed && !_changing && self.finishedWithVideo != nil)
+    if (!_dismissed && self.finishedWithVideo != nil)
         self.finishedWithVideo(url, image, fileSize, duration, dimensions, liveUploadData, adjustments);
     else
         [[NSFileManager defaultManager] removeItemAtURL:url error:NULL];
-    
-    _changing = false;
 }
 
 - (UIImageOrientation)orientationForThumbnailWithTransform:(CGAffineTransform)transform mirrored:(bool)mirrored
@@ -1043,12 +1069,14 @@ typedef enum
         __weak TGVideoMessageCaptureController *weakSelf = self;
         [_currentAudioSession setDisposable:[[LegacyComponentsGlobals provider] requestAudioSession:speaker ? TGAudioSessionTypePlayAndRecordHeadphones : TGAudioSessionTypePlayAndRecord interrupted:^
         {
-            __strong TGVideoMessageCaptureController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-            {
-                strongSelf->_automaticDismiss = true;
-                [strongSelf complete];
-            }
+            TGDispatchOnMainThread(^{
+                __strong TGVideoMessageCaptureController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    strongSelf->_automaticDismiss = true;
+                    [strongSelf complete];
+                }
+            });
         }]];
     }];
 }

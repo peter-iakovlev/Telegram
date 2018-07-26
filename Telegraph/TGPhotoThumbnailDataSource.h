@@ -10,4 +10,6 @@
 
 @interface TGPhotoThumbnailDataSource : TGImageDataSource
 
++ (TGDataResource *)resultForUnavailableImage:(bool)isFlat cornerRadius:(int)cornerRadius position:(int)position;
+
 @end

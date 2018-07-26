@@ -186,6 +186,18 @@
         int32_t textLength = (int32_t)textBytes.length;
         [data appendBytes:&textLength length:4];
         [data appendData:textBytes];
+    } else if (actionType == TGMessageActionBotAllowed) {
+        NSString *domain = _actionData[@"domain"];
+        NSData *domainBytes = [domain dataUsingEncoding:NSUTF8StringEncoding];
+        int32_t domainLength = (int32_t)domainBytes.length;
+        [data appendBytes:&domainLength length:4];
+        [data appendData:domainBytes];
+    } else if (actionType == TGMessageActionSecureValuesSent) {
+        NSString *values = _actionData[@"values"];
+        NSData *valuesBytes = [values dataUsingEncoding:NSUTF8StringEncoding];
+        int32_t valuesLength = (int32_t)valuesBytes.length;
+        [data appendBytes:&valuesLength length:4];
+        [data appendData:valuesBytes];
     }
 
     int dataLength = (int)data.length - dataLengthPtr - 4;
@@ -387,12 +399,30 @@
         [is read:(uint8_t *)&totalAmount maxLength:4];
         actionAttachment.actionData = @{@"currency": title, @"totalAmount": @(totalAmount)};
     } else if (actionType == TGMessageActionText) {
-        int32_t currencyLength = 0;
-        [is read:(uint8_t *)&currencyLength maxLength:4];
-        uint8_t *titleBytes = malloc(currencyLength);
-        [is read:titleBytes maxLength:currencyLength];
-        NSString *title = [[NSString alloc] initWithBytesNoCopy:titleBytes length:currencyLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        int32_t textLength = 0;
+        [is read:(uint8_t *)&textLength maxLength:4];
+        uint8_t *titleBytes = malloc(textLength);
+        [is read:titleBytes maxLength:textLength];
+        NSString *title = [[NSString alloc] initWithBytesNoCopy:titleBytes length:textLength encoding:NSUTF8StringEncoding freeWhenDone:true];
         actionAttachment.actionData = @{@"text": title};
+    } else if (actionType == TGMessageActionBotAllowed) {
+        int32_t domainLength = 0;
+        [is read:(uint8_t *)&domainLength maxLength:4];
+        uint8_t *domainBytes = malloc(domainLength);
+        [is read:domainBytes maxLength:domainLength];
+        NSString *domain = [[NSString alloc] initWithBytesNoCopy:domainBytes length:domainLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        if (domain == nil)
+            domain = @"";
+        actionAttachment.actionData = @{@"domain": domain};
+    } else if (actionType == TGMessageActionSecureValuesSent) {
+        int32_t valuesLength = 0;
+        [is read:(uint8_t *)&valuesLength maxLength:4];
+        uint8_t *valuesBytes = malloc(valuesLength);
+        [is read:valuesBytes maxLength:valuesLength];
+        NSString *values = [[NSString alloc] initWithBytesNoCopy:valuesBytes length:valuesLength encoding:NSUTF8StringEncoding freeWhenDone:true];
+        if (values == nil)
+            values = @"";
+        actionAttachment.actionData = @{@"values": values};
     }
     
     return actionAttachment;

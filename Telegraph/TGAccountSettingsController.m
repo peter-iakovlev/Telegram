@@ -25,10 +25,10 @@
 #import "TGVersionCollectionItem.h"
 
 #import "TGWallpaperListController.h"
-#import "TGWallpaperController.h"
 #import "TGWallpaperManager.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomAlertView.h"
+#import "TGCustomActionSheet.h"
 #import <LegacyComponents/TGProgressWindow.h>
 #import <LegacyComponents/TGRemoteImageView.h>
 
@@ -47,7 +47,7 @@
 
 #import "TGUsernameController.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGAccountSettingsActor.h"
 
@@ -68,13 +68,21 @@
 
 #import "TGStickersSignals.h"
 #import "TGUserSignal.h"
+#import "TGProxySignals.h"
+#import "TGPassportSignals.h"
 
 #import "TGLocalizationSelectionController.h"
 #import "TGEditProfileController.h"
 
+#import "TGAppearanceController.h"
+#import "TGProxySetupController.h"
+#import "TGPassportRequestController.h"
+
+#import "TGTwoStepConfigSignal.h"
+
 #import "TGLegacyComponentsContext.h"
 
-@interface TGAccountSettingsController () <TGWallpaperControllerDelegate>
+@interface TGAccountSettingsController ()
 {
     int32_t _uid;
     
@@ -83,6 +91,11 @@
     TGCollectionMenuSection *_headerSection;
     TGCollectionMenuSection *_settingsSection;
     TGCollectionMenuSection *_shortcutSection;
+    
+    SMetaDisposable *_proxyListDisposable;
+    SMetaDisposable *_proxyStatusDisposable;
+    TGCollectionMenuSection *_proxySection;
+    TGVariantCollectionItem *_proxyItem;
     
     TGAccountInfoCollectionItem *_profileDataItem;
     TGButtonCollectionItem *_setProfilePhotoItem;
@@ -100,7 +113,8 @@
     TGDisclosureActionCollectionItem *_supportItem;
     TGDisclosureActionCollectionItem *_faqItem;
     
-    TGCollectionMenuSection *_watchSection;
+    TGCollectionMenuSection *_otherSection;
+    TGDisclosureActionCollectionItem *_passportItem;
     TGDisclosureActionCollectionItem *_watchItem;
     SMetaDisposable *_watchAppInstalledDisposable;
     
@@ -143,7 +157,10 @@
         ]];
         [self.menuSections addSection:_headerSection];
         
-        _wallpapersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.ChatBackground") action:@selector(wallpapersPressed)];
+        _proxyItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Proxy") action:@selector(proxyPressed)];
+        _proxySection = [[TGCollectionMenuSection alloc] initWithItems:@[_proxyItem]];
+        
+        _wallpapersItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Appearance") action:@selector(wallpapersPressed)];
         _languageItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.AppLanguage") variant:TGLocalized(@"Localization.LanguageName") action:@selector(languagePressed)];
         
         NSMutableArray *settingsItems = [[NSMutableArray alloc] init];
@@ -175,35 +192,52 @@
             });
         }];
         
+        _passportItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.Passport") action:@selector(passportPressed)];
         _watchItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"Settings.AppleWatch") action:@selector(watchPressed)];
+        
+        _otherSection =  [[TGCollectionMenuSection alloc] initWithItems:@[]];
+        _otherSection.insets = UIEdgeInsetsZero;
+        [self.menuSections addSection:_otherSection];
+        
+        SSignal *blockedModeSignal = [[TGDatabaseInstance() customPropertySignal:@"blockedMode"] map:^NSNumber *(NSData *data)
+        {
+            int32_t value = 0;
+            [data getBytes:&value];
+            
+            return @(value);
+        }];
+        
         __weak TGAccountSettingsController *weakSelf = self;
-        _watchAppInstalledDisposable = [[SMetaDisposable alloc] init];
-        [_watchAppInstalledDisposable setDisposable:[[[[TGBridgeServer instanceSignal] mapToSignal:^SSignal *(TGBridgeServer *bridgeServer) {
-            return [bridgeServer watchAppInstalledSignal];
-        }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *next)
+        _proxyListDisposable = [[SMetaDisposable alloc] init];
+        _proxyStatusDisposable = [[SMetaDisposable alloc] init];
+        [_proxyListDisposable setDisposable:[[[SSignal combineSignals:@[[TGProxySignals listSignal], blockedModeSignal] withInitialStates:@[ @[], @false ]] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *next)
         {
             __strong TGAccountSettingsController *strongSelf = weakSelf;
             if (strongSelf == nil)
                 return;
             
+            NSArray *list = next.firstObject;
+            bool alwaysShowProxy = [next.lastObject boolValue];
+            
             [strongSelf.menuSections beginRecordingChanges];
-            if (next.boolValue)
+            if (list.count == 0 && !alwaysShowProxy)
             {
-                if (strongSelf->_watchSection == nil)
-                {
-                    strongSelf->_watchSection = [[TGCollectionMenuSection alloc] initWithItems:@[strongSelf->_watchItem]];
-                    [strongSelf.menuSections insertSection:strongSelf->_watchSection atIndex:3];
-                }
+                NSUInteger sectionIndex = [strongSelf.menuSections.sections indexOfObject:strongSelf->_proxySection];
+                if (sectionIndex != NSNotFound)
+                    [strongSelf.menuSections deleteSection:sectionIndex];
+                
+                [strongSelf->_proxyStatusDisposable setDisposable:nil];
             }
             else
             {
-                if (strongSelf->_watchSection != nil)
+                NSUInteger sectionIndex = [strongSelf.menuSections.sections indexOfObject:strongSelf->_proxySection];
+                if (sectionIndex == NSNotFound)
                 {
-                    [strongSelf.menuSections deleteSection:3];
-                    strongSelf->_watchSection = nil;
+                    [strongSelf.menuSections insertSection:strongSelf->_proxySection atIndex:1];
+                    
+                    [strongSelf setupProxyStatus];
                 }
             }
-
             [strongSelf.menuSections commitRecordedChanges:strongSelf.collectionView];
         }]];
         
@@ -220,7 +254,7 @@
         [self.menuSections addSection:infoSection];
    
 #ifdef INTERNAL_RELEASE
-        TGCollectionMenuSection *debugSection = [[TGCollectionMenuSection alloc] initWithItems:@[[[TGButtonCollectionItem alloc] initWithTitle:@"Debug Settings" action:@selector(mySettingsPressed)]]];
+        //TGCollectionMenuSection *debugSection = [[TGCollectionMenuSection alloc] initWithItems:@[[[TGButtonCollectionItem alloc] initWithTitle:@"Debug Settings" action:@selector(mySettingsPressed)]]];
         //[self.menuSections addSection:debugSection];
 #endif
         
@@ -242,7 +276,8 @@
 - (void)loadView
 {
     [super loadView];
-    
+   
+    _proxyItem.icon = TGImageNamed(@"SettingsProxyIcon.png");
     _savedMessagesItem.icon = TGImageNamed(@"SettingsSavedMessagesIcon.png");
     _notificationsItem.icon = TGImageNamed(@"SettingsNotificationsIcon.png");
     _privacySettingsItem.icon = TGImageNamed(@"SettingsPrivacyIcon.png");
@@ -250,6 +285,7 @@
     _wallpapersItem.icon = TGImageNamed(@"SettingsWallpaperIcon.png");
     _stickerSettingsItem.icon = TGImageNamed(@"SettingsStickersIcon.png");
     _languageItem.icon = TGImageNamed(@"SettingsLanguageIcon.png");
+    _passportItem.icon = TGImageNamed(@"SettingsPassportIcon.png");
     _watchItem.icon = TGImageNamed(@"SettingsWatchIcon.png");
     _supportItem.icon = TGImageNamed(@"SettingsSupportIcon.png");
     _faqItem.icon = TGImageNamed(@"SettingsFaqIcon.png");
@@ -280,6 +316,70 @@
     }];
 
     _updatedFeaturedStickerPacksDisposable = [[[TGStickersSignals updatedFeaturedStickerPacks] startOn:[SQueue concurrentDefaultQueue]] startWithNext:nil];
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    __weak TGAccountSettingsController *weakSelf = self;
+    
+    SSignal *watchAppSignal = [[TGBridgeServer instanceSignal] mapToSignal:^SSignal *(TGBridgeServer *bridgeServer) {
+        return [bridgeServer watchAppInstalledSignal];
+    }];
+    
+    _watchAppInstalledDisposable = [[SMetaDisposable alloc] init];
+    [_watchAppInstalledDisposable setDisposable:[[[SSignal combineSignals:@[[TGPassportSignals hasPassport], watchAppSignal] withInitialStates:@[@false, @false]] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray<NSNumber *> *next)
+    {
+        __strong TGAccountSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        NSUInteger otherSectionIndex = [strongSelf.menuSections.sections indexOfObject:strongSelf->_otherSection];
+        if (otherSectionIndex == NSNotFound)
+            return;
+        
+        bool hasPassport = next.firstObject.boolValue;
+        NSUInteger indexOfPassportItem = [strongSelf.menuSections.sections[otherSectionIndex] indexOfItem:strongSelf->_passportItem];
+        bool hasPassportItem = indexOfPassportItem != NSNotFound;
+        
+        bool hasWatchApp = next.lastObject.boolValue;
+        NSUInteger indexOfWatchItem = [strongSelf.menuSections.sections[otherSectionIndex] indexOfItem:strongSelf->_watchItem];
+        bool hasWatchItem = indexOfWatchItem != NSNotFound;
+        
+        if (hasPassport != hasPassportItem)
+        {
+            [strongSelf.menuSections beginRecordingChanges];
+            if (hasPassport) {
+                [strongSelf.menuSections insertItem:strongSelf->_passportItem toSection:otherSectionIndex atIndex:0];
+            }
+            else {
+                [strongSelf.menuSections deleteItemFromSection:otherSectionIndex atIndex:indexOfPassportItem];
+            }
+            [strongSelf.menuSections commitRecordedChanges:strongSelf.collectionView];
+        }
+        
+        if (hasWatchApp != hasWatchItem)
+        {
+            indexOfWatchItem = [strongSelf.menuSections.sections[otherSectionIndex] indexOfItem:strongSelf->_watchItem];
+            [strongSelf.menuSections beginRecordingChanges];
+            if (hasWatchApp) {
+                [strongSelf.menuSections insertItem:strongSelf->_watchItem toSection:otherSectionIndex atIndex:strongSelf->_otherSection.items.count];
+            }
+            else {
+                [strongSelf.menuSections deleteItemFromSection:otherSectionIndex atIndex:indexOfWatchItem];
+            }
+            [strongSelf.menuSections commitRecordedChanges:strongSelf.collectionView];
+        }
+        
+        UIEdgeInsets targetInsets = hasPassport || hasWatchApp ? UIEdgeInsetsMake(0.0f, 0.0f, 35.0f, 0.0f) : UIEdgeInsetsZero;
+        if (!UIEdgeInsetsEqualToEdgeInsets(strongSelf->_otherSection.insets, targetInsets)) {
+            strongSelf->_otherSection.insets = targetInsets;
+            [UIView animateWithDuration:0.3 animations:^{
+                [strongSelf.collectionView.collectionViewLayout invalidateLayout];
+            }];
+        }
+    }]];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -344,6 +444,39 @@
     [self presentViewController:navigationController animated:true completion:nil];
 }
 
+- (void)setupProxyStatus
+{
+    __weak TGAccountSettingsController *weakSelf = self;
+    [_proxyStatusDisposable setDisposable:[[[TGProxySignals stateSignal] deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *next)
+    {
+        __strong TGAccountSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        TGConnectionState state = (TGConnectionState)next.integerValue;
+        
+        NSString *string = TGLocalized(@"Settings.ProxyDisabled");
+        switch (state) {
+            case TGConnectionStateTimedOut:
+            case TGConnectionStateConnecting:
+            case TGConnectionStateUpdating:
+            case TGConnectionStateWaitingForNetwork:
+                string = TGLocalized(@"Settings.ProxyConnecting");
+                break;
+                
+            case TGConnectionStateNormal:
+                string = TGLocalized(@"Settings.ProxyConnected");
+                break;
+                
+            default:
+                string = TGLocalized(@"Settings.ProxyDisabled");
+                break;
+        }
+        
+        strongSelf->_proxyItem.variant = string;
+    }]];
+}
+
 - (void)setProfilePhotoPressed
 {
     __weak TGAccountSettingsController *weakSelf = self;
@@ -366,7 +499,12 @@
         strongSelf->_avatarMixin = nil;        
     };
     _avatarMixin.requestSearchController = ^TGViewController *(TGMediaAssetsController *assetsController) {
+        __strong TGAccountSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return nil;
+        
         TGWebSearchController *searchController = [[TGWebSearchController alloc] initWithContext:[TGLegacyComponentsContext shared] forAvatarSelection:true embedded:true allowGrouping:false];
+        searchController.presentation = strongSelf.presentation;
         
         __weak TGMediaAssetsController *weakAssetsController = assetsController;
         __weak TGWebSearchController *weakController = searchController;
@@ -390,7 +528,28 @@
         
         return searchController;
     };
+    _avatarMixin.sourceRect = ^CGRect
+    {
+        __strong TGAccountSettingsController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return CGRectZero;
+        
+        return [strongSelf frameForItem:strongSelf->_setProfilePhotoItem];
+    };
     [_avatarMixin present];
+}
+
+- (CGRect)frameForItem:(TGCollectionItem *)item
+{
+    for (TGCollectionItemView *itemView in self.collectionView.visibleCells)
+    {
+        if (![itemView isKindOfClass:[TGCollectionItemView class]])
+            continue;
+        
+        if (itemView.boundItem == item)
+            return [itemView convertRect:itemView.bounds toView:self.view];
+    }
+    return CGRectZero;
 }
 
 - (void)_updateProfileImage:(UIImage *)image
@@ -488,14 +647,18 @@
 
 - (void)updatePhoneCallsEnabled:(bool)enabled
 {
+    NSUInteger shortcutSectionIndex = [self.menuSections.sections indexOfObject:_shortcutSection];
+    if (shortcutSectionIndex == NSNotFound)
+        return;
+    
     if (enabled && _callSettingsItem == nil) {
         _callSettingsItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"CallSettings.RecentCalls") action:@selector(callSettingsPressed)];
         if ([self isViewLoaded])
             _callSettingsItem.icon = TGImageNamed(@"SettingsCallsIcon.png");
-        [self.menuSections insertItem:_callSettingsItem toSection:1 atIndex:1];
+        [self.menuSections insertItem:_callSettingsItem toSection:shortcutSectionIndex atIndex:1];
         [self.collectionView reloadData];
     } else if (!enabled && _callSettingsItem != nil) {
-        [self.menuSections deleteItemFromSection:1 atIndex:1];
+        [self.menuSections deleteItemFromSection:shortcutSectionIndex atIndex:1];
         _callSettingsItem = nil;
         [self.collectionView reloadData];
     }
@@ -575,7 +738,7 @@
 
 - (void)wallpapersPressed
 {
-    [self.navigationController pushViewController:[[TGWallpaperListController alloc] init] animated:true];
+    [self.navigationController pushViewController:[[TGAppearanceController alloc] init] animated:true];
 }
 
 - (void)mySettingsPressed
@@ -585,7 +748,7 @@
 
 - (void)supportPressed
 {
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Settings.FAQ_Intro") cancelButtonTitle:TGLocalized(@"Settings.FAQ_Button") otherButtonTitles:@[TGLocalized(@"Common.OK")] completionBlock:^(bool okButtonPressed)
+    TGCustomAlertView *alertView = [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Settings.FAQ_Intro") cancelButtonTitle:TGLocalized(@"Settings.FAQ_Button") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
     {
         if (okButtonPressed)
         {
@@ -598,30 +761,23 @@
                 [ActionStageInstance() requestActor:@"/tg/support/preferredPeer" options:nil flags:0 watcher:self];
             }
             /*else
-            {
-                int32_t uid = 0;
-                [data getBytes:&uid];
-                [[TGInterfaceManager instance] navigateToConversationWithId:uid conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:true animated:true];
-            }*/
+             {
+             int32_t uid = 0;
+             [data getBytes:&uid];
+             [[TGInterfaceManager instance] navigateToConversationWithId:uid conversation:nil performActions:nil atMessage:nil clearStack:true openKeyboard:true animated:true];
+             }*/
         }
         else
         {
             [self faqPressed];
         }
-    }] show];
+    }];
+    alertView.noActionOnDimTap = true;
 }
 
 - (void)faqPressed
 {
-    [TGAppDelegateInstance handleOpenInstantView:TGLocalized(@"Settings.FAQ_URL")];
-}
-
-#pragma mark -
-
-- (void)wallpaperController:(TGWallpaperController *)wallpaperController didSelectWallpaperWithInfo:(TGWallpaperInfo *)wallpaperInfo
-{
-    [[TGWallpaperManager instance] setCurrentWallpaperWithInfo:wallpaperInfo];
-    [wallpaperController.presentingViewController dismissViewControllerAnimated:true completion:nil];
+    [TGAppDelegateInstance handleOpenInstantView:TGLocalized(@"Settings.FAQ_URL") disableActions:false];
 }
 
 #pragma mark -
@@ -699,8 +855,7 @@
             {
                 [_profileDataItem setUpdatingAvatar:nil hasUpdatingAvatar:false];
                 
-                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                [alertView show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         });
     }
@@ -728,7 +883,7 @@
         
         if ([_profileDataItem hasUpdatingAvatar])
         {
-            TGActionSheet *actionSheet = [[TGActionSheet alloc] initWithTitle:nil actions:@[
+            TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:nil actions:@[
                 [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"GroupInfo.SetGroupPhotoStop") action:@"stop" type:TGActionSheetActionTypeDestructive],
                 [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel],
             ] actionBlock:^(id target, NSString *action)
@@ -847,9 +1002,28 @@
 //    }
 }
 
+- (void)passportPressed
+{
+    if (!TGIsPad())
+    {
+        //[[UIApplication sharedApplication] setStatusBarOrientation:UIInterfaceOrientationPortrait];
+        [[UIDevice currentDevice] setValue:@(UIInterfaceOrientationPortrait) forKey:@"orientation"];
+        [UINavigationController attemptRotationToDeviceOrientation];
+    }
+    
+    TGPassportRequestController *controller = [[TGPassportRequestController alloc] initWithFormRequest:nil];
+    [self.navigationController pushViewController:controller animated:true];
+}
+
 - (void)watchPressed
 {
     TGWatchController *controller = [[TGWatchController alloc] init];
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (void)proxyPressed
+{
+    TGProxySetupController *controller = [[TGProxySetupController alloc] init];
     [self.navigationController pushViewController:controller animated:true];
 }
 
@@ -867,7 +1041,8 @@
     _stickerSettingsItem.title = TGLocalized(@"ChatSettings.Stickers");
     
     _setProfilePhotoItem.title = TGLocalized(@"Settings.SetProfilePhoto");
-    _wallpapersItem.title = TGLocalized(@"Settings.ChatBackground");
+    _setUsernameItem.title = TGLocalized(@"Settings.SetUsername");
+    _wallpapersItem.title = TGLocalized(@"Settings.Appearance");
     _supportItem.title = TGLocalized(@"Settings.Support");
     _callSettingsItem.title = TGLocalized(@"CallSettings.RecentCalls");
     
@@ -876,11 +1051,21 @@
     _languageItem.title = TGLocalized(@"Settings.AppLanguage");
     _languageItem.variant = TGLocalized(@"Localization.LanguageName");
     
+    _proxyItem.title = TGLocalized(@"Settings.Proxy");
+    _passportItem.title = TGLocalized(@"Settings.Passport");
+    _watchItem.title = TGLocalized(@"Settings.AppleWatch");
+    
+    NSUInteger sectionIndex = [self.menuSections.sections indexOfObject:_proxySection];
+    if (sectionIndex != NSNotFound)
+        [self setupProxyStatus];
+    
     [_profileDataItem localizationUpdated];
 }
     
 - (void)languagePressed {
-    [self.navigationController pushViewController:[[TGLocalizationSelectionController alloc] init] animated:true];
+    TGLocalizationSelectionController *controller = [[TGLocalizationSelectionController alloc] init];
+    controller.presentation = self.presentation;
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 - (void)scrollToTopRequested

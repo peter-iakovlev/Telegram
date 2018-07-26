@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGPasswordPlaceholderItemView ()
 {
     UIImageView *_iconView;
@@ -41,6 +43,14 @@
         [self addSubview:_textLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuCommentColor;
+    _textLabel.textColor = presentation.pallete.collectionMenuCommentColor;
 }
 
 - (void)setIcon:(UIImage *)icon title:(NSString *)title text:(NSString *)text

@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 #import "TGDatabase.h"
 #import "TGTelegramNetworking.h"
 #import "TGAppDelegate.h"
@@ -12,30 +14,32 @@
 #import "TGButtonCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
 #import "TGCommentCollectionItem.h"
+#import "TGProxyCollectionItem.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGDatabase.h"
+#import "TGProxySignals.h"
+#import "TGProxyItem.h"
 
-#import <MTProtoKit/MtProtoKit.h>
+#import "TGProxyDetailsController.h"
+
+#import <MTProtoKit/MTProtoKit.h>
 
 @interface TGProxySetupController () <ASWatcher> {
-    TGCheckCollectionItem *_typeNone;
-    TGCheckCollectionItem *_typeSocks;
+    UIBarButtonItem *_cancelItem;
+    UIBarButtonItem *_editItem;
+    UIBarButtonItem *_doneItem;
     
-    TGUsernameCollectionItem *_addressItem;
-    TGUsernameCollectionItem *_portItem;
-    TGUsernameCollectionItem *_usernameItem;
-    TGUsernameCollectionItem *_passwordItem;
-    
-    TGCollectionMenuSection *_connectionSection;
-    TGCollectionMenuSection *_authSection;
-    
+    TGSwitchCollectionItem *_socksItem;
+    TGCollectionMenuSection *_listSection;
     TGSwitchCollectionItem *_callsItem;
     TGCollectionMenuSection *_callsSection;
     
     TGButtonCollectionItem *_shareItem;
-    TGCollectionMenuSection *_shareSection;
+    
+    NSArray *_proxies;
+    TGProxyItem *_selectedProxy;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -44,140 +48,75 @@
 
 @implementation TGProxySetupController
 
-- (instancetype)initWithCurrentSettings {
+- (instancetype)init
+{
+    return [self initModal:false];
+}
+
+- (instancetype)initModal:(bool)modal {
     self = [super init];
     if (self != nil) {
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
         self.title = TGLocalized(@"SocksProxySetup.Title");
         
-        MTSocksProxySettings *settings = nil;
+        if (modal)
+        {
+            _cancelItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)];
+            [self setLeftBarButtonItem:_cancelItem];
+        }
+        
+        _editItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Edit") style:UIBarButtonItemStylePlain target:self action:@selector(editPressed)];
+        _doneItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)];
+        
         bool inactive = false;
-        NSData *socksProxyData = [TGDatabaseInstance() customProperty:@"socksProxyData"];
-        if (socksProxyData != nil) {
-            NSDictionary *socksProxyDict = [NSKeyedUnarchiver unarchiveObjectWithData:socksProxyData];
-            if (socksProxyDict[@"ip"] != nil && socksProxyDict[@"port"] != nil) {
-                settings = [[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"]];
-                inactive = [socksProxyDict[@"inactive"] boolValue];
+        _proxies = [TGProxySignals loadStoredProxies];
+        _selectedProxy = [TGProxySignals currentProxy:&inactive];
+    
+        if (_selectedProxy == nil) {
+            inactive = true;
+            
+            if (_proxies.count > 0)
+                _selectedProxy = _proxies.firstObject;
+        } else {
+            for (TGProxyItem *proxy in _proxies)
+            {
+                if ([proxy isEqual:_selectedProxy])
+                {
+                    _selectedProxy = proxy;
+                    break;
+                }
             }
         }
-        if (settings == nil) {
-            inactive = true;
-        }
         
-        [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
-        [self setRightBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)]];
+        _socksItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.UseProxy") isOn:!inactive];
+        _socksItem.interfaceHandle = self.actionHandle;
         
-        self.navigationItem.rightBarButtonItem.enabled = false;
-        
-        CGFloat minimalInset = 100.0f;
-        
-        __weak TGProxySetupController *weakSelf = self;
-        
-        _typeNone = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.TypeNone") action:@selector(typeNonePressed)];
-        _typeSocks = [[TGCheckCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.TypeSocks") action:@selector(typeSocksPressed)];
-        
-        _typeNone.isChecked = inactive;
-        _typeSocks.isChecked = !inactive;
-        
-        TGCollectionMenuSection *typeSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            _typeNone,
-            _typeSocks
+        TGCollectionMenuSection *typeSection = [[TGCollectionMenuSection alloc] initWithItems:@
+        [
+         _socksItem
         ]];
         [self.menuSections addSection:typeSection];
         
-        void (^checkFields)(NSString *) = ^(NSString *__unused value) {
-            __strong TGProxySetupController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                [strongSelf checkInputValues];
-            }
-        };
+        TGHeaderCollectionItem *headerItem = [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.SavedProxies")];
+        TGButtonCollectionItem *addItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.AddProxy") action:@selector(addPressed)];
+        addItem.icon = self.presentation.images.collectionMenuAddImage;
+        addItem.iconOffset = CGPointMake(0.0f, 0.0f);
+        addItem.leftInset = 50.0f;
+        _listSection = [[TGCollectionMenuSection alloc] initWithItems:@[headerItem, addItem]];
+        [self.menuSections addSection:_listSection];
         
-        void (^focusOnNextItem)(TGUsernameCollectionItem *) = ^(TGUsernameCollectionItem *currentItem) {
-            __strong TGProxySetupController *strongSelf = weakSelf;
-            if (strongSelf != nil) {
-                [strongSelf focusOnNextItem:currentItem];
-            }
-        };
-        
-        _addressItem = [[TGUsernameCollectionItem alloc] init];
-        _addressItem.title = TGLocalized(@"SocksProxySetup.Hostname");
-        if (settings.ip != nil) {
-            _addressItem.username = settings.ip;
-        } else {
-            _addressItem.username = @"";
-        }
-        _addressItem.placeholder = @"";
-        _addressItem.minimalInset = minimalInset;
-        _addressItem.usernameChanged = checkFields;
-        _addressItem.usernameValid = true;
-        _addressItem.returnPressed = focusOnNextItem;
-        
-        _portItem = [[TGUsernameCollectionItem alloc] init];
-        _portItem.title = TGLocalized(@"SocksProxySetup.Port");
-        if (settings.port != 0) {
-            _portItem.username = [NSString stringWithFormat:@"%d", (int)settings.port];
-        } else {
-            _portItem.username = @"";
-        }
-        _portItem.placeholder = @"";
-        _portItem.minimalInset = minimalInset;
-        _portItem.usernameChanged = checkFields;
-        _portItem.usernameValid = true;
-        _portItem.returnPressed = focusOnNextItem;
-        _portItem.keyboardType = UIKeyboardTypeNumberPad;
-        
-        _connectionSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.Connection")],
-            _addressItem,
-            _portItem
-        ]];
-        
-        _usernameItem = [[TGUsernameCollectionItem alloc] init];
-        _usernameItem.title = TGLocalized(@"SocksProxySetup.Username");
-        if (settings.username != nil) {
-            _usernameItem.username = settings.username;
-        } else {
-            _usernameItem.username = @"";
-        }
-        _usernameItem.placeholder = @"";
-        _usernameItem.minimalInset = minimalInset;
-        _usernameItem.usernameChanged = checkFields;
-        _usernameItem.usernameValid = true;
-        _usernameItem.returnPressed = focusOnNextItem;
-        
-        _passwordItem = [[TGUsernameCollectionItem alloc] init];
-        _passwordItem.title = TGLocalized(@"SocksProxySetup.Password");
-        _passwordItem.secureEntry = true;
-        if (settings.password != nil) {
-            _passwordItem.username = settings.password;
-        } else {
-            _passwordItem.username = @"";
-        }
-        _passwordItem.placeholder = @"";
-        _passwordItem.minimalInset = minimalInset;
-        _passwordItem.usernameChanged = checkFields;
-        _passwordItem.usernameValid = true;
-        _passwordItem.returnPressed = focusOnNextItem;
-        
-        _authSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.Credentials")],
-            _usernameItem,
-            _passwordItem
-        ]];
-        
-        _shareItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Conversation.ContextMenuShare") action:@selector(sharePressed)];
+        _shareItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.ShareProxyList") action:@selector(sharePressed)];
         _shareItem.deselectAutomatically = true;
-        _shareSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-            _shareItem
-        ]];
         
-        _callsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.UseForCalls") isOn:TGAppDelegateInstance.callsUseProxy];
+        _callsItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"SocksProxySetup.UseForCalls") isOn:!_selectedProxy.isMTProxy && TGAppDelegateInstance.callsUseProxy];
+        _callsItem.isEnabled = !_selectedProxy.isMTProxy;
         _callsItem.interfaceHandle = _actionHandle;
         _callsSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             _callsItem,
             [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"SocksProxySetup.UseForCallsHelp")]]
         ];
+        [self.menuSections addSection:_callsSection];
         
         if (self.menuSections.sections.count != 0) {
             UIEdgeInsets topSectionInsets = ((TGCollectionMenuSection *)self.menuSections.sections[0]).insets;
@@ -185,8 +124,7 @@
             ((TGCollectionMenuSection *)self.menuSections.sections[0]).insets = topSectionInsets;
         }
         
-        [self resetSections];
-        [self checkInputValues];
+        [self updateProxies];
     }
     return self;
 }
@@ -200,6 +138,70 @@
     }
 }
 
+- (void)editPressed
+{
+    self.enableItemReorderingGestures = true;
+    
+    [self enterEditingMode:true];
+}
+
+- (void)donePressed
+{
+    self.enableItemReorderingGestures = false;
+    
+    if ([self isOrderChanged]) {
+        _proxies = [self currentProxies];
+        [TGProxySignals storeProxies:_proxies];
+    }
+    
+    [self leaveEditingMode:true];
+}
+
+- (void)didEnterEditingMode:(bool)animated
+{
+    [super didEnterEditingMode:animated];
+    
+    if (_cancelItem != nil)
+        [self setLeftBarButtonItem:nil];
+    [self setRightBarButtonItem:_doneItem];
+}
+
+- (void)didLeaveEditingMode:(bool)animated
+{
+    [super didLeaveEditingMode:animated];
+    
+    if (_cancelItem != nil)
+        [self setLeftBarButtonItem:_cancelItem];
+    [self setRightBarButtonItem:_editItem];
+}
+
+- (NSArray *)currentProxies {
+    NSMutableArray *currentProxies = [[NSMutableArray alloc] init];
+    
+    for (id item in _listSection.items) {
+        if ([item isKindOfClass:[TGProxyCollectionItem class]]) {
+            [currentProxies addObject:((TGProxyCollectionItem *)item).proxy];
+        }
+    }
+    
+    return currentProxies;
+}
+
+- (bool)isOrderChanged {
+    NSArray *currentProxies = [self currentProxies];
+    
+    bool orderChanged = false;
+    if (_proxies.count == currentProxies.count) {
+        for (NSInteger i = 0; i < (NSInteger)currentProxies.count; i++) {
+            if (!TGObjectCompare(((TGProxyItem *)currentProxies[i]), ((TGProxyItem *)_proxies[i]))) {
+                orderChanged = true;
+                break;
+            }
+        }
+    }
+    
+    return orderChanged;
+}
 
 - (void)actionStageActionRequested:(NSString *)action options:(id)options
 {
@@ -212,6 +214,32 @@
             TGAppDelegateInstance.callsUseProxy = switchItem.isOn;
             [TGAppDelegateInstance saveSettings];
         }
+        else if (switchItem == _socksItem)
+        {
+            if (_proxies.count == 0)
+            {
+                [_socksItem setIsOn:false animated:true];
+                [self addPressed];
+            }
+            else
+            {
+                if (_selectedProxy != nil)
+                {
+                    MTSocksProxySettings *settings = [self applyProxy:_selectedProxy inactive:!switchItem.isOn];;
+                    if (self.completion != nil)
+                        self.completion(settings, !switchItem.isOn);
+                }
+                else if (switchItem.isOn && _proxies.count > 0)
+                {
+                    _selectedProxy = _proxies.firstObject;
+                    MTSocksProxySettings *settings = [self applyProxy:_selectedProxy inactive:!switchItem.isOn];
+                    if (self.completion != nil)
+                        self.completion(settings, !switchItem.isOn);
+                }
+                
+                [self updateEditItem];
+            }
+        }
     }
 }
 
@@ -219,95 +247,290 @@
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
-- (void)donePressed {
-    if (_completion) {
-        _completion([[MTSocksProxySettings alloc] initWithIp:_addressItem.username port:(uint16_t)[_portItem.username intValue] username:_usernameItem.username password:_passwordItem.username], _typeNone.isChecked);
-    }
-    [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
+- (void)updateEditItem
+{
+    [self setRightBarButtonItem:_proxies.count > 0 ? _editItem : nil];
 }
 
-- (void)checkInputValues {
-    bool ready = _addressItem.username.length != 0 && _portItem.username.length != 0;
-    if (_typeNone.isChecked) {
-        ready = true;
-    }
-    self.navigationItem.rightBarButtonItem.enabled = ready;
-    _shareItem.enabled = ready;
+- (SSignal *)connectionSignal
+{
+    return [[SSignal single:@(TGConnectionStateConnecting)] then:[[[SSignal complete] delay:0.1 onQueue:[SQueue mainQueue]] then:[TGProxySignals connectionStatus]]];
 }
 
-- (void)focusOnNextItem:(TGCollectionItem *)currentItem {
-    bool foundCurrent = false;
-    for (TGCollectionMenuSection *section in self.menuSections.sections) {
-        for (TGCollectionItem *item in section.items) {
-            if (item == currentItem) {
-                foundCurrent = true;
-            } else if (foundCurrent) {
-                if ([item isKindOfClass:[TGUsernameCollectionItem class]]) {
-                    [(TGUsernameCollectionItem *)item becomeFirstResponder];
-                    
-                    NSIndexPath *indexPath = [self indexPathForItem:item];
-                    if (indexPath != nil) {
-                        [self.collectionView scrollToItemAtIndexPath:indexPath atScrollPosition:UICollectionViewScrollPositionCenteredVertically animated:true];
-                        [self.collectionView layoutSubviews];
-                        if ([item isKindOfClass:[TGUsernameCollectionItem class]]) {
-                            [((TGUsernameCollectionItem *)item) becomeFirstResponder];
-                        }
-                    }
-                    
-                    return;
-                }
+- (void)updateProxies
+{
+    while (_listSection.items.count != 2)
+    {
+        [_listSection deleteItemAtIndex:2];
+    }
+    
+    for (TGProxyItem *proxy in _proxies)
+    {
+        TGProxyCollectionItem *item = [self createItemForProxy:proxy];
+        if (item.selected && _socksItem.isOn)
+            [item setStatusSignal:[self connectionSignal]];
+        else
+            [item setStatusSignal:[SSignal single:@(TGConnectionStateNotConnected)]];
+        [_listSection addItem:item];
+    }
+    
+    if (_proxies.count > 0)
+        [_listSection addItem:_shareItem];
+    
+    [self.collectionView reloadData];
+    [self updateEditItem];
+}
+
+- (TGProxyCollectionItem *)createItemForProxy:(TGProxyItem *)proxy
+{
+    __weak TGProxySetupController *weakSelf = self;
+    TGProxyCollectionItem *item = [[TGProxyCollectionItem alloc] initWithProxy:proxy removeRequested:^{
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf removeProxy:proxy];
+    }];
+    __weak TGProxyCollectionItem *weakItem = item;
+    item.deselectAutomatically = true;
+    item.selected = [proxy isEqual:_selectedProxy];
+    item.pressed = ^
+    {
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        __strong TGProxyCollectionItem *strongItem = weakItem;
+        if (strongSelf != nil && strongItem != nil)
+        {
+            if (![strongSelf->_selectedProxy isEqual:strongItem.proxy] || !strongSelf->_socksItem.isOn)
+            {
+                [strongSelf applyProxy:strongItem.proxy inactive:false];
+                strongSelf->_socksItem.isOn = true;
             }
         }
-    }
-    
-    [self.view endEditing:true];
+    };
+    item.infoPressed = ^
+    {
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        __strong TGProxyCollectionItem *strongItem = weakItem;
+        if (strongSelf != nil && strongItem != nil)
+            [strongSelf viewProxy:strongItem.proxy];
+    };
+    item.canBeMovedToSectionAtIndex = ^bool (NSUInteger sectionIndex, NSUInteger index)
+    {
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            TGCollectionMenuSection *section = strongSelf.menuSections.sections[sectionIndex];
+            return section == strongSelf->_listSection && index > 1 && index < section.items.count;
+        }
+        return false;
+    };
+    [item setAvailabilitySignal:[TGProxySignals availabiltyForProxy:proxy withContext:[[TGTelegramNetworking instance] context] datacenterId:[[TGTelegramNetworking instance] masterDatacenterId]]];
+    return item;
 }
 
-- (void)resetSections {
-    while (self.menuSections.sections.count != 1) {
-        [self.menuSections deleteSection:1];
+- (void)addPressed
+{
+    [self donePressed];
+    
+    __weak TGProxySetupController *weakSelf = self;
+    TGProxyDetailsController *controller = [[TGProxyDetailsController alloc] initWithProxy:nil];
+    controller.completionBlock = ^(TGProxyItem *proxy)
+    {
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            NSArray<TGProxyItem *> *proxies = [strongSelf->_proxies mutableCopy];
+            bool addShareItem = proxies.count == 0;
+            
+            NSUInteger existingIndex = [proxies indexOfObject:proxy];
+            if (existingIndex != NSNotFound)
+                [(NSMutableArray *)proxies removeObject:proxy];
+            
+            strongSelf->_proxies = [@[proxy] arrayByAddingObjectsFromArray:proxies];
+            [TGProxySignals storeProxies:strongSelf->_proxies];
+            
+            NSUInteger listSectionIndex = [strongSelf.menuSections.sections indexOfObject:strongSelf->_listSection];
+            [strongSelf.menuSections beginRecordingChanges];
+            TGProxyCollectionItem *item = [strongSelf createItemForProxy:proxy];
+            if (existingIndex != NSNotFound)
+                [strongSelf.menuSections deleteItemFromSection:listSectionIndex atIndex:existingIndex + 2];
+            [strongSelf.menuSections insertItem:item toSection:listSectionIndex atIndex:2];
+            
+            if (addShareItem)
+                [strongSelf.menuSections addItemToSection:listSectionIndex item:strongSelf->_shareItem];
+            
+            [strongSelf.menuSections commitRecordedChanges:strongSelf.collectionView];
+
+            [strongSelf applyProxy:proxy inactive:false];
+            
+            [strongSelf updateEditItem];
+            
+            strongSelf->_socksItem.isOn = true;
+        }
+    };
+    
+    TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:controller];
+    [self.navigationController presentViewController:navigationController animated:true completion:nil];
+}
+
+- (MTSocksProxySettings *)applyProxy:(TGProxyItem *)proxy inactive:(bool)inactive
+{
+    _selectedProxy = proxy;
+    _callsItem.isEnabled = !_selectedProxy.isMTProxy;
+    _callsItem.isOn = _callsItem.isEnabled && TGAppDelegateInstance.callsUseProxy;
+    
+    MTSocksProxySettings *settings = [TGProxySignals applyProxy:proxy inactive:proxy == nil || inactive];
+    if (self.completion != nil)
+        self.completion(settings, proxy == nil);
+    
+    for (TGProxyCollectionItem *item in _listSection.items)
+    {
+        if (![item isKindOfClass:[TGProxyCollectionItem class]])
+            continue;
+        
+        item.selected = [item.proxy isEqual:proxy];
+            
+        if (item.selected && !inactive)
+            [item setStatusSignal:[self connectionSignal]];
+        else
+            [item setStatusSignal:[SSignal single:@(TGConnectionStateNotConnected)]];
     }
+    return settings;
+}
+
+- (void)viewProxy:(TGProxyItem *)proxy
+{
+    __weak TGProxySetupController *weakSelf = self;
+    TGProxyDetailsController *controller = [[TGProxyDetailsController alloc] initWithProxy:proxy];
+    controller.completionBlock = ^(TGProxyItem *newProxy)
+    {
+        __strong TGProxySetupController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf updateProxy:proxy withProxy:newProxy];
+    };
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (void)updateProxy:(TGProxyItem *)proxy withProxy:(TGProxyItem *)newProxy
+{
+    [_listSection.items enumerateObjectsUsingBlock:^(TGProxyCollectionItem *item, __unused NSUInteger index, BOOL * _Nonnull stop)
+    {
+        if (![item isKindOfClass:[TGProxyCollectionItem class]])
+            return;
+        
+        if ([item.proxy isEqual:proxy])
+        {
+            item.proxy = newProxy;
+            [item setAvailabilitySignal:[TGProxySignals availabiltyForProxy:newProxy withContext:[[TGTelegramNetworking instance] context] datacenterId:[[TGTelegramNetworking instance] masterDatacenterId]]];
+            *stop = true;
+        }
+    }];
     
-    if (_typeNone.isChecked) {
-    } else if (_typeSocks.isChecked) {
-        [self.menuSections addSection:_connectionSection];
-        [self.menuSections addSection:_authSection];
-        [self.menuSections addSection:_callsSection];
-        [self.menuSections addSection:_shareSection];
-    } 
+    NSMutableArray *newProxies = [_proxies mutableCopy];
+    NSUInteger proxyIndex = [newProxies indexOfObject:proxy];
+    if (proxyIndex == NSNotFound)
+        return;
     
-    if (self.isViewLoaded) {
-        [self.collectionView reloadData];
+    [newProxies replaceObjectAtIndex:proxyIndex withObject:newProxy];
+    _proxies = newProxies;
+    [TGProxySignals storeProxies:newProxies];
+    
+    if ([_selectedProxy isEqual:proxy])
+    {
+        _socksItem.isOn = true;
+        [self applyProxy:newProxy inactive:false];
     }
 }
 
-- (void)typeNonePressed {
-    if (!_typeNone.isChecked) {
-        _typeNone.isChecked = true;
-        _typeSocks.isChecked = false;
-        [self resetSections];
-        [self checkInputValues];
+- (void)removeProxy:(TGProxyItem *)proxy
+{
+    __block NSUInteger indexToRemove = NSNotFound;
+    [_listSection.items enumerateObjectsUsingBlock:^(TGProxyCollectionItem *item, NSUInteger index, BOOL * _Nonnull stop)
+    {
+        if (![item isKindOfClass:[TGProxyCollectionItem class]])
+            return;
+        
+        if ([item.proxy isEqual:proxy])
+        {
+            indexToRemove = index;
+            *stop = true;
+        }
+    }];
+    
+    NSMutableArray *newProxies = [_proxies mutableCopy];
+    [newProxies removeObject:proxy];
+    _proxies = newProxies;
+    [TGProxySignals storeProxies:newProxies];
+    
+    bool removeShareItem = false;
+    if (_proxies.count == 0)
+    {
+        _socksItem.isOn = false;
+        removeShareItem = true;
+    }
+    
+    if ([proxy isEqual:_selectedProxy])
+        [self applyProxy:newProxies.firstObject inactive:false];
+    
+    if (indexToRemove == NSNotFound)
+        return;
+    
+    NSUInteger listSectionIndex = [self.menuSections.sections indexOfObject:_listSection];
+    [self.menuSections beginRecordingChanges];
+    
+    if (removeShareItem)
+    {
+        TGCollectionMenuSection *listSection = self.menuSections.sections[listSectionIndex];
+        NSUInteger shareItemIndex = [listSection.items indexOfObject:_shareItem];
+        if (shareItemIndex != NSNotFound)
+            [self.menuSections deleteItemFromSection:listSectionIndex atIndex:shareItemIndex];
+    }
+    
+    [self.menuSections deleteItemFromSection:listSectionIndex atIndex:indexToRemove];
+    [self.menuSections commitRecordedChanges:self.collectionView];
+}
+
+- (void)sharePressed
+{
+    NSMutableString *proxiesString = [[NSMutableString alloc] init];
+    
+    NSMutableString *proxyString = [[NSMutableString alloc] init];
+    for (TGProxyItem *proxy in _proxies)
+    {
+        if (proxiesString.length > 0)
+            [proxiesString appendString:@"\n\n"];
+        
+        if (!proxy.isMTProxy)
+        {
+            proxyString = [[NSMutableString alloc] initWithFormat:@"https://t.me/socks?server=%@&port=%d", [TGStringUtils stringByEscapingForActorURL:proxy.server], proxy.port];
+            if (proxy.username.length != 0) {
+                [proxyString appendFormat:@"&user=%@&pass=%@", [TGStringUtils stringByEscapingForURL:proxy.username],[TGStringUtils stringByEscapingForURL:proxy.password]];
+            }
+        }
+        else
+        {
+            proxyString = [[NSMutableString alloc] initWithFormat:@"https://t.me/proxy?server=%@&port=%d", [TGStringUtils stringByEscapingForActorURL:proxy.server], proxy.port];
+            [proxyString appendFormat:@"&secret=%@", [TGStringUtils stringByEscapingForURL:proxy.secret]];
+        }
+        
+        [proxiesString appendString:proxyString];
+        [proxyString deleteCharactersInRange:NSMakeRange(0, proxyString.length)];
+    }
+
+    UIActivityViewController *activityViewController = [[UIActivityViewController alloc] initWithActivityItems:@[proxiesString] applicationActivities:nil];
+    [self presentViewController:activityViewController animated:true completion:nil];
+    if (iosMajorVersion() >= 8 && [UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPad)
+    {
+        UIView *sourceView = [_shareItem boundView];
+        activityViewController.popoverPresentationController.sourceView = sourceView;
+        activityViewController.popoverPresentationController.sourceRect = sourceView.bounds;
     }
 }
 
-- (void)typeSocksPressed {
-    if (!_typeSocks.isChecked) {
-        _typeSocks.isChecked = true;
-        _typeNone.isChecked = false;
-        [self resetSections];
-        [self checkInputValues];
-    }
-}
-
-- (void)sharePressed {
-    NSMutableString *result = [[NSMutableString alloc] initWithFormat:@"tg://socks?server=%@&port=%@", [TGStringUtils stringByEscapingForURL:_addressItem.username], [TGStringUtils stringByEscapingForURL:_portItem.username]];
-    if (_usernameItem.username.length != 0) {
-        [result appendFormat:@"&user=%@&pass=%@", [TGStringUtils stringByEscapingForURL:_usernameItem.username], [TGStringUtils stringByEscapingForURL:_passwordItem.username]];
-    }
+- (BOOL)prefersStatusBarHidden
+{
+    if (!TGIsPad() && iosMajorVersion() >= 11 && UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
+        return true;
     
-    [[UIPasteboard generalPasteboard] setString:result];
-    
-    [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+    return [super prefersStatusBarHidden];
 }
 
 @end

@@ -14,5 +14,10 @@
 @property (nonatomic, readonly) NSInteger selectedCount;
 
 - (instancetype)initWithSelectionContext:(TGMediaSelectionContext *)selectionContext;
+- (instancetype)initWithSelectionContext:(TGMediaSelectionContext *)selectionContext items:(NSArray *)items;
+
+- (void)addSelectedItem:(id<TGMediaSelectableItem>)selectedItem;
+- (void)removeSelectedItem:(id<TGMediaSelectableItem>)selectedItem;
+- (void)clear;
 
 @end

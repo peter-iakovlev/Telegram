@@ -1,29 +1,38 @@
 #import "TGShareContactSignals.h"
 
-#import "ApiLayer73.h"
+#import "ApiLayer82.h"
 #import "TGUploadedMessageContentMedia.h"
+#import "TGShareContactController.h"
+#import "TGVCard.h"
 
 @implementation TGShareContactSignals
 
-+ (SSignal *)contactMessageContentForContact:(TGContactModel *)contact parentController:(UIViewController *)parentController
++ (SSignal *)contactMessageContentForContact:(TGContactModel *)contact parentController:(UIViewController *)parentController context:(TGShareContext *)context
 {
-    SSignal *(^contentSignal)(TGPhoneNumberModel *) = ^SSignal *(TGPhoneNumberModel *phone)
+    TGUploadedMessageContentMedia *(^content)(TGContactModel *) = ^TGUploadedMessageContentMedia *(TGContactModel *contact)
     {
-        Api73_InputMedia_inputMediaContact *inputContact = [Api73_InputMedia inputMediaContactWithPhoneNumber:phone.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName];
+        TGPhoneNumberModel *phoneNumber = contact.phoneNumbers.firstObject;
+        Api82_InputMedia_inputMediaContact *inputContact = [Api82_InputMedia inputMediaContactWithPhoneNumber:phoneNumber.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName vcard:contact.vcard.vcardString];
         
-        return [SSignal single:[[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputContact]];
+        return [[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputContact];
     };
     
-    if (contact.phoneNumbers.count == 1)
-    {
-        return contentSignal(contact.phoneNumbers.firstObject);
-    }
-    else
-    {
-        return [[[self selectPhoneNumberSignal:contact parentController:parentController] startOn:[SQueue mainQueue]] mapToSignal:^SSignal *(TGPhoneNumberModel *phone)
+    if (contact.vcard.isPrimitive) {
+        return [SSignal single:content(contact)];
+    } else {
+        return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
         {
-            return contentSignal(phone);
-        }];
+            TGShareContactController *controller = [[TGShareContactController alloc] initWithContext:context vCard:contact.vcard uid:0];
+            controller.completionBlock = ^(TGContactModel *contact)
+            {
+                [subscriber putNext:content(contact)];
+                [subscriber putCompletion];
+            };
+            UINavigationController *navController = [parentController isKindOfClass:[UINavigationController class]] ? (UINavigationController *)parentController : parentController.navigationController;
+            [navController pushViewController:controller animated:true];
+            
+            return nil;
+        }] startOn:[SQueue mainQueue]];
     }
 }
 

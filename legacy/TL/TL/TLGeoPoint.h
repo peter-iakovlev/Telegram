@@ -19,6 +19,7 @@
 
 @property (nonatomic) double n_long;
 @property (nonatomic) double lat;
+@property (nonatomic) int64_t access_hash;
 
 @end
 

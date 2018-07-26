@@ -13,7 +13,9 @@
 - (void)setLabel:(NSString *)label;
 - (void)setPhone:(NSString *)phone;
 - (void)setPhoneColor:(UIColor *)phoneColor;
-
 - (void)setLastInList:(bool)lastInList;
+
+- (void)setChecking:(bool)checking;
+- (void)setIsChecked:(bool)checked animated:(bool)animated;
 
 @end

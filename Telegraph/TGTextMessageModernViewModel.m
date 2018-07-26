@@ -24,6 +24,8 @@
 
 #import "TGWebpageFooterModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGTextMessageModernViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGModernTextViewModel *_textModel;
@@ -38,7 +40,6 @@
     bool _centerText;
     bool _isGame;
     bool _isInvoice;
-    int32_t _authorPeerId;
 }
 
 @end
@@ -126,27 +127,16 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
     self = [super initWithMessage:message authorPeer:authorPeer viaUser:viaUser context:context];
     if (self != nil)
     {
-        static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-                      {
-                          assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
-                      });
         _authorPeerId = message.fromUid;
         _isGame = hasGame;
         _isInvoice = hasInvoice;
-        _authorPeerId = message.fromUid;
         NSArray *textCheckingResults = nil;
         if (hasGame) {
             _text = @"";
             textCheckingResults = nil;
         } else {
             textCheckingResults = message.textCheckingResults;
-            NSArray *updatedTextCheckingResults = nil;
-            _text = expandedTextAndAttributes(message.text, textCheckingResults, &updatedTextCheckingResults);
-            if (updatedTextCheckingResults != nil) {
-                textCheckingResults = updatedTextCheckingResults;
-            }
+            _text = message.text;
         }
         
         CTFontRef font = textFontForSize(TGGetMessageViewModelLayoutConstants()->textFontSize);
@@ -159,8 +149,10 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
          }*/
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:_text font:font];
+        _textModel.underlineAllLinks = _incomingAppearance ? _context.presentation.pallete.underlineAllIncomingLinks : _context.presentation.pallete.underlineAllOutgoingLinks;
         _textModel.textCheckingResults = _isGame ? nil : textCheckingResults;
-        _textModel.textColor = [assetsSource messageTextColor];
+        _textModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingTextColor : _context.presentation.pallete.chatOutgoingTextColor;
+        _textModel.linkColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingLinkColor : _context.presentation.pallete.chatOutgoingLinkColor;
         if (message.isBroadcast)
             _textModel.additionalTrailingWidth += 10.0f;
         [_contentModel addSubmodel:_textModel];
@@ -254,17 +246,19 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                 }
                 webpageIsVideo = isVideo && !isAnimation;
             }
-            
-            bool isTwitter = [_webPage.siteName.lowercaseString isEqualToString:@"twitter"];
-            bool isInstagram = [_webPage.siteName.lowercaseString isEqualToString:@"instagram"];
-            bool isInstantGallery = (isTwitter || isInstagram) && _webPage.instantPage != nil;
+        
             bool isCoub = [_webPage.siteName.lowercaseString isEqualToString:@"coub"];
+            bool isInstagram = [_webPage.siteName.lowercaseString isEqualToString:@"instagram"];
+            bool isTwitter = [_webPage.siteName.lowercaseString isEqualToString:@"twitter"];
+            bool isInstantGallery = [_webPage.pageType isEqualToString:@"telegram_album"] || ((isTwitter || isInstagram) && _webPage.instantPage != nil);
             
             bool activateVideo = false;
             bool activateGame = false;
             bool activateInvoice = false;
             bool activateInstantPage = false;
             bool activateRoundMessage = false;
+            
+            bool isArticleLink = false;
             if (linkCandidate == nil)
             {
                 if (_webPageFooterModel != nil && CGRectContainsPoint(_webPageFooterModel.frame, point))
@@ -299,16 +293,36 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                             }
                             linkCandidate = _webPage.url;
                         }
+                        isArticleLink = true;
                     }
                     else
                     {
                         linkCandidate = [_webPageFooterModel linkAtPoint:CGPointMake(point.x - _webPageFooterModel.frame.origin.x, point.y - _webPageFooterModel.frame.origin.y) regionData:NULL];
+                        isArticleLink = true;
                     }
                 }
             }
             if (_webPage.instantPage != nil && !isInstantGallery && ([linkCandidate hasPrefix:@"http://telegra.ph/"] || [linkCandidate hasPrefix:@"https://telegra.ph/"] || [linkCandidate hasPrefix:@"http://t.me/iv?"] || [linkCandidate hasPrefix:@"https://t.me/iv?"]) && webpageAction != TGWebpageFooterModelActionDownload) {
                 if ([_webPage.url isEqualToString:linkCandidate] || (linkCandidateText != nil && [_webPage.url isEqualToString:linkCandidateText])) {
                     activateInstantPage = true;
+                }
+            }
+            
+            if (_webPage.displayUrl != nil && isArticleLink) {
+                if ([linkCandidate hasPrefix:@"hashtag://"]) {
+                    NSString *hashtag = [linkCandidate substringFromIndex:@"hashtag://".length];
+                    if ([_webPage.displayUrl rangeOfString:@"instagram.com"].location != NSNotFound) {
+                        linkCandidate = [NSString stringWithFormat:@"https://instagram.com/explore/tags/%@", hashtag];
+                    } else if ([_webPage.displayUrl rangeOfString:@"twitter.com"].location != NSNotFound) {
+                        linkCandidate = [NSString stringWithFormat:@"https://twitter.com/hashtag/%@", hashtag];
+                    }
+                } else if ([linkCandidate hasPrefix:@"mention://"]) {
+                    NSString *mention = [linkCandidate substringFromIndex:@"mention://".length];
+                    if ([_webPage.displayUrl rangeOfString:@"instagram.com"].location != NSNotFound) {
+                        linkCandidate = [NSString stringWithFormat:@"https://instagram.com/%@", mention];
+                    } else if ([_webPage.displayUrl rangeOfString:@"twitter.com"].location != NSNotFound) {
+                        linkCandidate = [NSString stringWithFormat:@"https://twitter.com/%@", mention];
+                    }
                 }
             }
             
@@ -326,28 +340,28 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
                     }
                 }
                 else
-                    [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                    [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             }
             else if (recognizer.doubleTapped) {
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             } else if (activateRoundMessage) {
                 [_webPageFooterModel activateMediaPlayback];
             } else if (activateVideo) {
-                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             } else if (activateGame) {
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": [NSString stringWithFormat:@"activate-app://%d", _mid]}];
             } else if (activateInvoice) {
-                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             } else if (activateInstantPage) {
                 [self instantPageButtonPressed];
             } else if (webpageAction == TGWebpageFooterModelActionDownload) {
-                [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             } else if (webpageAction == TGWebpageFooterModelActionCancel) {
-                [_context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             } else if (webpageAction == TGWebpageFooterModelActionPlay) {
                 [_webPageFooterModel activateWebpageContents];
             } else if (webpageAction == TGWebpageFooterModelActionOpenMedia) {
-                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             }
             else if (webpageAction == TGWebpageFooterModelActionCustom) {
                 [_webPageFooterModel activateWebpageContents];
@@ -357,7 +371,7 @@ static NSString *expandedTextAndAttributes(NSString *text, NSArray *textChecking
             else if (activateWebpageContents)
                 [_context.companionHandle requestAction:@"openEmbedRequested" options:@{@"webPage": _webPage, @"mid": @(_mid)}];
             else if (webPage != nil)
-                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             else if (linkCandidate != nil)
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate, @"mid": @(_mid), @"hidden": @(hiddenLink)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {

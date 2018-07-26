@@ -40,7 +40,7 @@
 
 @end
 
-@interface TGNavigationController () <UINavigationControllerDelegate, UIGestureRecognizerDelegate>
+@interface TGNavigationController () <UINavigationControllerDelegate, UIGestureRecognizerDelegate, UINavigationBarDelegate>
 {
     UITapGestureRecognizer *_dimmingTapRecognizer;
     CGSize _preferredContentSize;
@@ -78,7 +78,15 @@
 
 + (TGNavigationController *)navigationControllerWithControllers:(NSArray *)controllers navigationBarClass:(Class)navigationBarClass
 {
+    return [self navigationControllerWithControllers:controllers navigationBarClass:navigationBarClass inhibitPresentation:false];
+}
+
++ (TGNavigationController *)navigationControllerWithControllers:(NSArray *)controllers navigationBarClass:(Class)navigationBarClass inhibitPresentation:(bool)inhibitPresentation
+{
     TGNavigationController *navigationController = [[TGNavigationController alloc] initWithNavigationBarClass:navigationBarClass toolbarClass:[UIToolbar class]];
+    
+    if (!inhibitPresentation && [[LegacyComponentsGlobals provider] respondsToSelector:@selector(navigationBarPallete)])
+        [((TGNavigationBar *)navigationController.navigationBar) setPallete:[[LegacyComponentsGlobals provider] navigationBarPallete]];
     
     bool first = true;
     for (id controller in controllers) {
@@ -126,7 +134,7 @@
         self.navigationBar.prefersLargeTitles = false;
     }
     
-    if (iosMajorVersion() >= 8)
+    if (iosMajorVersion() >= 8 && !TGIsRTL())
     {
         object_setClass(self.interactivePopGestureRecognizer, [TGNavigationPanGestureRecognizer class]);
         self.interactivePopGestureRecognizer.delaysTouchesBegan = false;
@@ -175,54 +183,28 @@
         
         if ([TGViewController hasTallScreen] && _becomeActiveObserver == nil && _enterBackgroundObserver == nil)
         {
+            __weak TGNavigationController *weakSelf = self;
             _enterBackgroundObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification * _Nonnull note)
             {
-                [[NSNotificationCenter defaultCenter] removeObserver:_enterBackgroundObserver];
-                _enterBackgroundObserver = nil;
-                
-                if (_becomeActiveObserver == nil)
-                {
-                    _becomeActiveObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note)
+                __strong TGNavigationController *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [[NSNotificationCenter defaultCenter] removeObserver:strongSelf->_enterBackgroundObserver];
+                    strongSelf->_enterBackgroundObserver = nil;
+                    
+                    if (strongSelf->_becomeActiveObserver == nil)
                     {
-                        if ([TGViewController hasTallScreen])
-                            _fixNextInteractiveTransition = true;
-                    }];
+                        strongSelf->_becomeActiveObserver = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:nil usingBlock:^(NSNotification * _Nonnull note) {
+                            __strong TGNavigationController *strongSelf = weakSelf;
+                            if (strongSelf != nil) {
+                                if ([TGViewController hasTallScreen])
+                                    strongSelf->_fixNextInteractiveTransition = true;
+                            }
+                        }];
+                    }
                 }
             }];
         }
-
     }
-//    if (iosMajorVersion() >= 8) {
-//        SEL selector = NSSelectorFromString(TGEncodeText(@"`tdsffoFehfQboHftuvsfSfdphoj{fs", -1));
-//        if ([self respondsToSelector:selector])
-//        {
-//#pragma clang diagnostic push
-//#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-//            UIScreenEdgePanGestureRecognizer *screenPanRecognizer = [self performSelector:selector];
-//#pragma clang diagnostic pop
-//
-//            screenPanRecognizer.enabled = false;
-//
-//            Ivar targetsIvar = class_getInstanceVariable([UIGestureRecognizer class], "_targets");
-//            id targetActionPairs = object_getIvar(screenPanRecognizer, targetsIvar);
-//
-//            Class targetActionPairClass = NSClassFromString(@"UIGestureRecognizerTarget");
-//            Ivar targetIvar = class_getInstanceVariable(targetActionPairClass, "_target");
-//            Ivar actionIvar = class_getInstanceVariable(targetActionPairClass, "_action");
-//
-//            for (id targetActionPair in targetActionPairs)
-//            {
-//                id target = object_getIvar(targetActionPair, targetIvar);
-//                SEL action = (__bridge void *)object_getIvar(targetActionPair, actionIvar);
-//
-//                _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:target action:action];
-//                _panGestureRecognizer.delegate = self;
-//                [screenPanRecognizer.view addGestureRecognizer:_panGestureRecognizer];
-//
-//                break;
-//            }
-//        }
-//    }
 }
 
 - (bool)_gestureRecognizerShouldBegin:(UIPanGestureRecognizer *)gestureRecognizer
@@ -242,7 +224,7 @@
         return false;
     
     UIView *view = [gestureRecognizer.view hitTest:location withEvent:nil];
-    if ([view isKindOfClass:[UIControl class]] && ![view isKindOfClass:[UIButton class]])
+    if (view.tag == 0xdead || ([view isKindOfClass:[UIControl class]] && ![view isKindOfClass:[UIButton class]]))
         return false;
     
     return self.viewControllers.count > 1;
@@ -273,10 +255,14 @@
         return false;
     };
     
-    if ([otherGestureRecognizer.view isKindOfClass:[UIScrollView class]])
+    if (otherGestureRecognizer.view.tag == 0xdead)
+    {
+        return false;
+    }
+    else if ([otherGestureRecognizer.view isKindOfClass:[UIScrollView class]])
     {
         UIScrollView *scrollView = (UIScrollView *)otherGestureRecognizer.view;
-        bool viewIsHorizontalScrollView = !TGIsRTL() && scrollView.contentSize.width > scrollView.contentSize.height && fabs(scrollView.contentOffset.x + scrollView.contentInset.left) < FLT_EPSILON && scrollView.tag != 0xbeef;
+        bool viewIsHorizontalScrollView = !TGIsRTL() && scrollView.contentSize.height > FLT_EPSILON && scrollView.contentSize.width > scrollView.contentSize.height && fabs(scrollView.contentOffset.x + scrollView.contentInset.left) < FLT_EPSILON && scrollView.tag != 0xbeef;
         bool viewIsDeceleratingScrollView = scrollView.contentSize.height > scrollView.contentSize.width && scrollView.isDecelerating;
         if (viewIsHorizontalScrollView || viewIsDeceleratingScrollView)
         {
@@ -793,6 +779,39 @@ static UIView *findDimmingView(UIView *view)
     }
 }
 
+- (BOOL)navigationBar:(UINavigationBar *)navigationBar shouldPopItem:(UINavigationItem *)item
+{
+    if (self.viewControllers.count < navigationBar.items.count)
+        return true;
+    
+    bool shouldPop = true;
+    if (self.shouldPopController != nil) {
+        shouldPop = self.shouldPopController(self.topViewController);
+    }
+    
+    if (shouldPop)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            [self popViewControllerAnimated:YES];
+        });
+    } else
+    {
+        for (UIView *subview in [navigationBar subviews])
+        {
+            if (0.< subview.alpha && subview.alpha < 1.)
+            {
+                [UIView animateWithDuration:.25 animations:^
+                {
+                    subview.alpha = 1.;
+                }];
+            }
+        }
+    }
+    
+    return false;
+}
+
 - (UIViewController *)popViewControllerAnimated:(BOOL)animated
 {
     _fixNextInteractiveTransition = false;
@@ -828,7 +847,7 @@ static UIView *findDimmingView(UIView *view)
     UIViewController *result = [super popViewControllerAnimated:animated];
     _isInPopTransition = false;
     
-    if (iosMajorVersion() >= 8 && [self.interactivePopGestureRecognizer isKindOfClass:[UIScreenEdgePanGestureRecognizer class]])
+    if (iosMajorVersion() >= 8 && !TGIsRTL() && [self.interactivePopGestureRecognizer isKindOfClass:[UIScreenEdgePanGestureRecognizer class]])
         object_setClass(self.interactivePopGestureRecognizer, [TGNavigationPanGestureRecognizer class]);
     
     return result;
@@ -888,6 +907,11 @@ TGNavigationController *findNavigationController()
         return [super prefersStatusBarHidden];
     
     return false;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    return self.topViewController.preferredStatusBarStyle;
 }
 
 @end
@@ -979,6 +1003,11 @@ TGNavigationController *findNavigationController()
 - (void)_setEdgeRegionSize:(CGFloat)edgeRegionSize
 {
     __edgeRegionSize = edgeRegionSize;
+}
+
+- (id)recognizerTouchesToIgnoreForEvent:(id)event
+{
+    return nil;
 }
 
 @end

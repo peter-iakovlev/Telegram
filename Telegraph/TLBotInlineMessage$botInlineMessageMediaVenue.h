@@ -11,6 +11,7 @@
 @property (nonatomic, strong) NSString *address;
 @property (nonatomic, strong) NSString *provider;
 @property (nonatomic, strong) NSString *venue_id;
+@property (nonatomic, strong) NSString *venue_type;
 @property (nonatomic, strong) TLReplyMarkup *reply_markup;
 
 @end

@@ -4,12 +4,14 @@
 @class TGModernButton;
 @class TGModernGalleryVideoPlayerView;
 @class TGModernGalleryVideoScrubbingInterfaceView;
+@class TGModernGalleryPIPHeaderView;
 
 @interface TGModernGalleryNewVideoItemView : TGModernGalleryZoomableItemView
 {
     TGModernButton *_actionButton;
     TGModernGalleryVideoPlayerView *_playerView;
     TGModernGalleryVideoScrubbingInterfaceView *_scrubbingInterfaceView;
+    TGModernGalleryPIPHeaderView *_pipHeaderView;
     bool _playerViewDetached;
     
     CGSize _videoDimensions;

@@ -138,7 +138,7 @@
 + (void)markItemAsViewed:(TGMusicPlayerItem *)item {
     [TGDatabaseInstance() dispatchOnDatabaseThread:^{
         if ([item.key respondsToSelector:@selector(intValue)]) {
-            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[(NSNumber *)item.key intValue] peerId:item.peerId];
+            TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:[(NSNumber *)item.key intValue] peerId:item.conversationId];
             if (message != nil && !message.outgoing) {
                 if (TGPeerIdIsSecretChat(message.cid)) {
                     int32_t flags = [TGDatabaseInstance() secretMessageFlags:message.mid];
@@ -167,7 +167,7 @@
                             readMessageContentsInteractive[@(message.cid)] = @[@(message.mid)];
                         }
                         
-                        [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:@[[[TGDatabaseUpdateContentsRead alloc] initWithPeerId:message.cid messageId:message.mid]] updatePeerDrafts:nil removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil readHistoryForPeerIds:nil resetPeerReadStates:nil resetPeerUnseenMentionsStates:nil clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:readMessageContentsInteractive deleteEarlierHistory:nil];
+                        [TGDatabaseInstance() transactionAddMessages:nil notifyAddedMessages:false removeMessages:nil updateMessages:@[[[TGDatabaseUpdateContentsRead alloc] initWithPeerId:message.cid messageId:message.mid]] updatePeerDrafts:nil removeMessagesInteractive:nil keepDates:false removeMessagesInteractiveForEveryone:false updateConversationDatas:nil applyMaxIncomingReadIds:nil applyMaxOutgoingReadIds:nil applyMaxOutgoingReadDates:nil applyUnreadMarks:nil readHistoryForPeerIds:nil resetPeerReadStates:nil resetPeerUnseenMentionsStates:nil clearConversationsWithPeerIds:nil clearConversationsInteractive:false removeConversationsWithPeerIds:nil updatePinnedConversations:nil synchronizePinnedConversations:false forceReplacePinnedConversations:false readMessageContentsInteractive:readMessageContentsInteractive deleteEarlierHistory:nil updateFeededChannels:nil newlyJoinedFeedId:nil synchronizeFeededChannels:false calculateUnreadChats:false];
                         
                         [ActionStageInstance() dispatchResource:[NSString stringWithFormat:@"/tg/conversation/*/readmessageContents"] resource:@{@"messageIds": @[@(message.mid)]}];
                     }

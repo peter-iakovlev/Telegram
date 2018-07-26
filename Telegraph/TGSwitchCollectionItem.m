@@ -96,6 +96,17 @@
     }
 }
 
+- (void)setIsEnabled:(bool)isEnabled
+{
+    if (_isEnabled != isEnabled)
+    {
+        _isEnabled = isEnabled;
+        
+        if ([self boundView] != nil)
+            [((TGSwitchCollectionItemView *)[self boundView]) setIsEnabled:_isEnabled];
+    }
+}
+
 - (void)switchCollectionItemViewChangedValue:(TGSwitchCollectionItemView *)switchItemView isOn:(bool)isOn
 {
     if (switchItemView == [self boundView])

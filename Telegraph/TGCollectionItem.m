@@ -72,6 +72,7 @@
     _view = view;
     _view.boundItem = self;
     _view.presentation = _presentation;
+    _view.highlightDisabled = _highlightDisabled;
     
     [_view setIgnoreSeparatorInset:_ignoreSeparatorInset];
 }

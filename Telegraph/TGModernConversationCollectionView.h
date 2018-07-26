@@ -11,6 +11,7 @@
 #import "TGMessageRange.h"
 
 @class TGModernViewStorage;
+@class TGPresentation;
 
 @interface TGModernConversationCollectionView : UICollectionView
 
@@ -35,11 +36,13 @@
 
 - (CGFloat)implicitTopInset;
 - (void)updateHeaderView;
+- (void)updatePresentation;
 
 @end
 
 @protocol TGModernConversationCollectionViewDelegate <UICollectionViewDelegate>
 
 - (TGModernViewStorage *)viewStorage;
+- (TGPresentation *)presentation;
 
 @end

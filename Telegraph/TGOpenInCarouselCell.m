@@ -7,6 +7,8 @@
 #import "TGOpenInAppItem.h"
 #import "TGOpenInSignals.h"
 
+#import <LegacyComponents/TGMenuSheetController.h>
+
 NSString *const TGOpenInCarouselCellIdentifier = @"TGOpenInCarouselCell";
 const CGFloat TGOpenInCarouselCellIconCornerRadius = 16.0f;
 
@@ -30,37 +32,7 @@ const CGFloat TGOpenInCarouselCellIconCornerRadius = 16.0f;
         _imageView = [[TGImageView alloc] initWithFrame:CGRectMake(10.0f, 14.0f, 60.0f, 60.0f)];
         [self addSubview:_imageView];
         
-        static dispatch_once_t onceToken;
-        static UIImage *cornersImage;
-        dispatch_once(&onceToken, ^
-        {
-            CGRect rect = CGRectMake(0, 0, TGOpenInCarouselCellIconCornerRadius * 2 + 1.0f, TGOpenInCarouselCellIconCornerRadius * 2 + 1.0f);
-            
-            UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            CGContextSaveGState(context);
-            
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillRect(context, rect);
-            
-            CGContextSetBlendMode(context, kCGBlendModeClear);
-            
-            CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-            CGContextFillEllipseInRect(context, rect);
-
-            CGContextRestoreGState(context);
-            
-            CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-            CGContextSetLineWidth(context, 0.5f);
-            CGContextStrokeEllipseInRect(context, CGRectInset(rect, 0.5f, 0.5f));
-            
-            cornersImage = [UIGraphicsGetImageFromCurrentImageContext() resizableImageWithCapInsets:UIEdgeInsetsMake(TGOpenInCarouselCellIconCornerRadius, TGOpenInCarouselCellIconCornerRadius, TGOpenInCarouselCellIconCornerRadius, TGOpenInCarouselCellIconCornerRadius)];
-            
-            UIGraphicsEndImageContext();
-        });
-        
-        _cornersView = [[UIImageView alloc] initWithImage:cornersImage];
+        _cornersView = [[UIImageView alloc] init];
         _cornersView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         _cornersView.frame = _imageView.frame;
         [self addSubview:_cornersView];
@@ -73,6 +45,19 @@ const CGFloat TGOpenInCarouselCellIconCornerRadius = 16.0f;
         [self addSubview:_titleLabel];
     }
     return self;
+}
+
+- (void)setCornersImage:(UIImage *)cornersImage
+{
+    _cornersView.image = cornersImage;
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _pallete = pallete;
+    self.backgroundColor = pallete.backgroundColor;
+    _titleLabel.backgroundColor = pallete.backgroundColor;
+    _titleLabel.textColor = pallete.textColor;
 }
 
 - (void)prepareForReuse
@@ -93,11 +78,6 @@ const CGFloat TGOpenInCarouselCellIconCornerRadius = 16.0f;
         iconSignal = [TGOpenInSignals iconForAppItem:appItem];
     
     [_imageView setSignal:iconSignal];
-}
-
-- (void)layoutSubviews
-{
-    
 }
 
 @end

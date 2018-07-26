@@ -4,10 +4,12 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGSecretModernConversationAccessoryTimerView ()
 {
     TGModernButton *_timerButton;
-    UIView *_timerIconView;
+    UIImageView *_timerIconView;
     UILabel *_timeLabel;
 }
 
@@ -28,19 +30,25 @@
         [_timerButton addTarget:self action:@selector(timerButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_timerButton];
         
-        UIColor *modeIconColor = UIColorRGB(0xa0a7b0);
-        _timerIconView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"ModernConversationSecretAccessoryTimer.png"), modeIconColor)];
+        _timerIconView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 24.0f, 26.0f)];
         _timerIconView.frame = CGRectOffset(_timerIconView.frame, CGFloor((_timerButton.frame.size.width - _timerIconView.frame.size.width) / 2.0f) - 6.0f - TGScreenPixel, 5.0f - TGScreenPixel);
         [_timerButton addSubview:_timerIconView];
         
         _timeLabel = [[UILabel alloc] init];
         _timeLabel.backgroundColor = [UIColor clearColor];
-        _timeLabel.textColor = modeIconColor;
         _timeLabel.font = TGSystemFontOfSize(16.0f);
         _timeLabel.hidden = true;
         [_timerButton addSubview:_timeLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _timerIconView.image = presentation.images.chatInputTimerIcon;
+    _timeLabel.textColor = presentation.pallete.chatInputFieldButtonColor;
 }
 
 - (void)sizeToFit

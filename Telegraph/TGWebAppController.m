@@ -117,6 +117,11 @@
     [_shareDisposable dispose];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation {
+    _presentation = presentation;
+    _titleView.presentation = presentation;
+}
+
 - (void)closePressed {
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }

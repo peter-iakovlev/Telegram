@@ -27,7 +27,6 @@
         [ActionStageInstance() watchForPaths:@[
             @"/tg/conversations",
             @"/tg/broadcastConversations",
-            @"/tg/channelListSyncrhonized",
             @"/dialogListReloaded"
         ] watcher:self];
         
@@ -57,7 +56,7 @@
             {
                 [_list removeAllObjects];
                 for (TGConversation *conversation in chatList) {
-                    if (!conversation.isDeactivated) {
+                    if ([conversation isEqual:[TGConversation class]] && !conversation.isDeactivated) {
                         [_list addObject:conversation];
                     }
                 }
@@ -76,6 +75,10 @@
         for (NSInteger i = 0; i < (NSInteger)conversations.count; i++)
         {
             TGConversation *conversation = conversations[i];
+            if (![conversation isKindOfClass:[TGConversation class]]) {
+                [conversations removeObjectAtIndex:i];
+                i--;
+            }
             if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel) {
                 [conversations removeObjectAtIndex:i];
                 i--;
@@ -166,9 +169,6 @@
         if (_listUpdated)
             _listUpdated(items);
     }
-    else if ([path isEqualToString:@"/tg/channelListSyncrhonized"]) {
-        [self actionStageResourceDispatched:@"/tg/conversations" resource:[[SGraphObjectNode alloc] initWithObject:resource] arguments:@{@"filterEarliest": @true}];
-    }
 }
 
 @end
@@ -199,7 +199,7 @@
             for (NSUInteger i = 0; i < filteredResult.count; i++)
             {
                 TGConversation *conversation = filteredResult[i];
-                if (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel)
+                if (![conversation isKindOfClass:[TGConversation class]] || (conversation.isChannel && conversation.kind != TGConversationKindPersistentChannel))
                 {
                     [filteredResult removeObjectAtIndex:i];
                     i--;

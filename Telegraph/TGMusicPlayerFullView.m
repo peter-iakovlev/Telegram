@@ -10,10 +10,15 @@
 #import "TGMusicPlayer.h"
 #import "TGTelegraph.h"
 
+#import "TGPresentation.h"
+
 @interface TGMusicPlayerCollectionView : UICollectionView
 {
     UIView *_whiteTailView;
 }
+
+@property (nonatomic, strong) UIColor *tailColor;
+
 @end
 
 
@@ -22,7 +27,9 @@
 @end
 
 @interface TGMusicPlayerFullView () <UICollectionViewDelegate, UICollectionViewDataSource, UIScrollViewDelegate, UIGestureRecognizerDelegate>
-{    
+{
+    TGPresentation *_presentation;
+    
     UIView *_dimView;
     
     UIView *_containerView;
@@ -74,7 +81,7 @@
     CGFloat _coverExpandProgress;
     
     UIImageView *_edgeView;
-    UICollectionView *_collectionView;
+    TGMusicPlayerCollectionView *_collectionView;
     UIView *_separator;
     TGScrollIndicatorView *_scrollIndicator;
     
@@ -93,12 +100,13 @@
 
 @implementation TGMusicPlayerFullView
 
-- (instancetype)initWithFrame:(CGRect)frame context:(id<LegacyComponentsContext>)context
+- (instancetype)initWithFrame:(CGRect)frame context:(id<LegacyComponentsContext>)context presentation:(TGPresentation *)presentation
 {
     self = [super initWithFrame:frame];
     if (self != nil)
     {
         _context = context;
+        _presentation = presentation;
         
         _dimView = [[UIView alloc] init];
         _dimView.alpha = 0.0f;
@@ -117,6 +125,7 @@
         if (iosMajorVersion() >= 11)
             _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
         _collectionView.backgroundColor = [UIColor clearColor];
+        _collectionView.tailColor = presentation.pallete.menuBackgroundColor;
         _collectionView.delegate = self;
         _collectionView.dataSource = self;
         _collectionView.scrollsToTop = false;
@@ -129,63 +138,69 @@
         _panelView = [[UIView alloc] init];
         [_collectionView addSubview:_panelView];
         
-        _edgeView = [[UIImageView alloc] initWithImage:[TGComponentsImageNamed(@"LocationPanelEdge") resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 10.0f, 0.0f, 10.0f)]];
-        _edgeView.highlightedImage = [TGComponentsImageNamed(@"LocationPanelEdge_Highlighted") resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 10.0f, 0.0f, 10.0f)];
+        UIImage *edgeImage = TGComponentsImageNamed(@"LocationPanelEdge");
+        UIImage *edgeHighlightImage = TGComponentsImageNamed(@"LocationPanelEdge_Highlighted");
+        
+        UIGraphicsBeginImageContextWithOptions(edgeImage.size, false, 0.0f);
+        [edgeImage drawAtPoint:CGPointZero];
+        [TGTintedImage(edgeHighlightImage, presentation.pallete.menuBackgroundColor) drawAtPoint:CGPointZero];
+        
+        edgeImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        _edgeView = [[UIImageView alloc] initWithImage:[edgeImage resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 10.0f, 0.0f, 10.0f)]];
         _edgeView.frame = CGRectMake(0.0f, 0.0f, self.frame.size.width, _edgeView.frame.size.height);
         [_panelView addSubview:_edgeView];
         
         _separator = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
         _separator.alpha = 0.0f;
-        _separator.backgroundColor = TGSeparatorColor();
+        _separator.backgroundColor = presentation.pallete.separatorColor;
         [_panelView addSubview:_separator];
         
         _controlsView = [[UIView alloc] init];
-        _controlsView.backgroundColor = [UIColor whiteColor];
+        _controlsView.backgroundColor = presentation.pallete.menuBackgroundColor;
         [_panelView addSubview:_controlsView];
         
         _arrowView = [[TGModernButton alloc] init];
         _arrowView.adjustsImageWhenHighlighted = false;
-        [_arrowView setImage:TGImageNamed(@"MusicPlayerArrow") forState:UIControlStateNormal];
+        [_arrowView setImage:TGTintedImage(TGImageNamed(@"MusicPlayerArrow"), presentation.pallete.collectionMenuAccessoryColor) forState:UIControlStateNormal];
         [_arrowView addTarget:self action:@selector(arrowPressed) forControlEvents:UIControlEventTouchUpInside];
         [_arrowView sizeToFit];
         [_panelView addSubview:_arrowView];
         
-        static dispatch_once_t onceToken;
-        static UIImage *moreImage;
-        static UIImage *trackImage;
-        static UIImage *handleImage;
-        dispatch_once(&onceToken, ^
-        {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(19.0f, 5.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 5.0f, 5.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(7.0f, 0.0f, 5.0f, 5.0f));
-            CGContextFillEllipseInRect(context, CGRectMake(14.0f, 0.0f, 5.0f, 5.0f));
-            
-            moreImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-            
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(3.0f, 3.0f), false, 0.0f);
-            context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 3.0f, 3.0f));
-            trackImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-            
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(6.0f, 6.0f), false, 0.0f);
-            context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 6.0f, 6.0f));
-            handleImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
+        UIImage *moreImage;
+        UIImage *trackImage;
+        UIImage *handleImage;
+
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(19.0f, 5.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
         
-        _scrubbingBackground = [[UIImageView alloc] initWithImage:[TGTintedImage(trackImage, UIColorRGB(0xcccccc)) resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 1.5f, 0.0f, 1.5f)]];
+        CGContextSetFillColorWithColor(context, presentation.pallete.menuAccentColor.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 5.0f, 5.0f));
+        CGContextFillEllipseInRect(context, CGRectMake(7.0f, 0.0f, 5.0f, 5.0f));
+        CGContextFillEllipseInRect(context, CGRectMake(14.0f, 0.0f, 5.0f, 5.0f));
+        
+        moreImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(3.0f, 3.0f), false, 0.0f);
+        context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, presentation.pallete.menuAccentColor.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 3.0f, 3.0f));
+        trackImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(6.0f, 6.0f), false, 0.0f);
+        context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, presentation.pallete.menuAccentColor.CGColor);
+        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 6.0f, 6.0f));
+        handleImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        
+        _scrubbingBackground = [[UIImageView alloc] initWithImage:[TGTintedImage(trackImage, presentation.pallete.collectionMenuAccessoryColor) resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 1.5f, 0.0f, 1.5f)]];
         [_controlsView addSubview:_scrubbingBackground];
         
-        _playbackScrubbingForeground = [[UIImageView alloc] initWithImage:[TGTintedImage(trackImage, TGAccentColor()) resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 1.5f, 0.0f, 1.5f)]];
+        _playbackScrubbingForeground = [[UIImageView alloc] initWithImage:[trackImage resizableImageWithCapInsets:UIEdgeInsetsMake(0.0f, 1.5f, 0.0f, 1.5f)]];
         [_controlsView addSubview:_playbackScrubbingForeground];
         
         _downloadingScrubbingForeground = [[UIImageView alloc] initWithImage:_playbackScrubbingForeground.image];
@@ -223,28 +238,28 @@
         [_controlsView addSubview:_scrubbingArea];
         
         _positionLabel = [[UILabel alloc] init];
-        _positionLabel.backgroundColor = [UIColor whiteColor];
-        _positionLabel.textColor = UIColorRGB(0x8d8e93);
+        _positionLabel.backgroundColor = _controlsView.backgroundColor;
+        _positionLabel.textColor = presentation.pallete.menuSecondaryTextColor;
         _positionLabel.font = TGSystemFontOfSize(13.0f);
         [_controlsView addSubview:_positionLabel];
         _positionLabelValue = INT_MIN;
         
         _durationLabel = [[UILabel alloc] init];
-        _durationLabel.backgroundColor = [UIColor whiteColor];
-        _durationLabel.textColor = UIColorRGB(0x8d8e93);
+        _durationLabel.backgroundColor = _controlsView.backgroundColor;
+        _durationLabel.textColor = presentation.pallete.menuSecondaryTextColor;
         _durationLabel.font = TGSystemFontOfSize(13.0f);
         [_controlsView addSubview:_durationLabel];
         _durationLabelValue = INT_MIN;
         
         _titleLabel = [[UILabel alloc] init];
-        _titleLabel.backgroundColor = [UIColor whiteColor];
-        _titleLabel.textColor = [UIColor blackColor];
+        _titleLabel.backgroundColor = _controlsView.backgroundColor;
+        _titleLabel.textColor = presentation.pallete.menuTextColor;
         _titleLabel.font = TGMediumSystemFontOfSize(16.0f);
         [_controlsView addSubview:_titleLabel];
         
         _performerLabel = [[UILabel alloc] init];
-        _performerLabel.backgroundColor = [UIColor whiteColor];
-        _performerLabel.textColor = UIColorRGB(0x8d8e93);
+        _performerLabel.backgroundColor = _controlsView.backgroundColor;
+        _performerLabel.textColor = presentation.pallete.menuSecondaryTextColor;
         _performerLabel.font = TGSystemFontOfSize(12.0f);
         [_controlsView addSubview:_performerLabel];
         
@@ -270,38 +285,40 @@
         
         _controlPlayButton = [[TGModernButton alloc] init];
         _controlPlayButton.adjustsImageWhenHighlighted = false;
-        [_controlPlayButton setImage:TGImageNamed(@"MusicPlayerControlPlay.png") forState:UIControlStateNormal];
+        [_controlPlayButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlPlay.png"), presentation.pallete.musicControlsColor) forState:UIControlStateNormal];
         [_controlPlayButton setContentEdgeInsets:UIEdgeInsetsMake(0.0f, 5.0f, 0.0f, 0.0f)];
         [_controlPlayButton addTarget:self action:@selector(controlPlay) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlPlayButton];
         
         _controlPauseButton = [[TGModernButton alloc] init];
         _controlPauseButton.adjustsImageWhenHighlighted = false;
-        [_controlPauseButton setImage:TGImageNamed(@"MusicPlayerControlPause.png") forState:UIControlStateNormal];
+        [_controlPauseButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlPause.png"), presentation.pallete.musicControlsColor) forState:UIControlStateNormal];
         [_controlPauseButton addTarget:self action:@selector(controlPause) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlPauseButton];
         
         _controlBackButton = [[TGModernButton alloc] init];
         _controlBackButton.adjustsImageWhenHighlighted = false;
-        [_controlBackButton setImage:TGImageNamed(@"MusicPlayerControlBack.png") forState:UIControlStateNormal];
+        [_controlBackButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlBack.png"), presentation.pallete.musicControlsColor) forState:UIControlStateNormal];
         [_controlBackButton addTarget:self action:@selector(controlBack) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlBackButton];
         
         _controlForwardButton = [[TGModernButton alloc] init];
         _controlForwardButton.adjustsImageWhenHighlighted = false;
-        [_controlForwardButton setImage:TGImageNamed(@"MusicPlayerControlForward.png") forState:UIControlStateNormal];
+        [_controlForwardButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlForward.png"), presentation.pallete.musicControlsColor) forState:UIControlStateNormal];
         [_controlForwardButton addTarget:self action:@selector(controlForward) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlForwardButton];
         
         _controlShuffleButton = [[TGMusicPlayerModeButton alloc] init];
+        _controlShuffleButton.accentColor = presentation.pallete.accentColor;
         _controlShuffleButton.adjustsImageWhenHighlighted = false;
-        [_controlShuffleButton setImage:TGImageNamed(@"MusicPlayerControlReverse.png") forState:UIControlStateNormal];
+        [_controlShuffleButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlReverse.png"), presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
         [_controlShuffleButton addTarget:self action:@selector(controlOrder) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlShuffleButton];
         
         _controlRepeatButton = [[TGMusicPlayerModeButton alloc] init];
+        _controlRepeatButton.accentColor = presentation.pallete.accentColor;
         _controlRepeatButton.adjustsImageWhenHighlighted = false;
-        [_controlRepeatButton setImage:TGImageNamed(@"MusicPlayerControlRepeat.png") forState:UIControlStateNormal];
+        [_controlRepeatButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlRepeat.png"), presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
         [_controlRepeatButton addTarget:self action:@selector(controlRepeat) forControlEvents:UIControlEventTouchUpInside];
         [_controlsView addSubview:_controlRepeatButton];
         
@@ -426,17 +443,17 @@
         switch (status.orderType)
         {
             case TGMusicPlayerOrderTypeNewestFirst:
-                [_controlShuffleButton setImage:TGImageNamed(@"MusicPlayerControlReverse.png") forState:UIControlStateNormal];
+                [_controlShuffleButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlReverse.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlShuffleButton.selected = false;
                 break;
                 
             case TGMusicPlayerOrderTypeOldestFirst:
-                [_controlShuffleButton setImage:TGImageNamed(@"MusicPlayerControlReverse.png") forState:UIControlStateNormal];
+                [_controlShuffleButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlReverse.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlShuffleButton.selected = true;
                 break;
                 
             case TGMusicPlayerOrderTypeShuffle:
-                [_controlShuffleButton setImage:TGImageNamed(@"MusicPlayerControlShuffle.png") forState:UIControlStateNormal];
+                [_controlShuffleButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlShuffle.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlShuffleButton.selected = true;
                 break;
         }
@@ -446,17 +463,17 @@
         switch (status.repeatType)
         {
             case TGMusicPlayerRepeatTypeNone:
-                [_controlRepeatButton setImage:TGImageNamed(@"MusicPlayerControlRepeat.png") forState:UIControlStateNormal];
+                [_controlRepeatButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlRepeat.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlRepeatButton.selected = false;
                 break;
                 
             case TGMusicPlayerRepeatTypeAll:
-                [_controlRepeatButton setImage:TGImageNamed(@"MusicPlayerControlRepeat.png") forState:UIControlStateNormal];
+                [_controlRepeatButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlRepeat.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlRepeatButton.selected = true;
                 break;
                 
             case TGMusicPlayerRepeatTypeOne:
-                [_controlRepeatButton setImage:TGImageNamed(@"MusicPlayerControlRepeatOne.png") forState:UIControlStateNormal];
+                [_controlRepeatButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerControlRepeatOne.png"), _presentation.pallete.secondaryTextColor) forState:UIControlStateNormal];
                 _controlRepeatButton.selected = true;
                 break;
         }
@@ -965,6 +982,7 @@
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     TGMusicPlaylistCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:TGMusicPlaylistCellKind forIndexPath:indexPath];
+    cell.presentation = _presentation;
     NSUInteger index = [self reversePlaylist] ? _currentPlaylist.items.count - indexPath.row - 1 : indexPath.row;
     TGMusicPlayerItem *item = _currentPlaylist.items[index];
     [cell setItem:item];
@@ -1248,6 +1266,16 @@
         [self addSubview:_whiteTailView];
     }
     return self;
+}
+
+- (UIColor *)tailColor
+{
+    return _whiteTailView.backgroundColor;
+}
+
+- (void)setTailColor:(UIColor *)tailColor
+{
+    _whiteTailView.backgroundColor = tailColor;
 }
 
 - (void)layoutSubviews

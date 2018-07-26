@@ -3,16 +3,16 @@
     {
       "size" : "24x24",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "NotificationIcon38@2x.png",
+      "scale" : "2x",
       "role" : "notificationCenter",
       "subtype" : "38mm"
     },
     {
       "size" : "27.5x27.5",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "NotificationIcon42@2x.png",
+      "scale" : "2x",
       "role" : "notificationCenter",
       "subtype" : "42mm"
     },
@@ -33,34 +33,40 @@
     {
       "size" : "40x40",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "Icon@2x.png",
+      "scale" : "2x",
       "role" : "appLauncher",
       "subtype" : "38mm"
     },
     {
       "size" : "44x44",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "LongLook@2x.png",
+      "scale" : "2x",
       "role" : "longLook",
       "subtype" : "42mm"
     },
     {
       "size" : "86x86",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "ShortLook38@2x.png",
+      "scale" : "2x",
       "role" : "quickLook",
       "subtype" : "38mm"
     },
     {
       "size" : "98x98",
       "idiom" : "watch",
-      "scale" : "2x",
       "filename" : "ShortLook42@2x.png",
+      "scale" : "2x",
       "role" : "quickLook",
       "subtype" : "42mm"
+    },
+    {
+      "size" : "1024x1024",
+      "idiom" : "watch-marketing",
+      "filename" : "T-Ipad_1024.png",
+      "scale" : "1x"
     }
   ],
   "info" : {

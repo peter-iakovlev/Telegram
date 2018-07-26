@@ -99,6 +99,20 @@
     return self;
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    if (!pallete.isDark)
+        return;
+    
+    UIImage *leftImage = [TGTintedImage(_leftBackgroundView.image, pallete.backgroundColor) resizableImageWithCapInsets:UIEdgeInsetsMake(18, 10, 18, 1)];
+    UIImage *rightImage = [TGTintedImage(_rightBackgroundView.image, pallete.backgroundColor) resizableImageWithCapInsets:UIEdgeInsetsMake(18, 1, 18, 10)];
+    UIImage *middleImage = [TGTintedImage(_middleBackgroundView.image, pallete.backgroundColor) resizableImageWithCapInsets:UIEdgeInsetsMake(18, 2, 18, 2)];
+    
+    _leftBackgroundView.image = leftImage;
+    _rightBackgroundView.image = rightImage;
+    _middleBackgroundView.image = middleImage;
+}
+
 - (CGFloat)preferredHeight
 {
     return 75.0f;
@@ -115,13 +129,40 @@
     NSDictionary *associations = dictionary[@"associations"];
     NSDictionary *stickerPacks = dictionary[@"stickerPacks"];
     
+    NSUInteger previousDocumentsCount = _documentList.count;
     if (!TGObjectCompare(_documentList, documents))
     {
         _documentList = documents;
         _associations = associations;
         _stickerPacks = stickerPacks;
-        [_collectionView reloadData];
-        [_collectionView layoutSubviews];
+        
+        if (previousDocumentsCount > 0 && previousDocumentsCount < 5) {
+            UIView *snapshotView = [_collectionView snapshotViewAfterScreenUpdates:false];
+            snapshotView.frame = _collectionView.frame;
+            [_collectionView.superview addSubview:snapshotView];
+            
+            [_collectionView reloadData];
+            [_collectionView layoutSubviews];
+            
+            _collectionView.alpha = 0.0f;
+            [UIView animateWithDuration:0.35 animations:^{
+                snapshotView.alpha = 0.0f;
+            } completion:^(__unused BOOL finished) {
+                [snapshotView removeFromSuperview];
+            }];
+            
+            [UIView animateWithDuration:0.2 animations:^{
+                _collectionView.alpha = 1.0f;
+            } completion:nil];
+            
+            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^{
+                [self layoutSubviews];
+            } completion:nil];
+        } else {
+            [_collectionView reloadData];
+            [_collectionView layoutSubviews];
+            [self setNeedsLayout];
+        }
     }
 }
 
@@ -441,9 +482,9 @@
                 strongSelf.documentSelected(document);
             }
         }
-    } stickerPackRemoved:nil stickerPackHidden:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
+    } stickerPackRemoved:nil stickerPackAdded:nil stickerPackHidden:nil linkOpened:nil stickerPackArchived:false stickerPackIsMask:stickerPack.isMask sourceView:parentViewController.view sourceRect:^CGRect{
         return sourceRect;
-    } centered:true existingController:nil];
+    } centered:true existingController:nil expanded:false];
     if (!TGIsPad())
     {
         controller.willDismiss = ^(__unused bool manual) {

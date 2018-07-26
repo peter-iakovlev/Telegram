@@ -24,6 +24,8 @@
 @class TGMessageViewsViewModel;
 @class TGModernLabelViewModel;
 
+@class TGPresentation;
+
 extern bool debugShowMessageIds;
 
 @interface TGContentBubbleViewModel : TGMessageViewModel
@@ -94,6 +96,6 @@ extern bool debugShowMessageIds;
 - (void)layoutContentForHeaderHeight:(CGFloat)headerHeight containerSize:(CGSize)containerSize;
 - (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth;
 
-+ (TGReplyHeaderModel *)replyHeaderModelFromMessage:(TGMessage *)replyHeader peer:(id)peer incoming:(bool)incoming system:(bool)system;
++ (TGReplyHeaderModel *)replyHeaderModelFromMessage:(TGMessage *)replyHeader peer:(id)peer incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation;
 
 @end

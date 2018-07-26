@@ -10,11 +10,9 @@
 
 #import <LegacyComponents/TGRemoteImageView.h>
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGDatabase.h"
-
-#import "TGAlertView.h"
 
 #import "TGAppDelegate.h"
 
@@ -30,6 +28,8 @@
 #import "TGProgressAlert.h"
 
 #import "TGCacheIndexingItem.h"
+
+#import "TGPresentation.h"
 
 @interface TGEvaluatedPeerMediaCacheIndexDataWithPeer: NSObject
 
@@ -299,7 +299,7 @@
     }
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
     
-    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
     {
         __strong TGCacheController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -489,7 +489,7 @@
 - (void)clearPeerData:(TGEvaluatedPeerMediaCacheIndexData *)peerData types:(NSArray *)types {
     __weak TGCacheController *weakSelf = self;
     
-    _progressAlert = [[TGProgressAlert alloc] initWithFrame:self.view.bounds];
+    _progressAlert = [[TGProgressAlert alloc] initWithFrame:self.view.bounds backgroundColor:self.presentation.pallete.menuBackgroundColor separatorColor:self.presentation.pallete.menuSeparatorColor textColor:self.presentation.pallete.menuTextColor accentColor:self.presentation.pallete.menuAccentColor];
     _progressAlert.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _progressAlert.text = TGLocalized(@"Cache.ClearProgress");
     _progressAlert.alpha = 0.0f;
@@ -531,6 +531,11 @@
                 
                 *stop = cancelled;
             }];
+            
+            NSArray *tmpFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:nil];
+            for (NSString *path in tmpFiles) {
+                [filePaths addObject:[NSTemporaryDirectory() stringByAppendingPathComponent:path]];
+            }
             
             if (!cancelled) {
                 int32_t counter = 0;

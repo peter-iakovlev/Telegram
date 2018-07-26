@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 static UIImage *plusImage() {
     static UIImage *image = nil;
     static dispatch_once_t onceToken;
@@ -37,20 +39,29 @@ static UIImage *plusImage() {
     self = [super initWithFrame:frame];
     if (self != nil) {
         _button = [[TGModernButton alloc] init];
-        [_button setImage:plusImage() forState:UIControlStateNormal];
         _button.modernHighlight = true;
         _button.extendedEdgeInsets = UIEdgeInsetsMake(15.0f, 15.0f, 15.0f, 15.0f);
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         _button.frame = CGRectMake(0.0f, 0.0f, 56.0f, 56.0f);
         [self addSubview:_button];
         
-        _checkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheckGray.png"]];
+        _checkView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
         _checkView.frame = CGRectMake(CGFloor((_button.bounds.size.width - _checkView.frame.size.width) / 2.0f), CGFloor((_button.bounds.size.height - _checkView.frame.size.height) / 2.0f), _checkView.frame.size.width, _checkView.frame.size.height);
         [self addSubview:_checkView];
         
         self.frame = _button.bounds;
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (presentation == nil || _presentation == presentation)
+        return;
+    
+    _presentation = presentation;
+    [_button setImage:presentation.images.collectionMenuAddImage forState:UIControlStateNormal];
+    _checkView.image = presentation.images.collectionMenuUnimportantCheckImage;
 }
 
 - (void)setStatus:(TGStickerPackItemStatus)status {

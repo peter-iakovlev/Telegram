@@ -56,6 +56,10 @@
 
 #import "TGInterfaceManager.h"
 
+#import "TGICloudEmergencyDataSignals.h"
+
+#import "TGNetworkSettings.h"
+
 static const int TGMaxWorkerCount = 4;
 
 MTInternalIdClass(TGDownloadWorker)
@@ -88,9 +92,12 @@ MTInternalIdClass(TGDownloadWorker)
     TGUpdateMessageService *_updateService;
     NSInteger _masterDatacenterId;
     
+    NSMutableArray *_postponedRequests;
+    
     bool _isNetworkAvailable;
     bool _isConnected;
     bool _isUsingProxy;
+    bool _proxyHasConnectionIssues;
     bool _isUpdatingConnectionContext;
     bool _isPerformingServiceTasks;
     
@@ -109,6 +116,7 @@ MTInternalIdClass(TGDownloadWorker)
     UIWindow *_currentPasswordEntryWindow;
     
     SMetaDisposable *_updateCallsConfig;
+    SVariable *_socksProxySettingsValue;
 }
 
 @property (nonatomic, strong) ASHandle *actionHandle;
@@ -123,9 +131,14 @@ static void TGTelegramLoggingFunction(NSString *format, va_list args)
 }
 
 static NSData *initialSocksProxyData = nil;
+static NSData *initialNetworkSettingsData = nil;
 
 + (void)preload {
-    initialSocksProxyData = [TGDatabaseInstance() customProperty:@"socksProxyData"];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        initialSocksProxyData = [TGDatabaseInstance() customProperty:@"socksProxyData"];
+        initialNetworkSettingsData = [TGDatabaseInstance() customProperty:@"networkSettingsData"];
+    });
 }
 
 static TGTelegramNetworking *singleton = nil;
@@ -136,7 +149,8 @@ static TGTelegramNetworking *singleton = nil;
     {
         MTLogSetLoggingFunction(&TGTelegramLoggingFunction);
         
-        singleton = [[TGTelegramNetworking alloc] initWithSocksProxyData:initialSocksProxyData];
+        [TGTelegramNetworking preload];
+        singleton = [[TGTelegramNetworking alloc] initWithSocksProxyData:initialSocksProxyData networkSettingsData:initialNetworkSettingsData];
     });
     return singleton;
 }
@@ -146,7 +160,7 @@ static TGTelegramNetworking *singleton = nil;
     return singleton;
 }
 
-- (instancetype)initWithSocksProxyData:(NSData *)socksProxyData
+- (instancetype)initWithSocksProxyData:(NSData *)socksProxyData networkSettingsData:(NSData *)networkSettingsData
 {
     self = [super init];
     if (self != nil)
@@ -154,6 +168,7 @@ static TGTelegramNetworking *singleton = nil;
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         [ActionStageInstance() watchForPath:@"/tg/service/synchronizationstate" watcher:self];
         
+        _postponedRequests = [[NSMutableArray alloc] init];
         _currentWakeUpCompletions = [[NSMutableArray alloc] init];
         
         _settingsKeychain = [MTFileBasedKeychain keychainWithName:@"Telegram-Settings" documentsPath:[TGAppDelegate documentsPath]];
@@ -189,7 +204,7 @@ static TGTelegramNetworking *singleton = nil;
                 } else {
                     ip = text;
                 }
-                datacenterAddressOverrides[@(i + 1)] = [[MTDatacenterAddress alloc] initWithIp:ip port:port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false];
+                datacenterAddressOverrides[@(i + 1)] = [[MTDatacenterAddress alloc] initWithIp:ip port:port preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil];
             }
         }
         apiEnvironment.datacenterAddressOverrides = datacenterAddressOverrides;
@@ -209,11 +224,34 @@ static TGTelegramNetworking *singleton = nil;
         if (socksProxyData != nil) {
             NSDictionary *socksProxyDict = [NSKeyedUnarchiver unarchiveObjectWithData:socksProxyData];
             if (socksProxyDict[@"ip"] != nil && socksProxyDict[@"port"] != nil && ![socksProxyDict[@"inactive"] boolValue]) {
-                apiEnvironment = [apiEnvironment withUpdatedSocksProxySettings:[[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"]]];
+                NSData *secret = [socksProxyDict[@"secret"] length] > 0 && [socksProxyDict[@"secret"] length] % 2 == 0 ? [NSData dataWithHexString:socksProxyDict[@"secret"]] : nil;
+                apiEnvironment = [apiEnvironment withUpdatedSocksProxySettings:[[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"] secret:secret]];
             }
         }
         
-        _context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment];
+        TGNetworkSettings *networkSettings = nil;
+        if (networkSettingsData != nil) {
+            networkSettings = [NSKeyedUnarchiver unarchiveObjectWithData:networkSettingsData];
+        }
+        if (networkSettings == nil) {
+            TGUser *user = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
+            NSString *phoneNumber = @"";
+            if (user != nil) {
+                phoneNumber = [TGPhoneUtils cleanPhone:user.phoneNumber];
+            }
+            if ([phoneNumber hasPrefix:@"7"]) {
+                networkSettings = [[TGNetworkSettings alloc] initWithReducedBackupDiscoveryTimeout:true];
+            }
+        }
+        
+        if (networkSettings != nil) {
+            apiEnvironment = [apiEnvironment withUpdatedNetworkSettings:[[MTNetworkSettings alloc] initWithReducedBackupDiscoveryTimeout:networkSettings.reducedBackupDiscoveryTimeout]];
+        }
+        
+        _socksProxySettingsValue = [[SVariable alloc] init];
+        [_socksProxySettingsValue set:[SSignal single:apiEnvironment.socksProxySettings]];
+        
+        _context = [[MTContext alloc] initWithSerialization:[[TGTLSerialization alloc] init] apiEnvironment:apiEnvironment isTestingEnvironment:_isTestingEnvironment useTempAuthKeys:false];
         [_context addChangeListener:self];
         
         _workersByDatacenterId = [[NSMutableDictionary alloc] init];
@@ -222,10 +260,10 @@ static TGTelegramNetworking *singleton = nil;
         if (_isTestingEnvironment)
         {
             [_context updateAddressSetForDatacenterWithId:1 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
             ]] forceUpdateSchemes:true];
             [_context updateAddressSetForDatacenterWithId:2 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
             ]] forceUpdateSchemes:true];
         }
         else
@@ -233,28 +271,28 @@ static TGTelegramNetworking *singleton = nil;
             [_context performBatchUpdates:^
             {
                 [_context setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false],
-                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23d:f001::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil],
+                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23d:f001::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false],
-                    [[MTDatacenterAddress alloc] initWithIp:@"2001:67c:4e8:f002::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil],
+                    [[MTDatacenterAddress alloc] initWithIp:@"2001:67c:4e8:f002::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                 ]]];
                 
                 [_context setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false],
-                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23d:f003::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil],
+                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23d:f003::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false],
-                    [[MTDatacenterAddress alloc] initWithIp:@"2001:67c:4e8:f004::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil],
+                    [[MTDatacenterAddress alloc] initWithIp:@"2001:67c:4e8:f004::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                 ]]];
 
                 [_context setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false],
-                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23f:f005::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil],
+                    [[MTDatacenterAddress alloc] initWithIp:@"2001:b28:f23f:f005::a" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
                 ]]];
             }];
         }
@@ -264,15 +302,40 @@ static TGTelegramNetworking *singleton = nil;
         if (_isTestingEnvironment)
         {
             [_context updateAddressSetForDatacenterWithId:1 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
             ]] forceUpdateSchemes:true];
             [_context updateAddressSetForDatacenterWithId:2 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
+                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
             ]] forceUpdateSchemes:true];
+        } else {
+#if DEBUG
+            //[_context updateAddressSetForDatacenterWithId:1 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[]] forceUpdateSchemes:true];
+#endif
         }
         
-        [_context setDiscoverBackupAddressListSignal:[[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *subscriber) {
-            id<SDisposable> disposable = [[TGAccountSignals fetchBackupIps:_isTestingEnvironment] startWithNext:nil error:^(__unused id error) {
+        MTSignal *discoverBackupAddressList = [[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *subscriber) {
+            TGUser *user = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
+            NSString *phoneNumber = @"";
+            if (user != nil) {
+                phoneNumber = [TGPhoneUtils cleanPhone:user.phoneNumber];
+            }
+            id<MTDisposable> disposable = [[MTBackupAddressSignals fetchBackupIps:_isTestingEnvironment currentContext:_context additionalSource:[[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *internalSubscriber) {
+                TGUser *user = [TGDatabaseInstance() loadUser:TGTelegraphInstance.clientUserId];
+                NSString *prefix = @"0";
+                if (user != nil) {
+                    NSString *phone = [TGPhoneUtils cleanPhone:user.phoneNumber];
+                    if (phone.length > 0) {
+                        prefix = [phone substringToIndex:1];
+                    }
+                }
+                id<SDisposable> disposable = [[TGICloudEmergencyDataSignals fetchBackupAddressInfo:prefix phoneNumber:phoneNumber] startWithNext:^(MTBackupDatacenterData *result) {
+                    [internalSubscriber putNext:result];
+                    [internalSubscriber putCompletion];
+                }];
+                return [[MTBlockDisposable alloc] initWithBlock:^{
+                    [disposable dispose];
+                }];
+            }] phoneNumber:phoneNumber] startWithNext:nil error:^(__unused id error) {
                 [subscriber putCompletion];
             } completed:^{
                 [subscriber putCompletion];
@@ -280,7 +343,12 @@ static TGTelegramNetworking *singleton = nil;
             return [[MTBlockDisposable alloc] initWithBlock:^{
                 [disposable dispose];
             }];
-        }]];
+        }];
+        [_context setDiscoverBackupAddressListSignal:discoverBackupAddressList];
+        
+        __unused id<SDisposable> disposable = [[TGICloudEmergencyDataSignals updateSubscription] startWithNext:nil];
+        
+        //__unused id disposable2 = [discoverBackupAddressList startWithNext:nil];
         
         bool foundAuthorizations = false;
         for (NSInteger i = 0; i < 5; i++)
@@ -309,6 +377,14 @@ static TGTelegramNetworking *singleton = nil;
         [ActionStageInstance() requestActor:@"/tg/datacenterWatchdog" options:nil flags:0 watcher:self];
         
         [TGDatabaseInstance() resetStartupTime:[self globalTime]];
+        
+        bool renewSchemes = networkSettings == nil;
+#ifdef DEBUG
+        renewSchemes = true;
+#endif
+        if (renewSchemes) {
+            [_context invalidateTransportSchemesForKnownDatacenterIds];
+        }
     }
     return self;
 }
@@ -369,12 +445,24 @@ static TGTelegramNetworking *singleton = nil;
             }
         }
         
+        NSMutableDictionary *addressSets = [[NSMutableDictionary alloc] init];
+        for (NSNumber *dcId in _context.knownDatacenterIds)
+        {
+            NSInteger datacenterId = dcId.integerValue;
+            if (datacenterId > 0 && datacenterId < 10)
+            {
+                MTDatacenterAddressSet *addressSet = [_context addressSetForDatacenterWithId:_mtProto.datacenterId];
+                if (addressSet != nil)
+                    addressSets[dcId] = addressSet;
+            }
+        }
+
         MTDatacenterAuthInfo *authInfo = [_context authInfoForDatacenterWithId:_mtProto.datacenterId];
         if (authInfo != nil)
         {
-            MTDatacenterAuthInfo *sharedAuthInfo = [[MTDatacenterAuthInfo alloc] initWithAuthKey:authInfo.authKey authKeyId:authInfo.authKeyId saltSet:@[] authKeyAttributes:@{} tempAuthKey:nil];
+            MTDatacenterAuthInfo *sharedAuthInfo = [[MTDatacenterAuthInfo alloc] initWithAuthKey:authInfo.authKey authKeyId:authInfo.authKeyId saltSet:@[] authKeyAttributes:@{} mainTempAuthKey:nil mediaTempAuthKey:nil];
             NSString *versionString = [[NSString alloc] initWithFormat:@"%@ (%@)", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"], [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"]];
-            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:@{@"datacenterId":@(_mtProto.datacenterId), @"authInfo": sharedAuthInfo, @"version": versionString, @"clientUserId": @(TGTelegraphInstance.clientUserId) }];
+            NSData *data = [NSKeyedArchiver archivedDataWithRootObject:@{@"datacenterId":@(_mtProto.datacenterId), @"addressSets": addressSets, @"authInfo": sharedAuthInfo, @"version": versionString, @"clientUserId": @(TGTelegraphInstance.clientUserId), @"isTesting": @(_isTestingEnvironment) }];
             
             NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
             dict[@"protected"] = @(password != nil);
@@ -450,7 +538,7 @@ static TGTelegramNetworking *singleton = nil;
 {
     [ActionStageInstance() dispatchOnStageQueue:^
     {
-        if (self->_requestService != nil)
+        if (_requestService != nil)
         {
             _requestService.delegate = nil;
             [_mtProto removeMessageService:_requestService];
@@ -475,6 +563,8 @@ static TGTelegramNetworking *singleton = nil;
         _mtProto.delegate = self;
         _isNetworkAvailable = true;
         _isConnected = true;
+        _mtProto.useTempAuthKeys = false;
+        //_mtProto.checkForProxyConnectionIssues = true;
         [self dispatchNetworkState];
         
         _requestService = [[MTRequestMessageService alloc] initWithContext:_context];
@@ -490,14 +580,21 @@ static TGTelegramNetworking *singleton = nil;
             [_context transportSchemeForDatacenterWithIdRequired:datacenterId media:false];
         }
         
+        if (_postponedRequests.count > 0) {
+            for (MTRequest *request in _postponedRequests) {
+                [_requestService addRequest:request];
+            }
+            [_postponedRequests removeAllObjects];
+        }
+        
 #if TARGET_IPHONE_SIMULATOR && true
         MTRequest *getSchemeRequest = [[MTRequest alloc] init];
         getSchemeRequest.body = [[TLRPChelp_getScheme$help_getScheme alloc] init];
         [getSchemeRequest setCompleted:^(TLScheme$scheme *result, __unused NSTimeInterval timestamp, __unused id error)
-         {
-             TGLog(@"%@", result.scheme_raw);
-         }];
-        [_requestService addRequest:getSchemeRequest];
+        {
+            TGLog(@"%@", result.scheme_raw);
+        }];
+        [self addRequest:getSchemeRequest];
         
         //[_context transportSchemeForDatacenterWithIdRequired:1];
 #endif
@@ -595,6 +692,9 @@ static TGTelegramNetworking *singleton = nil;
     [TGAppDelegateInstance saveSettings];
     
     [_context removeAllAuthTokens];
+    [_context updateApiEnvironment:^MTApiEnvironment *(MTApiEnvironment *environment) {
+        return [environment withUpdatedSocksProxySettings:nil];
+    }];
     
     [TGKeychainImport clearLegacyKeychain];
 #else
@@ -629,6 +729,8 @@ static TGTelegramNetworking *singleton = nil;
             [_context updateTransportSchemeForDatacenterWithId:datacenterId transportScheme:scheme media:false isProxy:false];
         }
     }];
+    
+    [self exportCredentialsForExtensions];
 #else
     TGDatacenterContext *datacenter = datacenter = [[TGDatacenterContext alloc] init];
     datacenter.datacenterId = datacenterId;
@@ -824,6 +926,12 @@ static TGTelegramNetworking *singleton = nil;
 
 - (void)addRequest:(MTRequest *)request
 {
+    if (_requestService == nil) {
+        [_postponedRequests addObject:request];
+        return;
+    }
+    
+    NSAssert(_requestService != nil, @"requestService should not be nil");
     [_requestService addRequest:request];
 }
 
@@ -1006,7 +1114,7 @@ static TGTelegramNetworking *singleton = nil;
                               }];
                          }];
                         
-                        [_requestService addRequest:request];
+                        [self addRequest:request];
                         
                         id internalId = request.internalId;
                         [currentCollectedForwardMessagesDisposable add:[[SBlockDisposable alloc] initWithBlock:^
@@ -1099,7 +1207,7 @@ static TGTelegramNetworking *singleton = nil;
             return true;
         }];
         
-        [_requestService addRequest:request];
+        [self addRequest:request];
         return request.internalId;
     }
 #else
@@ -1228,7 +1336,8 @@ static TGTelegramNetworking *singleton = nil;
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         _isConnected = state.isConnected;
-        _isUsingProxy = state.isUsingProxy;
+        _isUsingProxy = state.proxyAddress.length != 0;
+        _proxyHasConnectionIssues = _isUsingProxy && state.proxyHasConnectionIssues;
         [self dispatchNetworkState];
     }];
 }
@@ -1276,7 +1385,7 @@ static TGTelegramNetworking *singleton = nil;
             if (token != _dispatchNetworkStateToken)
                 return;
             
-            TGLog(@"[TGTelegramNetworking state: %d %d %d %d %d]", (int)_isUpdatingConnectionContext, (int)_isPerformingServiceTasks, (int)_isConnected, (int)_isNetworkAvailable, (int)_isUsingProxy);
+            TGLog(@"[TGTelegramNetworking state: %d %d %d %d %d %d]", (int)_isUpdatingConnectionContext, (int)_isPerformingServiceTasks, (int)_isConnected, (int)_isNetworkAvailable, (int)_isUsingProxy, (int)_proxyHasConnectionIssues);
             
             int state = [ActionStageInstance() requestActorStateNow:@"/tg/service/updatestate"] ? 1 : 0;
             if (_isUpdatingConnectionContext || _isPerformingServiceTasks)
@@ -1287,6 +1396,8 @@ static TGTelegramNetworking *singleton = nil;
                 state |= 4;
             if (_isUsingProxy)
                 state |= 8;
+            if (_proxyHasConnectionIssues)
+                state |= 16;
             
             [ActionStageInstance() dispatchResource:@"/tg/service/synchronizationstate" resource:[[SGraphObjectNode alloc] initWithObject:[NSNumber numberWithInt:state]]];
         });
@@ -1425,7 +1536,7 @@ static TGTelegramNetworking *singleton = nil;
             return true;
         }];
         
-        [_requestService addRequest:request];
+        [self addRequest:request];
         id requestToken = request.internalId;
         
         return [[SBlockDisposable alloc] initWithBlock:^
@@ -1505,7 +1616,7 @@ static TGTelegramNetworking *singleton = nil;
             return true;
         }];
         
-        [_requestService addRequest:request];
+        [self addRequest:request];
         id requestToken = request.internalId;
         
         return [[SBlockDisposable alloc] initWithBlock:^
@@ -1706,6 +1817,14 @@ static TGTelegramNetworking *singleton = nil;
 
 - (NSString *)wifiUsageResetPath {
     return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"wifi-usage-reset"];
+}
+
+- (SSignal *)socksProxySettings {
+    return _socksProxySettingsValue.signal;
+}
+
+- (void)contextApiEnvironmentUpdated:(MTContext *)__unused context apiEnvironment:(MTApiEnvironment *)apiEnvironment {
+    [_socksProxySettingsValue set:[SSignal single:apiEnvironment.socksProxySettings]];
 }
 
 @end

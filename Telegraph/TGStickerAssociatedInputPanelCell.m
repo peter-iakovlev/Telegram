@@ -7,6 +7,7 @@
 @interface TGStickerAssociatedInputPanelCell ()
 {
     TGImageView *_imageView;
+    NSString *_previousUri;
     
     bool _highlighted;
 }
@@ -31,6 +32,7 @@
 {
     [super prepareForReuse];
     
+    _previousUri = nil;
     [_imageView reset];
 }
 
@@ -53,6 +55,10 @@
     [uri appendFormat:@"&width=128&height=128"];
     [uri appendFormat:@"&highQuality=1"];
     
+    if ([_previousUri isEqualToString:uri])
+        return;
+    
+    _previousUri = uri;
     [_imageView loadUri:uri withOptions:nil];
 }
 

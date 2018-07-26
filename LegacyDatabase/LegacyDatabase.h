@@ -39,7 +39,7 @@ FOUNDATION_EXPORT const unsigned char LegacyDatabaseVersionString[];
 #import <LegacyDatabase/PSLMDBTable.h>
 #import <LegacyDatabase/TGMemoryCache.h>
 #import <LegacyDatabase/TGPoolWithTimeout.h>
-#import <LegacyDatabase/ApiLayer73.h>
+#import <LegacyDatabase/ApiLayer82.h>
 
 #import <LegacyDatabase/TGPeerId.h>
 #import <LegacyDatabase/TGContactModel.h>

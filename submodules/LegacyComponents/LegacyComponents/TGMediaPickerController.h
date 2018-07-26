@@ -6,6 +6,7 @@
 @class TGMediaSelectionContext;
 @class TGMediaEditingContext;
 @class TGMediaPickerSelectionGestureRecognizer;
+@class TGMediaAssetsPallete;
 
 @interface TGMediaPickerController : TGViewController <UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout>
 {
@@ -19,10 +20,15 @@
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 @property (nonatomic, assign) bool localMediaCacheEnabled;
 @property (nonatomic, assign) bool captionsEnabled;
+@property (nonatomic, assign) bool allowCaptionEntities;
 @property (nonatomic, assign) bool inhibitDocumentCaptions;
 @property (nonatomic, assign) bool shouldStoreAssets;
 @property (nonatomic, assign) bool hasTimer;
+@property (nonatomic, assign) bool onlyCrop;
+@property (nonatomic, assign) bool inhibitMute;
 @property (nonatomic, strong) NSString *recipientName;
+
+@property (nonatomic, strong) TGMediaAssetsPallete *pallete;
 
 @property (nonatomic, readonly) TGMediaSelectionContext *selectionContext;
 @property (nonatomic, readonly) TGMediaEditingContext *editingContext;

@@ -25,17 +25,21 @@ UIImage *TGRotateAndScaleImageToPixelSize(UIImage *image, CGSize size);
 UIImage *TGFixOrientationAndCrop(UIImage *source, CGRect cropFrame, CGSize imageSize);
 UIImage *TGRotateAndCrop(UIImage *source, CGRect cropFrame, CGSize imageSize);
     
-UIImage *TGAttachmentImage(UIImage *source, CGSize sourceSize, CGSize size, bool incoming, bool location);
-UIImage *TGSecretAttachmentImage(UIImage *source, CGSize sourceSize, CGSize size);
-    
 UIImage *TGIdenticonImage(NSData *data, NSData *additionalData, CGSize size);
     
 UIImage *TGCircleImage(CGFloat radius, UIColor *color);
 
 UIImage *TGImageNamed(NSString *name);
 UIImage *TGTintedImage(UIImage *image, UIColor *color);
+UIImage *TGTintedWithAlphaImage(UIImage *image, UIColor *color);
     
 NSString *TGImageHash(NSData *data);
+    
+uint32_t TGColorHexCode(UIColor *color);
+uint32_t TGColorHexCodeWithAlpha(UIColor *color);
+    
+NSData *TGJPEGRepresentation(UIImage *image, CGFloat compressionRate);
+bool TGWriteJPEGRepresentationToFile(UIImage *image, CGFloat compressionRate, NSString *filePath);
     
 #ifdef __cplusplus
 }
@@ -89,3 +93,12 @@ void TGDrawSvgPath(CGContextRef context, NSString *path);
 #ifdef __cplusplus
 }
 #endif
+
+@interface TGImageBorderPallete : NSObject
+
+@property (nonatomic, readonly) UIColor *borderColor;
+@property (nonatomic, readonly) UIColor *shadowColor;
+
++ (instancetype)palleteWithBorderColor:(UIColor *)borderColor shadowColor:(UIColor *)shadowColor;
+
+@end

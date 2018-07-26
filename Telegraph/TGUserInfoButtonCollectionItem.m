@@ -10,9 +10,12 @@
 
 #import "TGUserInfoButtonCollectionItemView.h"
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoButtonCollectionItem ()
 {
     SEL _action;
+    bool _hasCustomColor;
 }
 
 @end
@@ -32,6 +35,23 @@
         _titleColor = TGAccentColor();
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    if (!_hasCustomColor)
+    {
+        _titleColor = presentation.pallete.collectionMenuAccentColor;
+        [(TGUserInfoButtonCollectionItemView *)self.boundView setTitleColor:_titleColor];
+    }
+}
+
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _titleColor = titleColor;
+    _hasCustomColor = true;
 }
 
 - (Class)itemViewClass

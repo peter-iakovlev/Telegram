@@ -20,7 +20,7 @@
 #import "TGButtonCollectionItem.h"
 #import "TGCommentCollectionItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 #import "TGAlertSoundController.h"
 
@@ -185,15 +185,13 @@
 
 - (void)resetAllNotifications
 {
-    [[[TGActionSheet alloc] initWithTitle:TGLocalized(@"Notifications.ResetAllNotificationsHelp") actions:@[
+    [[[TGCustomActionSheet alloc] initWithTitle:TGLocalized(@"Notifications.ResetAllNotificationsHelp") actions:@[
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Notifications.Reset") action:@"reset" type:TGActionSheetActionTypeDestructive],
         [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
     ] actionBlock:^(TGNotificationSettingsController *controller, NSString *action)
     {
         if ([action isEqualToString:@"reset"])
-        {
             [controller _commitResetAllNotitications];
-        }
     } target:self] showInView:self.view];
 }
 
@@ -221,14 +219,14 @@
     {
         index++;
         
-        if (index == 1)
-            continue;
-        
         int soundId = 0;
-        if (index == 0)
+        
+        if (index == 1)
+            soundId = 1;
+        else if (index == 0)
             soundId = 0;
         else
-            soundId = index + 100 - 2;
+            soundId = index + 100 - 1;
         
         NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
         dict[@"title"] = soundName;
@@ -261,7 +259,7 @@
 - (void)privateSoundPressed
 {
     _selectingPrivateSound = true;
-    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"Notifications.TextTone") soundInfoList:[self _soundInfoListForSelectedSoundId:[_privateNotificationSettings[@"soundId"] intValue]]];
+    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"Notifications.TextTone") soundInfoList:[self _soundInfoListForSelectedSoundId:[_privateNotificationSettings[@"soundId"] intValue]] defaultId:nil];
     alertSoundController.delegate = self;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[alertSoundController]];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
@@ -275,7 +273,7 @@
 - (void)groupSoundPressed
 {
     _selectingPrivateSound = false;
-    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"Notifications.TextTone") soundInfoList:[self _soundInfoListForSelectedSoundId:[_groupNotificationSettings[@"soundId"] intValue]]];
+    TGAlertSoundController *alertSoundController = [[TGAlertSoundController alloc] initWithTitle:TGLocalized(@"Notifications.TextTone") soundInfoList:[self _soundInfoListForSelectedSoundId:[_groupNotificationSettings[@"soundId"] intValue]] defaultId:nil];
     alertSoundController.delegate = self;
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[alertSoundController]];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad)
@@ -320,19 +318,6 @@
 
 #pragma mark -
 
-- (NSString *)soundNameFromId:(int)soundId
-{
-    if (soundId == 0 || soundId == 1)
-        return [TGAppDelegateInstance modernAlertSoundTitles][soundId];
-    
-    if (soundId >= 2 && soundId <= 9)
-        return [TGAppDelegateInstance classicAlertSoundTitles][MAX(0, soundId - 2)];
-    
-    if (soundId >= 100 && soundId <= 111)
-        return [TGAppDelegateInstance modernAlertSoundTitles][soundId - 100 + 2];
-    return @"";
-}
-
 - (void)_updateItems:(bool)animated
 {
     [_privateAlert setIsOn:[[_privateNotificationSettings objectForKey:@"muteUntil"] intValue] == 0 animated:animated];
@@ -342,7 +327,7 @@
     if (privateSoundId == 1)
         privateSoundId = 100;
     
-    _privateSound.variant = [self soundNameFromId:privateSoundId];
+    _privateSound.variant = [TGAlertSoundController soundNameFromId:privateSoundId];
     
     [_groupAlert setIsOn:[[_groupNotificationSettings objectForKey:@"muteUntil"] intValue] == 0 animated:animated];
     [_groupPreview setIsOn:[[_groupNotificationSettings objectForKey:@"previewText"] boolValue] animated:animated];
@@ -351,7 +336,7 @@
     if (groupSoundId == 1)
         groupSoundId = 100;
     
-    _groupSound.variant = [self soundNameFromId:groupSoundId];
+    _groupSound.variant = [TGAlertSoundController soundNameFromId:groupSoundId];
     
     [_inAppSounds setIsOn:TGAppDelegateInstance.soundEnabled animated:animated];
     [_inAppVibrate setIsOn:TGAppDelegateInstance.vibrationEnabled animated:animated];

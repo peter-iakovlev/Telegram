@@ -71,18 +71,17 @@
         _topStripeView.frame = CGRectMake(self.separatorInset, 0.0f, self.frame.size.width - self.separatorInset, separatorHeight * 2.0f);
     }
     
+    CGSize checkSize = _checkView.frame.size;
     if (_alignToRight)
     {
         _label.frame = CGRectMake(15.0f + self.safeAreaInset.left, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f - self.safeAreaInset.left - self.safeAreaInset.right, 26);
         
-        CGSize checkSize = _checkView.frame.size;
         _checkView.frame = CGRectMake(bounds.size.width - 15.0f - checkSize.width - self.safeAreaInset.right, 16.0f, checkSize.width, checkSize.height);
     }
     else
     {
         _label.frame = CGRectMake(44.0f + self.safeAreaInset.left, CGFloor((bounds.size.height - 26) / 2), bounds.size.width - 44.0f - 16.0f - self.safeAreaInset.left - self.safeAreaInset.right, 26);
         
-        CGSize checkSize = _checkView.frame.size;
         _checkView.frame = CGRectMake(15.0f + self.safeAreaInset.left, 16.0f, checkSize.width, checkSize.height);
     }
 }

@@ -4,10 +4,13 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGShareSheetButtonItemView ()
 {
     TGModernButton *_button;
     UIImageView *_imageView;
+    bool _destructive;
 }
 
 @end
@@ -61,6 +64,14 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    [_button setTitleColor:_destructive ? self.presentation.pallete.menuDestructiveColor : self.presentation.pallete.menuAccentColor forState:UIControlStateNormal];
+    [_button setTitleColor:presentation.pallete.menuSecondaryTextColor forState:UIControlStateDisabled];
+}
+
 - (void)setTitle:(NSString *)title
 {
     [_button setTitle:title forState:UIControlStateNormal];
@@ -87,7 +98,8 @@
 
 - (void)setDestructive:(bool)destructive
 {
-    [_button setTitleColor:destructive ? TGDestructiveAccentColor() : TGAccentColor()];
+    _destructive = destructive;
+    [_button setTitleColor:destructive ? self.presentation.pallete.menuDestructiveColor : self.presentation.pallete.menuAccentColor forState:UIControlStateNormal];
 }
 
 - (void)setEnabled:(bool)enabled {

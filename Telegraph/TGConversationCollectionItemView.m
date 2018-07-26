@@ -6,10 +6,13 @@
 
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
+
 @interface TGConversationCollectionItemViewContent : UIView
 
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) NSString *status;
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @end
 
@@ -29,17 +32,14 @@
 - (void)drawRect:(CGRect)__unused rect
 {
     static UIFont *titleFont = nil;
-    static CGColorRef titleColor = NULL;
+    CGColorRef titleColor = self.presentation.pallete.collectionMenuTextColor.CGColor;
     
     static UIFont *statusFont = nil;
     static dispatch_once_t onceToken;
-    static CGColorRef regularStatusColor = NULL;
+    CGColorRef regularStatusColor = self.presentation.pallete.collectionMenuVariantColor.CGColor;
     dispatch_once(&onceToken, ^ {
         titleFont = TGMediumSystemFontOfSize(17.0f);
         statusFont = TGSystemFontOfSize(13.0f);
-        
-        titleColor = CGColorRetain([UIColor blackColor].CGColor);
-        regularStatusColor = CGColorRetain(UIColorRGB(0xb3b3b3).CGColor);
     });
     
     CGRect bounds = self.bounds;
@@ -60,6 +60,12 @@
     CGSize statusSize = [_status sizeWithFont:statusFont];
     CGContextSetFillColorWithColor(context, regularStatusColor);
     [_status drawInRect:CGRectMake(1.0f, 23.0f - TGRetinaPixel, MIN(statusSize.width, availableWidth), statusSize.height) withFont:statusFont lineBreakMode:NSLineBreakByTruncatingTail];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    [self setNeedsDisplay];
 }
 
 @end
@@ -90,6 +96,13 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    [_content setPresentation:presentation];
+}
+
 - (void)setConversation:(TGConversation *)conversation {
     _conversation = conversation;
     _content.title = conversation.chatTitle;
@@ -100,22 +113,7 @@
 
 - (void)setAvatarUri:(NSString *)avatarUri
 {
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];
     
     if (avatarUri.length == 0) {
         [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(40.0f, 40.0f) conversationId:_conversation.conversationId title:_conversation.chatTitle placeholder:placeholder];

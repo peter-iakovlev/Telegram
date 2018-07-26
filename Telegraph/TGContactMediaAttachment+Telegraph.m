@@ -13,6 +13,7 @@
         self.firstName = desc.first_name;
         self.lastName = desc.last_name;
         self.phoneNumber = desc.phone_number;
+        self.vcard = desc.vcard;
     }
     return self;
 }

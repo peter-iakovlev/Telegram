@@ -20,8 +20,6 @@
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
 #import "TGGenericPeerMediaGalleryDeleteAccessoryView.h"
 
-#import "TGActionSheet.h"
-
 #import "TGForwardTargetController.h"
 #import <LegacyComponents/TGProgressWindow.h>
 
@@ -43,6 +41,7 @@
     
     NSArray *_modelItems;
     int32_t _atMessageId;
+    int64_t _atPeerId;
     bool _allowActions;
     
     NSUInteger _incompleteCount;
@@ -81,7 +80,7 @@
         
         _atMessageId = atMessageId;
         _allowActions = allowActions;
-        [self _loadInitialItemsAtMessageId:_atMessageId];
+        [self _loadInitialItemsAtMessageId:_atMessageId atPeerId:0];
             
         [ActionStageInstance() watchForPaths:@[
             [NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", _peerId],
@@ -113,6 +112,34 @@
         
         _groupedItems = [[NSMutableDictionary alloc] init];
         [self _replaceMessages:messages atMessageId:_atMessageId];
+    }
+    return self;
+}
+
+- (instancetype)initWithFeedId:(int64_t)feedId atMessageId:(int32_t)atMessageId atPeerId:(int64_t)atPeerId allowActions:(bool)allowActions
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _externalMode = false;
+        
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self];
+        
+        _queue = [[ATQueue alloc] init];
+        
+        _peerId = feedId;
+        
+        _atMessageId = atMessageId;
+        _atPeerId = atPeerId;
+        
+        _allowActions = allowActions;
+        [self _loadInitialItemsAtMessageId:_atMessageId atPeerId:_atPeerId];
+        
+        [ActionStageInstance() watchForPaths:@[
+        [NSString stringWithFormat:@"/tg/conversation/(%lld)/messages", _peerId],
+        [NSString stringWithFormat:@"/tg/conversation/(%lld)/messagesChanged", _peerId],
+        [NSString stringWithFormat:@"/tg/conversation/(%lld)/messagesDeleted", _peerId]
+        ] watcher:self];
     }
     return self;
 }
@@ -179,7 +206,7 @@
     }
 }
 
-- (void)_loadInitialItemsAtMessageId:(int32_t)atMessageId
+- (void)_loadInitialItemsAtMessageId:(int32_t)atMessageId atPeerId:(int64_t)__unused atPeerId
 {
     int count = 0;
     NSArray *messages = [[TGDatabaseInstance() loadMediaInConversation:_peerId atMessageId:atMessageId limitAfter:32 count:&count important:_important] sortedArrayUsingComparator:^NSComparisonResult(TGMessage *message1, TGMessage *message2)
@@ -249,7 +276,8 @@
                 
                 imageItem.date = message.date;
                 imageItem.messageId = message.mid;
-                imageItem.caption = imageMedia.caption;
+                imageItem.caption = message.caption;
+                imageItem.entities = message.entities;
                 imageItem.groupedId = message.groupedId;
                 [updatedModelItems addObject:imageItem];
             }
@@ -265,7 +293,8 @@
 
                 videoItem.date = message.date;
                 videoItem.messageId = message.mid;
-                videoItem.caption = videoMedia.caption;
+                videoItem.caption = message.caption;
+                videoItem.entities = message.entities;
                 videoItem.groupedId = message.groupedId;
                 [updatedModelItems addObject:videoItem];
             }
@@ -425,7 +454,8 @@
 
                     imageItem.date = message.date;
                     imageItem.messageId = message.mid;
-                    imageItem.caption = imageMedia.caption;
+                    imageItem.caption = message.caption;
+                    imageItem.entities = message.entities;
                     imageItem.groupedId = message.groupedId;
                     changesFound = true;
                     [updatedModelItems replaceObjectAtIndex:(NSUInteger)index withObject:imageItem];
@@ -442,7 +472,8 @@
 
                     videoItem.date = message.date;
                     videoItem.messageId = message.mid;
-                    videoItem.caption = videoMedia.caption;
+                    videoItem.caption = message.caption;
+                    videoItem.entities = message.entities;
                     videoItem.groupedId = message.groupedId;
                     changesFound = true;
                     [updatedModelItems replaceObjectAtIndex:(NSUInteger)index withObject:videoItem];
@@ -541,7 +572,8 @@
                 
                 imageItem.date = message.date;
                 imageItem.messageId = message.mid;
-                imageItem.caption = imageMedia.caption;
+                imageItem.caption = message.caption;
+                imageItem.entities = message.entities;
                 imageItem.groupedId = message.groupedId;
                 [updatedModelItems insertObject:imageItem atIndex:0];
                 
@@ -560,7 +592,8 @@
                 
                 videoItem.date = message.date;
                 videoItem.messageId = message.mid;
-                videoItem.caption = videoMedia.caption;
+                videoItem.caption = message.caption;
+                videoItem.entities = message.entities;
                 videoItem.groupedId = message.groupedId;
                 [updatedModelItems insertObject:videoItem atIndex:0];
                 
@@ -626,6 +659,14 @@
 {
     _footerView = [[TGGenericPeerMediaGalleryDefaultFooterView alloc] init];
     __weak TGGenericPeerMediaGalleryModel *weakSelf = self;
+    if (self.viewControllerForModalPresentation != nil)
+        _footerView.parentController = (TGViewController *)self.viewControllerForModalPresentation();
+    _footerView.openLinkRequested = ^(NSString *url)
+    {
+        __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf.openLinkRequested != nil)
+            strongSelf.openLinkRequested(url);
+    };
     _footerView.groupItemChanged = ^(TGGenericPeerGalleryGroupItem *item, bool synchronously)
     {
         __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
@@ -761,7 +802,7 @@
                     __strong TGGenericPeerMediaGalleryModel *strongSelf = weakSelf;
                     
                     if (strongSelf != nil && strongSelf.shareAction != nil)
-                        strongSelf.shareAction(messageIds, peerIds, caption);
+                        strongSelf.shareAction(messageIds, strongSelf->_peerId, peerIds, caption);
                 } externalShareItemSignal:externalItemSignal sourceView:strongAccessoryView sourceRect:sourceRect barButtonItem:nil];
             }
             else if (saveAction != nil)
@@ -1026,14 +1067,8 @@
                         int32_t messageId = [item messageId];
                         TGMessage *message = [TGDatabaseInstance() loadMessageWithMid:messageId peerId:strongSelf->_peerId];
                         
-                        if (message.outgoing) {
-                            if (![TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin]) {
+                        if (![TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin]) {
                                 canDeleteForEveryone = false;
-                            }
-                        } else {
-                            if (!(TGPeerIdIsGroup(strongSelf->_peerId) && [TGGenericModernConversationCompanion canDeleteMessageForEveryone:message peerId:strongSelf->_peerId isPeerAdmin:isPeerAdmin])) {
-                                canDeleteForEveryone = false;
-                            }
                         }
                     }
                 }

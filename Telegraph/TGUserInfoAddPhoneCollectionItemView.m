@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGUserInfoAddPhoneCollectionItemView ()
 {
     CALayer *_separatorLayer;
@@ -25,7 +27,7 @@
         CGFloat separatorHeight = TGScreenPixel;
         self.selectionInsets = UIEdgeInsetsMake(separatorHeight, 0.0f, 0.0f, 0.0f);
         
-        _addIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuAddIcon.png")];
+        _addIconView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 22.0f, 24.0f)];
         [self addSubview:_addIconView];
         
         _labelView = [[UILabel alloc] init];
@@ -37,6 +39,15 @@
         [self addSubview:_labelView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _addIconView.image = presentation.images.collectionMenuPlusImage;
+    _separatorLayer.backgroundColor = presentation.pallete.collectionMenuSeparatorColor.CGColor;
+    _labelView.textColor = presentation.pallete.collectionMenuAccentColor;
 }
 
 - (void)layoutSubviews

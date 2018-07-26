@@ -5,6 +5,6 @@
 
 @interface TGReplyHeaderVideoModel : TGReplyHeaderImageModel
 
-- (instancetype)initWithPeer:(id)peer videoMedia:(TGVideoMediaAttachment *)videoMedia incoming:(bool)incoming system:(bool)system;
+- (instancetype)initWithPeer:(id)peer videoMedia:(TGVideoMediaAttachment *)videoMedia incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation;
 
 @end

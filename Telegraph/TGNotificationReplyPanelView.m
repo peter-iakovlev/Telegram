@@ -13,6 +13,8 @@
 #import "TGStickerAssociatedInputPanel.h"
 #import "TGStickerKeyboardView.h"
 
+#import "TGPresentation.h"
+
 @interface TGNotificationReplyPanelView () <HPGrowingTextViewDelegate>
 {
     UIView *_wrapperView;
@@ -90,7 +92,7 @@
         _sendButton = [[TGModernButton alloc] initWithFrame:CGRectMake(0, 0, self.frame.size.height, self.frame.size.height)];
         _sendButton.enabled = false;
         _sendButton.adjustsImageWhenHighlighted = false;
-        [_sendButton setImage:TGComponentsImageNamed(@"PhotoPickerSendIcon") forState:UIControlStateNormal];
+        [_sendButton setImage:TGPresentation.current.images.chatInputSendIcon forState:UIControlStateNormal];
         [_sendButton addTarget:self action:@selector(sendButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_sendButton];
         
@@ -386,7 +388,7 @@
     }
     else
     {
-        if (_inputField.text.length == 0 && !(TGAppDelegateInstance.alwaysShowStickersMode != 2))
+        if (_inputField.text.length == 0)
             [commands addObject:_stickerModeButton];
     }
     [self setModeButtons:commands force:force];

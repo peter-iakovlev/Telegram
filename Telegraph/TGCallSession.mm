@@ -23,6 +23,7 @@
 
 #import "VoIPController.h"
 #import "VoIPServerConfig.h"
+#import "os/darwin/SetupLogging.h"
 
 typedef enum
 {
@@ -231,16 +232,26 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
     [session controllerStateChanged:state];
 }
 
+static void loggingFunction(NSString *string)
+{
+    TGLog(string);
+}
+
 - (void)_controllerInit
 {
     _controller = [[SAtomic alloc] initWithValue:nil recursive:true];
     [_controller modify:^id(VoIPControllerHolder *current) {
         assert(current == nil);
 
+        TGVoipLoggingFunction = &loggingFunction;
+        
         tgvoip::VoIPController *controller = new tgvoip::VoIPController();
         controller->implData = (__bridge void *)self;
-        controller->SetStateCallback(&controllerStateCallback);
-        controller->SetSignalBarsCountCallback(&signalBarsCallback);
+        
+        tgvoip::VoIPController::Callbacks callbacks;
+        callbacks.connectionStateChanged = &controllerStateCallback;
+        callbacks.signalBarCountChanged = &signalBarsCallback;
+        controller->SetCallbacks(callbacks);
 
         tgvoip::VoIPController::crypto.sha1 = &TGCallSha1;
         tgvoip::VoIPController::crypto.sha256 = &TGCallSha256;
@@ -258,15 +269,15 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
     TGCallTransmissionState tranmissionState = TGCallTransmissionStateInitializing;
     switch (state)
     {
-        case STATE_ESTABLISHED:
+        case tgvoip::STATE_ESTABLISHED:
             tranmissionState = TGCallTransmissionStateEstablished;
             break;
 
-        case STATE_FAILED:
+        case tgvoip::STATE_FAILED:
             tranmissionState = TGCallTransmissionStateFailed;
             break;
             
-        case STATE_RECONNECTING:
+        case tgvoip::STATE_RECONNECTING:
             tranmissionState = TGCallTransmissionStateReconnecting;
             break;
 
@@ -281,6 +292,12 @@ static void controllerStateCallback(tgvoip::VoIPController *controller, int stat
         
         if (tranmissionState == TGCallTransmissionStateEstablished && _startTime < DBL_EPSILON)
         {
+            [[TGCallSession audioQueue] dispatch:^
+            {
+                NSError *error;
+                [[AVAudioSession sharedInstance] setMode:AVAudioSessionModeVoiceChat error:&error];
+            }];
+            
             _startTime = CFAbsoluteTimeGetCurrent();
             
             if (self.onConnected != nil)
@@ -400,30 +417,18 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
                     tgvoip::IPv6Address addressv6(std::string(connection.ipv6.UTF8String));
                     unsigned char peerTag[16];
                     [connection.peerTag getBytes:peerTag length:16];
-                    endpoints.push_back(tgvoip::Endpoint(connection.identifier, (uint16_t)connection.port, address, addressv6, EP_TYPE_UDP_RELAY, peerTag));
+                    endpoints.push_back(tgvoip::Endpoint(connection.identifier, (uint16_t)connection.port, address, addressv6, tgvoip::Endpoint::TYPE_UDP_RELAY, peerTag));
                 }
 
-                voip_config_t config;
-                config.init_timeout = [TGCallSession callConnectTimeout];
-                config.recv_timeout = [TGCallSession callPacketTimeout];
-                config.data_saving = TGAppDelegateInstance.callsDataUsageMode;
-                config.enableAEC = false;
-                config.enableNS = true;
-                config.enableAGC = true;
-                
-                memset(config.logFilePath, 0, sizeof(config.logFilePath));
-                
+                tgvoip::VoIPController::Config config([TGCallSession callConnectTimeout], [TGCallSession callPacketTimeout], TGAppDelegateInstance.callsDataUsageMode, false, true, true);
+
                 NSString *logPath = [[self callLogsPath] stringByAppendingPathComponent:[NSString stringWithFormat:@"%lld-%lld.log", state.callId, state.accessHash]];
-                if (logPath.length < 256)
-                {
-                    const char *c = [logPath UTF8String];
-                    strncpy(config.logFilePath, c, logPath.length);
-                }
+                config.logFilePath = std::string([logPath UTF8String]);
                 
                 if (TGAppDelegateInstance.callsUseProxy)
                 {
                     MTSocksProxySettings *proxySettings = [[TGTelegramNetworking instance] context].apiEnvironment.socksProxySettings;
-                    if (proxySettings != nil) {
+                    if (proxySettings != nil && proxySettings.secret.length == 0) {
                         std::string username = "";
                         if (proxySettings.username != nil) {
                             username = std::string(proxySettings.username.UTF8String);
@@ -463,10 +468,10 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
                         break;
                 }
                 
-                controller.controller->SetConfig(&config);
+                controller.controller->SetConfig(config);
 
                 controller.controller->SetEncryptionKey((char *)state.connection.key.bytes, _outgoing);
-                controller.controller->SetRemoteEndpoints(endpoints, allowP2P);
+                controller.controller->SetRemoteEndpoints(endpoints, allowP2P, TGCallMaxLayer);
                 controller.controller->Start();
 
                 controller.controller->Connect();
@@ -496,8 +501,9 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
         controller.controller->GetDebugLog(buffer);
         debugLog = [[NSString alloc] initWithUTF8String:buffer];
 
-        voip_stats_t stats;
+        tgvoip::VoIPController::TrafficStats stats;
         controller.controller->GetStats(&stats);
+        controller.controller->Stop();
         delete controller.controller;
 
         MTNetworkUsageManager *usageManager = [[MTNetworkUsageManager alloc] initWithInfo:[[TGTelegramNetworking instance] mediaUsageInfoForType:TGNetworkMediaTypeTagCall]];
@@ -524,22 +530,22 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
         switch ((TGNetworkType)value.integerValue)
         {
             case TGNetworkTypeGPRS:
-                return @(NET_TYPE_GPRS);
+                return @(tgvoip::NET_TYPE_GPRS);
 
             case TGNetworkTypeEdge:
-                return @(NET_TYPE_EDGE);
+                return @(tgvoip::NET_TYPE_EDGE);
 
             case TGNetworkType3G:
-                return @(NET_TYPE_3G);
+                return @(tgvoip::NET_TYPE_3G);
 
             case TGNetworkTypeLTE:
-                return @(NET_TYPE_LTE);
+                return @(tgvoip::NET_TYPE_LTE);
 
             case TGNetworkTypeWiFi:
-                return @(NET_TYPE_WIFI);
+                return @(tgvoip::NET_TYPE_WIFI);
 
             default:
-                return @(NET_TYPE_UNKNOWN);
+                return @(tgvoip::NET_TYPE_UNKNOWN);
         }
     }] ignoreRepeated] startWithNext:^(NSNumber *next)
     {
@@ -720,26 +726,29 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
         TGUser *peer = [TGDatabaseInstance() loadUser:(int)peerId];
         NSString *text = [NSString stringWithFormat:TGLocalized(@"PHONE_CALL_REQUEST"), peer.displayName];
 
+        NSNumber *globalMessageSoundIdVal = nil;
         int globalMessageSoundId = 1;
-        bool globalMessagePreviewText = true;
-        int globalMessageMuteUntil = 0;
         bool notFound = false;
-        [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundId muteUntil:&globalMessageMuteUntil previewText:&globalMessagePreviewText messagesMuted:NULL notFound:&notFound];
-        if (notFound)
-        {
+        
+        [TGDatabaseInstance() loadPeerNotificationSettings:INT_MAX - 1 soundId:&globalMessageSoundIdVal muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:&notFound];
+        if (notFound) {
             globalMessageSoundId = 1;
-            globalMessagePreviewText = true;
+        }
+        else {
+            globalMessageSoundId = globalMessageSoundIdVal ? globalMessageSoundIdVal.intValue : 1;
         }
 
-        int soundId = 1;
         notFound = false;
-        int muteUntil = 0;
-        [TGDatabaseInstance() loadPeerNotificationSettings:_peer.uid soundId:&soundId muteUntil:&muteUntil previewText:NULL messagesMuted:NULL notFound:&notFound];
-        if (notFound)
-            soundId = 1;
-
-        if (soundId == 1)
+        
+        NSNumber *soundIdVal = nil;
+        int soundId = 1;
+        [TGDatabaseInstance() loadPeerNotificationSettings:_peer.uid soundId:&soundIdVal muteUntil:NULL previewText:NULL messagesMuted:NULL notFound:&notFound];
+        
+        if (soundIdVal != nil) {
+            soundId = soundIdVal.intValue;
+        } else {
             soundId = globalMessageSoundId;
+        }
 
         if (soundId > 0)
             notification.soundName = [[NSString alloc] initWithFormat:@"%d.m4a", soundId];
@@ -856,6 +865,9 @@ static id<SDisposable> audioSession;
 
         [audioSession dispose];
         audioSession = nil;
+        
+        AVAudioSession *session = [AVAudioSession sharedInstance];
+        [session setPreferredIOBufferDuration:0.0 error:NULL];
     } synchronous:true];
 }
 
@@ -922,7 +934,7 @@ static id<SDisposable> audioSession;
         if (!audioRoute.isLoudspeaker)
         {
             OSSpinLockLock(&_speakerLock);
-            _speaker = audioRoute.isLoudspeaker;
+            _speaker = false;
             OSSpinLockUnlock(&_speakerLock);
         }
         
@@ -1210,13 +1222,14 @@ static id<SDisposable> audioSession;
 - (SSignal *)audioContextSignal
 {
     __weak TGCallSession *weakSelf = self;
-    return [[[SSignal combineSignals:@[_state.signal, _transmissionState.signal, [TGAudioSessionManager routeChange], _audioTogglesPipe.signalProducer(), [[[SSignal single:@true] delay:1.0 onQueue:[SQueue concurrentDefaultQueue]] restart]] withInitialStates:@[ [NSNull null], @0, @0, @0, @0 ]] deliverOn:[SQueue concurrentDefaultQueue]] map:^id(__unused NSArray *values)
+    return [[[SSignal combineSignals:@[_state.signal, _transmissionState.signal, [TGAudioSessionManager routeChange], _audioTogglesPipe.signalProducer(), [[[SSignal single:@true] delay:1.0 onQueue:[SQueue concurrentDefaultQueue]] restart]] withInitialStates:@[ [NSNull null], @0, @0, @0, @0 ]] deliverOn:[TGCallSession audioQueue]] map:^id(__unused NSArray *values)
     {
         __strong TGCallSession *strongSelf = weakSelf;
         
         TGCallStateData *stateData = [values[0] isKindOfClass:[NSNull class]] ? nil : (TGCallStateData *)values[0];
         TGCallState currentState = stateData.state;
         
+        OSSpinLockLock(&_speakerLock);
         AVAudioSession *audioSession = [AVAudioSession sharedInstance];
         NSArray *inputs = iosMajorVersion() >= 7 ? audioSession.availableInputs : nil;
         NSArray *outputs = audioSession.currentRoute.outputs;
@@ -1225,7 +1238,6 @@ static id<SDisposable> audioSession;
         TGAudioRoute *activeRoute = nil;
         bool hasHeadphones = false;
         
-        OSSpinLockLock(&_speakerLock);
         bool speaker = strongSelf->_speaker;
         NSNumber *targetSpeaker = strongSelf->_targetSpeaker;
         NSNumber *delayedSpeaker = strongSelf->_delayedSpeaker;
@@ -1250,7 +1262,6 @@ static id<SDisposable> audioSession;
         {
             speaker = delayedSpeaker.boolValue;
         }
-        OSSpinLockUnlock(&_speakerLock);
         
         for (AVAudioSessionPortDescription *input in inputs)
         {
@@ -1272,6 +1283,7 @@ static id<SDisposable> audioSession;
                     activeRoute = route;
             }
         }
+        OSSpinLockUnlock(&_speakerLock);
         
         TGAudioRoute *builtInRoute = [TGAudioRoute routeForBuiltIn:hasHeadphones];
         [audioRoutes addObject:builtInRoute];
@@ -1304,9 +1316,8 @@ static id<SDisposable> audioSession;
 
         NSArray *debugValues = [strongSelf->_controller with:^id(VoIPControllerHolder *controller) {
             NSString *versionString = [NSString stringWithUTF8String:controller.controller->GetVersion()];
-            char buffer[2048];
-            controller.controller->GetDebugString(buffer, 2048);
-            NSString *debugString = [NSString stringWithUTF8String:buffer];
+            auto rawDebugString = controller.controller->GetDebugString();
+            NSString *debugString = [NSString stringWithUTF8String:rawDebugString.c_str()];
             return @[debugString, versionString];
         }];
         return [SSignal single:[NSString stringWithFormat:@"libtgvoip v%@\n%@", debugValues[1], debugValues[0]]];

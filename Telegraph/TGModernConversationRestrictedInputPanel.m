@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGModernConversationRestrictedInputPanel ()
 {
     CALayer *_stripeLayer;
@@ -42,6 +44,15 @@
         [self addSubview:_label];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    _label.textColor = presentation.pallete.secondaryTextColor;
 }
 
 - (void)setTimeout:(int32_t)timeout {

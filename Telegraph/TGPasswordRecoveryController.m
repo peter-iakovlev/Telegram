@@ -9,6 +9,8 @@
 
 #import "TGAlertView.h"
 
+#import "TGPresentation.h"
+
 @interface TGPasswordRecoveryController ()
 {
     NSString *_emailPattern;
@@ -63,7 +65,7 @@
         [self.menuSections addSection:firstSection];
         
         TGCommentCollectionItem *recoverItem = [[TGCommentCollectionItem alloc] initWithText:[[NSString alloc] initWithFormat:TGLocalized(@"TwoStepAuth.RecoveryEmailUnavailable"), _emailPattern]];
-        recoverItem.textColor = TGAccentColor();
+        recoverItem.textColor = self.presentation.pallete.collectionMenuAccentColor;
         recoverItem.action = ^
         {
             __strong TGPasswordRecoveryController *strongSelf = weakSelf;

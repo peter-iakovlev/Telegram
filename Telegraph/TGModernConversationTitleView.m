@@ -73,16 +73,23 @@ const NSTimeInterval typingIntervalSecond = 0.14;
 {
     _presentation = presentation;
     
-    _titleLabel.textColor = _presentation.pallete.navigationTitleColor;
+    _titleLabel.textColor = presentation.pallete.navigationTitleColor;
+    _activityIndicator.color = presentation.pallete.navigationActiveSubtitleColor;
+    _titleModalProgressIndicator.color = presentation.pallete.navigationSpinnerColor;
+    _titleModalProgressLabel.textColor = presentation.pallete.navigationTitleColor;
     
     if (_typingStatus == nil)
-        _statusLabel.textColor = _statusHasAccentColor ? _presentation.pallete.navigationActiveSubtitleColor : _presentation.pallete.navigationSubtitleColor;
+        _statusLabel.textColor = _statusHasAccentColor ? presentation.pallete.navigationActiveSubtitleColor : presentation.pallete.navigationSubtitleColor;
     else
-        _statusLabel.textColor = _presentation.pallete.navigationActiveSubtitleColor;
+        _statusLabel.textColor = presentation.pallete.navigationActiveSubtitleColor;
     
-    _toggleLabel.textColor = _presentation.pallete.navigationSubtitleColor;
+    _toggleLabel.textColor = presentation.pallete.navigationSubtitleColor;
     
-    _unreadBackground.image = _presentation.images.chatNavBadgeImage;
+    _unreadBackground.image = presentation.images.chatNavBadgeImage;
+    _unreadLabel.textColor = presentation.pallete.navigationBadgeTextColor;
+    
+    if (_arrowView != nil)
+        _arrowView.image = TGTintedImage(TGImageNamed(@"TooltipArrow.png"), self.presentation.pallete.navigationTitleColor);
 }
 
 - (void)_updateLabelsForCurrentOrientation
@@ -192,7 +199,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
     _statusLabel.hidden = !showStatus;
     if (!_showStatus && showArrow) {
         if (_arrowView == nil) {
-            _arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"TooltipArrow.png")];
+            _arrowView = [[UIImageView alloc] initWithImage:TGTintedImage(TGImageNamed(@"TooltipArrow.png"), self.presentation.pallete.navigationTitleColor)];
             [self addSubview:_arrowView];
         }
     }
@@ -320,7 +327,7 @@ const NSTimeInterval typingIntervalSecond = 0.14;
                 _activityIndicator = [[TGModernConversationTitleActivityIndicator alloc] init];
                 _activityIndicator.alpha = 0.0f;
             }
-            
+            _activityIndicator.color = self.presentation.pallete.navigationActiveSubtitleColor;
             if (_activityIndicator.superview != self)
                 [self addSubview:_activityIndicator];
             
@@ -407,10 +414,11 @@ const NSTimeInterval typingIntervalSecond = 0.14;
             _titleModalProgressLabel = [[UILabel alloc] init];
             _titleModalProgressLabel.clipsToBounds = false;
             _titleModalProgressLabel.backgroundColor = [UIColor clearColor];
-            _titleModalProgressLabel.textColor = [UIColor blackColor];
+            _titleModalProgressLabel.textColor = self.presentation.pallete.navigationTitleColor;
             _titleModalProgressLabel.font = TGBoldSystemFontOfSize(16.0f);
             
             _titleModalProgressIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+            _titleModalProgressIndicator.color = self.presentation.pallete.navigationSpinnerColor;
         }
         
         if (modalProgressStatus != nil)
@@ -492,7 +500,7 @@ static UIView *findNavigationBar(UIView *view)
                 
                 _unreadLabel = [[UILabel alloc] init];
                 _unreadLabel.backgroundColor = [UIColor clearColor];
-                _unreadLabel.textColor = [UIColor whiteColor];
+                _unreadLabel.textColor = _presentation.pallete.navigationBadgeTextColor;
                 _unreadLabel.font = TGSystemFontOfSize(12.0f);
                 [_unreadContainer addSubview:_unreadLabel];
                 
@@ -515,7 +523,7 @@ static UIView *findNavigationBar(UIView *view)
                 frame.origin.x = 10.0f - _unreadBackground.frame.size.width - [TGViewController safeAreaInsetForOrientation:_orientation].right;
                 _unreadBackground.frame = frame;
             }
-            _unreadLabel.frame = CGRectMake(_unreadBackground.frame.origin.x + TGRetinaFloor((_unreadBackground.frame.size.width - _unreadLabel.frame.size.width) / 2.0f), offset.y + 1.0f + (TGIsLocaleArabic() ? 1.0f : 0.0f) + 1.0f, _unreadLabel.frame.size.width, _unreadLabel.frame.size.height);
+            _unreadLabel.frame = CGRectMake(_unreadBackground.frame.origin.x + TGScreenPixelFloor((_unreadBackground.frame.size.width - _unreadLabel.frame.size.width) / 2.0f), offset.y + 1.0f + (TGIsLocaleArabic() ? 1.0f : 0.0f) + 1.0f, _unreadLabel.frame.size.width, _unreadLabel.frame.size.height);
         }
         else if (_unreadContainer != nil)
         {

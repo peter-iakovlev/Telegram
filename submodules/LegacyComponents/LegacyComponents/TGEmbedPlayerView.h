@@ -36,8 +36,11 @@
 
 @property (nonatomic, assign) bool disallowAutoplay;
 @property (nonatomic, assign) bool disallowPIP;
+@property (nonatomic, assign) bool disableControls;
 
 @property (nonatomic, assign) CGRect initialFrame;
+
+@property (nonatomic, copy) void (^onWatermarkAction)(void);
 
 @property (nonatomic, copy) void (^requestFullscreen)(NSTimeInterval duration);
 @property (nonatomic, copy) void (^onMetadataLoaded)(NSString *title, NSString *subtitle);
@@ -48,6 +51,7 @@
 
 - (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage;
 - (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal;
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal alternateCachePathSignal:(SSignal *)alternateCachePathSignal;
 - (void)setupWithEmbedSize:(CGSize)embedSize;
 
 - (void)setDimmed:(bool)dimmed animated:(bool)animated shouldDelay:(bool)shouldDelay;
@@ -93,6 +97,7 @@
 - (SSignal *)loadProgress;
 
 + (bool)_supportsWebPage:(TGWebPageMediaAttachment *)webPage;
++ (bool)hasNativeSupportForX:(TGWebPageMediaAttachment *)webPage;
 
 + (Class)playerViewClassForWebPage:(TGWebPageMediaAttachment *)webPage onlySpecial:(bool)onlySpecial;
 + (TGEmbedPlayerView *)makePlayerViewForWebPage:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)signal;

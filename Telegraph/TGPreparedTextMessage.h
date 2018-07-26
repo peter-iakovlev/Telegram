@@ -13,10 +13,9 @@
 
 @interface TGPreparedTextMessage : TGPreparedMessage
 
-@property (nonatomic, strong) NSString *text;
 @property (nonatomic) bool disableLinkPreviews;
 @property (nonatomic, strong) TGWebPageMediaAttachment *parsedWebpage;
-@property (nonatomic, strong) NSArray *entities;
+
 
 - (instancetype)initWithText:(NSString *)text replyMessage:(TGMessage *)replyMessage disableLinkPreviews:(bool)disableLinkPreviews parsedWebpage:(TGWebPageMediaAttachment *)parsedWebpage entities:(NSArray *)entities botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
 

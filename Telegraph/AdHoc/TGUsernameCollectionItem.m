@@ -34,6 +34,7 @@
     [super bindView:view];
     
     [view setTitle:_title];
+    [view setTitleColor:_titleColor];
     [view setPrefix:_prefix];
     [view setPlaceholder:_placeholder];
     [view setSecureEntry:_secureEntry];
@@ -53,6 +54,13 @@
         
         if (strongSelf.usernameChanged)
             strongSelf.usernameChanged(username);
+    };
+    view.shouldChangeText = ^bool(NSString *text)
+    {
+         __strong TGUsernameCollectionItem *strongSelf = weakSelf;
+        if (strongSelf.shouldChangeText != nil)
+            return strongSelf.shouldChangeText(text);
+        return true;
     };
     view.returnPressed = ^{
         __strong TGUsernameCollectionItem *strongSelf = weakSelf;
@@ -80,6 +88,12 @@
     //((TGUsernameCollectionItemView *)self.boundView).returnPressed = nil;
     
     [super unbindView];
+}
+
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _titleColor = titleColor;
+    [((TGUsernameCollectionItemView *)self.boundView) setTitleColor:_titleColor];
 }
 
 - (void)setTextPasted:(NSString *(^)(NSRange, NSString *))textPasted {
@@ -126,6 +140,11 @@
 - (void)becomeFirstResponder
 {
     [((TGUsernameCollectionItemView *)self.boundView) becomeFirstResponder];
+}
+
+- (void)resignFirstResponder
+{
+    [((TGUsernameCollectionItemView *)self.boundView) resignFirstResponder];
 }
 
 @end

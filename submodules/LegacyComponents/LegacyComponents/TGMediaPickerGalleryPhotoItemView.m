@@ -1,9 +1,12 @@
 #import "TGMediaPickerGalleryPhotoItemView.h"
 
+#import <PhotosUI/PhotosUI.h>
+
 #import "LegacyComponentsInternal.h"
 #import "TGFont.h"
 #import "TGStringUtils.h"
 
+#import <LegacyComponents/TGMediaAsset.h>
 #import <LegacyComponents/TGMediaAssetImageSignals.h>
 
 #import <LegacyComponents/TGPhotoEditorUtils.h>
@@ -13,8 +16,11 @@
 #import <LegacyComponents/TGImageView.h>
 
 #import <LegacyComponents/TGMediaSelectionContext.h>
+#import <LegacyComponents/PGPhotoEditorValues.h>
 
 #import "TGMediaPickerGalleryPhotoItem.h"
+
+#import <LegacyComponents/TGMenuView.h>
 
 @interface TGMediaPickerGalleryPhotoItemView ()
 {
@@ -25,12 +31,21 @@
     void (^_currentAvailabilityObserver)(bool);
     
     UIView *_temporaryRepView;
+    PHLivePhotoView *_livePhotoView;
     
     SMetaDisposable *_attributesDisposable;
+    
+    TGMenuContainerView *_tooltipContainerView;
 }
+
+@property (nonatomic, strong) TGMediaPickerGalleryPhotoItem *item;
+
 @end
 
 @implementation TGMediaPickerGalleryPhotoItemView
+
+@dynamic item;
+@synthesize safeAreaInset = _safeAreaInset;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -79,6 +94,11 @@
 {
     _imageView.hidden = false;
     [_imageView reset];
+    if (_livePhotoView != nil)
+    {
+        [_livePhotoView removeFromSuperview];
+        _livePhotoView = nil;
+    }
     [self setProgressVisible:false value:0.0f animated:false];
 }
 
@@ -86,7 +106,7 @@
 {
     [super setItem:item synchronously:synchronously];
     
-    _imageSize = item.asset.dimensions;
+    _imageSize = item.asset.originalSize;
     [self reset];
     
     if (item.asset == nil)
@@ -116,7 +136,15 @@
             }];
         };
 
-        SSignal *assetSignal = [TGMediaAssetImageSignals imageForAsset:item.asset imageType:(item.immediateThumbnailImage != nil) ? TGMediaAssetImageTypeScreen : TGMediaAssetImageTypeFastScreen size:CGSizeMake(1280, 1280)];
+        SSignal *assetSignal = [SSignal single:nil];
+        if ([item.asset isKindOfClass:[TGMediaAsset class]])
+        {
+            assetSignal = [TGMediaAssetImageSignals imageForAsset:(TGMediaAsset *)item.asset imageType:(item.immediateThumbnailImage != nil) ? TGMediaAssetImageTypeScreen : TGMediaAssetImageTypeFastScreen size:CGSizeMake(1280, 1280)];
+        }
+        else
+        {
+            assetSignal = [item.asset screenImageSignal:0.0];
+        }
         
         SSignal *imageSignal = assetSignal;
         if (item.editingContext != nil)
@@ -162,10 +190,33 @@
                 return;
             
             if ([next isKindOfClass:[UIImage class]])
+            {
                 strongSelf->_imageSize = ((UIImage *)next).size;
+            }
             
             [strongSelf reset];
+            
+            strongSelf->_livePhotoView.frame = strongSelf->_imageView.frame;
         }]];
+        
+//        if (item.asset.subtypes & TGMediaAssetSubtypePhotoLive)
+//        {
+//            _livePhotoView = [[PHLivePhotoView alloc] init];
+//            _livePhotoView.muted = true;
+//            _livePhotoView.contentMode = UIViewContentModeScaleAspectFill;
+//            _livePhotoView.hidden = self.imageView.hidden;
+//            _livePhotoView.frame = CGRectMake((self.containerView.frame.size.width - _imageSize.width) / 2.0f, (self.containerView.frame.size.height - _imageSize.height) / 2.0f, _imageSize.width, _imageSize.height);
+//            [self.containerView addSubview:_livePhotoView];
+//            
+//            [[[TGMediaAssetImageSignals livePhotoForAsset:item.asset] deliverOn:[SQueue mainQueue]] startWithNext:^(PHLivePhoto *next)
+//            {
+//                __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+//                if (strongSelf == nil)
+//                    return;
+//                
+//                strongSelf->_livePhotoView.livePhoto = next;
+//            }];
+//        }
         
         if (!item.asFile)
             return;
@@ -175,18 +226,21 @@
         if (_attributesDisposable == nil)
             _attributesDisposable = [[SMetaDisposable alloc] init];
         
-        [_attributesDisposable setDisposable:[[[TGMediaAssetImageSignals fileAttributesForAsset:item.asset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGMediaAssetImageFileAttributes *next)
+        if ([item.asset isKindOfClass:[TGMediaAsset class]])
         {
-            __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
-            if (strongSelf == nil)
-                return;
-            
-            NSString *extension = next.fileName.pathExtension.uppercaseString;
-            NSString *fileSize = [TGStringUtils stringForFileSize:next.fileSize precision:2];
-            NSString *dimensions = [NSString stringWithFormat:@"%dx%d", (int)next.dimensions.width, (int)next.dimensions.height];
-            
-            strongSelf->_fileInfoLabel.text = [NSString stringWithFormat:@"%@ • %@ • %@", extension, fileSize, dimensions];
-        }]];
+            [_attributesDisposable setDisposable:[[[TGMediaAssetImageSignals fileAttributesForAsset:(TGMediaAsset *)item.asset] deliverOn:[SQueue mainQueue]] startWithNext:^(TGMediaAssetImageFileAttributes *next)
+            {
+                __strong TGMediaPickerGalleryPhotoItemView *strongSelf = weakSelf;
+                if (strongSelf == nil)
+                    return;
+                
+                NSString *extension = next.fileName.pathExtension.uppercaseString;
+                NSString *fileSize = [TGStringUtils stringForFileSize:next.fileSize precision:2];
+                NSString *dimensions = [NSString stringWithFormat:@"%dx%d", (int)next.dimensions.width, (int)next.dimensions.height];
+                
+                strongSelf->_fileInfoLabel.text = [NSString stringWithFormat:@"%@ • %@ • %@", extension, fileSize, dimensions];
+            }]];
+        }
     }
 }
 
@@ -313,6 +367,44 @@
 {
     UIView *contentView = [self transitionContentView];
     return [contentView convertRect:contentView.bounds toView:[self transitionView]];
+}
+
+- (void)toggleSendAsGif
+{
+    CGSize originalSize = self.item.asset.originalSize;
+    PGPhotoEditorValues *adjustments = (PGPhotoEditorValues *)[self.item.editingContext adjustmentsForItem:self.item.editableMediaItem];
+    CGRect cropRect = adjustments.cropRect;
+    if (cropRect.size.width < FLT_EPSILON)
+        cropRect = CGRectMake(0.0f, 0.0f, originalSize.width, originalSize.height);
+    
+    PGPhotoEditorValues *updatedAdjustments = [PGPhotoEditorValues editorValuesWithOriginalSize:originalSize cropRect:cropRect cropRotation:adjustments.cropRotation cropOrientation:adjustments.cropOrientation cropLockedAspectRatio:adjustments.cropLockedAspectRatio cropMirrored:adjustments.cropMirrored toolValues:adjustments.toolValues paintingData:adjustments.paintingData sendAsGif:!adjustments.sendAsGif];
+    [self.item.editingContext setAdjustments:updatedAdjustments forItem:self.item.editableMediaItem];
+    
+    bool sendAsGif = !adjustments.sendAsGif;
+    if (sendAsGif)
+    {
+        if (UIInterfaceOrientationIsPortrait([[LegacyComponentsGlobals provider] applicationStatusBarOrientation]))
+        {
+            UIView *parentView = [self.delegate itemViewDidRequestInterfaceView:self];
+            
+            _tooltipContainerView = [[TGMenuContainerView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, parentView.frame.size.width, parentView.frame.size.height)];
+            [parentView addSubview:_tooltipContainerView];
+            
+            NSMutableArray *actions = [[NSMutableArray alloc] init];
+            [actions addObject:[[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"MediaPicker.LivePhotoDescription"), @"title", nil]];
+            _tooltipContainerView.menuView.forceArrowOnTop = true;
+            _tooltipContainerView.menuView.multiline = true;
+            [_tooltipContainerView.menuView setButtonsAndActions:actions watcherHandle:nil];
+            _tooltipContainerView.menuView.buttonHighlightDisabled = true;
+            [_tooltipContainerView.menuView sizeToFit];
+            
+            CGRect iconViewFrame = CGRectMake(12, 188 + _safeAreaInset.top, 40, 40);
+            [_tooltipContainerView showMenuFromRect:iconViewFrame animated:false];
+        }
+        
+        if (self.item.selectionContext != nil)
+            [self.item.selectionContext setItem:self.item.selectableMediaItem selected:true];
+    }
 }
 
 @end

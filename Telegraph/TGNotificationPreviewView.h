@@ -56,6 +56,8 @@
 
 @property (nonatomic, readonly) bool isIdle;
 
+@property (nonatomic, assign) bool unnlimitedHeight;
+
 - (CGFloat)maxContentHeight;
 
 - (void)_updateExpandProgress:(CGFloat)progress hideText:(bool)hideText;

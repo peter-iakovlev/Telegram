@@ -4,6 +4,6 @@
 
 @interface TGReplyHeaderTextModel : TGReplyHeaderModel
 
-- (instancetype)initWithPeer:(id)peer text:(NSString *)text incoming:(bool)incoming system:(bool)system;
+- (instancetype)initWithPeer:(id)peer text:(NSString *)text incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation;
 
 @end

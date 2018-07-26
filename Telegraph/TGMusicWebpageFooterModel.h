@@ -4,6 +4,6 @@
 
 @interface TGMusicWebpageFooterModel : TGWebpageFooterModel
 
-- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews;
+- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId authorPeerId:(int64_t)authorPeerId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews;
 
 @end

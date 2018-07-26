@@ -3,11 +3,16 @@
 #import <LegacyComponents/LegacyComponents.h>
 
 #import <LegacyComponents/TGEmbedPlayerView.h>
+#import <LegacyComponents/TGEmbedCoubPlayerView.h>
 #import "TGEmbedInternalPlayerView.h"
+
+#import "TGPreparedLocalDocumentMessage.h"
 
 #import "TGSharedPhotoSignals.h"
 #import "TGSharedMediaUtils.h"
 #import "TGSharedMediaSignals.h"
+
+#import "TGMediaStoreContext.h"
 
 #import <LegacyComponents/TGMenuSheetView.h>
 #import <LegacyComponents/TGMenuSheetController.h>
@@ -24,10 +29,11 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
 @end
 
-@interface TGEmbedItemView ()
+@interface TGEmbedItemView () <ASWatcher>
 {
     bool _preview;
     TGEmbedItemViewWindow *_embedWindow;
+    NSString *_downloadPath;
     
     TGPIPSourceLocation *_location;
     
@@ -54,6 +60,9 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     
     bool _mayRequestFullscreenOnOrientationChange;
 }
+
+@property (nonatomic, strong) ASHandle *actionHandle;
+
 @end
 
 @implementation TGEmbedItemView
@@ -113,11 +122,16 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
 - (instancetype)initWithMediaAttachment:(TGMediaAttachment *)attachment preview:(bool)preview thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
+    return [self initWithMediaAttachment:attachment preview:preview thumbnailSignal:thumbnailSignal peerId:peerId messageId:messageId mediaUrl:nil];
+}
+
+- (instancetype)initWithMediaAttachment:(TGMediaAttachment *)attachment preview:(bool)preview thumbnailSignal:(SSignal *)thumbnailSignal peerId:(int64_t)peerId messageId:(int32_t)messageId mediaUrl:(NSString *)mediaUrl
+{
     self = [super initWithType:TGMenuSheetItemTypeDefault];
     if (self != nil)
     {
         _preview = preview;
-        _location = [[TGPIPSourceLocation alloc] initWithEmbed:true peerId:peerId messageId:messageId localId:0 webPage:nil];
+        _location = [[TGPIPSourceLocation alloc] initWithEmbed:true conversationId:peerId messageId:messageId localId:0 webPage:nil];
         self.backgroundColor = [UIColor blackColor];
         
         _backView = [[UIView alloc] initWithFrame:self.bounds];
@@ -159,8 +173,49 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
             
             if (!hasPIPPlayer)
             {
-                Class playerViewClass = [TGEmbedPlayerView playerViewClassForWebPage:_webPage onlySpecial:false];
-                _playerView = [[playerViewClass alloc] initWithWebPageAttachment:_webPage thumbnailSignal:thumbnailSignal];
+                if ([_webPage.url hasPrefix:@"webdoc"])
+                {
+                    _playerView = [[TGEmbedInternalPlayerView alloc] initWithWebPageAttachment:_webPage thumbnailSignal:thumbnailSignal];
+                }
+                else
+                {
+                    Class playerViewClass = [TGEmbedPlayerView playerViewClassForWebPage:_webPage onlySpecial:false];
+                    
+                    TGDocumentMediaAttachment *document = _webPage.document;
+                    NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version] stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:document.fileName]];
+                    
+                    SSignal *alternateCachePathSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+                    {
+                        if ([[NSFileManager defaultManager] fileExistsAtPath:filePath])
+                        {
+                            [subscriber putNext:filePath];
+                            [subscriber putCompletion];
+                        }
+                        else
+                        {
+                            [[[TGMediaStoreContext instance] temporaryFilesCache] getValuePathForKey:[mediaUrl dataUsingEncoding:NSUTF8StringEncoding] completion:^(NSString *path)
+                            {
+                                [subscriber putNext:path];
+                                [subscriber putCompletion];
+                            }];
+                        }
+                        return nil;
+                    }];
+                    
+                    _playerView = [[playerViewClass alloc] initWithWebPageAttachment:_webPage thumbnailSignal:thumbnailSignal alternateCachePathSignal:alternateCachePathSignal];
+                    
+                    if (playerViewClass == [TGEmbedCoubPlayerView class] && document != nil)
+                    {
+                        if (![[NSFileManager defaultManager] fileExistsAtPath:filePath])
+                        {
+                            _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+                            
+                            NSString *path = [NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", document.datacenterId, document.documentId, document.documentUri.length != 0 ? document.documentUri : @""];
+                            _downloadPath = path;
+                            [ActionStageInstance() requestActor:path options:@{@"documentAttachment": document} flags:0 watcher:self];
+                        }
+                    }
+                }
             }
         }
         else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
@@ -201,6 +256,38 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     return self;
 }
 
+- (void)dealloc
+{
+    [_actionHandle reset];
+    [ActionStageInstance() removeWatcher:self];
+}
+
+- (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message {
+    if ([messageType isEqualToString:@"progress"]) {
+        TGDispatchOnMainThread(^{
+            if ([path isEqualToString:_downloadPath]) {
+                [_playerView setLoadProgress:[message floatValue] * 0.5f duration:0];
+            }
+        });
+    }
+}
+
+- (void)actorCompleted:(int)status path:(NSString *)path result:(id)__unused result {
+    TGDispatchOnMainThread(^ {
+        if ([path isEqualToString:_downloadPath]) {
+            _downloadPath = nil;
+            
+            if (status == ASStatusSuccess) {
+                if ([_playerView isKindOfClass:[TGEmbedCoubPlayerView class]]) {
+                    TGDocumentMediaAttachment *document = _webPage.document;
+                    NSString *filePath = [[TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version] stringByAppendingPathComponent:[TGDocumentMediaAttachment safeFileNameForFileName:document.fileName]];
+                    [((TGEmbedCoubPlayerView *)_playerView) setVideoPath:filePath];
+                }
+            }
+        }
+    });
+}
+
 - (void)handlePan:(UIPanGestureRecognizer *)gestureRecognizer
 {
     if (self.handleInternalPan != nil)
@@ -210,6 +297,14 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 - (void)_configurePlayerView
 {
     __weak TGEmbedItemView *weakSelf = self;
+    _playerView.onWatermarkAction = ^{
+        __strong TGEmbedItemView *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        if (strongSelf.onWatermarkAction != nil)
+            strongSelf.onWatermarkAction();
+    };
     _playerView.roundCorners = UIRectCornerTopLeft | UIRectCornerTopRight;
     _playerView.requestFullscreen = ^(NSTimeInterval duration)
     {
@@ -307,12 +402,18 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     
     _playerView.disableWatermarkAction = _preview;
     _playerView.inhibitFullscreenButton = _preview;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+       [self didChangeAbsoluteFrame];
+    });
 }
 
 - (void)menuView:(TGMenuSheetView *)__unused menuView didAppearAnimated:(bool)__unused animated
 {
     if (_preview)
         [_playerView onLockInPlace];
+    
+    [self didChangeAbsoluteFrame];
 }
 
 - (void)menuView:(TGMenuSheetView *)__unused menuView willDisappearAnimated:(bool)__unused animated
@@ -388,10 +489,14 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
 
 - (void)layoutSubviews
 {
-    _wrapperView.frame = CGRectMake(0, 0, self.frame.size.width, _embedSize.height);
+    CGFloat offset = 0.0f;
+    if (_wrapperView.superview == self)
+        _wrapperView.frame = CGRectMake(0, 0, self.frame.size.width, _embedSize.height);
+    else
+        offset = -7.5f;
     
     if (_playerView.superview == _wrapperView)
-        _playerView.center = CGPointMake(_wrapperView.frame.size.width / 2.0f, _wrapperView.frame.size.height / 2.0f);
+        _playerView.center = CGPointMake(_wrapperView.frame.size.width / 2.0f, _wrapperView.frame.size.height / 2.0f + offset);
 }
 
 - (void)didChangeAbsoluteFrame
@@ -402,6 +507,9 @@ const CGFloat TGEmbedItemViewCornerRadius = 5.5f;
     CGRect frame = [self convertRect:self.bounds toView:nil];
     frame.size.height += 15.0f;
     _wrapperView.frame = frame;
+    
+    if (_playerView.superview == _wrapperView)
+        _playerView.center = CGPointMake(_wrapperView.frame.size.width / 2.0f, _wrapperView.frame.size.height / 2.0f - 7.5f);
 }
 
 @end

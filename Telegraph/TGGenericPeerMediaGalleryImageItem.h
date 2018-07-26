@@ -12,6 +12,8 @@
 @property (nonatomic) int32_t messageId;
 @property (nonatomic) int64_t peerId;
 @property (nonatomic, strong) NSString *caption;
+@property (nonatomic, strong) NSArray *textCheckingResults;
+@property (nonatomic, strong) NSArray *entities;
 @property (nonatomic) int64_t groupedId;
 @property (nonatomic, strong) NSArray *groupItems;
 @property (nonatomic, strong) NSString *author;

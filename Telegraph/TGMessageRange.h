@@ -4,9 +4,11 @@
 typedef struct {
     int32_t firstMessageId;
     int32_t firstLocalMessageId;
+    int64_t firstPeerId;
     int firstDate;
     int32_t lastMessageId;
     int32_t lastLocalMessageId;
+    int64_t lastPeerId;
     int lastDate;
 } TGMessageRange;
 
@@ -30,7 +32,7 @@ inline bool TGMessageRangeEquals(TGMessageRange range1, TGMessageRange range2)
 }
 
 #ifndef __cplusplus
-bool TGMessageRangeContains(TGMessageRange range, int32_t messageId, int date);
+bool TGMessageRangeContains(TGMessageRange range, int64_t peerId, int32_t messageId, int date);
 #endif
     
 #ifdef __cplusplus
@@ -38,7 +40,7 @@ bool TGMessageRangeContains(TGMessageRange range, int32_t messageId, int date);
 #endif
 
 #ifdef __cplusplus
-bool TGMessageRangeContains(TGMessageRange const &range, int32_t messageId, int date);
+bool TGMessageRangeContains(TGMessageRange const &range, int64_t peerId, int32_t messageId, int date);
 #endif
 
 #endif

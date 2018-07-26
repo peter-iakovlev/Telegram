@@ -10,4 +10,6 @@
 
 - (instancetype)initWithContext:(TGModernViewContext *)context incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage imageInText:(bool)imageInText invoice:(TGInvoiceMediaAttachment *)invoice;
 
++ (NSDictionary *)buttonForType:(NSString *)buttonType context:(TGModernViewContext *)context;
+
 @end

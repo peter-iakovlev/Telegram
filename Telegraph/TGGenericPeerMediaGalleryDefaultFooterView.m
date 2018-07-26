@@ -1,8 +1,12 @@
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
+#import <SafariServices/SafariServices.h>
+
+#import "TGAppDelegate.h"
 
 #import "TGGenericPeerGalleryItem.h"
+#import "TGGenericPeerMediaGalleryVideoItem.h"
 
 #import "TGItemCollectionGalleryItem.h"
 #import "TGSecretPeerMediaGalleryImageItem.h"
@@ -11,9 +15,38 @@
 #import "TGGroupAvatarGalleryItem.h"
 #import "TGGenericPeerGalleryGroupItem.h"
 
+#import "TGModernFlatteningViewModel.h"
+#import "TGModernTextViewModel.h"
+#import "TGReusableLabel.h"
+#import "TGCollectionStaticMultilineTextItemView.h"
+
+#import "TGCustomActionSheet.h"
+#import "TGOpenInMenu.h"
+
 #import "TGGenericPeerMediaGalleryGroupSliderView.h"
 
 const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f, -8.0f };
+
+@interface TGGalleryTextLabelLink : NSObject
+
+@property (nonatomic, readonly) NSRange range;
+@property (nonatomic, strong, readonly) NSString *link;
+@property (nonatomic, strong) UIButton *button;
+
+@end
+
+@implementation TGGalleryTextLabelLink
+
+- (instancetype)initWithRange:(NSRange)range link:(NSString *)link {
+    self = [super init];
+    if (self != nil) {
+        _range = range;
+        _link = link;
+    }
+    return self;
+}
+
+@end
 
 @interface TGGenericPeerMediaGalleryDefaultFooterView ()
 {
@@ -24,11 +57,18 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     UILabel *_dateLabel;
     
     UIView *_captionPanelView;
-    UILabel *_captionLabel;
+    TGCollectionStaticMultilineTextItemViewTextView *_captionView;
+    TGModernTextViewModel *_textModel;
     
     UIView *_groupPanelView;
     TGGenericPeerMediaGalleryGroupSliderView *_groupSliderView;
     int64_t _currentGroupedId;
+    int64_t _currentGroupedKeyId;
+    
+    UIView *_videoPanelView;
+    bool _isVideo;
+    
+    UIView *_customContentView;
     
     NSMutableDictionary *_captionHeightForWidth;
 }
@@ -60,21 +100,37 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         _dateLabel.font = TGSystemFontOfSize(14.0f);
         [self addSubview:_dateLabel];
         
-        _captionLabel = [[UILabel alloc] init];
-        _captionLabel.backgroundColor = [UIColor clearColor];
-        _captionLabel.opaque = false;
-        _captionLabel.font = TGSystemFontOfSize(16);
-        _captionLabel.numberOfLines = 0;
-        _captionLabel.textColor = [UIColor whiteColor];
-        [_captionPanelView addSubview:_captionLabel];
+        _captionView = [[TGCollectionStaticMultilineTextItemViewTextView alloc] init];
+        _captionView.userInteractionEnabled = true;
+        
+        __weak TGGenericPeerMediaGalleryDefaultFooterView *weakSelf = self;
+        _captionView.followLink = ^(NSString *url)
+        {
+            __strong TGGenericPeerMediaGalleryDefaultFooterView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                strongSelf.openLinkRequested(url);
+        };
+        _captionView.holdLink = ^(NSString *url)
+        {
+            __strong TGGenericPeerMediaGalleryDefaultFooterView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf showActionsMenuForLink:url];
+        };
+        [_captionPanelView addSubview:_captionView];
         
         _groupPanelView = [[UIView alloc] initWithFrame:CGRectZero];
-        _groupPanelView.backgroundColor = UIColorRGBA(0x000000, 0.65f);
+        _groupPanelView.backgroundColor = _captionPanelView.backgroundColor;
         _groupPanelView.clipsToBounds = true;
         [self addSubview:_groupPanelView];
         
         _groupSliderView = [[TGGenericPeerMediaGalleryGroupSliderView alloc] init];
         [_groupPanelView addSubview:_groupSliderView];
+        
+        _videoPanelView = [[UIView alloc] initWithFrame:CGRectZero];
+        _videoPanelView.backgroundColor = _captionPanelView.backgroundColor;
+        _videoPanelView.clipsToBounds = true;
+        [self addSubview:_videoPanelView];
+        
     }
     return self;
 }
@@ -89,6 +145,135 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     [_groupSliderView setTransitionProgress:progress];
 }
 
+- (void)showActionsMenuForLink:(NSString *)url
+{
+    if (url.length == 0)
+        return;
+
+    UIView *parentView = self.parentController.view;
+    if ([url hasPrefix:@"tel:"])
+    {
+        TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:url.length < 70 ? url : [[url substringToIndex:70] stringByAppendingString:@"..."] actions:@
+                                            [
+                                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.PhoneCall") action:@"call"],
+                                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogCopy") action:@"copy"],
+                                             [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]
+                                             ] actionBlock:^(__unused TGGenericPeerMediaGalleryDefaultFooterView *controller, NSString *action)
+        {
+            if ([action isEqualToString:@"call"])
+            {
+                [TGAppDelegateInstance performPhoneCall:[NSURL URLWithString:url]];
+            }
+            else if ([action isEqualToString:@"copy"])
+            {
+                UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+                if (pasteboard != nil)
+                {
+                    NSString *copyString = url;
+                    if ([url hasPrefix:@"mailto:"])
+                        copyString = [url substringFromIndex:7];
+                    else if ([url hasPrefix:@"tel:"])
+                        copyString = [url substringFromIndex:4];
+                    [pasteboard setString:copyString];
+                }
+            }
+        } target:self];
+        [actionSheet showInView:parentView];
+    }
+    else
+    {
+        NSString *displayString = url;
+        if ([url hasPrefix:@"hashtag://"])
+            displayString = [@"#" stringByAppendingString:[url substringFromIndex:@"hashtag://".length]];
+        else if ([url hasPrefix:@"mention://"])
+            displayString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
+        
+        
+        NSURL *link = [NSURL URLWithString:url];
+        if (link.scheme.length == 0)
+            link = [NSURL URLWithString:[@"http://" stringByAppendingString:url]];
+        
+        bool useOpenIn = false;
+        bool isWeblink = false;
+        if ([link.scheme isEqualToString:@"http"] || [link.scheme isEqualToString:@"https"])
+        {
+            isWeblink = true;
+            if ([TGOpenInMenu hasThirdPartyAppsForURL:link])
+                useOpenIn = true;
+        }
+        
+        NSMutableArray *actions = [[NSMutableArray alloc] init];
+        if (useOpenIn)
+        {
+            TGActionSheetAction *openInAction = [[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.FileOpenIn") action:@"openIn"];
+            openInAction.disableAutomaticSheetDismiss = true;
+            [actions addObject:openInAction];
+        }
+        else
+        {
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogOpen") action:@"open"]];
+        }
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.LinkDialogCopy") action:@"copy"]];
+        
+        if (isWeblink && iosMajorVersion() >= 7)
+        {
+            [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Conversation.AddToReadingList") action:@"addToReadingList"]];
+        }
+        
+        [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
+        
+        TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:displayString.length < 70 ? displayString : [[displayString substringToIndex:70] stringByAppendingString:@"..."] actions:actions menuController:nil advancedActionBlock:^(TGMenuSheetController *menuController, TGGenericPeerMediaGalleryDefaultFooterView *controller, NSString *action)
+        {
+            if ([action isEqualToString:@"open"])
+            {
+                if (controller.openLinkRequested != nil)
+                    controller.openLinkRequested(url);
+            }
+            else if ([action isEqualToString:@"openIn"])
+            {
+                [TGOpenInMenu presentInParentController:controller.parentController menuController:menuController title:TGLocalized(@"Map.OpenIn") url:link buttonTitle:nil buttonAction:nil sourceView:parentView sourceRect:nil barButtonItem:nil];
+            }
+            else if ([action isEqualToString:@"copy"])
+            {
+                UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+                if (pasteboard != nil)
+                {
+                    NSString *copyString = url;
+                    if ([url hasPrefix:@"mailto:"])
+                        copyString = [url substringFromIndex:7];
+                    else if ([url hasPrefix:@"tel:"])
+                        copyString = [url substringFromIndex:4];
+                    else if ([url hasPrefix:@"hashtag://"])
+                        copyString = [@"#" stringByAppendingString:[url substringFromIndex:@"hashtag://".length]];
+                    else if ([url hasPrefix:@"mention://"])
+                        copyString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
+                    [pasteboard setString:copyString];
+                }
+            }
+            else if ([action isEqualToString:@"addToReadingList"])
+            {
+                [[SSReadingList defaultReadingList] addReadingListItemWithURL:[NSURL URLWithString:url] title:url previewText:nil error:NULL];
+            }
+        } target:self];
+        [actionSheet showInView:parentView];
+    }
+}
+
+- (void)setupCaption:(NSString *)text textCheckingResults:(NSArray *)textCheckingResults
+{
+    _textModel = [[TGModernTextViewModel alloc] initWithText:text font:TGCoreTextSystemFontOfSize(16.0f)];
+    _textModel.textColor = [UIColor whiteColor];
+    _textModel.linkColor = [UIColor whiteColor];
+    _textModel.textCheckingResults = textCheckingResults;
+    _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+    
+    CGFloat parentWidth = self.superview.frame.size.width - _safeAreaInset.left - _safeAreaInset.right;
+    [_textModel layoutForContainerSize:CGSizeMake([self captionWidthForWidth:parentWidth], CGFLOAT_MAX)];
+    
+    [_captionView setTextModel:_textModel];
+    [self setNeedsLayout];
+}
+
 - (void)setItem:(id<TGModernGalleryItem>)item
 {
     if (![item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)] && ![item isKindOfClass:[TGItemCollectionGalleryItem class]] && ![item isKindOfClass:[TGSecretPeerMediaGalleryImageItem class]] && ![item isKindOfClass:[TGSecretPeerMediaGalleryVideoItem class]] && ![item isKindOfClass:[TGUserAvatarGalleryItem class]] && ![item isKindOfClass:[TGGroupAvatarGalleryItem class]])
@@ -97,9 +282,11 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     bool shouldAnimate = _hasAppeared;
 
     NSString *newCaption = nil;
+    NSArray *newTextCheckingResults = nil;
     NSArray *groupItems = nil;
     int64_t groupedId = 0;
     int64_t groupedKeyId = 0;
+    bool isVideo = false;
     if ([item conformsToProtocol:@protocol(TGGenericPeerGalleryItem)]) {
         id<TGGenericPeerGalleryItem> concreteItem = (id<TGGenericPeerGalleryItem>)item;
         NSString *title = nil;
@@ -112,6 +299,8 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         
         if ([concreteItem respondsToSelector:@selector(caption)])
             newCaption = [concreteItem performSelector:@selector(caption) withObject:nil];
+        if ([concreteItem respondsToSelector:@selector(textCheckingResults)])
+            newTextCheckingResults = [concreteItem performSelector:@selector(textCheckingResults) withObject:nil];
         
         if ([concreteItem respondsToSelector:@selector(groupItems)])
         {
@@ -128,6 +317,9 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
                 groupedKeyId = NSNotFound;
             }
         }
+        
+        if ([concreteItem isKindOfClass:[TGGenericPeerMediaGalleryVideoItem class]])
+            isVideo = true;
         
         _nameLabel.text = title;
         _dateLabel.text = [concreteItem date] > 0 ? [TGDateUtils stringForApproximateDate:(int)[concreteItem date]] : nil;
@@ -179,32 +371,38 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     
     _hasAppeared = true;
     
-    if ([_captionLabel.text isEqualToString:newCaption] && groupedId == _currentGroupedId)
+    if ([_textModel.text isEqualToString:newCaption] && groupedId == _currentGroupedId && _currentGroupedKeyId == groupedKeyId && isVideo == _isVideo)
     {
         [self setNeedsLayout];
         return;
     }
 
     _captionHeightForWidth = [[NSMutableDictionary alloc] init];
+    
     bool groupChanged = _currentGroupedId != groupedId;
     _currentGroupedId = groupedId;
+    _currentGroupedKeyId = groupedKeyId;
+    
+    bool videoChanged = _isVideo != isVideo;
+    _isVideo = isVideo;
     
     UIView *captionSnapshotView = nil;
-    if (shouldAnimate && !_captionLabel.hidden)
+    if (shouldAnimate && !_captionView.hidden)
     {
-        captionSnapshotView = [_captionLabel snapshotViewAfterScreenUpdates:false];
-        captionSnapshotView.frame = _captionLabel.frame;
-        [_captionPanelView insertSubview:captionSnapshotView belowSubview:_captionLabel];
+        captionSnapshotView = [_captionView snapshotViewAfterScreenUpdates:false];
+        captionSnapshotView.frame = _captionView.frame;
+        [_captionPanelView insertSubview:captionSnapshotView belowSubview:_captionView];
         
-        _captionLabel.alpha = 0.0f;
-        _captionLabel.hidden = true;
+        _captionView.alpha = 0.0f;
+        _captionView.hidden = true;
     }
     
-    _captionLabel.text = newCaption;
+    [self setupCaption:newCaption textCheckingResults:newTextCheckingResults];
+    
     if (!shouldAnimate)
     {
-        _captionLabel.hidden = (_captionLabel.text.length == 0);
-        _captionLabel.alpha = _captionLabel.hidden ? 0.0f : 1.0f;
+        _captionView.hidden = (_textModel.text.length == 0);
+        _captionView.alpha = _captionView.hidden ? 0.0f : 1.0f;
     }
     
     UIView *groupSnapshotView = nil;
@@ -218,6 +416,17 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         _groupSliderView.hidden = true;
     }
     
+    UIView *videoSnapshotView = nil;
+    if (shouldAnimate && videoChanged && _customContentView != nil && !_customContentView.hidden)
+    {
+        videoSnapshotView = [_customContentView snapshotViewAfterScreenUpdates:false];
+        videoSnapshotView.frame = _customContentView.frame;
+        [_videoPanelView insertSubview:videoSnapshotView belowSubview:_customContentView];
+        
+        _customContentView.alpha = 0.0f;
+        _customContentView.hidden = true;
+    }
+    
     if (groupedId != 1)
         [_groupSliderView setGroupedId:groupedId items:groupItems];
     if (groupedId != 0 && groupedKeyId != NSNotFound)
@@ -229,11 +438,17 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         _groupSliderView.alpha = _groupSliderView.hidden ? 0.0f : 1.0f;
     }
     
+    if (!shouldAnimate)
+    {
+        _customContentView.hidden = !isVideo;
+        _customContentView.alpha = _customContentView.hidden ? 0.0f : 1.0f;
+    }
+    
     CGFloat fadeOutDuration = 0.21f;
     if (shouldAnimate)
     {
         CGFloat parentWidth = self.superview.frame.size.width;
-        CGRect captionTargetFrame = [self captionPanelFrameForParentWidth:parentWidth captionHeight:[self captionHeightForWidth:parentWidth] inGroup:_currentGroupedId != 0];
+        CGRect captionTargetFrame = [self captionPanelFrameForParentWidth:parentWidth captionHeight:[self captionHeightForWidth:parentWidth] inGroup:_currentGroupedId != 0 isVideo:_isVideo];
         if (captionTargetFrame.size.height < FLT_EPSILON)
             fadeOutDuration = 0.17f;
         
@@ -257,12 +472,21 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
             } completion:nil];
         }
 
-        if (_captionLabel.text.length > 0)
+        CGRect videoTargetFrame = [self videoPanelFrameForParentWidth:parentWidth inGroup:_currentGroupedId != 0 isVideo:_isVideo];
+        if (fabs(videoTargetFrame.size.height - _videoPanelView.frame.size.height) > FLT_EPSILON)
         {
-            _captionLabel.hidden = false;
+            [UIView animateWithDuration:0.3f delay:0.0f options:7 << 16 animations:^
+            {
+                _videoPanelView.frame = videoTargetFrame;
+            } completion:nil];
+        }
+        
+        if (_textModel.text.length > 0)
+        {
+            _captionView.hidden = false;
             [UIView animateWithDuration:0.24f delay:fadeInDelay options:UIViewAnimationOptionCurveEaseInOut animations:^
             {
-                _captionLabel.alpha = 1.0f;
+                _captionView.alpha = 1.0f;
             } completion:nil];
         }
         
@@ -272,6 +496,15 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
             [UIView animateWithDuration:0.24f delay:fadeInDelay options:UIViewAnimationOptionCurveEaseInOut animations:^
             {
                 _groupSliderView.alpha = 1.0f;
+            } completion:nil];
+        }
+        
+        if (isVideo)
+        {
+            _customContentView.hidden = false;
+            [UIView animateWithDuration:0.24f delay:fadeInDelay options:UIViewAnimationOptionCurveEaseInOut animations:^
+            {
+                _customContentView.alpha = 1.0f;
             } completion:nil];
         }
     }
@@ -298,6 +531,17 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
         }];
     }
     
+    if (videoSnapshotView != nil)
+    {
+        [UIView animateWithDuration:fadeOutDuration delay:0.0f options:UIViewAnimationOptionCurveEaseOut animations:^
+        {
+            videoSnapshotView.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            [videoSnapshotView removeFromSuperview];
+        }];
+    }
+    
     [self setNeedsLayout];
 }
 
@@ -314,11 +558,28 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     _dateLabel.hidden = contentHidden;
 }
 
-- (CGRect)captionPanelFrameForParentWidth:(CGFloat)width captionHeight:(CGFloat)captionHeight inGroup:(bool)inGroup
+- (void)setCustomContentView:(UIView *)contentView
+{
+    if (_customContentView != nil && _customContentView != contentView)
+    {
+        [_customContentView removeFromSuperview];
+        _customContentView = nil;
+    }
+    
+    _customContentView = contentView;
+    [_videoPanelView addSubview:_customContentView];
+    [self setNeedsLayout];
+}
+
+- (CGRect)captionPanelFrameForParentWidth:(CGFloat)width captionHeight:(CGFloat)captionHeight inGroup:(bool)inGroup isVideo:(bool)isVideo
 {
     CGFloat panelHeight = captionHeight > FLT_EPSILON ? captionHeight + 17.0f : 0.0f;
+    if (isVideo)
+        panelHeight -= 5.0f;
     CGFloat y = -panelHeight;
     if (inGroup)
+        y -= 43.0f;
+    if (isVideo)
         y -= 43.0f;
     return CGRectMake(-self.frame.origin.x, y, width, panelHeight);
 }
@@ -329,33 +590,23 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     return CGRectMake(-self.frame.origin.x, -panelHeight, width, panelHeight);
 }
 
-- (CGFloat)captionHeightForWidth:(CGFloat)width
+- (CGRect)videoPanelFrameForParentWidth:(CGFloat)width inGroup:(bool)inGroup isVideo:(bool)isVideo
+{
+    CGFloat panelHeight = isVideo > FLT_EPSILON ? 43.0f : 0.0f;
+    CGFloat y = -panelHeight;
+    if (inGroup)
+        y -= 43.0f;
+    return CGRectMake(-self.frame.origin.x, y, width, panelHeight);
+}
+
+- (CGFloat)captionHeightForWidth:(CGFloat)__unused width
 {
     CGFloat height = 0.0f;
     
-    if (_captionLabel.text.length == 0)
+    if ([_textModel.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length == 0)
         return height;
     
-    NSNumber *widthKey = @(width);
-    NSNumber *cachedHeight = _captionHeightForWidth[widthKey];
-    if (cachedHeight == nil)
-    {
-        if ([_captionLabel.text respondsToSelector:@selector(boundingRectWithSize:options:attributes:context:)])
-        {
-            height = [_captionLabel.text boundingRectWithSize:CGSizeMake([self captionWidthForWidth:width], FLT_MAX) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:_captionLabel.font} context:NULL].size.height;
-        }
-        else
-        {
-            height = [_captionLabel.text sizeWithFont:_captionLabel.font constrainedToSize:CGSizeMake([self captionWidthForWidth:width], FLT_MAX) lineBreakMode:NSLineBreakByWordWrapping].height;
-        }
-        _captionHeightForWidth[widthKey] = @(height);
-    }
-    else
-    {
-        height = cachedHeight.floatValue;
-    }
-    
-    return height;
+    return _textModel.frame.size.height;
 }
 
 - (CGFloat)captionWidthForWidth:(CGFloat)width
@@ -367,39 +618,15 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
 {
 }
 
-- (void)setCaptionPanelHidden:(bool)hidden animated:(bool)animated
-{
-    if (animated)
-    {
-        _captionPanelView.hidden = false;
-        _groupPanelView.hidden = false;
-
-        [UIView animateWithDuration:0.35f delay:0.0f options:UIViewAnimationOptionCurveLinear animations:^
-        {
-            _captionPanelView.alpha = hidden ? 0.0f : 1.0f;
-            _groupPanelView.alpha = hidden ? 0.0f : 1.0f;
-        } completion:^(BOOL finished)
-        {
-            if (finished)
-            {
-                _captionPanelView.hidden = hidden;
-                _groupPanelView.hidden = hidden;
-            }
-        }];
-    }
-    else
-    {
-        _captionPanelView.alpha = hidden ? 0.0f : 1.0f;
-        _captionPanelView.hidden = hidden;
-        
-        _groupPanelView.alpha = hidden ? 0.0f : 1.0f;;
-        _groupPanelView.hidden = hidden;
-    }
-}
-
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
 {
     if (_groupPanelView.frame.size.height > FLT_EPSILON && CGRectContainsPoint(_groupPanelView.frame, point))
+        return true;
+    
+    if (_videoPanelView.frame.size.height > FLT_EPSILON && CGRectContainsPoint(_videoPanelView.frame, point))
+        return true;
+    
+    if (_captionPanelView.frame.size.height > FLT_EPSILON && CGRectContainsPoint(_captionPanelView.frame, point))
         return true;
     
     return [super pointInside:point withEvent:event];
@@ -427,15 +654,26 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
     
     CGFloat parentWidth = self.superview.frame.size.width - _safeAreaInset.left - _safeAreaInset.right;
     CGFloat captionWidth = 0.0f;
-    if (_captionLabel.text.length > 0)
+    if (_textModel.text.length > 0)
     {
         captionWidth = [self captionWidthForWidth:parentWidth];
-        _captionLabel.frame = CGRectMake(TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin.x + _safeAreaInset.left, 8, CGCeil(captionWidth), CGCeil([self captionHeightForWidth:captionWidth]));
+        if ([_textModel layoutNeedsUpdatingForContainerSize:CGSizeMake(captionWidth, CGFLOAT_MAX)])
+            [_textModel layoutForContainerSize:CGSizeMake(captionWidth, CGFLOAT_MAX)];
+        
+        CGSize targetSize = CGSizeMake(captionWidth, [self captionHeightForWidth:captionWidth]);
+        if (fabs(targetSize.width - _captionView.frame.size.width) > FLT_EPSILON || fabs(targetSize.height - _captionView.frame.size.height) > FLT_EPSILON)
+        {
+            _captionView.frame = CGRectMake(TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin.x + _safeAreaInset.left, 8.0f, targetSize.width, targetSize.height);
+            [_captionView setNeedsDisplay];
+        }
     }
     
-    _groupPanelView.frame = [self groupPanelFrameForParentWidth:parentWidth inGroup:_currentGroupedId != 0];
+    _groupPanelView.frame = [self groupPanelFrameForParentWidth:self.superview.frame.size.width inGroup:_currentGroupedId != 0];
     _groupSliderView.frame = CGRectOffset(_groupPanelView.bounds, 0.0f, 1.0f);
-    _captionPanelView.frame = [self captionPanelFrameForParentWidth:parentWidth captionHeight:[self captionHeightForWidth:captionWidth] inGroup:_currentGroupedId != 0];
+    _captionPanelView.frame = [self captionPanelFrameForParentWidth:self.superview.frame.size.width captionHeight:[self captionHeightForWidth:captionWidth] inGroup:_currentGroupedId != 0 isVideo:_isVideo];
+    _videoPanelView.frame = [self videoPanelFrameForParentWidth:self.superview.frame.size.width inGroup:_currentGroupedId != 0 isVideo:_isVideo];
+    
+    _customContentView.frame = CGRectMake(_safeAreaInset.left, 0.0f, parentWidth, 43.0f);
 }
 
 @end

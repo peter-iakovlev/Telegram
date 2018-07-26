@@ -65,7 +65,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x2049d70c;
+    return (int32_t)0x296f104;
 }
 
 - (int32_t)TLconstructorName
@@ -78,6 +78,7 @@
     TLGeoPoint$geoPoint *object = [[TLGeoPoint$geoPoint alloc] init];
     object.n_long = metaObject->getDouble((int32_t)0x682f3647);
     object.lat = metaObject->getDouble((int32_t)0x8161c7a1);
+    object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
     return object;
 }
 
@@ -94,6 +95,12 @@
         value.type = TLConstructedValueTypePrimitiveDouble;
         value.primitive.doubleValue = self.lat;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8161c7a1, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.access_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
     }
 }
 

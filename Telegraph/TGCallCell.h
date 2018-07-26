@@ -27,6 +27,7 @@
 
 @property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic) bool isLastCell;
+@property (nonatomic) bool inSettings;
 
 - (void)setupWithCallGroup:(TGCallGroup *)group;
 

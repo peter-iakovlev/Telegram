@@ -30,13 +30,17 @@
     
     NSMutableArray *itemViews = [[NSMutableArray alloc] init];
     
+    __weak TGMenuSheetController *weakController = controller;
     TGEmbedItemView *embedView = [[TGEmbedItemView alloc] initWithWebPageAttachment:attachment preview:false peerId:peerId messageId:messageId];
     embedView.parentController = parentController;
+    embedView.onWatermarkAction = ^{
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController != nil)
+            [strongController dismissAnimated:true];
+    };
     [itemViews addObject:embedView];
     
     TGWebPageMediaAttachment *webPage = attachment;
-    __weak TGMenuSheetController *weakController = controller;
-    
     TGMenuSheetButtonItemView *openItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Conversation.FileOpenIn") type:TGMenuSheetButtonTypeDefault action:^
     {
         __strong TGMenuSheetController *strongController = weakController;

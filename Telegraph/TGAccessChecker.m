@@ -15,9 +15,9 @@
 {
     if ([TGSynchronizeContactsManager instance].phonebookAccessStatus == TGPhonebookAccessStatusDisabled)
     {
-        [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.Contacts")
+        [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.Contacts")
                                          showSettingsButton:true
-                                            completionBlock:alertDismissCompletion] show];
+                                            completionBlock:alertDismissCompletion];
         return false;
     }
     
@@ -49,17 +49,17 @@
                     break;
             }
             
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
+            [TGAccessRequiredAlertView presentWithMessage:message
                                              showSettingsButton:true
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
         case TGMediaLibraryAuthorizationStatusRestricted:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.PhotosRestricted")
+            [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.PhotosRestricted")
                                              showSettingsButton:false
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
@@ -94,17 +94,17 @@
                     break;
             }
             
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
+            [TGAccessRequiredAlertView presentWithMessage:message
                                              showSettingsButton:true
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
         case PGMicrophoneAuthorizationStatusRestricted:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.MicrophoneRestricted")
+            [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.MicrophoneRestricted")
                                              showSettingsButton:false
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
@@ -123,9 +123,9 @@
     
     if (![PGCamera cameraAvailable])
     {
-        [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.CameraDisabled")
+        [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.CameraDisabled")
                                          showSettingsButton:true
-                                            completionBlock:alertDismissCompletion] show];
+                                            completionBlock:alertDismissCompletion];
         
         return false;
     }
@@ -146,17 +146,17 @@
                     break;
             }
             
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
+            [TGAccessRequiredAlertView presentWithMessage:message
                                              showSettingsButton:true
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
         case PGCameraAuthorizationStatusRestricted:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.CameraRestricted")
+            [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.CameraRestricted")
                                              showSettingsButton:false
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
@@ -186,17 +186,17 @@
                     message = TGLocalized(@"AccessDenied.LocationAlwaysDenied");
                     break;
             }
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:message
+            [TGAccessRequiredAlertView presentWithMessage:message
                                              showSettingsButton:true
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
         case kCLAuthorizationStatusRestricted:
         {
-            [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.LocationDisabled")
+            [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.LocationDisabled")
                                              showSettingsButton:false
-                                                completionBlock:alertDismissCompletion] show];
+                                                completionBlock:alertDismissCompletion];
         }
             return false;
             
@@ -204,9 +204,9 @@
         {
             if (intent == TGLocationAccessIntentLiveLocation)
             {
-                [[[TGAccessRequiredAlertView alloc] initWithMessage:TGLocalized(@"AccessDenied.LocationAlwaysDenied")
+                [TGAccessRequiredAlertView presentWithMessage:TGLocalized(@"AccessDenied.LocationAlwaysDenied")
                                                  showSettingsButton:true
-                                                    completionBlock:alertDismissCompletion] show];
+                                                    completionBlock:alertDismissCompletion];
                 return false;
             }
         }

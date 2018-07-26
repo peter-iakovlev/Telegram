@@ -44,6 +44,8 @@
     bool _editing;
     bool _showCameraIcon;
     
+    bool _multilineName;
+    
     UIView *_editingFirstNameSeparator;
     UIView *_editingLastNameSeparator;
     
@@ -170,10 +172,20 @@
     _lastNameField.textColor = presentation.pallete.collectionMenuTextColor;
     _lastNameField.placeholderColor = presentation.pallete.collectionMenuPlaceholderColor;
     
+    _firstNameField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    _lastNameField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    
     _editingFirstNameSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
     _editingLastNameSeparator.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
     
     [_callButton setImage:presentation.images.profileCallIcon forState:UIControlStateNormal];
+}
+
+- (void)setMultilineName:(bool)multilineName
+{
+    _multilineName = multilineName;
+    _nameLabel.numberOfLines = multilineName ? 2 : 1;
+    [self setNeedsLayout];
 }
 
 - (void)setAvatarHidden:(bool)hidden animated:(bool)animated
@@ -233,12 +245,31 @@
     _lastName = lastName;
     
     NSString *nameText = nil;
-    if (firstName != nil && lastName != nil)
-        nameText = [[NSString alloc] initWithFormat:@"%@ %@", firstName, lastName];
-    else if (firstName != nil)
-        nameText = firstName;
-    else if (lastName != nil)
-        nameText = lastName;
+    NSString *displayFirstName = firstName;
+    NSString *displayLastName = lastName;
+    if (TGIsKorean())
+    {
+        displayFirstName = lastName;
+        displayLastName = firstName;
+    }
+    
+    NSString *prefix = self.customProperties[@"prefix"];
+    NSString *middleName = self.customProperties[@"middleName"];
+    NSString *suffix = self.customProperties[@"suffix"];
+    
+    NSMutableArray *nameComponents = [[NSMutableArray alloc] init];
+    if (prefix != nil)
+        [nameComponents addObject:prefix];
+    if (displayFirstName != nil)
+        [nameComponents addObject:displayFirstName];
+    if (middleName != nil)
+        [nameComponents addObject:middleName];
+    if (displayLastName != nil)
+        [nameComponents addObject:displayLastName];
+    if (suffix != nil)
+        [nameComponents addObject:suffix];
+    
+    nameText = [nameComponents componentsJoinedByString:@" "];
     
     if (!TGStringCompare(nameText, _nameLabel.text))
     {
@@ -399,24 +430,8 @@
 
 - (void)setAvatarUri:(NSString *)avatarUri animated:(bool)animated synchronous:(bool)synchronous
 {
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        //!placeholder
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(64.0f, 64.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 64.0f, 64.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 63.0f, 63.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:64.0f];
+
     UIImage *currentPlaceholder = [_avatarView currentImage];
     if (currentPlaceholder == nil)
         currentPlaceholder = placeholder;
@@ -591,14 +606,26 @@
         maxStatusWidth -= 40.0f;
     }
     
-    CGSize nameLabelSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, 1000)];
-    nameLabelSize.width = MIN(nameLabelSize.width, maxNameWidth);
-    CGRect firstNameLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 26 + TGRetinaPixel + _nameOffset.height, nameLabelSize.width, nameLabelSize.height);
-    _nameLabel.frame = firstNameLabelFrame;
+    CGSize nameSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, CGFLOAT_MAX)];
+    nameSize.width = MIN(nameSize.width, maxNameWidth);
+    if (nameSize.height < FLT_EPSILON)
+    {
+        NSString *currentText = _nameLabel.text;
+        _nameLabel.text = @" ";
+        nameSize = [_nameLabel sizeThatFits:CGSizeMake(maxNameWidth, CGFLOAT_MAX)];
+        _nameLabel.text = currentText;
+    }
+    
+    CGFloat nameY = (_statusLabel.text.length > 0 || _phoneLabel != nil || _usernameLabel != nil) ? 81.0f : 98.0f;
+    
+    nameSize.width = MIN(nameSize.width, maxNameWidth);
+    CGRect nameLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, floor((nameY - nameSize.height) / 2.0f) + _nameOffset.height, nameSize.width, nameSize.height);
+    _nameLabel.frame = nameLabelFrame;
+    
     
     CGSize statusLabelSize = [_statusLabel sizeThatFits:CGSizeMake(maxStatusWidth, 1000)];
     statusLabelSize.width = MIN(statusLabelSize.width, maxStatusWidth);
-    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, 53 + _nameOffset.height, statusLabelSize.width, statusLabelSize.height);
+    CGRect statusLabelFrame = CGRectMake(92 + _nameOffset.width + self.safeAreaInset.left, CGRectGetMaxY(nameLabelFrame) + 2.0f, statusLabelSize.width, statusLabelSize.height);
     _statusLabel.frame = statusLabelFrame;
     
     if (_phoneLabel != nil)
@@ -624,10 +651,10 @@
     
     CGFloat fieldLeftPadding = 100.0f + self.safeAreaInset.left;
     
-    CGRect firstNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 12 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
+    CGRect firstNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 12 + TGScreenPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
     _firstNameField.frame = firstNameFieldFrame;
     
-    CGRect lastNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 56 + TGRetinaPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
+    CGRect lastNameFieldFrame = CGRectMake(fieldLeftPadding + 13.0f, 56 + TGScreenPixel, bounds.size.width - fieldLeftPadding - 14.0f - 13.0f, 30);
     _lastNameField.frame = lastNameFieldFrame;
     
     CGFloat separatorHeight = TGScreenPixel;
@@ -635,7 +662,7 @@
     _editingLastNameSeparator.frame = CGRectMake(fieldLeftPadding, 88.0f, bounds.size.width - fieldLeftPadding, separatorHeight);
     
     if (_verifiedIcon.superview != nil) {
-        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, firstNameLabelFrame.origin.x + nameLabelSize.width + 4.0f, firstNameLabelFrame.origin.y + 5.0f + TGRetinaPixel);
+        _verifiedIcon.frame = CGRectOffset(_verifiedIcon.bounds, nameLabelFrame.origin.x + nameLabelFrame.size.width + 4.0f, nameLabelFrame.origin.y + 4.0f + TGScreenPixel);
     }
     
     _avatarOverlay.frame = _avatarView.frame;

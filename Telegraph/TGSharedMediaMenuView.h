@@ -1,7 +1,10 @@
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGSharedMediaMenuView : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic) NSUInteger selectedItemIndex;
 
 @property (nonatomic, copy) void (^selectedItemIndexChanged)(NSUInteger);

@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xb7b72ab3;
+    return (int32_t)0x48ec1750;
 }
 
 - (int32_t)TLconstructorName
@@ -50,6 +50,9 @@
 {
     TLaccount_PasswordSettings$account_passwordSettings *object = [[TLaccount_PasswordSettings$account_passwordSettings alloc] init];
     object.email = metaObject->getString((int32_t)0x5b2095e7);
+    object.secure_salt = metaObject->getBytes((int32_t)0xcefd0b8c);
+    object.secure_secret = metaObject->getBytes((int32_t)0x9f64911f);
+    object.secure_secret_id = metaObject->getInt64((int32_t)0xfca1cb16);
     return object;
 }
 
@@ -60,6 +63,24 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.email;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5b2095e7, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.secure_salt;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xcefd0b8c, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.secure_secret;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9f64911f, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveInt64;
+        value.primitive.int64Value = self.secure_secret_id;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xfca1cb16, value));
     }
 }
 

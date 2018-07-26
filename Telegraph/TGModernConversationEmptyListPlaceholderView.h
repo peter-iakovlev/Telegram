@@ -9,9 +9,13 @@
 #import <UIKit/UIKit.h>
 
 @class TGModernConversationEmptyListPlaceholderView;
+@class TGPresentation;
 
 @interface TGModernConversationEmptyListPlaceholderView : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
+
+- (instancetype)initWithFrame:(CGRect)frame presentation:(TGPresentation *)presentation;
 - (void)adjustLayoutForSize:(CGSize)size contentInsets:(UIEdgeInsets)contentInsets duration:(NSTimeInterval)duration curve:(int)curve;
 
 @end

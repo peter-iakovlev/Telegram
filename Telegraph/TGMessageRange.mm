@@ -2,12 +2,26 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
-bool TGMessageRangeContains(TGMessageRange range, int32_t messageId, int date)
+bool TGMessageRangeContains(TGMessageRange range, __unused int64_t peerId, int32_t messageId, int date)
 {
-    return date >= range.firstDate && date <= range.lastDate && (messageId < TGMessageLocalMidBaseline ? (messageId >= range.firstMessageId && messageId <= range.lastMessageId) : (messageId >= range.firstLocalMessageId && messageId <= range.lastLocalMessageId));
+    if (range.firstPeerId != 0 || range.lastPeerId != 0)
+    {
+        return date >= range.firstDate && date <= range.lastDate;
+    }
+    else
+    {
+        return date >= range.firstDate && date <= range.lastDate && (messageId < TGMessageLocalMidBaseline ? (messageId >= range.firstMessageId && messageId <= range.lastMessageId) : (messageId >= range.firstLocalMessageId && messageId <= range.lastLocalMessageId));
+    }
 }
 
-bool TGMessageRangeContains(TGMessageRange const &range, int32_t messageId, int date)
+bool TGMessageRangeContains(TGMessageRange const &range, __unused int64_t peerId, int32_t messageId, int date)
 {
-    return date >= range.firstDate && date <= range.lastDate && (messageId < TGMessageLocalMidBaseline ? (messageId >= range.firstMessageId && messageId <= range.lastMessageId) : (messageId >= range.firstLocalMessageId && messageId <= range.lastLocalMessageId));
+    if (range.firstPeerId != 0 || range.lastPeerId != 0)
+    {
+        return date >= range.firstDate && date <= range.lastDate;
+    }
+    else
+    {
+        return date >= range.firstDate && date <= range.lastDate && (messageId < TGMessageLocalMidBaseline ? (messageId >= range.firstMessageId && messageId <= range.lastMessageId) : (messageId >= range.firstLocalMessageId && messageId <= range.lastLocalMessageId));
+    }
 }

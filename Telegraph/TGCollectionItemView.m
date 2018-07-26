@@ -48,9 +48,15 @@
     if (!self.boundItem.transparent)
         self.backgroundView.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
     
-    self.selectedBackgroundView.backgroundColor = presentation.pallete.collectionMenuCellSelectionColor;
+    self.selectedBackgroundView.backgroundColor = self.highlightDisabled ? [UIColor clearColor] : presentation.pallete.collectionMenuCellSelectionColor;
     _topStripeView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
     _bottomStripeView.backgroundColor = presentation.pallete.collectionMenuSeparatorColor;
+}
+
+- (void)setHighlightDisabled:(bool)highlightDisabled
+{
+    _highlightDisabled = highlightDisabled;
+    self.selectedBackgroundView.backgroundColor = highlightDisabled ? [UIColor clearColor] : _presentation.pallete.collectionMenuCellSelectionColor;
 }
 
 - (void)setItemPosition:(int)itemPosition

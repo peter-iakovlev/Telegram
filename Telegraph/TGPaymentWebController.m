@@ -4,7 +4,7 @@
 
 #import <WebKit/WebKit.h>
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 @interface TGWeakPaymentScriptMessageHandler : NSObject <WKScriptMessageHandler> {
     void (^_block)(WKScriptMessage *);
@@ -152,7 +152,7 @@
                     NSData *data = [NSJSONSerialization dataWithJSONObject:dict[@"credentials"] options:0 error:&error];
                     __weak TGPaymentWebController *weakSelf = self;
                     if (_canSave) {
-                        [TGAlertView presentAlertWithTitle:nil message:TGLocalized(@"Checkout.NewCard.SaveInfoHelp") cancelButtonTitle:TGLocalized(@"Common.NotNow") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed) {
+                        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Checkout.NewCard.SaveInfoHelp") cancelButtonTitle:TGLocalized(@"Common.NotNow") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed) {
                             __strong TGPaymentWebController *strongSelf = weakSelf;
                             if (strongSelf != nil) {
                                 NSString *credentials = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -165,7 +165,7 @@
                         NSString *text = TGLocalized(@"Checkout.NewCard.SaveInfoEnableHelp");
                         text = [text stringByReplacingOccurrencesOfString:@"[" withString:@""];
                         text = [text stringByReplacingOccurrencesOfString:@"]" withString:@""];
-                        [TGAlertView presentAlertWithTitle:nil message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
+                        [TGCustomAlertView presentAlertWithTitle:nil message:text cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
                             __strong TGPaymentWebController *strongSelf = weakSelf;
                             if (strongSelf != nil) {
                                 NSString *credentials = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];

@@ -38,6 +38,8 @@ typedef enum {
 @property (nonatomic, strong) TGCollectionItem *boundItem;
 @property (nonatomic, strong) TGPresentation *presentation;
 
+@property (nonatomic, assign) bool highlightDisabled;
+
 - (void)setItemPosition:(int)itemPosition;
 - (void)setItemPosition:(int)itemPosition animated:(bool)animated;
 

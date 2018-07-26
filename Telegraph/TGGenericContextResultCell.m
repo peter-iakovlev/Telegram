@@ -26,6 +26,8 @@
 #import "TGTelegraph.h"
 #import "TGGenericPeerPlaylistSignals.h"
 
+#import "TGPresentation.h"
+
 @interface TGTruncatedLabel: UIView
 
 @property (nonatomic, strong) NSAttributedString *attributedText;
@@ -77,6 +79,7 @@
 }
 
 @property (nonatomic, copy) void (^preview)(TGBotContextResult *result);
+@property (nonatomic, strong) TGConversationAssociatedInputPanelPallete *pallete;
 
 @end
 
@@ -85,30 +88,21 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
-        static UIImage *alternativeImageBackground = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^ {
-            CGFloat diameter = 4.0;
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGContextSetFillColorWithColor(context, UIColorRGB(0xdfdfdf).CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-            alternativeImageBackground = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0) topCapHeight:(NSInteger)(diameter / 2.0)];
-            UIGraphicsEndImageContext();
-        });
+        TGPresentation *presentation = TGPresentation.current;
         
-        _alternativeImageBackgroundView = [[UIImageView alloc] initWithImage:alternativeImageBackground];
+        _alternativeImageBackgroundView = [[UIImageView alloc] initWithImage:presentation.images.chatBotResultPlaceholderImage];
         [self addSubview:_alternativeImageBackgroundView];
         _alternativeImageLabel = [[UILabel alloc] init];
         _alternativeImageLabel.backgroundColor = [UIColor clearColor];
         _alternativeImageLabel.font = TGSystemFontOfSize(25.0f);
-        _alternativeImageLabel.textColor = [UIColor whiteColor];
+        _alternativeImageLabel.textColor = presentation.pallete.accentContrastColor;
         [self addSubview:_alternativeImageLabel];
         
         _imageView = [[TGImageView alloc] initWithFrame:CGRectMake(12.0f, 10.0f, 55.0f, 55.0f)];
         [self addSubview:_imageView];
         
         _iconView = [[TGDocumentMessageIconView alloc] initWithFrame:CGRectMake(18.0, 9.0f, 44.0f, 44.0f)];
+        _iconView.presentation = presentation;
         [_iconView setIncoming:true];
         [self addSubview:_iconView];
         _iconView.delegate = self;
@@ -119,6 +113,8 @@
         [self addSubview:_avatarView];
         
         _overlayView = [[TGMessageImageViewOverlayView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 25.0f, 25.0f)];
+        _overlayView.incomingColor = presentation.pallete.accentColor;
+        _overlayView.incomingIconColor = presentation.pallete.accentContrastColor;
         [_overlayView setRadius:25.0f];
         [_overlayView setPlay];
         [_imageView addSubview:_overlayView];
@@ -170,7 +166,7 @@
     SSignal *imageSignal = nil;
     NSString *imageUrl = nil;
     _overlayView.hidden = true;
-    _avatarView.highlighted = true;
+    _avatarView.hidden = true;
     _iconView.hidden = true;
     bool isAudio = false;
     bool isContact = false;
@@ -312,9 +308,9 @@
     paragraphStyle.lineSpacing = 0.0f;
     paragraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
     
-    _titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title == nil ? @"" : title attributes:@{NSFontAttributeName: TGBoldSystemFontOfSize(16.0f), NSParagraphStyleAttributeName: paragraphStyle}];
+    _titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title == nil ? @"" : title attributes:@{NSFontAttributeName: TGBoldSystemFontOfSize(16.0f), NSParagraphStyleAttributeName: paragraphStyle, NSForegroundColorAttributeName: _pallete.textColor}];
     
-    _textLabel.attributedText = [[NSAttributedString alloc] initWithString:text == nil ? @"" : text attributes:@{NSFontAttributeName: TGSystemFontOfSize(15.0f), NSParagraphStyleAttributeName: paragraphStyle, NSForegroundColorAttributeName: UIColorRGB(0x8e8e93)}];
+    _textLabel.attributedText = [[NSAttributedString alloc] initWithString:text == nil ? @"" : text attributes:@{NSFontAttributeName: TGSystemFontOfSize(15.0f), NSParagraphStyleAttributeName: paragraphStyle, NSForegroundColorAttributeName: _pallete.secondaryTextColor}];
     
     [self setNeedsLayout];
     
@@ -449,8 +445,17 @@
 - (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier {
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self != nil) {
+        self.selectedBackgroundView = [[UIView alloc] init];
     }
     return self;
+}
+
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    _pallete = pallete;
+    _content.pallete = self.pallete;
+    self.backgroundColor = pallete.backgroundColor;
+    self.selectedBackgroundView.backgroundColor = pallete.selectionColor;
 }
 
 - (void)prepareForReuse {
@@ -464,6 +469,7 @@
     
     if (_content == nil) {
         _content = [[TGGenericContextResultCellContent alloc] initWithFrame:self.bounds];
+        _content.pallete = self.pallete;
         _content.preview = _preview;
         [self.contentView addSubview:_content];
     }

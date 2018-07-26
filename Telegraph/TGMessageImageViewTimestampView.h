@@ -17,7 +17,9 @@
 
 - (void)setPresentation:(TGPresentation *)presentation;
 - (void)setBackdropArea:(TGStaticBackdropAreaData *)backdropArea transitionDuration:(NSTimeInterval)transitionDuration;
+- (void)setServiceStyle:(bool)serviceStyle;
 - (void)setTimestampColor:(UIColor *)timestampColor;
+- (void)setTimestampTextColor:(UIColor *)timestampTextColor;
 - (void)setTimestampString:(NSString *)timestampString signatureString:(NSString *)signatureString displayCheckmarks:(bool)displayCheckmarks checkmarkValue:(int)checkmarkValue displayViews:(bool)displayViews viewsValue:(int)viewsValue animated:(bool)animated;
 - (void)setDisplayProgress:(bool)displayProgress;
 - (void)setIsBroadcast:(bool)setIsBroadcast;

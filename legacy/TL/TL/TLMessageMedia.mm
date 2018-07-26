@@ -103,7 +103,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x5e7d2f39;
+    return (int32_t)0xcbf24940;
 }
 
 - (int32_t)TLconstructorName
@@ -117,6 +117,7 @@
     object.phone_number = metaObject->getString((int32_t)0xaecb6c79);
     object.first_name = metaObject->getString((int32_t)0xa604f05d);
     object.last_name = metaObject->getString((int32_t)0x10662e0e);
+    object.vcard = metaObject->getString((int32_t)0x5116b203);
     object.user_id = metaObject->getInt32((int32_t)0xafdf4073);
     return object;
 }
@@ -140,6 +141,12 @@
         value.type = TLConstructedValueTypeString;
         value.nativeObject = self.last_name;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x10662e0e, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.vcard;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5116b203, value));
     }
     {
         TLConstructedValue value;
@@ -344,7 +351,6 @@
     TLMessageMedia$messageMediaPhotoMeta *object = [[TLMessageMedia$messageMediaPhotoMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.photo = metaObject->getObject((int32_t)0xe6c52372);
-    object.caption = metaObject->getString((int32_t)0x9bcfcf5a);
     object.ttl_seconds = metaObject->getInt32((int32_t)0x401ae035);
     return object;
 }
@@ -362,12 +368,6 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.photo;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xe6c52372, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.caption;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
     }
     {
         TLConstructedValue value;
@@ -398,7 +398,6 @@
     TLMessageMedia$messageMediaDocumentMeta *object = [[TLMessageMedia$messageMediaDocumentMeta alloc] init];
     object.flags = metaObject->getInt32((int32_t)0x81915c23);
     object.document = metaObject->getObject((int32_t)0xf1465b5f);
-    object.caption = metaObject->getString((int32_t)0x9bcfcf5a);
     object.ttl_seconds = metaObject->getInt32((int32_t)0x401ae035);
     return object;
 }
@@ -416,12 +415,6 @@
         value.type = TLConstructedValueTypeObject;
         value.nativeObject = self.document;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xf1465b5f, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.caption;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9bcfcf5a, value));
     }
     {
         TLConstructedValue value;

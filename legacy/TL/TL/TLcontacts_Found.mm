@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x1aa1f784;
+    return (int32_t)0xb3134d9d;
 }
 
 - (int32_t)TLconstructorName
@@ -49,6 +49,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLcontacts_Found$contacts_found *object = [[TLcontacts_Found$contacts_found alloc] init];
+    object.my_results = metaObject->getArray((int32_t)0x1644c5f3);
     object.results = metaObject->getArray((int32_t)0x817bffcc);
     object.chats = metaObject->getArray((int32_t)0x4240ad02);
     object.users = metaObject->getArray((int32_t)0x933e5ff3);
@@ -57,6 +58,12 @@
 
 - (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
 {
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.my_results;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x1644c5f3, value));
+    }
     {
         TLConstructedValue value;
         value.type = TLConstructedValueTypeVector;

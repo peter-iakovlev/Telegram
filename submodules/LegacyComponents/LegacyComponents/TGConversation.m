@@ -1,7 +1,7 @@
 #import "TGConversation.h"
 
 #import "LegacyComponentsInternal.h"
-
+#import "TGStringUtils.h"
 #import "TGMessage.h"
 
 #import "PSKeyValueCoder.h"
@@ -456,7 +456,7 @@
 
 @implementation TGConversation
 
-- (id)initWithConversationId:(int64_t)conversationId unreadCount:(int)unreadCount serviceUnreadCount:(int)serviceUnreadCount
+- (instancetype)initWithConversationId:(int64_t)conversationId unreadCount:(int)unreadCount serviceUnreadCount:(int)serviceUnreadCount
 {
     self = [super init];
     if (self != nil)
@@ -502,6 +502,8 @@
         _chatPhotoSmall = [coder decodeStringForCKey:"cp.s"];
         _chatPhotoMedium = [coder decodeStringForCKey:"cp.m"];
         _chatPhotoBig = [coder decodeStringForCKey:"cp.l"];
+        _chatPhotoFileReferenceSmall = [coder decodeDataCorCKey:"cp.frs"];
+        _chatPhotoFileReferenceBig = [coder decodeDataCorCKey:"cp.frb"];
         _chatParticipants = nil;
         _chatParticipantCount = 0;
         _chatVersion = [coder decodeInt32ForCKey:"ver"];
@@ -525,6 +527,11 @@
         _channelAdminRights = [coder decodeObjectForCKey:"car"];
         _channelBannedRights = [coder decodeObjectForCKey:"cbr"];
         _messageFlags = [coder decodeInt64ForCKey:"mf"];
+        
+        int32_t feedId = [coder decodeInt32ForCKey:"fi"];
+        _feedId = feedId != -1 ? @(feedId) : nil;
+        
+        _unreadMark = [coder decodeInt32ForCKey:"unrm"];
     }
     return self;
 }
@@ -560,6 +567,8 @@
     [coder encodeString:_chatPhotoSmall forCKey:"cp.s"];
     [coder encodeString:_chatPhotoMedium forCKey:"cp.m"];
     [coder encodeString:_chatPhotoBig forCKey:"cp.l"];
+    [coder encodeData:_chatPhotoFileReferenceSmall forCKey:"cp.frs"];
+    [coder encodeData:_chatPhotoFileReferenceBig forCKey:"cp.frb"];
     [coder encodeInt32:_chatVersion forCKey:"ver"];
     [coder encodeInt32:_chatIsAdmin ? 1 : 0 forCKey:"adm"];
     [coder encodeInt32:_channelRole forCKey:"role"];
@@ -575,6 +584,8 @@
     [coder encodeObject:_channelAdminRights forCKey:"car"];
     [coder encodeObject:_channelBannedRights forCKey:"cbr"];
     [coder encodeInt64:_messageFlags forCKey:"mf"];
+    [coder encodeInt32:_feedId != nil ? _feedId.intValue : -1 forCKey:"fi"];
+    [coder encodeInt32:_unreadMark ? 1 : 0 forCKey:"unrm"];
 }
 
 - (id)copyWithZone:(NSZone *)__unused zone
@@ -612,6 +623,8 @@
     conversation.chatPhotoSmall = _chatPhotoSmall;
     conversation.chatPhotoMedium = _chatPhotoMedium;
     conversation.chatPhotoBig = _chatPhotoBig;
+    conversation.chatPhotoFileReferenceSmall = _chatPhotoFileReferenceSmall;
+    conversation.chatPhotoFileReferenceBig = _chatPhotoFileReferenceBig;
     conversation.chatParticipants = [_chatParticipants copy];
     conversation.chatParticipantCount = _chatParticipantCount;
     conversation.chatVersion = _chatVersion;
@@ -624,6 +637,7 @@
     conversation.isDeleted = _isDeleted;
     conversation.restrictionReason = _restrictionReason;
     conversation->_chatCreationDate = _chatCreationDate;
+    conversation->_unreadMark = _unreadMark;
     
     conversation.encryptedData = _encryptedData == nil ? nil : [_encryptedData copy];
     
@@ -643,6 +657,8 @@
     conversation->_channelBannedRights = _channelBannedRights;
     
     conversation->_messageFlags = _messageFlags;
+    
+    conversation->_feedId = _feedId;
     
     return conversation;
 }
@@ -674,6 +690,10 @@
     _deliveryError = message.deliveryState == TGMessageDeliveryStateFailed;
     _deliveryState = message.deliveryState;
     _messageFlags = message.flags;
+    if (_maxKnownMessageId > TGMessageLocalMidBaseline)
+        _maxKnownMessageId = 0;
+    if (message.mid < TGMessageLocalMidBaseline && (message.mid > _maxKnownMessageId))
+        _maxKnownMessageId = message.mid;
 }
 
 - (void)mergeEmptyMessage {
@@ -721,6 +741,9 @@
         if ((_chatPhotoMedium != nil) != (other.chatPhotoMedium != nil) || (_chatPhotoMedium != nil && ![_chatPhotoMedium isEqualToString:other.chatPhotoMedium]))
             return false;
         if ((_chatPhotoBig != nil) != (other.chatPhotoBig != nil) || (_chatPhotoBig != nil && ![_chatPhotoBig isEqualToString:other.chatPhotoBig]))
+            return false;
+        
+        if (!TGObjectCompare(other.chatPhotoFileReferenceSmall, _chatPhotoFileReferenceSmall) || !TGObjectCompare(other.chatPhotoFileReferenceBig, _chatPhotoFileReferenceBig))
             return false;
     }
     
@@ -801,6 +824,9 @@
         if ((_chatPhotoMedium != nil) != (other.chatPhotoMedium != nil) || (_chatPhotoMedium != nil && ![_chatPhotoMedium isEqualToString:other.chatPhotoMedium]))
             return false;
         if ((_chatPhotoBig != nil) != (other.chatPhotoBig != nil) || (_chatPhotoBig != nil && ![_chatPhotoBig isEqualToString:other.chatPhotoBig]))
+            return false;
+        
+        if (!TGObjectCompare(other.chatPhotoFileReferenceSmall, _chatPhotoFileReferenceSmall) || !TGObjectCompare(other.chatPhotoFileReferenceBig, _chatPhotoFileReferenceBig))
             return false;
     }
     
@@ -1005,6 +1031,8 @@
     self.chatPhotoSmall = conversation.chatPhotoSmall;
     self.chatPhotoMedium = conversation.chatPhotoMedium;
     self.chatPhotoBig = conversation.chatPhotoBig;
+    self.chatPhotoFileReferenceSmall = conversation.chatPhotoFileReferenceSmall;
+    self.chatPhotoFileReferenceBig = conversation.chatPhotoFileReferenceBig;
     self.chatParticipantCount = conversation.chatParticipantCount;
     self.leftChat = conversation.leftChat;
     self.kickedFromChat = conversation.kickedFromChat;
@@ -1027,6 +1055,7 @@
     }
     self.channelAdminRights = conversation.channelAdminRights;
     self.channelBannedRights = conversation.channelBannedRights;
+    _feedId = conversation->_feedId;
 }
 
 - (void)mergeChannel:(TGConversation *)channel {
@@ -1035,6 +1064,8 @@
     _chatPhotoBig = channel.chatPhotoBig;
     _chatPhotoMedium = channel.chatPhotoMedium;
     _chatPhotoSmall = channel.chatPhotoSmall;
+    _chatPhotoFileReferenceSmall = channel.chatPhotoFileReferenceSmall;
+    _chatPhotoFileReferenceBig = channel.chatPhotoFileReferenceBig;
     _username = channel.username;
     if (!channel.isMin) {
         _chatIsAdmin = channel.chatIsAdmin;
@@ -1048,6 +1079,9 @@
         self.restrictionReason = channel.restrictionReason;
         self.channelAdminRights = channel.channelAdminRights;
         self.channelBannedRights = channel.channelBannedRights;
+        
+        if (channel->_feedId != nil)
+            _feedId = channel->_feedId;
     }
     self.everybodyCanAddMembers = channel.everybodyCanAddMembers;
     _channelIsReadOnly = channel.channelIsReadOnly;
@@ -1279,6 +1313,44 @@
 
 - (bool)pinnedToTop {
     return _pinnedDate >= TGConversationPinnedDateBase;
+}
+
+- (int64_t)conversationFeedId {
+    if (_feedId.intValue == 0)
+        return 0;
+    return TGPeerIdFromAdminLogId(_feedId.intValue);
+}
+
+- (int32_t)searchMessageId {
+    return [self.additionalProperties[@"searchMessageId"] intValue];
+}
+
+- (bool)isAd {
+    return TGPeerIdIsAd(_conversationId);
+}
+
+- (NSString *)chatPhotoFullSmall
+{
+    NSString *finalAvatarUrl = self.chatPhotoSmall;
+    if (finalAvatarUrl.length == 0)
+        return finalAvatarUrl;
+    
+    if (self.chatPhotoFileReferenceSmall != nil)
+        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_%@", [self.chatPhotoFileReferenceSmall stringByEncodingInHex]];
+    
+    return finalAvatarUrl;
+}
+
+- (NSString *)chatPhotoFullBig
+{
+    NSString *finalAvatarUrl = self.chatPhotoBig;
+    if (finalAvatarUrl.length == 0)
+        return finalAvatarUrl;
+    
+    if (self.chatPhotoFileReferenceBig != nil)
+        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_%@", [self.chatPhotoFileReferenceBig stringByEncodingInHex]];
+    
+    return finalAvatarUrl;
 }
 
 @end

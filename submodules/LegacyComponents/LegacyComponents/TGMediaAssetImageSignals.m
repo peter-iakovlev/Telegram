@@ -43,6 +43,16 @@ static Class TGMediaAssetImageSignalsClass = nil;
     return [TGMediaAssetImageSignalsClass imageForAsset:asset imageType:imageType size:size allowNetworkAccess:allowNetworkAccess];
 }
 
++ (SSignal *)livePhotoForAsset:(TGMediaAsset *)asset
+{
+    return [self livePhotoForAsset:asset allowNetworkAccess:true];
+}
+
++ (SSignal *)livePhotoForAsset:(TGMediaAsset *)asset allowNetworkAccess:(bool)allowNetworkAccess
+{
+    return [TGMediaAssetImageSignalsClass livePhotoForAsset:asset allowNetworkAccess:allowNetworkAccess];
+}
+
 + (SSignal *)imageDataForAsset:(TGMediaAsset *)asset
 {
     return [self imageDataForAsset:asset allowNetworkAccess:true];
@@ -107,8 +117,14 @@ static Class TGMediaAssetImageSignalsClass = nil;
         generator.appliesPreferredTrackTransform = true;
         generator.maximumSize = size;
         
-        [generator generateCGImagesAsynchronouslyForTimes:timestamps completionHandler:^(__unused CMTime requestedTime, CGImageRef imageRef, __unused CMTime actualTime, AVAssetImageGeneratorResult result, __unused NSError *error)
+        [generator generateCGImagesAsynchronouslyForTimes:timestamps completionHandler:^(__unused CMTime requestedTime, CGImageRef imageRef, __unused CMTime actualTime, AVAssetImageGeneratorResult result, NSError *error)
         {
+           if (error != nil)
+           {
+               [subscriber putError:error];
+               return;
+           }
+            
             UIImage *image = [UIImage imageWithCGImage:imageRef];
             if (result == AVAssetImageGeneratorSucceeded && image != nil)
                 [images addObject:image];
@@ -181,7 +197,7 @@ static Class TGMediaAssetImageSignalsClass = nil;
 
 + (SSignal *)playerItemForVideoAsset:(TGMediaAsset *)asset
 {
-    if (asset == nil || !asset.isVideo)
+    if (asset == nil)
         return [SSignal fail:nil];
     
     return [TGMediaAssetImageSignalsClass playerItemForVideoAsset:asset];
@@ -194,7 +210,7 @@ static Class TGMediaAssetImageSignalsClass = nil;
 
 + (SSignal *)avAssetForVideoAsset:(TGMediaAsset *)asset allowNetworkAccess:(bool)allowNetworkAccess
 {
-    if (asset == nil || !asset.isVideo)
+    if (asset == nil)
         return [SSignal fail:nil];
     
     return [TGMediaAssetImageSignalsClass avAssetForVideoAsset:asset allowNetworkAccess:allowNetworkAccess];

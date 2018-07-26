@@ -417,8 +417,16 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
     CGRect cropRect = transformedRect;
     if (preset == TGMediaVideoConversionPresetVideoMessage)
     {
-        cropRect = CGRectInset(cropRect, 13.0f, 13.0f);
-        cropRect = CGRectOffset(cropRect, 2.0f, 3.0f);
+        if (fabs(transformedSize.width - transformedSize.height) < FLT_EPSILON)
+        {
+            cropRect = CGRectInset(cropRect, 13.0f, 13.0f);
+            cropRect = CGRectOffset(cropRect, 2.0f, 3.0f);
+        }
+        else
+        {
+            CGFloat minSide = MIN(transformedSize.width, transformedSize.height);
+            cropRect = CGRectMake((transformedSize.width - minSide) / 2.0f, (transformedSize.height - minSide) / 2.0f, minSide, minSide);
+        }
     }
     
     CGSize maxDimensions = [TGMediaVideoConversionPresetSettings maximumSizeForPreset:preset];
@@ -448,7 +456,6 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
     instruction.layerInstructions = [NSArray arrayWithObject:transformer];
     videoComposition.instructions = [NSArray arrayWithObject:instruction];
     
-    
     AVAssetReaderVideoCompositionOutput *output = [[AVAssetReaderVideoCompositionOutput alloc] initWithVideoTracks:[composition tracksWithMediaType:AVMediaTypeVideo] videoSettings:@{ (id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) }];
     output.videoComposition = videoComposition;
     
@@ -474,8 +481,8 @@ CGAffineTransform TGVideoTransformForCrop(UIImageOrientation orientation, CGSize
     TGMediaSampleBufferProcessor *videoProcessor = nil;
     TGMediaSampleBufferProcessor *audioProcessor = nil;
     
-    AVAssetTrack *audioTrack = [[avAsset tracksWithMediaType:AVMediaTypeAudio] firstObject];
     AVAssetTrack *videoTrack = [[avAsset tracksWithMediaType:AVMediaTypeVideo] firstObject];
+    AVAssetTrack *audioTrack = [[avAsset tracksWithMediaType:AVMediaTypeAudio] firstObject];
     if (videoTrack == nil)
         return false;
     
@@ -705,9 +712,9 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
 - (void)cancel
 {
     [_queue dispatch:^
-     {
-         [self _finish];
-     }];
+    {
+        [self _finish];
+    }];
 }
 
 - (void)_finish

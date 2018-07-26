@@ -25,9 +25,3 @@
 
 
 @end
-
-@interface TLInputNotifyPeer$inputNotifyAll : TLInputNotifyPeer
-
-
-@end
-

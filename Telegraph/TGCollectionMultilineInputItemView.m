@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGCollectionMultilineInputItemView () <UITextViewDelegate> {
     UILabel *_placeholderLabel;
     UITextView *_textView;
@@ -43,6 +45,17 @@
         [self.contentView addSubview:_countLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _textView.textColor = presentation.pallete.collectionMenuTextColor;
+    _placeholderLabel.textColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _countLabel.textColor = presentation.pallete.collectionMenuPlaceholderColor;
+    _countLabel.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
+    _textView.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
 }
 
 + (UIFont *)font {

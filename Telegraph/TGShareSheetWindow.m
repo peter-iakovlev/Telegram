@@ -25,6 +25,7 @@
         safeAreaInset.bottom -= 22;
     
     TGShareSheetView *attachmentSheetView = [[TGShareSheetView alloc] initWithFrame:CGRectZero];
+    attachmentSheetView.presentation = TGAppDelegateInstance.rootController.presentation;
     attachmentSheetView.safeAreaInset = safeAreaInset;
     [self setAttachmentSheetView:attachmentSheetView];
 }

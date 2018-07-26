@@ -8,8 +8,11 @@
 
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGLoginCountryCell : UITableViewCell
 
+- (void)setPresentation:(TGPresentation *)presentation;
 - (void)setTitle:(NSString *)title;
 - (void)setCode:(NSString *)code;
 - (void)setUseIndex:(bool)useIndex;

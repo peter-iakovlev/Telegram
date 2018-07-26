@@ -5,8 +5,9 @@
 #import "TGModernButtonViewModel.h"
 
 #import "TGModernView.h"
+#import "TGModernViewContext.h"
 
-#import "TGTelegraphConversationMessageAssetsSource.h"
+#import "TGPresentation.h"
 
 @interface TGMessageReplyButtonsView : UIView <TGModernView> {
     
@@ -27,8 +28,7 @@
 @interface TGMessageReplyButtonsModel () {
     NSMutableArray<TGModernButtonViewModel *> *_buttons;
     
-    UIImage *_buttonBackground;
-    UIImage *_buttonHighlightedBackground;
+    TGModernViewContext *_context;
 }
 
 @property (nonatomic, strong) TGBotReplyMarkup *replyMarkup;
@@ -37,16 +37,15 @@
 
 @implementation TGMessageReplyButtonsModel
 
-- (instancetype)init {
+- (instancetype)initWithContext:(TGModernViewContext *)context {
     self = [super init];
     if (self != nil) {
         self.hasNoView = false;
         self.skipDrawInContext = true;
         
+        _context = context;
         _buttons = [[NSMutableArray alloc] init];
-        
-        _buttonBackground = [[TGTelegraphConversationMessageAssetsSource instance] systemReplyButton];
-        _buttonHighlightedBackground = [[TGTelegraphConversationMessageAssetsSource instance] systemReplyHighlightedButton];
+    
         _buttonIndexInProgress = NSNotFound;
     }
     return self;
@@ -93,60 +92,23 @@
 
 - (TGModernButtonViewModel *)makeButton:(NSString *)title action:(id)action {
     TGModernButtonViewModel *button = [[TGModernButtonViewModel alloc] init];
-    button.backgroundImage = _buttonBackground;
-    button.highlightedBackgroundImage = _buttonHighlightedBackground;
+    button.presentation = _context.presentation;
+    button.backgroundImage = _context.presentation.images.chatReplyButtonBackgroundImage;
+    button.highlightedBackgroundImage = _context.presentation.images.chatReplyButtonHighlightedBackgroundImage;
     //button.modernHighlight = true;
     button.title = title;
+    button.titleColor = _context.presentation.pallete.chatReplyButtonIconColor;
     button.font = TGMediumSystemFontOfSize(16.0f);
     if ([action isKindOfClass:[TGBotReplyMarkupButtonActionUrl class]]) {
-        static UIImage *supplementaryIconImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(8.0f, 8.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            CGFloat lineWidth = 1.5f;
-            CGContextSetLineWidth(context, lineWidth);
-            CGContextSetStrokeColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextMoveToPoint(context, lineWidth / 2.0f, lineWidth / 2.0f);
-            CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, lineWidth / 2.0f);
-            CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, 8.0f - lineWidth / 2.0f);
-            CGContextStrokePath(context);
-            CGContextMoveToPoint(context, lineWidth / 2.0f, 8.0f - lineWidth / 2.0f);
-            CGContextAddLineToPoint(context, 8.0f - lineWidth / 2.0f, lineWidth / 2.0f);
-            CGContextStrokePath(context);
-            
-            supplementaryIconImage = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
-        button.supplementaryIcon = supplementaryIconImage;
+        button.supplementaryIcon = _context.presentation.images.chatReplyButtonUrlIcon;
     } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionRequestPhone class]]) {
-        static UIImage *phoneImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            phoneImage = [TGImageNamed(@"botbutton_phone.png") preloadedImage];
-        });
-        button.supplementaryIcon = phoneImage;
+        button.supplementaryIcon = _context.presentation.images.chatReplyButtonPhoneIcon;
     } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionRequestLocation class]]) {
-        static UIImage *locationImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            locationImage = [TGImageNamed(@"botbutton_location.png") preloadedImage];
-        });
-        button.supplementaryIcon = locationImage;
+        button.supplementaryIcon = _context.presentation.images.chatReplyButtonLocationIcon;
     } else if ([action isKindOfClass:[TGBotReplyMarkupButtonActionSwitchInline class]]) {
-        static UIImage *shareImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            shareImage = [TGImageNamed(@"botbutton_share.png") preloadedImage];
-        });
-        button.supplementaryIcon = shareImage;
+        button.supplementaryIcon = _context.presentation.images.chatReplyButtonSwitchInlineIcon;
     } else if (action == nil) {
-        static UIImage *messageImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            messageImage = [TGImageNamed(@"botbutton_msg.png") preloadedImage];
-        });
-        button.supplementaryIcon = messageImage;
+        button.supplementaryIcon = _context.presentation.images.chatReplyButtonActionIcon;
     }
     return button;
 }

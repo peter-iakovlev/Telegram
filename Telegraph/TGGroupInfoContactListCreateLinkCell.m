@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGGroupInfoContactListCreateLinkCell ()
 {
     UIImageView *_iconView;
@@ -17,12 +19,8 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self != nil)
     {
-        UIView *selectedView = [[UIView alloc] init];
-        UIView *innerSelectedView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f, 48.0f)];
-        innerSelectedView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-        [selectedView addSubview:innerSelectedView];
-        innerSelectedView.backgroundColor = TGSelectionColor();
-        self.selectedBackgroundView = selectedView;
+        self.selectedBackgroundView = [[UIView alloc] init];
+        self.selectedBackgroundView.backgroundColor = TGSelectionColor();
         
         CGFloat originX = TGIsPad() ? 74.0f : 66.0f;
         
@@ -35,7 +33,7 @@
         _titleLabel.text = TGLocalized(@"GroupInfo.InviteByLink");
         [self.contentView addSubview:_titleLabel];
         
-        _iconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernContactListInviteFriendsIcon.png")];
+        _iconView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 26.0f, 26.0f)];
         [self.contentView addSubview:_iconView];
         
         CGFloat verticalOffset = TGIsPad() ? 4.0f : 0.0f;
@@ -46,6 +44,17 @@
         _iconView.frame = iconFrame;
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    _titleLabel.textColor = presentation.pallete.accentColor;
+    _titleLabel.backgroundColor = self.backgroundColor;
+    _iconView.image = presentation.images.contactsInviteLinkIcon;
 }
 
 - (void)layoutSubviews

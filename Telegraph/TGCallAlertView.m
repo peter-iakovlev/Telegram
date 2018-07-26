@@ -1,29 +1,35 @@
 #import "TGCallAlertView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
+#import "TGLegacyComponentsGlobalsProvider.h"
 
 #import "TGAppDelegate.h"
+#import "TGTelegraph.h"
+#import "TGDefaultPresentationPallete.h"
 
 #import <LegacyComponents/TGObserverProxy.h>
 
 #import <LegacyComponents/TGModernButton.h>
 
 #import "TGLegacyComponentsContext.h"
+#import "TGPresentation.h"
 
 const CGFloat TGCallAlertViewWidth = 270.0f;
 const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 
 @interface TGCallAlertView ()
 {
+    bool _wide;
     UIButton *_dimView;
     UIView *_backgroundView;
     UILabel *_titleLabel;
-    UILabel *_messageLabel;
     UIView *_customView;
     UIView *_horizontalSeparator;
     UIView *_verticalSeparator;
     TGModernButton *_cancelButton;
     TGModernButton *_doneButton;
+    
+    bool _dismissed;
     
     void (^_completionBlock)(bool);
     
@@ -37,7 +43,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 
 @implementation TGCallAlertView
 
-- (instancetype)initWithTitle:(NSString *)title message:(NSString *)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock
+- (instancetype)initWithTitle:(NSString *)title message:(id)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock
 {
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
@@ -60,6 +66,19 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
         _backgroundView.layer.masksToBounds = true;
         [self addSubview:_backgroundView];
         
+        NSUInteger messageLength = 0;
+        if ([message isKindOfClass:[NSString class]]) {
+            messageLength = [message length];
+        }
+        else if ([message isKindOfClass:[NSAttributedString class]]) {
+            messageLength = [message length];
+            _wide = true;
+        }
+        
+        CGFloat inset = 20.0f;
+//        if (_wide && [self alertWidth] < 310)
+//            inset = 16.0f;
+        
         if (title.length > 0)
         {
             _titleLabel = [[UILabel alloc] init];
@@ -72,7 +91,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
             [_titleLabel sizeToFit];
             [_backgroundView addSubview:_titleLabel];
             
-            CGSize size = [_titleLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth - 20.0f * 2, FLT_MAX)];
+            CGSize size = [_titleLabel sizeThatFits:CGSizeMake([self alertWidth] - inset * 2, FLT_MAX)];
             _titleLabel.frame = CGRectMake(0.0f, 0.0f, ceil(size.width), ceil(size.height));
         }
         
@@ -82,25 +101,36 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
             [_backgroundView addSubview:_customView];
         }
         
-        if (message.length > 0)
+        TGPresentation *presentation = TGTelegraphInstance.clientUserId == 0 ? [TGPresentation defaultPresentation] : TGPresentation.current;
+        
+        if (messageLength > 0)
         {
             _messageLabel = [[UILabel alloc] init];
             _messageLabel.backgroundColor = [UIColor whiteColor];
             _messageLabel.font = TGSystemFontOfSize(13.0f);
             _messageLabel.numberOfLines = 0;
-            _messageLabel.text = message;
-            _messageLabel.textAlignment = NSTextAlignmentCenter;
-            _messageLabel.textColor = [UIColor blackColor];
+            
+            if ([message isKindOfClass:[NSString class]])
+            {
+                _messageLabel.text = message;
+                _messageLabel.textAlignment = NSTextAlignmentCenter;
+                _messageLabel.textColor = presentation.pallete.menuTextColor;
+            }
+            else if ([message isKindOfClass:[NSAttributedString class]])
+            {
+                _messageLabel.attributedText = message;
+            }
+            
             [_messageLabel sizeToFit];
             [_backgroundView addSubview:_messageLabel];
             
-            CGSize size = [_messageLabel sizeThatFits:CGSizeMake(TGCallAlertViewWidth - 20.0f * 2, FLT_MAX)];
+            CGSize size = [_messageLabel sizeThatFits:CGSizeMake([self alertWidth] - inset * 2, FLT_MAX)];
             _messageLabel.frame = CGRectMake(0.0f, 0.0f, ceil(size.width), ceil(size.height));
         }
         
         _cancelButton = [[TGModernButton alloc] init];
         _cancelButton.exclusiveTouch = true;
-        _cancelButton.titleLabel.font = TGSystemFontOfSize(17.0f);
+        _cancelButton.titleLabel.font = self.cancelIsBold ? TGBoldSystemFontOfSize(17.0f) : TGSystemFontOfSize(17.0f);
         _cancelButton.highlightBackgroundColor = UIColorRGB(0xebebeb);
         [_cancelButton setTitle:cancelButtonTitle forState:UIControlStateNormal];
         [_cancelButton setTitleColor:TGAccentColor()];
@@ -116,7 +146,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
         {
             _doneButton = [[TGModernButton alloc] init];
             _doneButton.exclusiveTouch = true;
-            _doneButton.titleLabel.font = TGBoldSystemFontOfSize(17.0f);
+            _doneButton.titleLabel.font = !self.cancelIsBold ? TGBoldSystemFontOfSize(17.0f) : TGSystemFontOfSize(17.0f);
             _doneButton.highlightBackgroundColor = UIColorRGB(0xebebeb);
             [_doneButton setTitle:doneButtonTitle forState:UIControlStateNormal];
             [_doneButton setTitleColor:TGAccentColor()];
@@ -128,8 +158,30 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
             _verticalSeparator.userInteractionEnabled = false;
             [_backgroundView addSubview:_verticalSeparator];
         }
+        
+        _backgroundView.backgroundColor = presentation.pallete.menuBackgroundColor;
+        _titleLabel.textColor = presentation.pallete.menuTextColor;
+        _titleLabel.backgroundColor = _backgroundView.backgroundColor;
+        
+        _messageLabel.backgroundColor = _backgroundView.backgroundColor;
+        
+        [_cancelButton setTitleColor:presentation.pallete.menuAccentColor];
+        _cancelButton.highlightBackgroundColor = presentation.pallete.menuSelectionColor;
+        [_doneButton setTitleColor:presentation.pallete.menuAccentColor];
+        _doneButton.highlightBackgroundColor = presentation.pallete.menuSelectionColor;
+        
+        _horizontalSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
+        _verticalSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
     }
     return self;
+}
+
+- (CGFloat)alertWidth
+{
+    CGFloat width = TGCallAlertViewWidth;
+//    if (_wide)
+//        width = MIN(320, TGScreenSize().width - 20.0f);
+    return width;
 }
 
 - (void)setFollowsKeyboard:(bool)followsKeyboard
@@ -194,11 +246,11 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     if (self.shouldDismissOnDimTap != nil)
     {
         if (self.shouldDismissOnDimTap())
-            [self dismiss:false];
+            [self dismiss:false fromDim:true animated:true];
     }
     else
     {
-        [self dismiss:false];
+        [self dismiss:false fromDim:true animated:true];
     }
 }
 
@@ -221,19 +273,40 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
 
 - (void)dismiss:(bool)done
 {
+    [self dismiss:done fromDim:false animated:true];
+}
+
+- (void)dismiss:(bool)done fromDim:(bool)fromDim animated:(bool)animated
+{
+    if (_dismissed)
+        return;
+    
+    _dismissed = true;
     self.userInteractionEnabled = false;
     
-    [UIView animateWithDuration:0.2 animations:^
+    if (animated)
+    {
+        [UIView animateWithDuration:0.2 animations:^
+        {
+            self.alpha = 0.0f;
+        } completion:^(__unused BOOL finished)
+        {
+            if (_onDismiss != nil)
+                _onDismiss();
+        }];
+    }
+    else
     {
         self.alpha = 0.0f;
-    } completion:^(__unused BOOL finished)
-    {
         if (_onDismiss != nil)
             _onDismiss();
-    }];
+    }
     
-    if (_completionBlock != nil)
-        _completionBlock(done);
+    if (!fromDim || !self.noActionOnDimTap)
+    {
+        if (_completionBlock != nil)
+            _completionBlock(done);
+    }
 }
 
 - (void)layoutSubviews
@@ -241,7 +314,7 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     _dimView.frame = self.bounds;
     bool isLandscape = self.bounds.size.width > self.bounds.size.height;
     
-    CGFloat width = TGCallAlertViewWidth;
+    CGFloat width = [self alertWidth];
     CGFloat height = 20.0f;
     
     if (_titleLabel != nil)
@@ -280,12 +353,31 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     _horizontalSeparator.frame = CGRectMake(0, height, width, separatorThickness);
     _verticalSeparator.frame = CGRectMake(width / 2.0f, height, separatorThickness, TGCallAlertViewButtonHeight);
     
-    CGFloat cancelWidth = _doneButton != nil ? width / 2.0f : width;
+    CGFloat halfWidth = width / 2.0f;
+    CGFloat cancelTextWidth = [[_cancelButton titleForState:UIControlStateNormal] sizeWithFont:_cancelButton.titleLabel.font].width;
+    CGFloat doneTextWidth = [[_doneButton titleForState:UIControlStateNormal] sizeWithFont:_doneButton.titleLabel.font].width;
     
-    _cancelButton.frame = CGRectMake(0, CGRectGetMaxY(_horizontalSeparator.frame), cancelWidth, TGCallAlertViewButtonHeight);
-    _doneButton.frame = CGRectMake(width / 2.0f, CGRectGetMaxY(_horizontalSeparator.frame), width / 2.0f, TGCallAlertViewButtonHeight);
+    CGFloat cancelWidth = _doneButton != nil ? halfWidth : width;
+    CGFloat doneWidth = halfWidth;
     
-    height = CGRectGetMaxY(_verticalSeparator.frame);
+    CGFloat cancelOrigin = CGRectGetMaxY(_horizontalSeparator.frame);
+    CGFloat doneOriginY = cancelOrigin;
+    
+    if (_doneButton != nil && (cancelTextWidth > halfWidth - 10.0f || doneTextWidth > halfWidth - 10.0f))
+    {
+        cancelWidth = width;
+        doneWidth = width;
+        
+        cancelOrigin += TGCallAlertViewButtonHeight;
+        _verticalSeparator.frame = CGRectMake(0.0f, cancelOrigin, width, separatorThickness);
+    }
+    
+    CGFloat doneOriginX = width - cancelWidth;
+    
+    _cancelButton.frame = CGRectMake(0, cancelOrigin, cancelWidth, TGCallAlertViewButtonHeight);
+    _doneButton.frame = CGRectMake(doneOriginX, doneOriginY, doneWidth, TGCallAlertViewButtonHeight);
+    
+    height = CGRectGetMaxY(_cancelButton.frame);
     
     CGFloat keyboardOffset = self.followsKeyboard ? _keyboardOffset : 0;
     CGFloat y = ceil((self.bounds.size.height - keyboardOffset - height) / 2.0f);
@@ -309,12 +401,23 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     _backgroundView.frame = CGRectMake((self.bounds.size.width - width) / 2.0f, y, width, height);
 }
 
-+ (TGCallAlertView *)presentAlertWithTitle:(NSString *)title message:(NSString *)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock
++ (TGCallAlertView *)presentAlertWithTitle:(NSString *)title message:(id)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock
 {
-    TGCallAlertView *alertView = [[TGCallAlertView alloc] initWithTitle:title message:message customView:customView cancelButtonTitle:cancelButtonTitle doneButtonTitle:doneButtonTitle completionBlock:completionBlock];
+    return [self _presentAlert:[TGCallAlertView class] withTitle:title message:message customView:customView cancelButtonTitle:cancelButtonTitle doneButtonTitle:doneButtonTitle completionBlock:completionBlock];
+}
+
++ (TGCallAlertView *)_presentAlert:(Class)alertClass withTitle:(NSString *)title message:(id)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle completionBlock:(void (^)(bool))completionBlock
+{
+    return [self _presentAlert:alertClass withTitle:title message:message customView:customView cancelButtonTitle:cancelButtonTitle doneButtonTitle:doneButtonTitle keepKeyboard:false completionBlock:completionBlock];
+}
+
++ (TGCallAlertView *)_presentAlert:(Class)alertClass withTitle:(NSString *)title message:(id)message customView:(UIView *)customView cancelButtonTitle:(NSString *)cancelButtonTitle doneButtonTitle:(NSString *)doneButtonTitle keepKeyboard:(bool)keepKeyboard completionBlock:(void (^)(bool))completionBlock
+{
+    TGCallAlertView *alertView = [[alertClass alloc] initWithTitle:title message:message customView:customView cancelButtonTitle:cancelButtonTitle doneButtonTitle:doneButtonTitle completionBlock:completionBlock];
     TGCallAlertViewController *controller = [[TGCallAlertViewController alloc] initWithView:alertView];
-    TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:TGAppDelegateInstance.rootController contentController:controller];
+    TGOverlayControllerWindow *window = [[TGOverlayControllerWindow alloc] initWithManager:[[TGLegacyComponentsContext shared] makeOverlayWindowManager] parentController:TGAppDelegateInstance.rootController contentController:controller keepKeyboard:keepKeyboard];
     window.hidden = false;
+    alertView->_alertWindow = window;
     
     return alertView;
 }
@@ -352,5 +455,125 @@ const CGFloat TGCallAlertViewButtonHeight = 44.0f;
     [super viewDidAppear:animated];
     [_alertView present];
 }
+
+- (void)dismiss
+{
+    [super dismiss];
+    [self.view removeFromSuperview];
+}
+
+- (UIViewController *)statusBarAppearanceSourceController
+{
+    UIViewController *rootController = [[LegacyComponentsGlobals provider] applicationWindows].firstObject.rootViewController;
+    UIViewController *topViewController = nil;
+    if ([rootController respondsToSelector:@selector(viewControllers)]) {
+        topViewController = [(UINavigationController *)rootController viewControllers].lastObject;
+    }
+    
+    if ([topViewController isKindOfClass:[UITabBarController class]])
+        topViewController = [(UITabBarController *)topViewController selectedViewController];
+    if ([topViewController isKindOfClass:[TGViewController class]])
+    {
+        TGViewController *concreteTopViewController = (TGViewController *)topViewController;
+        if (concreteTopViewController.presentedViewController != nil)
+        {
+            topViewController = concreteTopViewController.presentedViewController;
+        }
+        else if (concreteTopViewController.associatedWindowStack.count != 0)
+        {
+            for (UIWindow *window in concreteTopViewController.associatedWindowStack.reverseObjectEnumerator)
+            {
+                if (window.rootViewController != nil && window.rootViewController != self)
+                {
+                    topViewController = window.rootViewController;
+                    break;
+                }
+            }
+        }
+    }
+    
+    return topViewController;
+}
+
+- (UIViewController *)autorotationSourceController
+{
+    UIViewController *rootController = [[LegacyComponentsGlobals provider] applicationWindows].firstObject.rootViewController;
+    UIViewController *topViewController = nil;
+    if ([rootController respondsToSelector:@selector(viewControllers)]) {
+        topViewController = [(UINavigationController *)rootController viewControllers].lastObject;
+    }
+    
+    if ([topViewController isKindOfClass:[UITabBarController class]])
+        topViewController = [(UITabBarController *)topViewController selectedViewController];
+    
+    return topViewController;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    UIStatusBarStyle style = [[self statusBarAppearanceSourceController] preferredStatusBarStyle];
+    return style;
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    bool value = [[self statusBarAppearanceSourceController] prefersStatusBarHidden];
+    return value;
+}
+
+- (BOOL)shouldAutorotate
+{
+    static NSArray *nonRotateableWindowClasses = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+                  {
+                      NSMutableArray *array = [[NSMutableArray alloc] init];
+                      Class alertClass = NSClassFromString(TGEncodeText(@"`VJBmfsuPwfsmbzXjoepx", -1));
+                      if (alertClass != nil)
+                          [array addObject:alertClass];
+                      
+                      nonRotateableWindowClasses = array;
+                  });
+    
+    for (UIWindow *window in [[LegacyComponentsGlobals provider] applicationWindows].reverseObjectEnumerator)
+    {
+        for (Class classInfo in nonRotateableWindowClasses)
+        {
+            if ([window isKindOfClass:classInfo])
+                return false;
+        }
+    }
+    
+    UIViewController *rootController = [[LegacyComponentsGlobals provider] applicationWindows].firstObject.rootViewController;
+    
+    if (rootController.presentedViewController != nil)
+        return [rootController.presentedViewController shouldAutorotate];
+    
+    if ([self autorotationSourceController] != nil)
+        return [[self autorotationSourceController] shouldAutorotate];
+    
+    return true;
+}
+
+- (void)willAnimateRotationToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+{
+    [super willAnimateRotationToInterfaceOrientation:toInterfaceOrientation duration:duration];
+    
+    [self.view.window.layer removeAnimationForKey:@"backgroundColor"];
+    [CATransaction begin];
+    [CATransaction setDisableActions:true];
+    self.view.window.layer.backgroundColor = [UIColor clearColor].CGColor;
+    [CATransaction commit];
+    
+    for (UIView *view in self.view.window.subviews)
+    {
+        if (view != self.view)
+        {
+            [view removeFromSuperview];
+            break;
+        }
+    }
+}
+
 
 @end

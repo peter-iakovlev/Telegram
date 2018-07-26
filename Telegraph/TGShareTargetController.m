@@ -24,6 +24,9 @@
 
 #import "TGSelectContactController.h"
 
+#import "TGPresentation.h"
+#import "TGPresentationAssets.h"
+
 @interface TGShareTargetController () <UITableViewDelegate, UITableViewDataSource, TGSearchDisplayMixinDelegate>
 {
     bool _isDisplayingSearch;
@@ -85,7 +88,7 @@
 {
     [super loadView];
     
-    self.view.backgroundColor = [UIColor whiteColor];
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
     
     CGRect tableFrame = self.view.bounds;
     _tableView = [[TGListsTableView alloc] initWithFrame:tableFrame style:UITableViewStylePlain];
@@ -95,17 +98,18 @@
     _tableView.delegate = self;
     _tableView.dataSource = self;
     _tableView.opaque = true;
-    _tableView.backgroundColor = nil;
+    _tableView.backgroundColor = self.view.backgroundColor;
     _tableView.showsVerticalScrollIndicator = true;
     
     _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLightPlain];
+    [_searchBar setPallete:self.presentation.searchBarPallete];
     _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     
     _searchTopBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -320.0f, self.view.frame.size.width, 320.0f)];
     _searchTopBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     [_tableView insertSubview:_searchTopBackgroundView atIndex:0];
     
-    UIColor *searchBackgroundColor = UIColorRGB(0xf7f7f7);
+    UIColor *searchBackgroundColor = self.presentation.pallete.barBackgroundColor;
     _searchBar.backgroundColor = searchBackgroundColor;
     _searchTopBackgroundView.backgroundColor = searchBackgroundColor;
     
@@ -121,7 +125,7 @@
     
     if (iosMajorVersion() >= 7) {
         _tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
-        _tableView.separatorColor = TGSeparatorColor();
+        _tableView.separatorColor = self.presentation.pallete.separatorColor;
         _tableView.separatorInset = UIEdgeInsetsMake(0.0f, 65.0f, 0.0f, 0.0f);
     }
     
@@ -228,10 +232,10 @@
         TGShareTargetCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
         if (cell == nil)
             cell = [[TGShareTargetCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-        
+        cell.presentation = self.presentation;
         TGConversation *peer = [self currentPeers][indexPath.row];
         int64_t peerId = [TGShareTargetController _peerIdForPeer:peer];
-        [cell setupWithPeer:peer];
+        [cell setupWithPeer:peer feed:false];
         [cell setChecked:[_selectedPeerIds containsObject:@(peerId)] animated:false];
         [cell setIsLastCell:[self isLastCell:indexPath]];
         return cell;
@@ -268,6 +272,7 @@
                     }
                 };
             }
+            cell.presentation = self.presentation;
             [cell setRecentPeers:recentPeers unreadCounts:nil];
             [cell updateSelectedPeerIds:_selectedPeerIds];
             
@@ -279,10 +284,10 @@
             TGShareTargetCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
             if (cell == nil)
                 cell = [[TGShareTargetCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier];
-            
+            cell.presentation = self.presentation;
             TGConversation *peer = result;
             int64_t peerId = [TGShareTargetController _peerIdForPeer:peer];
-            [cell setupWithPeer:peer];
+            [cell setupWithPeer:peer feed:false];
             [cell setChecked:[_selectedPeerIds containsObject:@(peerId)] animated:false];
             return cell;
             
@@ -358,7 +363,7 @@
         
         UIView *sectionView = [[UIView alloc] initWithFrame:CGRectMake(0, first ? 0 : -1, 10, first ? 10 : 11)];
         sectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        sectionView.backgroundColor = UIColorRGB(0xf7f7f7);
+        sectionView.backgroundColor = self.presentation.pallete.sectionHeaderBackgroundColor;
         [sectionContainer addSubview:sectionView];
         
         UILabel *sectionLabel = [[UILabel alloc] init];
@@ -375,7 +380,7 @@
     UILabel *sectionLabel = (UILabel *)[sectionContainer viewWithTag:100];
     sectionLabel.font = wide ? TGBoldSystemFontOfSize(12.0f) : TGBoldSystemFontOfSize(17);
     sectionLabel.text = [title uppercaseString];
-    sectionLabel.textColor = wide ? UIColorRGB(0x8e8e93) : [UIColor blackColor];
+    sectionLabel.textColor = self.presentation.pallete.sectionHeaderTextColor;
     [sectionLabel sizeToFit];
     if (wide)
     {
@@ -482,16 +487,6 @@
     
     return checked;
 }
-
-
-//- (void)updateIsLastCell {
-//    for (NSIndexPath *indexPath in _tableView.indexPathsForVisibleRows) {
-//        TGCallCell *cell = (TGCallCell *)[_tableView cellForRowAtIndexPath:indexPath];
-//        if ([cell isKindOfClass:[TGCallCell class]]) {
-//            [cell setIsLastCell:[self isLastCell:indexPath]];
-//        }
-//    }
-//}
 
 - (void)reloadData
 {
@@ -703,6 +698,7 @@
 {
     UITableView *tableView = [[UITableView alloc] init];
     
+    tableView.backgroundColor = self.presentation.pallete.backgroundColor;
     tableView.delegate = self;
     tableView.dataSource = self;
     
@@ -710,7 +706,7 @@
     
     if (iosMajorVersion() >= 7) {
         tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
-        tableView.separatorColor = TGSeparatorColor();
+        tableView.separatorColor = self.presentation.pallete.separatorColor;
         tableView.separatorInset = UIEdgeInsetsMake(0.0f, 65.0f, 0.0f, 0.0f);
     }
     
@@ -914,16 +910,17 @@
     {
         if (_buttonContainer == nil)
         {
-            _buttonContainer = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, 46)];
-            ((TGHighlightableButton *)_buttonContainer).normalBackgroundColor = UIColorRGB(0xf7f7f7);
+            UIEdgeInsets safeAreaInset = self.calculatedSafeAreaInset;
+            _buttonContainer = [[TGHighlightableButton alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, 46 + safeAreaInset.bottom)];
+            ((TGHighlightableButton *)_buttonContainer).normalBackgroundColor = self.presentation.pallete.barBackgroundColor;
             
             UIView *separatorView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, _buttonContainer.frame.size.width, TGIsRetina() ? 0.5f : 1.0f)];
-            separatorView.backgroundColor = TGSeparatorColor();
+            separatorView.backgroundColor = self.presentation.pallete.barSeparatorColor;
             [_buttonContainer addSubview:separatorView];
             
             [((TGHighlightableButton *)_buttonContainer) addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
             _buttonContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-            _buttonContainer.backgroundColor = UIColorRGB(0xf7f7f7);
+            _buttonContainer.backgroundColor = self.presentation.pallete.barBackgroundColor;
             [self.view insertSubview:_buttonContainer aboveSubview:_tableView];
             
             UIView *alignmentContainer = [[UIView alloc] initWithFrame:CGRectMake(floorf((float)(_buttonContainer.frame.size.width - 320) / 2), 0, 320, 46)];
@@ -934,34 +931,21 @@
             
             UILabel *inviteLabel = [[UILabel alloc] init];
             inviteLabel.backgroundColor = [UIColor clearColor];
-            inviteLabel.textColor = TGAccentColor();
+            inviteLabel.textColor = self.presentation.pallete.accentColor;
             inviteLabel.font = TGMediumSystemFontOfSize(17);
             inviteLabel.text = TGLocalized(@"ShareMenu.Send");
             [inviteLabel sizeToFit];
             inviteLabel.tag = 100;
             [alignmentContainer addSubview:inviteLabel];
             
-            static UIImage *badgeImage = nil;
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(24.0f, 24.0f), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                
-                CGContextSetFillColorWithColor(context, TGAccentColor().CGColor);
-                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 24.0f, 24.0f));
-                
-                badgeImage = UIGraphicsGetImageFromCurrentImageContext();
-                UIGraphicsEndImageContext();
-            });
-            
+            UIImage *badgeImage = [TGPresentationAssets badgeWithDiameter:24.0f color:self.presentation.pallete.accentColor border:0 borderColor:nil];
             UIImageView *bubbleView = [[UIImageView alloc] initWithImage:[badgeImage stretchableImageWithLeftCapWidth:(int)(badgeImage.size.width / 2) topCapHeight:0]];
             bubbleView.tag = 101;
             [alignmentContainer addSubview:bubbleView];
             
             UILabel *countLabel = [[UILabel alloc] init];
             countLabel.backgroundColor = [UIColor clearColor];
-            countLabel.textColor = [UIColor whiteColor];
+            countLabel.textColor = self.presentation.pallete.accentContrastColor;
             countLabel.font = TGSystemFontOfSize(15);
             countLabel.text = @"1";
             [countLabel sizeToFit];
@@ -990,11 +974,11 @@
         countLabelFrame.origin = CGPointMake(bubbleView.frame.origin.x + floorf((float)(bubbleView.frame.size.width - countLabelFrame.size.width) / 2) + (TGIsRetina() ? 0.5f : 0.0f), 14);
         countLabel.frame = countLabelFrame;
         
-        if (ABS(_buttonContainer.frame.origin.y - self.view.frame.size.height + 46) > FLT_EPSILON)
+        if (ABS(_buttonContainer.frame.origin.y - self.view.frame.size.height + _buttonContainer.frame.size.height) > FLT_EPSILON)
         {
             [UIView animateWithDuration:0.2 delay:0.0 options:7 << 16 | UIViewAnimationOptionBeginFromCurrentState animations:^
             {
-                _buttonContainer.frame = CGRectMake(0, self.view.frame.size.height - 46, self.view.frame.size.width, 46);
+                _buttonContainer.frame = CGRectMake(0, self.view.frame.size.height - _buttonContainer.frame.size.height, self.view.frame.size.width, _buttonContainer.frame.size.height);
                  
                 [self updateTableFrame:false collapseSearch:false];
             } completion:nil];
@@ -1008,7 +992,7 @@
             {
                 [UIView animateWithDuration:0.2 delay:0.0 options:7 << 16 | UIViewAnimationOptionBeginFromCurrentState animations:^
                 {
-                    _buttonContainer.frame = CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, 46);
+                    _buttonContainer.frame = CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, _buttonContainer.frame.size.height);
                     
                     [self updateTableFrame:false collapseSearch:false];
                 } completion:nil];

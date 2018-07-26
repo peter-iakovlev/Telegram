@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaSectionHeaderView ()
 {
     UILabel *_dateLabel;
@@ -32,6 +34,16 @@
         [self addSubview:_summaryLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (_presentation == presentation)
+        return;
+    
+    self.backgroundColor = [presentation.pallete.backgroundColor colorWithAlphaComponent:0.92f];
+    _dateLabel.textColor = presentation.pallete.textColor;
+    _summaryLabel.textColor = presentation.pallete.sectionHeaderTextColor;
 }
 
 - (void)setDateString:(NSString *)dateString summaryString:(NSString *)summaryString

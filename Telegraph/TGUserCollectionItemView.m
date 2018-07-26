@@ -6,6 +6,8 @@
 
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
+
 @interface TGUserCollectionItemView ()
 {
     UILabel *_titleLabel;
@@ -34,10 +36,18 @@
         _titleLabel.font = TGSystemFontOfSize(17);
         [self.editingContentView addSubview:_titleLabel];
         
-        _disclosureIndicator = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
+        _disclosureIndicator = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 8.0f, 14.0f)];
         [self.editingContentView addSubview:_disclosureIndicator];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+    _disclosureIndicator.image = presentation.images.collectionMenuDisclosureIcon;
 }
 
 - (void)setShowAvatar:(bool)showAvatar
@@ -59,24 +69,7 @@
     else
         _titleLabel.text = @"";
     
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];    
     if (avatarUri.length == 0)
         [_avatarView loadUserPlaceholderWithSize:CGSizeMake(40.0f, 40.0f) uid:uidForPlaceholderCalculation firstName:firstName lastName:lastName placeholder:placeholder];
     else if (!TGStringCompare([_avatarView currentUrl], avatarUri))
@@ -92,6 +85,7 @@
     CGRect bounds = self.bounds;
     
     CGFloat leftInset = self.showsDeleteIndicator ? 38.0f : 0.0f;
+    leftInset += self.safeAreaInset.left;
     
     if (!_avatarView.hidden)
     {
@@ -102,7 +96,7 @@
     _titleLabel.frame = CGRectMake(15.0f + leftInset, CGFloor((bounds.size.height - 26.0f) / 2), bounds.size.width - 15.0f - leftInset - 40.0f, 26.0f);
     
     _disclosureIndicator.alpha = self.showsDeleteIndicator ? 0.0f : 1.0f;
-    _disclosureIndicator.frame = CGRectMake(bounds.size.width + (self.showsDeleteIndicator ? 0.0f : (-_disclosureIndicator.frame.size.width - 15.0f)) , CGFloor((bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
+    _disclosureIndicator.frame = CGRectMake(bounds.size.width + (self.showsDeleteIndicator ? 0.0f : (-_disclosureIndicator.frame.size.width - 15.0f)) - self.safeAreaInset.right, CGFloor((bounds.size.height - _disclosureIndicator.frame.size.height) / 2), _disclosureIndicator.frame.size.width, _disclosureIndicator.frame.size.height);
 }
 
 #pragma mark -

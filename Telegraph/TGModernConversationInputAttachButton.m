@@ -13,6 +13,7 @@
     {
         self.exclusiveTouch = true;
         self.multipleTouchEnabled = false;
+        self.tag = 0xdead;
         
         UILongPressGestureRecognizer *gestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleGesture:)];
         gestureRecognizer.delegate = self;

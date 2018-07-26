@@ -2,14 +2,19 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
+#import <LegacyComponents/TGCheckButtonView.h>
+
 @interface TGUserInfoUsernameCollectionItemView ()
 {
     CALayer *_separatorLayer;
     
     UILabel *_labelView;
     UILabel *_usernameLabel;
+    
+    TGCheckButtonView *_checkView;
 }
-
 @end
 
 @implementation TGUserInfoUsernameCollectionItemView
@@ -40,6 +45,32 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _labelView.textColor = presentation.pallete.collectionMenuTextColor;
+    _usernameLabel.textColor = presentation.pallete.collectionMenuAccentColor;
+    _separatorLayer.backgroundColor = presentation.pallete.collectionMenuSeparatorColor.CGColor;
+}
+
+- (void)setChecking:(bool)checking
+{
+    if (_checkView == nil)
+    {
+        _checkView = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleDefaultBlue pallete:self.presentation.checkButtonPallete];
+        _checkView.userInteractionEnabled = false;
+        [self addSubview:_checkView];
+    }
+    _checkView.hidden = !checking;
+    [self setNeedsLayout];
+}
+
+- (void)setIsChecked:(bool)checked animated:(bool)animated
+{
+    [_checkView setSelected:checked animated:animated];
+}
+
 - (void)setLabel:(NSString *)label
 {
     _labelView.text = label;
@@ -52,17 +83,26 @@
     [self setNeedsLayout];
 }
 
+- (void)setLastInList:(bool)lastInList
+{
+    _separatorLayer.hidden = !lastInList;
+}
+
 - (void)layoutSubviews
 {
     [super layoutSubviews];
     
     CGRect bounds = self.bounds;
     
+    bool hasCheck = _checkView != nil && !_checkView.hidden;
+    
+    _checkView.frame = CGRectMake(14.0f + self.safeAreaInset.left, TGScreenPixelFloor((self.frame.size.height - _checkView.frame.size.height) / 2.0f), _checkView.frame.size.width, _checkView.frame.size.height);
+    
     CGFloat separatorHeight = TGScreenPixel;
-    CGFloat separatorInset = 35.0f + self.safeAreaInset.left;
+    CGFloat separatorInset = (hasCheck ? 60.0f : 15.0f) + self.safeAreaInset.left;
     _separatorLayer.frame = CGRectMake(separatorInset, bounds.size.height - separatorHeight, bounds.size.width - separatorInset, separatorHeight);
     
-    CGFloat leftPadding = 35.0f + TGScreenPixel + self.safeAreaInset.left;
+    CGFloat leftPadding = (hasCheck ? 60.0f : 15.0f) + TGScreenPixel + self.safeAreaInset.left;
     
     CGSize labelSize = [_labelView sizeThatFits:CGSizeMake(bounds.size.width - leftPadding - self.safeAreaInset.right - 10.0f, CGFLOAT_MAX)];
     _labelView.frame = CGRectMake(leftPadding, 11.0f, labelSize.width, labelSize.height);

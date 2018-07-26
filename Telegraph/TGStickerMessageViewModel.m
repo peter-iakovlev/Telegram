@@ -27,6 +27,8 @@
 
 #import "TGModernTextViewModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGStickerMessageViewModel () <TGDoubleTapGestureRecognizerDelegate, UIGestureRecognizerDelegate>
 {
     bool _incoming;
@@ -89,12 +91,13 @@
         _callbackButtonInProgressDisposable = [[SMetaDisposable alloc] init];
         
         _mid = message.mid;
+        _authorPeerId = message.fromUid;
         _incoming = !message.outgoing;
         _read = ![_context isMessageUnread:message];
         _deliveryState = message.deliveryState;
         _hasAvatar = authorPeer != nil && [authorPeer isKindOfClass:[TGUser class]];
         if ([authorPeer isKindOfClass:[TGConversation class]]) {
-            if ([context isAdminLog] || context.isSavedMessages) {
+            if (context.isAdminLog || context.isSavedMessages || context.isFeed) {
                 _hasAvatar = true;
             }
         }
@@ -125,7 +128,11 @@
         [_imageModel setPresentation:_context.presentation];
         _imageModel.expectExtendedEdges = true;
         
+        UIColor *overlayBackgroundColor = context.presentation.pallete.chatSystemBackgroundColor ?: [[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor];
         _imageModel.overlayBackgroundColorHint = UIColorRGBA(0x000000, 0.4f);
+        _imageModel.timestampTextColor = context.presentation.pallete.chatSystemTextColor;
+        _imageModel.timestampColor = overlayBackgroundColor;
+        _imageModel.serviceTimestampStyle = true;
         
         CGSize displaySize = [self displaySizeForSize:_size];
         
@@ -152,7 +159,6 @@
         [self addSubmodel:_imageModel];
         
         _imageModel.flexibleTimestamp = true;
-        [_imageModel setTimestampColor:UIColorRGBA(0x000000, 0.3f)];
         [_imageModel setTimestampString:[TGDateUtils stringForShortTime:(int)message.date] signatureString:nil displayCheckmarks:!_incoming && !(_incomingAppearance && _context.isSavedMessages) && _deliveryState != TGMessageDeliveryStateFailed checkmarkValue:(_incoming ? 0 : ((_deliveryState == TGMessageDeliveryStateDelivered ? 1 : 0) + (_read ? 1 : 0))) displayViews:_messageViews != nil viewsValue:_messageViews.viewCount animated:false];
         [_imageModel setDisplayTimestampProgress:_deliveryState == TGMessageDeliveryStatePending];
         [_imageModel setIsBroadcast:message.isBroadcast];
@@ -188,14 +194,14 @@
         {
             _replyMessageId = replyHeader.mid;
             
-            _replyBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemReplyBackground]];
+            _replyBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:context.presentation.images.chatReplyBackground];
             _replyBackgroundModel.skipDrawInContext = true;
             [self addSubmodel:_replyBackgroundModel];
             
             _contentModel = [[TGModernFlatteningViewModel alloc] init];
             [self addSubmodel:_contentModel];
             
-            _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:replyPeer incoming:_incomingAppearance system:true];
+            _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:replyPeer incoming:_incomingAppearance system:true presentation:context.presentation];
             [_contentModel addSubmodel:_replyHeaderModel];
             
             if (viaUser != nil && viaUser.userName.length != 0) {
@@ -245,7 +251,7 @@
         TGBotReplyMarkup *replyMarkup = message.replyMarkup;
         if (replyMarkup != nil && replyMarkup.isInline) {
             _replyMarkup = replyMarkup;
-            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] initWithContext:context];
             __weak TGStickerMessageViewModel *weakSelf = self;
             _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
                 __strong TGStickerMessageViewModel *strongSelf = weakSelf;
@@ -278,20 +284,14 @@
 {
     [super updateAssets];
     
-    [_imageModel setTimestampColor:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor]];
+    //[_imageModel setTimestampColor:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackgroundColor]];
 }
 
 - (TGModernImageViewModel *)unsentButtonModel
 {
     if (_unsentButtonModel == nil)
     {
-        static UIImage *image = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            image = TGImageNamed(@"ModernMessageUnsentButton.png");
-        });
-        
+        UIImage *image = _context.presentation.images.chatUnsentIcon;
         _unsentButtonModel = [[TGModernImageViewModel alloc] initWithImage:image];
         _unsentButtonModel.frame = CGRectMake(0.0f, 0.0f, image.size.width, image.size.height);
         _unsentButtonModel.extendedEdges = UIEdgeInsetsMake(6, 6, 6, 6);
@@ -476,7 +476,7 @@
         _replyMarkup = replyMarkup;
         
         if (_replyButtonsModel == nil) {
-            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] initWithContext:_context];
             __weak TGStickerMessageViewModel *weakSelf = self;
             _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
                 __strong TGStickerMessageViewModel *strongSelf = weakSelf;
@@ -670,7 +670,7 @@
 - (void)messageTapGesture:(UITapGestureRecognizer *)recognizer
 {
     if (recognizer.state == UIGestureRecognizerStateRecognized)
-        [_context.companionHandle requestAction:@"stickerPackInfoRequested" options:@{@"mid": @(_mid)}];
+        [_context.companionHandle requestAction:@"stickerPackInfoRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)messageDoubleTapGesture:(TGDoubleTapGestureRecognizer *)recognizer
@@ -678,7 +678,7 @@
     if (recognizer.state == UIGestureRecognizerStateRecognized)
     {
         if (recognizer.longTapped)
-            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+            [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
     }
 }
 

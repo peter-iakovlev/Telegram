@@ -9,11 +9,35 @@ typedef enum {
     TGSearchBarStyleLightPlain = 3,
     TGSearchBarStyleLightAlwaysPlain = 4,
     TGSearchBarStyleHeader = 5,
+    TGSearchBarStyleKeyboard = 6
 } TGSearchBarStyle;
 
 @protocol TGSearchBarDelegate <UISearchBarDelegate>
 
 - (void)searchBar:(TGSearchBar *)searchBar willChangeHeight:(CGFloat)newHeight;
+
+@end
+
+@interface TGSearchBarPallete : NSObject
+
+@property (nonatomic, readonly) bool isDark;
+@property (nonatomic, readonly) UIColor *backgroundColor;
+@property (nonatomic, readonly) UIColor *highContrastBackgroundColor;
+@property (nonatomic, readonly) UIColor *textColor;
+@property (nonatomic, readonly) UIColor *placeholderColor;
+@property (nonatomic, readonly) UIImage *clearIcon;
+@property (nonatomic, readonly) UIColor *barBackgroundColor;
+@property (nonatomic, readonly) UIColor *barSeparatorColor;
+@property (nonatomic, readonly) UIColor *plainBackgroundColor;
+@property (nonatomic, readonly) UIColor *accentColor;
+@property (nonatomic, readonly) UIColor *accentContrastColor;
+@property (nonatomic, readonly) UIColor *menuBackgroundColor;
+@property (nonatomic, readonly) UIImage *segmentedControlBackgroundImage;
+@property (nonatomic, readonly) UIImage *segmentedControlSelectedImage;
+@property (nonatomic, readonly) UIImage *segmentedControlHighlightedImage;
+@property (nonatomic, readonly) UIImage *segmentedControlDividerImage;
+
++ (instancetype)palleteWithDark:(bool)dark backgroundColor:(UIColor *)backgroundColor highContrastBackgroundColor:(UIColor *)highContrastBackgroundColor textColor:(UIColor *)textColor placeholderColor:(UIColor *)placeholderColor clearIcon:(UIImage *)clearIcon barBackgroundColor:(UIColor *)barBackgroundColor barSeparatorColor:(UIColor *)barSeparatorColor plainBackgroundColor:(UIColor *)plainBackgroundColor accentColor:(UIColor *)accentColor accentContrastColor:(UIColor *)accentContrastColor menuBackgroundColor:(UIColor *)menuBackgroundColor segmentedControlBackgroundImage:(UIImage *)segmentedControlBackgroundImage segmentedControlSelectedImage:(UIImage *)segmentedControlSelectedImage segmentedControlHighlightedImage:(UIImage *)segmentedControlHighlightedImage segmentedControlDividerImage:(UIImage *)segmentedControlDividerImage;
 
 @end
 
@@ -64,5 +88,7 @@ typedef enum {
 - (void)updateClipping:(CGFloat)clippedHeight;
 
 - (void)localizationUpdated;
+
+- (void)setPallete:(TGSearchBarPallete *)pallete;
 
 @end

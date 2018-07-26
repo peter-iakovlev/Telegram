@@ -3,8 +3,6 @@
 #import <LegacyComponents/TGStickerPack.h>
 #import "TGArchivedStickerPacksSummary.h"
 
-#import "TGStickerPacksArchive.h"
-
 @class TLInputStickerSet;
 
 @interface TGStickersSignals : NSObject
@@ -21,6 +19,7 @@
 
 + (NSDictionary *)cachedStickerPacks;
 
++ (SSignal *)remoteStickersForEmoticon:(NSString *)emoticon;
 + (SSignal *)stickerPackInfo:(id<TGStickerPackReference>)packReference;
 + (SSignal *)installStickerPackAndGetArchived:(id<TGStickerPackReference>)packReference;
 + (SSignal *)installStickerPackAndGetArchived:(id<TGStickerPackReference>)packReference hintUnarchive:(bool)hintUnarchive;
@@ -28,6 +27,8 @@
 + (SSignal *)toggleStickerPackHidden:(id<TGStickerPackReference>)packReference hidden:(bool)hidden;
 + (SSignal *)reorderStickerPacks:(NSArray *)packReferences;
 + (SSignal *)archivedStickerPacksWithOffsetId:(int64_t)offsetId limit:(NSUInteger)limit;
+
++ (SSignal *)searchStickersWithQuery:(NSString *)query;
 
 + (void)remoteAddedStickerPack:(TGStickerPack *)stickerPack;
 + (void)remoteReorderedStickerPacks:(NSArray *)updatedOrder;
@@ -40,5 +41,7 @@
 + (TLInputStickerSet *)_inputStickerSetFromPackReference:(id<TGStickerPackReference>)packReference;
 
 + (SSignal *)cachedStickerPack:(id<TGStickerPackReference>)packReference;
+
++ (SSignal *)stickersForEmojis:(NSArray *)emojis includeRemote:(bool)includeRemote updateRemoteCached:(bool)updateRemoteCached;
 
 @end

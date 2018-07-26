@@ -63,6 +63,7 @@
     _checkView.image = presentation.images.collectionMenuCheckImage;
     _reorderingControl.image = presentation.images.collectionMenuReorderIcon;
     _unreadView.image = presentation.images.collectionMenuUnreadIcon;
+    _activityIndicator.color = presentation.pallete.collectionMenuSpinnerColor;
 }
 
 - (void)prepareForReuse
@@ -78,7 +79,7 @@
     if (searching && _activityIndicator == nil)
     {
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-        _activityIndicator.color = UIColorRGB(0x7c828c);
+        _activityIndicator.color = self.presentation.pallete.collectionMenuSpinnerColor;
         _activityIndicator.transform = CGAffineTransformMakeScale(0.85f, 0.85f);
         [self.contentView addSubview:_activityIndicator];
     }
@@ -195,6 +196,7 @@
     } else {
         if (_statusView == nil) {
             _statusView = [[TGStickerPackStatusView alloc] init];
+            _statusView.presentation = self.presentation;
             __weak TGStickerPackCollectionItemView *weakSelf = self;
             _statusView.install = ^{
                 __strong TGStickerPackCollectionItemView *strongSelf = weakSelf;

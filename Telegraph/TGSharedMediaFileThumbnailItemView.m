@@ -11,6 +11,8 @@
 #import "TGSharedMediaFileThumbnailView.h"
 #import "TGSharedMediaFileThumbnailLabelView.h"
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaFileThumbnailItemView ()
 {
     TGImageView *_imageView;
@@ -44,6 +46,17 @@
         _progressView.backgroundColor = TGAccentColor();
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (self.presentation == presentation)
+        return;
+    
+    [super setPresentation:presentation];
+    
+    
+    _progressView.backgroundColor = presentation.pallete.accentColor;
 }
 
 - (void)prepareForReuse

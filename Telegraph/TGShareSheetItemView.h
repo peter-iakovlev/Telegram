@@ -1,7 +1,10 @@
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGShareSheetItemView : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, copy) void (^preferredHeightNeedsUpdate)(TGShareSheetItemView *);
 
 - (CGFloat)preferredHeightForMaximumHeight:(CGFloat)maximumHeight;

@@ -13,4 +13,6 @@
 - (SSignal * _Nonnull)fetchedResource:(id<MediaResource> _Nonnull)resource;
 - (void)cancelInteractiveResourceFetch:(id<MediaResource> _Nonnull)resource;
 
+- (ResourceStorePaths * _Nonnull)storePathsForId:(id<MediaResourceId> _Nonnull)resourceId;
+
 @end

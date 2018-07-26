@@ -164,6 +164,8 @@ typedef enum {
 - (NSString *)cellularUsageResetPath;
 - (NSString *)wifiUsageResetPath;
 
+- (SSignal *)socksProxySettings;
+
 @end
 
 @interface MTRequest (LegacyTL)

@@ -29,6 +29,7 @@
 - (instancetype)init;
 - (instancetype)initWithMusic:(bool)music controlAudioSession:(bool)controlAudioSession;
 
+- (void)setRate:(CGFloat)rate;
 - (void)play;
 - (void)playFromPosition:(NSTimeInterval)position;
 - (void)pause:(void (^)())completion;

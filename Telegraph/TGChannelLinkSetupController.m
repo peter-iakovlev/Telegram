@@ -12,7 +12,7 @@
 
 #import "TGCollectionMenuLayout.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGChannelManagementSignals.h"
 #import "TGGroupManagementSignals.h"
@@ -123,7 +123,7 @@ typedef enum {
             if (strongSelf->_usernameItem.username.length != 0)
             {
                 [[UIPasteboard generalPasteboard] setString:[[NSString alloc] initWithFormat:@"http://t.me/%@", strongSelf->_usernameItem.username]];
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Username.LinkCopied") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         }
     };
@@ -195,16 +195,16 @@ typedef enum {
         unichar c = [_usernameItem.username characterAtIndex:0];
         if (c >= '0' && c <= '9')
         {
-            [[[TGAlertView alloc] initWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidStartsWithNumber") : TGLocalized(@"Channel.Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidStartsWithNumber") : TGLocalized(@"Channel.Username.InvalidStartsWithNumber") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
         }
         else
         {
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidCharacters") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidCharacters") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
         }
     }
     else if (_usernameItem.username.length != 0 && _usernameItem.username.length < 5)
     {
-        [[[TGAlertView alloc] initWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidTooShort") : TGLocalized(@"Channel.Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:_conversation.isChannelGroup ? TGLocalized(@"Group.Username.InvalidTooShort") : TGLocalized(@"Channel.Username.InvalidTooShort") message:nil cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:nil completionBlock:nil];
     }
     else
     {
@@ -230,7 +230,7 @@ typedef enum {
                     }] startWithNext:nil error:^(__unused id error) {
                         __strong TGChannelLinkSetupController *strongSelf = weakSelf;
                         if (strongSelf != nil) {
-                            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Username.InvalidTaken") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Username.InvalidTaken") message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                         }
                     } completed:^{
                         __strong TGChannelLinkSetupController *strongSelf = weakSelf;
@@ -244,11 +244,11 @@ typedef enum {
         };
         
         if (_usernameItem.username.length != 0 && _conversation.username.length == 0) {
-            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Channel.Edit.PrivatePublicLinkAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Channel.Edit.PrivatePublicLinkAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed) {
                 if (okButtonPressed) {
                     continueSetup();
                 }
-            }] show];;
+            }];
         } else {
             continueSetup();
         }

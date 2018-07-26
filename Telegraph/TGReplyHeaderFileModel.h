@@ -5,8 +5,8 @@
 
 @interface TGReplyHeaderFileModel : TGReplyHeaderImageModel
 
-- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system;
-- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system caption:(NSString *)caption;
+- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation;
+- (instancetype)initWithPeer:(id)peer fileMedia:(TGDocumentMediaAttachment *)fileMedia incoming:(bool)incoming system:(bool)system caption:(NSString *)caption presentation:(TGPresentation *)presentation;
 
 
 @end

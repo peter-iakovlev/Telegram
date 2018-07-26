@@ -4,6 +4,7 @@
 
 #import "TGGenericPeerMediaGalleryVideoItem.h"
 #import "TGModernGalleryVideoPlayerView.h"
+#import "TGModernGalleryPIPHeaderView.h"
 #import "TGModernGalleryVideoScrubbingInterfaceView.h"
 
 #import "TGDatabase.h"
@@ -24,7 +25,7 @@
 
 - (void)cancelPIP
 {
-    [_scrubbingInterfaceView setPictureInPictureHidden:false];
+    [_pipHeaderView setPictureInPictureHidden:false];
     
     _placeholderView.hidden = true;
     
@@ -34,7 +35,7 @@
 - (void)setItem:(id<TGModernGalleryItem>)item synchronously:(bool)synchronously
 {
     TGGenericPeerMediaGalleryVideoItem *videoItem = (TGGenericPeerMediaGalleryVideoItem *)item;
-    _location = [[TGPIPSourceLocation alloc] initWithEmbed:false peerId:videoItem.peerId messageId:videoItem.messageId localId:0 webPage:nil];
+    _location = [[TGPIPSourceLocation alloc] initWithEmbed:false conversationId:videoItem.peerId messageId:videoItem.messageId localId:0 webPage:nil];
     
     [super setItem:item synchronously:synchronously];
     
@@ -43,11 +44,9 @@
 
 - (void)setFocused:(bool)isFocused
 {
-    if (!isFocused)
-    {
-        [super setFocused:isFocused];
-    }
-    else
+    [super setFocused:isFocused];
+    
+    if (isFocused)
     {
         TGModernGalleryVideoPlayerView *playerView = nil;
         if ([self _hasPIPPlayerView:&playerView])
@@ -81,9 +80,9 @@
 {
     __weak TGGenericPeerMediaGalleryVideoItemView *weakSelf = self;
     
-    [_scrubbingInterfaceView setPictureInPictureHidden:!_playerView.supportsPIP || ((TGGenericPeerMediaGalleryVideoItem *)self.item).groupedId == 2];
+    [_pipHeaderView setPictureInPictureHidden:!_playerView.supportsPIP];
     
-    _scrubbingInterfaceView.pipPressed = ^
+    _pipHeaderView.pipPressed = ^
     {
         __strong TGGenericPeerMediaGalleryVideoItemView *strongSelf = weakSelf;
         if (strongSelf == nil)

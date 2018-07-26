@@ -28,10 +28,21 @@
     TGDocumentMessageIconView *view = (TGDocumentMessageIconView *)[self boundView];
     view.fileName = _fileName;
     
+    [view setPresentation:_presentation];
     [view setDiameter:_diameter];
     [view setIncoming:_incoming];
     [view setProgress:_progress animated:false];
     [view setOverlayType:_overlayType animated:false];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (_presentation != presentation)
+    {
+        _presentation = presentation;
+        
+        [((TGDocumentMessageIconView *)self.boundView) setPresentation:_presentation];
+    }
 }
 
 - (void)setProgress:(float)progress animated:(bool)animated

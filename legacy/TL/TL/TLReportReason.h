@@ -30,3 +30,7 @@
 
 @end
 
+@interface TLReportReason$inputReportReasonCopyright : TLReportReason
+
+
+@end

@@ -100,6 +100,15 @@
 - (void)dealloc {
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _backgroundView.backgroundColor = pallete.backgroundColor;
+    _stripeView.backgroundColor = pallete.barSeparatorColor;
+    _label.textColor = pallete.secondaryTextColor;
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];

@@ -3,7 +3,7 @@
 #import "../NSInputStream+TL.h"
 #import "../NSOutputStream+TL.h"
 
-#import "NSArray_CdnFileHash.h"
+#import "NSArray_FileHash.h"
 
 @implementation TLRPCupload_reuploadCdnFile
 
@@ -15,7 +15,7 @@
 
 - (int)impliedResponseSignature
 {
-    return (int)0xc05bcc69;
+    return (int)0x81b9f1ab;
 }
 
 - (int)layerVersion
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x1af91c09;
+    return (int32_t)0x9b2754a8;
 }
 
 - (int32_t)TLconstructorName

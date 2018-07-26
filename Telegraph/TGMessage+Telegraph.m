@@ -12,6 +12,7 @@
 #import "TGDocumentMediaAttachment+Telegraph.h"
 #import "TGWebPageMediaAttachment+Telegraph.h"
 #import "TGImageInfo+Telegraph.h"
+#import "TGWebDocument+Telegraph.h"
 
 #import <LegacyComponents/TGRemoteImageView.h>
 
@@ -40,8 +41,6 @@
         
 
         TGImageMediaAttachment *imageMediaAttachment = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:mediaPhoto.photo];
-        imageMediaAttachment.caption = mediaPhoto.caption;
-        
         [mediaAttachments addObject:imageMediaAttachment];
         
         if (mediaLifetime != nil) {
@@ -136,8 +135,6 @@
     {
         TLMessageMedia$messageMediaDocument *documentMedia = (TLMessageMedia$messageMediaDocument *)media;
         TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:documentMedia.document];
-        documentAttachment.caption = documentMedia.caption;
-        
         int32_t videoTTLSeconds = documentMedia.ttl_seconds;
         
         bool isAnimated = false;
@@ -152,7 +149,6 @@
                 videoMedia.duration = video.duration;
                 videoMedia.dimensions = video.size;
                 videoMedia.thumbnailInfo = documentAttachment.thumbnailInfo;
-                videoMedia.caption = documentAttachment.caption;
                 videoMedia.roundMessage = video.isRoundMessage;
                 
                 for (id additionalAttribute in documentAttachment.attributes) {
@@ -209,7 +205,7 @@
         
         TGWebDocument *photo = nil;
         if (invoiceDesc.photo != nil) {
-            photo = [[TGWebDocument alloc] initWithUrl:invoiceDesc.photo.url accessHash:invoiceDesc.photo.access_hash size:invoiceDesc.photo.size mimeType:invoiceDesc.photo.mime_type attributes:[TGDocumentMediaAttachment parseAttribtues:invoiceDesc.photo.attributes] datacenterId:invoiceDesc.photo.dc_id];
+            photo = [[TGWebDocument alloc] initWithTL:invoiceDesc.photo];
         }
         
         TGInvoiceMediaAttachment *invoice = [[TGInvoiceMediaAttachment alloc] initWithTitle:invoiceDesc.title text:invoiceDesc.n_description photo:photo currency:invoiceDesc.currency totalAmount:invoiceDesc.total_amount receiptMessageId:invoiceDesc.receipt_msg_id invoiceStartParam:invoiceDesc.start_param shippingAddressRequested:invoiceDesc.flags & (1 << 1) isTest:invoiceDesc.flags & (1 << 3)];
@@ -257,6 +253,12 @@
         } else if ([entity isKindOfClass:[TLMessageEntity$messageEntityMentionName class]]) {
             TLMessageEntity$messageEntityMentionName *mentionNameEntity = entity;
             [result addObject:[[TGMessageEntityMentionName alloc] initWithRange:NSMakeRange(mentionNameEntity.offset, mentionNameEntity.length) userId:mentionNameEntity.user_id]];
+        } else if ([entity isKindOfClass:[TLMessageEntity$messageEntityPhone class]]) {
+            TLMessageEntity$messageEntityPhone *messageEntityPhone = entity;
+            [result addObject:[[TGMessageEntityPhone alloc] initWithRange:NSMakeRange(messageEntityPhone.offset, messageEntityPhone.length)]];
+        } else if ([entity isKindOfClass:[TLMessageEntity$messageEntityCashtag class]]) {
+            TLMessageEntity$messageEntityCashtag *messageEntityCashtag = entity;
+            [result addObject:[[TGMessageEntityCashtag alloc] initWithRange:NSMakeRange(messageEntityCashtag.offset, messageEntityCashtag.length)]];
         }
     }
     

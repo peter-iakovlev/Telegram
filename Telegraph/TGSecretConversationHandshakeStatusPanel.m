@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGSecretConversationHandshakeStatusPanel ()
 {
     CALayer *_stripeLayer;
@@ -42,6 +44,15 @@
         [self addSubview:_textLabel];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _stripeLayer.backgroundColor = presentation.pallete.barSeparatorColor.CGColor;
+    _textLabel.textColor = presentation.pallete.textColor;
 }
 
 - (void)setText:(NSString *)text

@@ -7,6 +7,8 @@
 
 #import "TGCollectionStaticMultilineTextItemView.h"
 
+#import "TGPresentation.h"
+
 @interface TGCollectionStaticMultilineTextItem () {
     TGModernTextViewModel *_textModel;
     CGSize _containerSize;
@@ -29,6 +31,14 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    if (_textModel != nil)
+        [self _updateText];
+}
+
 - (Class)itemViewClass
 {
     return [TGCollectionStaticMultilineTextItemView class];
@@ -40,9 +50,12 @@
     NSString *string = _text;
     
     _textModel = [[TGModernTextViewModel alloc] initWithText:string font:TGCoreTextSystemFontOfSize(16.0f)];
+    _textModel.underlineAllLinks = self.presentation.pallete.underlineAllIncomingLinks;
     _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
     _textModel.additionalAttributes = attributes;
     _textModel.textCheckingResults = textCheckingResults;
+    _textModel.textColor = self.presentation.pallete.collectionMenuTextColor;
+    _textModel.linkColor = self.presentation.pallete.linkColor;
 }
 
 - (CGSize)itemSizeForContainerSize:(CGSize)containerSize
@@ -67,6 +80,12 @@
             strongSelf->_followLink(link);
         }
     }];
+    [view setHoldLink:^(NSString *link) {
+        __strong TGCollectionStaticMultilineTextItem *strongSelf = weakSelf;
+        if (strongSelf != nil && strongSelf->_holdLink) {
+            strongSelf->_holdLink(link);
+        }
+    }];
 }
 
 - (void)setText:(NSString *)text
@@ -75,7 +94,7 @@
     [self _updateText];
     
     if (self.boundView != nil) {
-        [_textModel layoutForContainerSize:CGSizeMake(_containerSize.width - 35.0f - 10.0f, CGFLOAT_MAX)];
+        [_textModel layoutForContainerSize:CGSizeMake(_containerSize.width - 15.0f - 10.0f, CGFLOAT_MAX)];
         [((TGCollectionStaticMultilineTextItemView *)self.boundView) setTextModel:_textModel];
     }
 }
@@ -83,6 +102,7 @@
 - (void)unbindView
 {
     [((TGCollectionStaticMultilineTextItemView *)self.boundView) setFollowLink:nil];
+    [((TGCollectionStaticMultilineTextItemView *)self.boundView) setHoldLink:nil];
     
     [super unbindView];
 }

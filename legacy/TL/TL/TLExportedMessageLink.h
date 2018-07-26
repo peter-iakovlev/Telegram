@@ -7,6 +7,7 @@
 @interface TLExportedMessageLink : NSObject <TLObject>
 
 @property (nonatomic, retain) NSString *link;
+@property (nonatomic, retain) NSString *html;
 
 @end
 

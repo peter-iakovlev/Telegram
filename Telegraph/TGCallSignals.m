@@ -17,7 +17,7 @@
 #import "TGCallContext.h"
 
 const int32_t TGCallMinLayer = 65;
-const int32_t TGCallMaxLayer = 66;
+const int32_t TGCallMaxLayer = 74;
 
 @implementation TGCallSignals
 

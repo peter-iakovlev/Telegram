@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGStickerCollectionHeader ()
 {
     UILabel *_titleLabel;
@@ -31,6 +33,20 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (presentation == _presentation)
+        return;
+    
+    _presentation = presentation;
+    
+    _titleLabel.textColor = presentation.pallete.chatInputKeyboardHeaderColor;
+    
+    UIImage *buttonImage = [_button imageForState:UIControlStateNormal];
+    if (buttonImage != nil)
+        [_button setImage:TGTintedImage(buttonImage, presentation.pallete.chatInputKeyboardHeaderColor) forState:UIControlStateNormal];
+}
+
 - (void)buttonPressed
 {
     if (self.accessoryPressed)
@@ -52,7 +68,10 @@
 - (void)setIcon:(UIImage *)icon
 {
     _button.userInteractionEnabled = icon != nil;
-    [_button setImage:icon forState:UIControlStateNormal];
+    if (_presentation != nil)
+        [_button setImage:TGTintedImage(icon, _presentation.pallete.chatInputKeyboardHeaderColor) forState:UIControlStateNormal];
+    else
+        [_button setImage:icon forState:UIControlStateNormal];
 }
 
 - (void)layoutSubviews

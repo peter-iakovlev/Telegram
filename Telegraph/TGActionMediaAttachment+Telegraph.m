@@ -112,6 +112,42 @@
         } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionCustomAction class]]) {
             self.actionType = TGMessageActionText;
             self.actionData = @{@"text": ((TLMessageAction$messageActionCustomAction *)actionDesc).message};
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionBotAllowed class]]) {
+            self.actionType = TGMessageActionBotAllowed;
+            self.actionData = @{@"domain": ((TLMessageAction$messageActionBotAllowed *)actionDesc).domain};
+        } else if ([actionDesc isKindOfClass:[TLMessageAction$messageActionSecureValuesSent class]]) {
+            self.actionType = TGMessageActionSecureValuesSent;
+            NSString *values = @"";
+            for (TLSecureValueType *type in ((TLMessageAction$messageActionSecureValuesSent *)actionDesc).types)
+            {
+                NSString *stringType = nil;
+                if ([type isKindOfClass:[TLSecureValueType$secureValueTypePersonalDetails class]])
+                    stringType = @"personal_details";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypePassport class]])
+                    stringType = @"passport";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeDriverLicense class]])
+                    stringType = @"driver_license";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeIdentityCard class]])
+                    stringType = @"identity_card";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeAddress class]])
+                    stringType = @"address";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeUtilityBill class]])
+                    stringType = @"utility_bill";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeBankStatement class]])
+                    stringType = @"bank_statement";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeRentalAgreement class]])
+                    stringType = @"rental_agreement";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypePhone class]])
+                    stringType = @"phone";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeEmail class]])
+                    stringType = @"email";
+                
+                if (values.length == 0)
+                    values = stringType;
+                else
+                    values = [values stringByAppendingFormat:@",%@", stringType];
+            }
+            self.actionData = @{@"values":values};
         }
     }
     return self;

@@ -179,7 +179,15 @@ const NSInteger TGRecentSearchLimit = 20;
             if (chat == nil)
                 chat = [database conversationWithIdSync:peerId];
             
-            if (chat != nil)
+            if (chat == nil || usersMapping[@(peerId)] == nil)
+            {
+                TGLegacyUser *user = [database userWithIdSync:(int32_t)peerId];
+                chat = [[TGPrivateChatModel alloc] initWithUserId:user.userId];
+                
+                TGUserModel *userModel = [[TGUserModel alloc] initWithUserId:user.userId accessHash:user.accessHash firstName:user.firstName lastName:user.lastName avatarLocation:[[TGFileLocation alloc] initWithFileUrl:user.photoSmall]];
+                usersMapping[@(user.userId)] = userModel;
+            }
+            if (chat != nil && usersMapping[@(peerId)] != nil)
                 [recentPeers addObject:chat];
         }
     }

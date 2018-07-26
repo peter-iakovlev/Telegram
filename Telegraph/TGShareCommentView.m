@@ -7,6 +7,8 @@
 
 #import "TGAppDelegate.h"
 
+#import "TGPresentation.h"
+
 @interface TGShareCommentView () <UITextViewDelegate>
 {
     UIImageView *_backgroundView;
@@ -71,6 +73,37 @@
         [self addSubview:_clearButton];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    CGFloat diameter = 16.0f;
+    UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    CGContextSetFillColorWithColor(context, presentation.pallete.searchBarMergedBackgroundColor.CGColor);
+    CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+    UIImage *backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+    UIGraphicsEndImageContext();
+    
+    _backgroundView.image = backgroundImage;
+    
+    _placeholderView.textColor = presentation.pallete.searchBarPlaceholderColor;
+    _textView.textColor = presentation.pallete.searchBarTextColor;
+    _textView.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+    
+    [UIView performWithoutAnimation:^
+    {
+         bool shouldFlip = _textView.isFirstResponder;
+         if (shouldFlip)
+             [_textView resignFirstResponder];
+         _textView.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
+         if (shouldFlip)
+             [_textView becomeFirstResponder];
+    }];
+    
+    [_clearButton setImage:presentation.images.searchClearIcon forState:UIControlStateNormal];
 }
 
 - (NSString *)placeholder
@@ -144,9 +177,9 @@
     {
         _clearButton.hidden = false;
         if (_textView.text.length == 0)
-            [_clearButton setImage:[UIImage imageNamed:@"ShareCommentCloseIcon"] forState:UIControlStateNormal];
+            [_clearButton setImage:_presentation.images.shareCloseIcon forState:UIControlStateNormal];
         else
-            [_clearButton setImage:[UIImage imageNamed:@"SearchBarClearIcon"] forState:UIControlStateNormal];
+            [_clearButton setImage:_presentation.images.searchClearIcon forState:UIControlStateNormal];
     }
     else
     {

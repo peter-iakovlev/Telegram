@@ -11,9 +11,11 @@
 #import <SSignalKit/SSignalKit.h>
 
 @class TGMusicPlayerStatus;
+@class TGPresentation;
 
 @interface TGAudioSliderViewModel : TGModernViewModel
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic) int64_t audioId;
 @property (nonatomic) int64_t localAudioId;
 @property (nonatomic) bool incoming;

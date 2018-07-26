@@ -16,6 +16,8 @@
 #import "TGModernButtonViewModel.h"
 #import "TGModernColorViewModel.h"
 
+#import "TGArticleWebpageFooterModel.h"
+
 #import "TGModernLetteredAvatarViewModel.h"
 
 #import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
@@ -26,8 +28,7 @@
 
 #import "TGTelegraphConversationMessageAssetsSource.h"
 
-
-
+#import "TGVCard.h"
 #import "TGDatabase.h"
 
 #import "TGMessageReplyButtonsModel.h"
@@ -44,9 +45,10 @@
     TGReplyHeaderModel *_replyHeaderModel;
     
     TGModernLabelViewModel *_contactNameModel;
-    TGModernLabelViewModel *_contactPhoneModel;
+    TGModernTextViewModel *_contactTextModel;
     TGModernLetteredAvatarViewModel *_contactAvatarModel;
-    TGModernColorViewModel *_separatorModel;
+    TGModernButtonViewModel *_contactButtonModel;
+    
     TGModernButtonViewModel *_actionButtonModel;
     
     TGModernDateViewModel *_dateModel;
@@ -59,6 +61,7 @@
     
     TGMessage *_message;
     
+    bool _savedMessage;
     bool _incoming;
     TGMessageDeliveryState _deliveryState;
     bool _read;
@@ -105,47 +108,43 @@
         _callbackButtonInProgressDisposable = [[SMetaDisposable alloc] init];
         
         static TGTelegraphConversationMessageAssetsSource *assetsSource = nil;
-        
-        static UIColor *incomingDateColor = nil;
-        static UIColor *outgoingDateColor = nil;
-        static UIColor *incomingForwardColor = nil;
-        static UIColor *outgoingForwardColor = nil;
-        static UIColor *incomingSeparatorColor = nil;
-        static UIColor *outgoingSeparatorColor = nil;
-        UIImage *actionImageIncoming = nil;
-        UIImage *actionImageOutgoing = nil;
-        
         static dispatch_once_t onceToken1;
         dispatch_once(&onceToken1, ^
         {
             assetsSource = [TGTelegraphConversationMessageAssetsSource instance];
-            
-            incomingDateColor = UIColorRGBA(0x525252, 0.6f);
-            outgoingDateColor = UIColorRGBA(0x008c09, 0.8f);
-            incomingSeparatorColor = UIColorRGBA(0x000000, 0.1f);
-            outgoingSeparatorColor = UIColorRGBA(0x008c09, 0.3f);
-            incomingForwardColor = UIColorRGBA(0x007bff, 1.0f);
-            outgoingForwardColor = UIColorRGBA(0x00a516, 1.0f);
         });
-        
-        actionImageIncoming = TGImageNamed(@"ModernMessageContactAdd_Incoming.png");
-        actionImageOutgoing = TGImageNamed(@"ModernMessageContactAdd_Outgoing.png");
         
         _needsEditingCheckButton = true;
         
         bool isChannel = [authorPeer isKindOfClass:[TGConversation class]];
         
+        _contact = [contact copy];
+        TGForwardedMessageMediaAttachment *forwardAttachment = nil;
+        TGContactMediaAttachment *contactAttachment = nil;
+        for (TGMediaAttachment *attachment in message.mediaAttachments)
+        {
+            if (attachment.type == TGContactMediaAttachmentType)
+            {
+                contactAttachment = (TGContactMediaAttachment *)attachment;
+                _contact.customProperties = @{ @"contact": contactAttachment };
+            } else if (attachment.type == TGForwardedMessageMediaAttachmentType)
+            {
+                forwardAttachment = (TGForwardedMessageMediaAttachment *)attachment;
+            }
+        }
+        _savedMessage = forwardAttachment != nil && context.isSavedMessages && forwardAttachment.forwardSourcePeerId != message.cid;
         _message = message;
         _mid = message.mid;
+        _authorPeerId = message.fromUid;
         _incoming = !message.outgoing;
-        _incomingAppearance = _incoming || isChannel;
+        _incomingAppearance = _incoming || isChannel || _savedMessage;
         _deliveryState = message.deliveryState;
         _read = ![_context isMessageUnread:message];
         _date = (int32_t)message.date;
-        _contact = contact;
+        
         _messageViews = message.viewCount;
         
-        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incomingAppearance ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing];
+        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:_incomingAppearance ? TGTextMessageBackgroundIncoming : TGTextMessageBackgroundOutgoing context:context];
         _backgroundModel.blendMode = kCGBlendModeCopy;
         _backgroundModel.skipDrawInContext = true;
         [self addSubmodel:_backgroundModel];
@@ -166,7 +165,7 @@
                 _hasAvatar = true;
             } else if ([authorPeer isKindOfClass:[TGConversation class]]) {
                 title = ((TGConversation *)authorPeer).chatTitle;
-                if ([context isAdminLog]) {
+                if (context.isAdminLog || context.isSavedMessages || context.isFeed) {
                     _hasAvatar = true;
                 }
             }
@@ -176,40 +175,29 @@
             static CTFontRef dateFont = NULL;
             static dispatch_once_t onceToken;
             dispatch_once(&onceToken, ^
-                          {
-                              if (iosMajorVersion() >= 7) {
-                                  dateFont = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGItalicSystemFontOfSize(12.0f) fontDescriptor], 0.0f, NULL);
-                              } else {
-                                  UIFont *font = TGItalicSystemFontOfSize(12.0f);
-                                  dateFont = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize, nil);
-                              }
-                          });
+            {
+                if (iosMajorVersion() >= 7) {
+                    dateFont = CTFontCreateWithFontDescriptor((__bridge CTFontDescriptorRef)[TGItalicSystemFontOfSize(12.0f) fontDescriptor], 0.0f, NULL);
+                } else {
+                    UIFont *font = TGItalicSystemFontOfSize(12.0f);
+                    dateFont = CTFontCreateWithName((__bridge CFStringRef)font.fontName, font.pointSize, nil);
+                }
+            });
             _authorSignatureModel = [[TGModernTextViewModel alloc] initWithText:@"" font:dateFont];
             _authorSignatureModel.ellipsisString = @"\u2026,";
-            _authorSignatureModel.textColor = _incomingAppearance ? incomingDateColor : outgoingDateColor;
+            _authorSignatureModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingDateColor : _context.presentation.pallete.chatOutgoingDateColor;
             [_contentModel addSubmodel:_authorSignatureModel];
-            
         }
         
-        static UIImage *placeholder = nil;
-        static dispatch_once_t onceToken2;
-        dispatch_once(&onceToken2, ^
+        TGVCard *vcard = [[TGVCard alloc] initWithString:contactAttachment.vcard];
+        bool usedOrganization = false;
+        if (!contact.hasAnyName && vcard.organization.value.length > 0)
         {
-            UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
-            CGContextRef context = UIGraphicsGetCurrentContext();
-            
-            //!placeholder
-            CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-            CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-            CGContextSetLineWidth(context, 1.0f);
-            CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
-            
-            placeholder = UIGraphicsGetImageFromCurrentImageContext();
-            UIGraphicsEndImageContext();
-        });
+            contact.firstName = vcard.organization.value;
+            usedOrganization = true;
+        }
         
-        _contactAvatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(40, 40) placeholder:placeholder];
+        _contactAvatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(40, 40) placeholder:[_context.presentation.images avatarPlaceholderWithDiameter:40.0f]];
         if (contact.photoUrlSmall.length != 0)
             [_contactAvatarModel setAvatarUri:contact.photoUrlSmall];
         else
@@ -219,27 +207,67 @@
         _contactAvatarModel.viewUserInteractionDisabled = true;
         [self addSubmodel:_contactAvatarModel];
         
-        _contactNameModel = [[TGModernLabelViewModel alloc] initWithText:contact.displayName textColor:_incomingAppearance ? incomingForwardColor : outgoingForwardColor font:[assetsSource messageForwardPhoneNameFont] maxWidth:155.0f];
+        _contactNameModel = [[TGModernLabelViewModel alloc] initWithText:contact.displayName textColor:_incomingAppearance ? context.presentation.pallete.chatIncomingAccentColor : context.presentation.pallete.chatOutgoingAccentColor font:[assetsSource messageForwardPhoneNameFont] maxWidth:155.0f];
         [_contentModel addSubmodel:_contactNameModel];
-
-        _contactPhoneModel = [[TGModernLabelViewModel alloc] initWithText:[TGPhoneUtils formatPhone:contact.phoneNumber forceInternational:contact.uid != 0] textColor:[assetsSource messageTextColor] font:[assetsSource messageForwardPhoneFont] maxWidth:155.0f];
-        [_contentModel addSubmodel:_contactPhoneModel];
         
-        _separatorModel = [[TGModernColorViewModel alloc] initWithColor:_incomingAppearance ? incomingSeparatorColor : outgoingSeparatorColor];
-        [self addSubmodel:_separatorModel];
+        const NSUInteger limit = 5;
+        NSMutableArray *lines = [[NSMutableArray alloc] init];
+        if (vcard.phones.values.count > 0)
+        {
+            for (TGVCardValueArrayItem *phone in vcard.phones.values)
+            {
+                if (lines.count == limit)
+                    break;
+                
+                NSString *phoneValue = phone.value;
+                NSCharacterSet *letterChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+                if ([phoneValue.uppercaseString rangeOfCharacterFromSet:letterChars].location == NSNotFound) {
+                    phoneValue = [TGPhoneUtils formatPhone:phoneValue forceInternational:contact.uid != 0];
+                }
+                [lines addObject:phoneValue];
+            }
+        }
+        else
+        {
+            NSString *phoneValue = contact.phoneNumber.length > 0 ? contact.phoneNumber : contactAttachment.phoneNumber;
+            NSCharacterSet *letterChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+            if ([phoneValue.uppercaseString rangeOfCharacterFromSet:letterChars].location == NSNotFound) {
+                phoneValue = [TGPhoneUtils formatPhone:phoneValue forceInternational:contact.uid != 0];
+            }
+            [lines addObject:phoneValue];
+        }
         
-        _actionButtonModel = [[TGModernButtonViewModel alloc] init];
-        _actionButtonModel.image = _incomingAppearance ? actionImageIncoming : actionImageOutgoing;
-        _actionButtonModel.modernHighlight = true;
-        [self addSubmodel:_actionButtonModel];
+        for (TGVCardValueArrayItem *email in vcard.emails.values)
+        {
+            if (lines.count == limit)
+                break;
+            
+            [lines addObject:(NSString *)email.value];
+        }
+        
+        if (!usedOrganization && lines.count != limit && vcard.organization.value.length > 0)
+            [lines addObject:vcard.organization.value];
+        
+        _contactTextModel = [[TGModernTextViewModel alloc] initWithText:[lines componentsJoinedByString:@"\n"] font:[assetsSource messageForwardPhoneFont]];
+        _contactTextModel.textColor = _incomingAppearance ? context.presentation.pallete.chatIncomingTextColor : context.presentation.pallete.chatOutgoingTextColor;
+        _contactTextModel.layoutFlags = TGReusableLabelLayoutMultiline;
+        [_contentModel addSubmodel:_contactTextModel];
+        
+        UIImage *icon = _incomingAppearance ? TGTintedImage(TGImageNamed(@"ModernMessageContactAdd_Incoming.png"), context.presentation.pallete.chatIncomingAccentColor) : TGTintedImage(TGImageNamed(@"ModernMessageContactAdd_Incoming.png"), context.presentation.pallete.chatOutgoingAccentColor);
+        
+        _contactButtonModel = [[TGModernButtonViewModel alloc] init];
+        _contactButtonModel.image = icon;
+        _contactButtonModel.modernHighlight = true;
+        [self addSubmodel:_contactButtonModel];
         
         int daytimeVariant = 0;
         NSString *dateText = [TGDateUtils stringForShortTime:(int)message.date daytimeVariant:&daytimeVariant];
-        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incomingAppearance ? incomingDateColor : outgoingDateColor daytimeVariant:daytimeVariant];
+        _dateModel = [[TGModernDateViewModel alloc] initWithText:dateText textColor:_incomingAppearance ? _context.presentation.pallete.chatIncomingDateColor : _context.presentation.pallete.chatOutgoingDateColor daytimeVariant:daytimeVariant];
         [_contentModel addSubmodel:_dateModel];
         
         if (_messageViews != nil) {
             _messageViewsModel = [[TGMessageViewsViewModel alloc] init];
+            _messageViewsModel.presentation = context.presentation;
             _messageViewsModel.type = _incomingAppearance ? TGMessageViewsViewTypeIncoming : TGMessageViewsViewTypeOutgoing;
             _messageViewsModel.count = _messageViews.viewCount;
             [self addSubmodel:_messageViewsModel];
@@ -254,6 +282,7 @@
             if (_deliveryState == TGMessageDeliveryStatePending)
             {
                 _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:_incomingAppearance ? TGModernClockProgressTypeIncomingClock : TGModernClockProgressTypeOutgoingClock];
+                _progressModel.presentation = context.presentation;
                 [self addSubmodel:_progressModel];
                 
                 if (!_incomingAppearance) {
@@ -291,10 +320,27 @@
             }
         }
         
+        NSDictionary *button = [TGArticleWebpageFooterModel buttonForType:@"viewContactDetails" context:context];
+        _actionButtonModel = [[TGModernButtonViewModel alloc] init];
+        _actionButtonModel.image = _incomingAppearance ? button[@"incoming"] : button[@"outgoing"];
+        _actionButtonModel.highlightedImage = _incomingAppearance ? button[@"incomingHighlighted"] : button[@"outgoingHighlighted"];
+        _actionButtonModel.backgroundImage = _incomingAppearance ? button[@"incomingBg"] : button[@"outgoingBg"];
+        _actionButtonModel.highlightedBackgroundImage = _incomingAppearance ? button[@"incomingSolidBg"] : button[@"outgoingSolidBg"];
+        _actionButtonModel.skipDrawInContext = true;
+
+        __weak TGContactMessageViewModel *weakSelf = self;
+        _actionButtonModel.pressed = ^{
+            __strong TGContactMessageViewModel *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf->_context.companionHandle requestAction:@"openVCard" options:@{@"contact": strongSelf->_contact}];
+            }
+        };
+        [self addSubmodel:_actionButtonModel];
+        
         TGBotReplyMarkup *replyMarkup = message.replyMarkup;
         if (replyMarkup != nil && replyMarkup.isInline) {
             _replyMarkup = replyMarkup;
-            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] initWithContext:context];
             __weak TGContactMessageViewModel *weakSelf = self;
             _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
                 __strong TGContactMessageViewModel *strongSelf = weakSelf;
@@ -324,13 +370,7 @@
 {
     if (_unsentButtonModel == nil)
     {
-        static UIImage *image = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            image = TGImageNamed(@"ModernMessageUnsentButton.png");
-        });
-        
+        UIImage *image = _context.presentation.images.chatUnsentIcon;
         _unsentButtonModel = [[TGModernImageViewModel alloc] initWithImage:image];
         _unsentButtonModel.frame = CGRectMake(0.0f, 0.0f, image.size.width, image.size.height);
         _unsentButtonModel.extendedEdges = UIEdgeInsetsMake(6, 6, 6, 6);
@@ -355,16 +395,11 @@
     
     if (_forwardedHeaderModel == nil)
     {
-        static UIColor *incomingForwardColor = nil;
-        static UIColor *outgoingForwardColor = nil;
         static NSRange formatNameRange;
         
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            incomingForwardColor = UIColorRGBA(0x007bff, 1.0f);
-            outgoingForwardColor = UIColorRGBA(0x00a516, 1.0f);
-            
             formatNameRange = [TGLocalized(@"Message.ForwardedMessage") rangeOfString:@"%@"];
         });
         
@@ -384,7 +419,7 @@
         NSString *text = [[NSString alloc] initWithFormat:TGLocalized(@"Message.ForwardedMessage"), title];
         
         _forwardedHeaderModel = [[TGModernTextViewModel alloc] initWithText:text font:[[TGTelegraphConversationMessageAssetsSource instance] messageForwardTitleFont]];
-        _forwardedHeaderModel.textColor = _incomingAppearance ? incomingForwardColor : outgoingForwardColor;
+        _forwardedHeaderModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingAccentColor : _context.presentation.pallete.chatOutgoingAccentColor;
         _forwardedHeaderModel.layoutFlags = TGReusableLabelLayoutMultiline;
         if (formatNameRange.location != NSNotFound && title.length != 0)
         {
@@ -400,7 +435,7 @@
 - (void)setReplyHeader:(TGMessage *)replyHeader peer:(id)peer
 {
     _replyMessageId = replyHeader.mid;
-    _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:peer incoming:_incomingAppearance system:false];
+    _replyHeaderModel = [TGContentBubbleViewModel replyHeaderModelFromMessage:replyHeader peer:peer incoming:_incomingAppearance system:false presentation:_context.presentation];
     if (_replyHeaderModel != nil)
         [_contentModel addSubmodel:_replyHeaderModel];
 }
@@ -585,6 +620,7 @@
                     unsentOffset = 29.0f;
                 
                 _progressModel = [[TGModernClockProgressViewModel alloc] initWithType:_incomingAppearance ? TGModernClockProgressTypeIncomingClock : TGModernClockProgressTypeOutgoingClock];
+                _progressModel.presentation = _context.presentation;
                 if (_incomingAppearance) {
                     _progressModel.frame = CGRectMake(CGRectGetMaxX(_backgroundModel.frame) - _dateModel.frame.size.width - 27.0f - layoutConstants->rightInset - unsentOffset + (TGIsPad() ? 12.0f : 0.0f) - signatureSize, _contentModel.frame.origin.y + _contentModel.frame.size.height - 17 + 1.0f, 15, 15);
                 } else {
@@ -693,7 +729,7 @@
             contact.lastName = contactMedia.lastName;
             
             if (![_contact isEqualToUser:contact]) {
-                _contact = contact;
+                //_contact = contact;
                 
                 if (contact.photoUrlSmall.length != 0)
                     [_contactAvatarModel setAvatarUri:contact.photoUrlSmall];
@@ -710,7 +746,7 @@
         _replyMarkup = replyMarkup;
         
         if (_replyButtonsModel == nil) {
-            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] init];
+            _replyButtonsModel = [[TGMessageReplyButtonsModel alloc] initWithContext:_context];
             __weak TGContactMessageViewModel *weakSelf = self;
             _replyButtonsModel.buttonActivated = ^(TGBotReplyMarkupButton *button, NSInteger index) {
                 __strong TGContactMessageViewModel *strongSelf = weakSelf;
@@ -748,18 +784,13 @@
         _contactAdded = mediaIsAvailable;
         
         if (!mediaIsAvailable)
-        {
-            _actionButtonModel.alpha = 1.0f;
-            _separatorModel.alpha = 1.0f;
-        }
+            _contactButtonModel.alpha = 1.0f;
         else
-        {
-            _actionButtonModel.alpha = 0.0f;
-            _separatorModel.alpha = 0.0f;
-        }
+            _contactButtonModel.alpha = 0.0f;
         
         if (self.frame.size.width > FLT_EPSILON)
         {
+            [_contentModel setNeedsSubmodelContentsUpdate];
             [self layoutForContainerSize:self.frame.size];
             
             for (TGModernViewModel *model in self.submodels)
@@ -875,7 +906,7 @@
         [[_unsentButtonModel boundView] addGestureRecognizer:_unsentButtonTapRecognizer];
     }
     
-    [(UIButton *)[_actionButtonModel boundView] addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    [(UIButton *)[_contactButtonModel boundView] addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     
     [self subscribeToCallbackButtonInProgress];
 }
@@ -893,7 +924,7 @@
         _unsentButtonTapRecognizer = nil;
     }
     
-    [(UIButton *)[_actionButtonModel boundView] removeTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+    [(UIButton *)[_contactButtonModel boundView] removeTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     
     [super unbindView:viewStorage];
     
@@ -921,9 +952,9 @@
             CGPoint point = [recognizer locationInView:[_contentModel boundView]];
             
             if (recognizer.longTapped)
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             else if (recognizer.doubleTapped)
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             else if (_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) {
                 if (_viaUser != nil && [_forwardedHeaderModel linkAtPoint:CGPointMake(point.x - _forwardedHeaderModel.frame.origin.x, point.y - _forwardedHeaderModel.frame.origin.y) regionData:NULL]) {
                     [_context.companionHandle requestAction:@"useContextBot" options:@{@"uid": @((int32_t)_viaUser.uid), @"username": _viaUser.userName == nil ? @"" : _viaUser.userName}];
@@ -937,9 +968,9 @@
             }
             else if (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point))
                 [_context.companionHandle requestAction:@"navigateToMessage" options:@{@"mid": @(_replyMessageId), @"sourceMid": @(_mid)}];
-            else if (CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactPhoneModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
+            else if (CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactTextModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
             {
-                [_context.companionHandle requestAction:@"showContactMessageMenu" options:@{@"contact": _contact}];
+                [_context.companionHandle requestAction:@"openVCard" options:@{@"contact": _contact}];
             }
         }
     }
@@ -968,7 +999,7 @@
 
 - (int)gestureRecognizer:(TGDoubleTapGestureRecognizer *)__unused recognizer shouldFailTap:(CGPoint)point
 {
-    if ((_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) || CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactPhoneModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
+    if ((_forwardedHeaderModel && CGRectContainsPoint(_forwardedHeaderModel.frame, point)) || (_replyHeaderModel && CGRectContainsPoint(_replyHeaderModel.frame, point)) || CGRectContainsPoint(CGRectOffset(CGRectUnion(_contactAvatarModel.frame, CGRectOffset(CGRectUnion(_contactNameModel.frame, _contactTextModel.frame), _contentModel.frame.origin.x, _contentModel.frame.origin.y)), -_backgroundModel.frame.origin.x, -_backgroundModel.frame.origin.y), point))
     {
         return 3;
     }
@@ -1068,22 +1099,35 @@
     contactNameFrame.origin = CGPointMake(44.0f, headerSize.height + 4.0f);
     _contactNameModel.frame = contactNameFrame;
     
-    CGRect contactPhoneFrame = _contactPhoneModel.frame;
-    contactPhoneFrame.origin = CGPointMake(contactNameFrame.origin.x, CGRectGetMaxY(contactNameFrame) + 1.0f);
-    _contactPhoneModel.frame = contactPhoneFrame;
+    [_contactTextModel layoutForContainerSize:CGSizeMake(180.0f, CGFLOAT_MAX)];
+    CGRect contactPhoneFrame = _contactTextModel.frame;
+    contactPhoneFrame.origin = CGPointMake(contactNameFrame.origin.x, CGRectGetMaxY(contactNameFrame) + 3.0f);
+    _contactTextModel.frame = contactPhoneFrame;
     
-    CGSize textSize = CGSizeMake(_contactNameModel.frame.origin.x + MAX(_contactNameModel.frame.size.width, _contactPhoneModel.frame.size.width), contactPhoneFrame.origin.y + contactPhoneFrame.size.height - contactNameFrame.origin.y);
+    CGSize textSize = CGSizeMake(_contactNameModel.frame.origin.x + MAX(_contactNameModel.frame.size.width, _contactTextModel.frame.size.width) + 10.0f, contactPhoneFrame.origin.y + contactPhoneFrame.size.height - contactNameFrame.origin.y);
     
-    CGFloat backgroundWidth = MAX(60.0f, MAX(headerSize.width, textSize.width) + 25.0f);
+    CGFloat contentWidth = MAX(150.0f, MAX(headerSize.width, textSize.width) + 2.0f + (_incomingAppearance ? 0.0f : 5.0f));
+    CGFloat backgroundWidth = MAX(170.0f, MAX(headerSize.width, textSize.width) + 25.0f);
     if (!_contactAdded)
         backgroundWidth += 44;
     
-    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), headerSize.height + textSize.height + 30.0f));
+    CGFloat backgroundHeight = headerSize.height + textSize.height + 30.0f;
+    backgroundHeight += 41.0f;
+    
+    CGRect backgroundFrame = CGRectMake(_incomingAppearance ? (avatarOffset + layoutConstants->leftInset) : (containerSize.width - backgroundWidth - layoutConstants->rightInset - unsentOffset), topSpacing, backgroundWidth, MAX((_hasAvatar ? 44.0f : 30.0f), backgroundHeight));
     if (_incomingAppearance && _editing)
         backgroundFrame.origin.x += 42.0f;
+    
+    if (!_editing && fabs(_replyPanOffset) > FLT_EPSILON)
+        backgroundFrame.origin.x += _replyPanOffset;
+    
     _backgroundModel.frame = backgroundFrame;
     
-    _contentModel.frame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, MAX(32.0f, MAX(headerSize.width, textSize.width) + 2 + (_incomingAppearance ? 0.0f : 5.0f)), MAX(headerSize.height + textSize.height + 25.0f, _hasAvatar ? 30.0f : 14.0f));
+    CGRect contentFrame = CGRectMake(backgroundFrame.origin.x + (_incomingAppearance ? 14 : 8), topSpacing + 2.0f, contentWidth, MAX(headerSize.height + textSize.height + 25.0f, _hasAvatar ? 30.0f : 14.0f));
+    if (!_contactAdded)
+        contentFrame.size.width += 44.0f;
+    contentFrame.size.height += 41.0f;
+    _contentModel.frame = contentFrame;
     
     if (_authorNameModel != nil)
     {
@@ -1112,17 +1156,22 @@
         contactNameFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactNameFrame.size.width - (_incomingAppearance ? 0.0f : 4.0f);
         _contactNameModel.frame = contactNameFrame;
         
-        CGRect contactPhoneFrame = _contactPhoneModel.frame;
+        CGRect contactPhoneFrame = _contactTextModel.frame;
         contactPhoneFrame.origin.x = _contentModel.frame.size.width - 1.0f - contactPhoneFrame.size.width - (_incomingAppearance ? 0.0f : 4.0f);
-        _contactPhoneModel.frame = contactPhoneFrame;
+        _contactTextModel.frame = contactPhoneFrame;
     }
     
     _contactAvatarModel.frame = CGRectMake(_contentModel.frame.origin.x - 1.0f, headerSize.height + 9.0f, 40.0f, 40.0f);
     
     if (!_contactAdded)
     {
-        _separatorModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incomingAppearance ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, TGRetinaPixel, 53.0f);
-        _actionButtonModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) + 1.0f + (_incomingAppearance ? 5.0f : 0.0f), backgroundFrame.origin.y + backgroundFrame.size.height - 53.0f - 5.0f, 46.0f, 54.0f);
+        _contactButtonModel.frame = CGRectMake(CGRectGetMaxX(_contentModel.frame) - 44.0f + 1.0f + (_incomingAppearance ? 5.0f : 0.0f), CGRectGetMinY(_contentModel.frame) + CGRectGetMinY(_contactNameModel.frame) - 5.0f, 46.0f, 54.0f);
+    }
+    
+    if (_actionButtonModel != nil) {
+        CGFloat instantOffset = CGRectGetMaxY(_contactTextModel.frame) + 8.0f;
+        CGFloat instantPageButtonWidth = _backgroundModel.frame.size.width - 26.0f;
+        _actionButtonModel.frame = CGRectMake(_contentModel.frame.origin.x + 2.0f, instantOffset + 8.0f, instantPageButtonWidth, 33.0f);
     }
     
     _dateModel.frame = CGRectMake(_contentModel.frame.size.width - (_incomingAppearance ? (3 + TGRetinaPixel) : 20.0f) - _dateModel.frame.size.width, _contentModel.frame.size.height - 18.0f - (TGIsLocaleArabic() ? 1.0f : 0.0f), _dateModel.frame.size.width, _dateModel.frame.size.height);

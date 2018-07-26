@@ -1,5 +1,6 @@
 #import "TGMenuSheetView.h"
 #import "TGMenuSheetItemView.h"
+#import "TGMenuSheetController.h"
 
 #import "LegacyComponentsInternal.h"
 #import "TGImageUtils.h"
@@ -124,30 +125,35 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     
     UIUserInterfaceSizeClass _sizeClass;
     bool _dark;
+    bool _borderless;
     
     id _panHandlingItemView;
     bool _expectsPreciseContentTouch;
     
     id<LegacyComponentsContext> _context;
+    
+    TGMenuSheetPallete *_pallete;
 }
 @end
 
 @implementation TGMenuSheetView
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context itemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass dark:(bool)dark
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context pallete:(TGMenuSheetPallete *)pallete itemViews:(NSArray *)itemViews sizeClass:(UIUserInterfaceSizeClass)sizeClass dark:(bool)dark borderless:(bool)borderless
 {
     self = [super initWithFrame:CGRectZero];
     if (self != nil)
     {
         _context = context;
-        self.backgroundColor = [UIColor clearColor];
+        _borderless = borderless;
         _dark = dark;
+        _pallete = pallete;
         
         _itemViews = [[NSMutableArray alloc] init];
         _dividerViews = [[NSMutableDictionary alloc] init];
         
         _sizeClass = sizeClass;
         
+        self.backgroundColor = [UIColor clearColor];
         [self addItemViews:itemViews];
     }
     return self;
@@ -201,6 +207,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
                 _mainBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_mainBackgroundView atIndex:0];
                 
+                if (_pallete != nil)
+                    _mainBackgroundView.backgroundColor = _pallete.backgroundColor;
+                
                 _scrollView = [[TGMenuSheetScrollView alloc] initWithFrame:CGRectZero];
                 if (iosMajorVersion() >= 11)
                     _scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
@@ -233,6 +242,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             {
                 _headerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_headerBackgroundView atIndex:0];
+                
+                if (_pallete != nil)
+                    _headerBackgroundView.backgroundColor = _pallete.backgroundColor;
             }
             
             [_headerBackgroundView addSubview:itemView];
@@ -250,6 +262,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             {
                 _footerBackgroundView = [[TGMenuSheetBackgroundView alloc] initWithFrame:CGRectZero sizeClass:_sizeClass dark:_dark];
                 [self insertSubview:_footerBackgroundView atIndex:0];
+                
+                if (_pallete != nil)
+                    _footerBackgroundView.backgroundColor = _pallete.backgroundColor;
             }
             
             [_footerBackgroundView addSubview:itemView];
@@ -272,31 +287,8 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
             strongSelf.menuRelayout();
     };
     
-    __weak TGMenuSheetItemView *weakItemView = itemView;
-    itemView.highlightUpdateBlock = ^(bool highlighted)
+    itemView.highlightUpdateBlock = ^(__unused bool highlighted)
     {
-        __strong TGMenuSheetView *strongSelf = weakSelf;
-        __strong TGMenuSheetItemView *strongItemView = weakItemView;
-        if (strongSelf != nil && weakItemView != nil)
-        {
-            if (true)
-                return;
-            
-            switch (strongItemView.type)
-            {
-                case TGMenuSheetItemTypeHeader:
-                    [strongSelf->_headerBackgroundView setMaskEnabled:highlighted];
-                    break;
-                
-                case TGMenuSheetItemTypeFooter:
-                    [strongSelf->_footerBackgroundView setMaskEnabled:highlighted];
-                    break;
-                
-                default:
-                    [strongSelf->_mainBackgroundView setMaskEnabled:highlighted];
-                    break;
-            }
-        };
     };
 }
 
@@ -307,6 +299,8 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     
     for (TGMenuSheetItemView *itemView in itemViews)
     {
+        if (_pallete != nil)
+            [itemView setPallete:_pallete];
         [self addItemView:itemView hasHeader:hasHeader hasFooter:hasFooter];
         
         if (itemView.type == TGMenuSheetItemTypeHeader)
@@ -349,6 +343,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     UIView *bottomDivider = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, TGScreenPixel)];
     bottomDivider.backgroundColor = _dark ? UIColorRGBA(0xffffff, 0.18f) : TGSeparatorColor();
     
+    if (_pallete != nil)
+        bottomDivider.backgroundColor = _pallete.separatorColor;
+    
     NSMutableDictionary *dividers = [[NSMutableDictionary alloc] init];
     if (topDivider != nil)
         dividers[TGMenuDividerTop] = topDivider;
@@ -382,7 +379,7 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
 
 - (UIEdgeInsets)edgeInsets
 {
-    if (_sizeClass == UIUserInterfaceSizeClassRegular)
+    if (_sizeClass == UIUserInterfaceSizeClassRegular || _borderless)
         return UIEdgeInsetsZero;
 
     return TGMenuSheetPhoneEdgeInsets;
@@ -829,8 +826,9 @@ const CGFloat TGMenuSheetInterSectionSpacing = 8.0f;
     
     if (hasRegularItems)
     {
-        _mainBackgroundView.frame = CGRectMake(edgeInsetLeft, topInset, width, MIN(contentHeight, maxHeight));
-        _scrollView.frame = _mainBackgroundView.bounds;
+        CGFloat additionalHeight = _borderless ? 256.0f : 0.0f;
+        _mainBackgroundView.frame = CGRectMake(edgeInsetLeft, topInset, width, MIN(contentHeight, maxHeight) + additionalHeight);
+        _scrollView.frame = CGRectMake(0.0f, 0.0f, _mainBackgroundView.frame.size.width, _mainBackgroundView.frame.size.height - additionalHeight);
         _scrollView.contentSize = CGSizeMake(width, contentHeight);
     }
     

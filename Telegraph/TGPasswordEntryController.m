@@ -13,11 +13,13 @@
 
 #import <LegacyComponents/TGProgressWindow.h>
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGPasswordRecoveryController.h"
 
 #import "TGAccountSignals.h"
+
+#import "TGPresentation.h"
 
 @interface TGPasswordEntryController ()
 {
@@ -80,7 +82,7 @@
         [items addObject:helpItem];
         
         TGCommentCollectionItem *forgotItem = [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"TwoStepAuth.EnterPasswordForgot")];
-        forgotItem.textColor = TGAccentColor();
+        forgotItem.textColor = self.presentation.pallete.collectionMenuAccentColor;
         forgotItem.action = ^
         {
             __strong TGPasswordEntryController *strongSelf = weakSelf;
@@ -127,7 +129,13 @@
         NSString *errorText = TGLocalized(@"TwoStepAuth.EnterPasswordInvalid");
         if ([error respondsToSelector:@selector(hasPrefix:)] && [error hasPrefix:@"FLOOD_WAIT"])
             errorText = TGLocalized(@"TwoStepAuth.FloodError");
-        [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        
+        [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
+        {
+            __strong TGPasswordEntryController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf->_passwordItem becomeFirstResponder];
+        }];
     } completed:nil]];
 }
 
@@ -140,10 +148,9 @@
 
 - (void)forgotPressed
 {
+    __weak TGPasswordEntryController *weakSelf = self;
     if (_twoStepConfig.hasRecovery)
     {
-        __weak TGPasswordEntryController *weakSelf = self;
-        
         TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
         [progressWindow show:true];
         
@@ -177,7 +184,7 @@
                         {
                             [strongSelf dismissViewControllerAnimated:true completion:nil];
                             
-                            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                         }
                     }
                 };
@@ -198,19 +205,29 @@
             NSString *errorText = TGLocalized(@"Login.UnknownError");
             if ([error hasPrefix:@"FLOOD_WAIT"])
                 errorText = TGLocalized(@"TwoStepAuth.FloodError");
-            [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
+            {
+                __strong TGPasswordEntryController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf->_passwordItem becomeFirstResponder];
+            }];
         } completed:nil]];
     }
     else
     {
-        [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryUnavailable") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.RecoveryUnavailable") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
+        {
+            __strong TGPasswordEntryController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf->_passwordItem becomeFirstResponder];
+        }];
     }
 }
 
 - (void)resetAccountPressed
 {
     __weak TGPasswordEntryController *weakSelf = self;
-    [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.ResetAccountConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
+    [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.ResetAccountConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
     {
         __strong TGPasswordEntryController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -220,7 +237,7 @@
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progressWindow show:true];
                 
-                [[[[TGAccountSignals deleteAccount] deliverOn:[SQueue mainQueue]] onDispose:^
+                [[[[TGAccountSignals deleteAccount:@"Forgot password"] deliverOn:[SQueue mainQueue]] onDispose:^
                 {
                     [progressWindow dismiss:true];
                 }] startWithNext:nil error:^(__unused id error)
@@ -235,7 +252,7 @@
                 }];
             }
         }
-    }] show];
+    }];
 }
 
 @end

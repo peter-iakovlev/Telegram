@@ -2,6 +2,8 @@
 
 #import "TGSuggestedLocalizationControllerView.h"
 
+#import "TGPresentation.h"
+
 @interface TGSuggestedLocalizationController () {
     TGSuggestedLocalization *_suggestedLocalization;
     TGSuggestedLocalizationControllerView *_controllerView;
@@ -28,7 +30,7 @@
     
     __weak TGSuggestedLocalizationController *weakSelf = self;
     
-    _controllerView = [[TGSuggestedLocalizationControllerView alloc] initWithSuggestedLocalization:_suggestedLocalization];
+    _controllerView = [[TGSuggestedLocalizationControllerView alloc] initWithSuggestedLocalization:_suggestedLocalization presentation:TGPresentation.current];
     _controllerView.frame = self.view.bounds;
     _controllerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self.view addSubview:_controllerView];

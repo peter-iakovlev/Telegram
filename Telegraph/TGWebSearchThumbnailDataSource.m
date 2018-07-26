@@ -15,6 +15,8 @@
 
 #import "TGMediaStoreContext.h"
 
+#import "TGPresentation.h"
+
 static TGWorkerPool *workerPool()
 {
     static TGWorkerPool *instance = nil;
@@ -143,13 +145,24 @@ static ASQueue *taskManagementQueue()
 
 + (TGDataResource *)resultForUnavailableImage
 {
-    static TGDataResource *imageData = nil;
+    static NSMutableDictionary *imageDatas = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorImage([UIColor whiteColor]) decoded:true];
+        imageDatas = [[NSMutableDictionary alloc] init];
     });
-
+    
+    TGPresentation *presentation = TGPresentation.current;
+    UIColor *color = presentation.pallete.backgroundColor;
+    
+    NSNumber *key = @(presentation.currentId);
+    TGDataResource *imageData = imageDatas[key];
+    if (imageDatas[key] == nil)
+    {
+        imageData = [[TGDataResource alloc] initWithImage:TGAverageColorImage(color) decoded:true];
+        imageDatas[key] = imageData;
+    }
+    
     return imageData;
 }
 
@@ -157,12 +170,23 @@ static ASQueue *taskManagementQueue()
 {
     if ([attribute isEqualToString:@"placeholder"])
     {
-        static UIImage *placeholder = nil;
+        static NSMutableDictionary *placeholders = nil;
         static dispatch_once_t onceToken;
         dispatch_once(&onceToken, ^
         {
-            placeholder = TGAverageColorImage([UIColor whiteColor]);
+            placeholders = [[NSMutableDictionary alloc] init];
         });
+        
+        TGPresentation *presentation = TGPresentation.current;
+        UIColor *color = presentation.pallete.backgroundColor;
+        
+        NSNumber *key = @(presentation.currentId);
+        UIImage *placeholder = placeholders[key];
+        if (placeholders[key] == nil)
+        {
+            placeholder = TGAverageColorImage(color);
+            placeholders[key] = placeholder;
+        }
         
         return placeholder;
     }

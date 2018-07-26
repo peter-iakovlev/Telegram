@@ -13,14 +13,13 @@
 
 @implementation TGPreparedAssetImageMessage
 
-- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo caption:(NSString *)caption useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup messageLifetime:(int32_t)messageLifetime groupedId:(int64_t)groupedId
+- (instancetype)initWithAssetIdentifier:(NSString *)assetIdentifier imageInfo:(TGImageInfo *)imageInfo text:(NSString *)text entities:(NSArray *)entities useMediaCache:(bool)useMediaCache isCloud:(bool)isCloud document:(bool)document localDocumentId:(int64_t)localDocumentId fileSize:(int)fileSize mimeType:(NSString *)mimeType attributes:(NSArray *)attributes replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup messageLifetime:(int32_t)messageLifetime groupedId:(int64_t)groupedId
 {
     self = [self init];
     if (self != nil)
     {
         _assetIdentifier = assetIdentifier;
         _imageInfo = imageInfo;
-        _caption = caption;
         _useMediaCache = useMediaCache;
         _isCloud = isCloud;
         _document = document;
@@ -30,6 +29,8 @@
         _attributes = attributes;
         self.groupedId = groupedId;
         
+        self.text = text;
+        self.entities = entities;
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
         self.messageLifetime = messageLifetime;
@@ -120,12 +121,12 @@
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
     message.groupedId = self.groupedId;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
     TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] init];
     imageAttachment.imageInfo = _imageInfo;
-    imageAttachment.caption = self.caption;
     [attachments addObject:imageAttachment];
     
     if (self.replyMessage != nil)
@@ -137,6 +138,7 @@
     }
     
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
     
     NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
     contentProperties[@"mediaAsset"] = [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier isVideo:false isCloud:_isCloud useMediaCache:_useMediaCache];
@@ -152,6 +154,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -161,7 +164,6 @@
     documentAttachment.attributes = [self attributes];
     documentAttachment.mimeType = _mimeType;
     documentAttachment.thumbnailInfo = _imageInfo;
-    documentAttachment.caption = self.caption;
     [attachments addObject:documentAttachment];
     
     if (self.replyMessage != nil)
@@ -177,6 +179,8 @@
     }
 
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
+    
     message.contentProperties = @{@"mediaAsset": [[TGMediaAssetContentProperty alloc] initWithAssetIdentifier:_assetIdentifier isVideo:false isCloud:_isCloud useMediaCache:false]};
     
     return message;

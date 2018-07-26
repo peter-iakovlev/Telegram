@@ -2,13 +2,15 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
-#import "TGAnimationUtils.h"
+#import <LegacyComponents/TGAnimationUtils.h>
 
 #import "TGCommentCollectionItem.h"
 
 #import <LegacyComponents/TGModernButton.h>
 
 #import "TGLocalizationSignals.h"
+
+#import "TGPresentation.h"
 
 @interface TGSuggestedLocalizationControllerView () <UITextFieldDelegate> {
     TGSuggestedLocalization *_suggestedLocalization;
@@ -42,14 +44,14 @@
 
 @implementation TGSuggestedLocalizationControllerView
 
-- (NSAttributedString *)attributedButtonTitle:(NSString *)top bottom:(NSString *)bottom {
-    NSMutableAttributedString *topString = [[NSMutableAttributedString alloc] initWithString:[top stringByAppendingString:@"\n"] attributes:@{NSFontAttributeName: TGSystemFontOfSize(17.0f), NSForegroundColorAttributeName: [UIColor blackColor]}];
-    NSAttributedString *bottomString = [[NSAttributedString alloc] initWithString:bottom attributes:@{NSFontAttributeName: TGSystemFontOfSize(12.0f), NSForegroundColorAttributeName: UIColorRGB(0x89898e)}];
+- (NSAttributedString *)attributedButtonTitle:(NSString *)top bottom:(NSString *)bottom presentation:(TGPresentation *)presentation {
+    NSMutableAttributedString *topString = [[NSMutableAttributedString alloc] initWithString:[top stringByAppendingString:@"\n"] attributes:@{NSFontAttributeName: TGSystemFontOfSize(17.0f), NSForegroundColorAttributeName: presentation.pallete.menuTextColor}];
+    NSAttributedString *bottomString = [[NSAttributedString alloc] initWithString:bottom attributes:@{NSFontAttributeName: TGSystemFontOfSize(12.0f), NSForegroundColorAttributeName: presentation.pallete.secondaryTextColor}];
     [topString appendAttributedString:bottomString];
     return topString;
 }
 
-- (instancetype)initWithSuggestedLocalization:(TGSuggestedLocalization *)suggestedLocalization {
+- (instancetype)initWithSuggestedLocalization:(TGSuggestedLocalization *)suggestedLocalization presentation:(TGPresentation *)presentation {
     self = [super initWithFrame:CGRectZero];
     if (self != nil) {
         _suggestedLocalization = suggestedLocalization;
@@ -60,32 +62,16 @@
         _dimmingView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.5f];
         [self addSubview:_dimmingView];
         
-        static UIImage *backgroundImage = nil;
-        static UIImage *textFieldBackgroundImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            {
-                CGFloat diameter = 26.0f;
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
-                UIGraphicsEndImageContext();
-            }
-            {
-                CGFloat diameter = 4.0f;
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetFillColorWithColor(context, UIColorRGB(0x98979e).CGColor);
-                CGContextFillRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                CGContextFillRect(context, CGRectMake(TGScreenPixel, TGScreenPixel, diameter - TGScreenPixel * 2.0, diameter - TGScreenPixel * 2.0f));
-                
-                textFieldBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
-                UIGraphicsEndImageContext();
-            }
-        });
+        UIImage *backgroundImage = nil;
+        {
+            CGFloat diameter = 26.0f;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, presentation.pallete.menuBackgroundColor.CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+            UIGraphicsEndImageContext();
+        }
         
         TGLocalization *englishLocalization = nativeEnglishLocalization();
         
@@ -96,7 +82,7 @@
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = nil;
         _titleLabel.opaque = false;
-        _titleLabel.textColor = [UIColor blackColor];
+        _titleLabel.textColor = presentation.pallete.menuTextColor;
         _titleLabel.font = TGBoldSystemFontOfSize(17.0f);
         _titleLabel.text = _suggestedLocalization.chooseLanguageString;
         [_titleLabel sizeToFit];
@@ -105,7 +91,7 @@
         _subtitleLabel = [[UILabel alloc] init];
         _subtitleLabel.backgroundColor = nil;
         _subtitleLabel.opaque = false;
-        _subtitleLabel.textColor = UIColorRGB(0x89898e);
+        _subtitleLabel.textColor = presentation.pallete.menuSecondaryTextColor;
         _subtitleLabel.font = TGSystemFontOfSize(12.0f);
         _subtitleLabel.text = [englishLocalization get:@"Localization.ChooseLanguage"];
         [_subtitleLabel sizeToFit];
@@ -113,37 +99,37 @@
         
         _buttonsHorizontalSeparator = [[UIView alloc] init];
         _buttonsHorizontalSeparator.userInteractionEnabled = false;
-        _buttonsHorizontalSeparator.backgroundColor = UIColorRGB(0xf2f2f3);
+        _buttonsHorizontalSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_buttonsHorizontalSeparator];
         
         _topSeparator = [[UIView alloc] init];
         _topSeparator.userInteractionEnabled = false;
-        _topSeparator.backgroundColor = UIColorRGB(0xf2f2f3);
+        _topSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_topSeparator];
         
         _middleSeparator = [[UIView alloc] init];
         _middleSeparator.userInteractionEnabled = false;
-        _middleSeparator.backgroundColor = UIColorRGB(0xf2f2f3);
+        _middleSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_middleSeparator];
         
         _bottomSeparator = [[UIView alloc] init];
         _bottomSeparator.userInteractionEnabled = false;
-        _bottomSeparator.backgroundColor = UIColorRGB(0xf2f2f3);
+        _bottomSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_bottomSeparator];
         
         _okButton = [[TGModernButton alloc] init];
         _okButton.titleLabel.font = TGSystemFontOfSize(17.0f);
-        [_okButton setTitleColor:TGAccentColor()];
+        [_okButton setTitleColor:presentation.pallete.menuAccentColor];
         [_backgroundView addSubview:_okButton];
         [_okButton setTitle:TGLocalized(@"Common.OK") forState:UIControlStateNormal];
         [_okButton addTarget:self action:@selector(okPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _englishButton = [[TGModernButton alloc] init];
-        _englishButton.highlightBackgroundColor = TGSelectionColor();
+        _englishButton.highlightBackgroundColor = presentation.pallete.selectionColor;
         _englishButton.titleLabel.font = TGSystemFontOfSize(17.0f);
         [_backgroundView addSubview:_englishButton];
         
-        [_englishButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.englishLanguageNameString bottom:@"English"] forState:UIControlStateNormal];
+        [_englishButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.englishLanguageNameString bottom:@"English" presentation:presentation] forState:UIControlStateNormal];
         
         _englishButton.titleLabel.numberOfLines = 2;
         _englishButton.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
@@ -156,10 +142,10 @@
         [_englishButton addSubview:_currentCheckView];
         
         _suggestedButton = [[TGModernButton alloc] init];
-        _suggestedButton.highlightBackgroundColor = TGSelectionColor();
+        _suggestedButton.highlightBackgroundColor = presentation.pallete.selectionColor;
         _suggestedButton.titleLabel.font = TGSystemFontOfSize(17.0f);
         [_backgroundView addSubview:_suggestedButton];
-        [_suggestedButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.info.localizedTitle bottom:_suggestedLocalization.info.title] forState:UIControlStateNormal];
+        [_suggestedButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.info.localizedTitle bottom:_suggestedLocalization.info.title presentation:presentation] forState:UIControlStateNormal];
         _suggestedButton.titleLabel.numberOfLines = 2;
         _suggestedButton.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
         _suggestedButton.titleEdgeInsets = UIEdgeInsetsMake(0.0f, 18.0f, 0.0f, 0.0f);
@@ -179,12 +165,12 @@
         }
         
         _otherButton = [[TGModernButton alloc] init];
-        _otherButton.highlightBackgroundColor = TGSelectionColor();
+        _otherButton.highlightBackgroundColor = presentation.pallete.selectionColor;
         _otherButton.titleLabel.font = TGSystemFontOfSize(17.0f);
         [_otherButton setTitleColor:[UIColor blackColor]];
         [_backgroundView addSubview:_otherButton];
         if (!TGStringCompare([englishLocalization get:@"Localization.LanguageOther"], _suggestedLocalization.chooseLanguageOtherString)) {
-            [_otherButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.chooseLanguageOtherString bottom:[englishLocalization get:@"Localization.LanguageOther"]] forState:UIControlStateNormal];
+            [_otherButton setAttributedTitle:[self attributedButtonTitle:_suggestedLocalization.chooseLanguageOtherString bottom:[englishLocalization get:@"Localization.LanguageOther"] presentation:presentation] forState:UIControlStateNormal];
             _otherButton.titleLabel.numberOfLines = 2;
             _otherButton.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
         } else {
@@ -195,7 +181,7 @@
         [_otherButton addTarget:self action:@selector(otherPressed) forControlEvents:UIControlEventTouchUpInside];
         [_backgroundView addSubview:_otherButton];
         
-        _otherDisclosureView = [[UIImageView alloc] initWithImage:TGComponentsImageNamed(@"ModernListsDisclosureIndicator.png")];
+        _otherDisclosureView = [[UIImageView alloc] initWithImage:presentation.images.collectionMenuDisclosureIcon];
         [_otherButton addSubview:_otherDisclosureView];
         
         //[_dimmingView addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dimViewTapGesture:)]];

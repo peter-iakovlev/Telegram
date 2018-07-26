@@ -14,19 +14,21 @@
 {
     int32_t _uid;
     NSString *_phoneNumber;
+    TGContactMediaAttachment *_contact;
 }
 
 @end
 
 @implementation TGAddToExistingContactController
 
-- (id)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber
+- (id)initWithUid:(int32_t)uid phoneNumber:(NSString *)phoneNumber attachment:(TGContactMediaAttachment *)attachment
 {
     self = [super initWithContactsMode:TGContactsModeRegistered | TGContactsModePhonebook | TGContactsModeSelectModal];
     if (self != nil)
     {
         _uid = uid;
         _phoneNumber = phoneNumber;
+        _contact = attachment;
         
         self.titleText = TGLocalized(@"Contacts.Title");
         [self setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Cancel") style:UIBarButtonItemStylePlain target:self action:@selector(cancelPressed)]];
@@ -43,13 +45,13 @@
 {
     if (user.uid > 0)
     {
-        TGCreateContactController *createContactController = [[TGCreateContactController alloc] initWithUid:_uid phoneNumber:_phoneNumber existingUid:user.uid];
+        TGCreateContactController *createContactController = [[TGCreateContactController alloc] initWithUid:_uid phoneNumber:_phoneNumber existingUid:user.uid attachment:_contact];
         createContactController.delegate = self;
         [self.navigationController pushViewController:createContactController animated:true];
     }
     else
     {
-        TGCreateContactController *createContactController = [[TGCreateContactController alloc] initWithUid:_uid phoneNumber:_phoneNumber existingNativeContactId:-user.uid];
+        TGCreateContactController *createContactController = [[TGCreateContactController alloc] initWithUid:_uid phoneNumber:_phoneNumber existingNativeContactId:-user.uid attachment:_contact modal:false];
         createContactController.delegate = self;
         [self.navigationController pushViewController:createContactController animated:true];
     }

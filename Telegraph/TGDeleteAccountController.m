@@ -6,6 +6,8 @@
 
 #import <LegacyComponents/TGProgressWindow.h>
 
+#import "TGPresentation.h"
+
 @interface TGDeleteAccountController ()
 {
     TGProgressWindow *_progressWindow;
@@ -26,7 +28,7 @@
         self.title = TGLocalized(@"DeleteAccount.Title");
         
         _deleteAccountButton = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"DeleteAccount.DeleteAccount") action:@selector(deleteAccountPressed)];
-        _deleteAccountButton.titleColor = TGDestructiveAccentColor();
+        _deleteAccountButton.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
         _deleteAccountButton.enabled = false;
         _deleteAccountButton.deselectAutomatically = true;
         

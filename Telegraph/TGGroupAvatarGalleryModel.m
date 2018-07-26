@@ -13,7 +13,7 @@
 
 #import "TGGenericPeerGalleryGroupItem.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 #import <LegacyComponents/TGProgressWindow.h>
 
 #import <LegacyComponents/TGMediaAssetsLibrary.h>
@@ -103,6 +103,7 @@
 {
     TGGenericPeerMediaGalleryActionsAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryActionsAccessoryView alloc] init];
     __weak TGGroupAvatarGalleryModel *weakSelf = self;
+    __weak TGGenericPeerMediaGalleryActionsAccessoryView *weakAccessoryView = accessoryView;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
         if ([item isKindOfClass:[TGGroupAvatarGalleryItem class]])
@@ -124,12 +125,12 @@
                     }
                     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
                     
-                    [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                    [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
                     {
                         __strong TGGroupAvatarGalleryModel *strongSelf = weakSelf;
                         if ([action isEqualToString:@"save"])
                             [strongSelf _commitSaveItemToCameraRoll:item];
-                    } target:strongSelf] showInView:actionSheetView];
+                    } target:strongSelf] showFromRect:[weakAccessoryView convertRect:weakAccessoryView.bounds toView:actionSheetView] inView:actionSheetView animated:true];
                 }
             }
         }

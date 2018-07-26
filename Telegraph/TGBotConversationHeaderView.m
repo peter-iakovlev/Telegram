@@ -11,6 +11,8 @@
 
 #import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
+#import "TGPresentation.h"
+
 @interface TGBotConversationHeaderView () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGModernViewContext *_context;
@@ -37,14 +39,14 @@
         _context = context;
         _viewStorage = [[TGModernViewStorage alloc] init];
         
-        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:TGTextMessageBackgroundIncoming];
+        _backgroundModel = [[TGTextMessageBackgroundViewModel alloc] initWithType:TGTextMessageBackgroundIncoming context:context];
         [_backgroundModel setPartialMode:true];
         [_backgroundModel bindViewToContainer:self viewStorage:_viewStorage];
         
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.textAlignment = NSTextAlignmentLeft;
         _titleLabel.backgroundColor = [UIColor clearColor];
-        _titleLabel.textColor = [UIColor blackColor];
+        _titleLabel.textColor = context.presentation.pallete.chatIncomingTextColor;
         _titleLabel.text = botInfo.botDescription;
         _titleLabel.text = TGLocalized(@"Bot.DescriptionTitle");
         _titleLabel.numberOfLines = 1;
@@ -57,6 +59,8 @@
         _contentModel = [[TGModernFlatteningViewModel alloc] initWithContext:nil];
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:text font:TGCoreTextSystemFontOfSize(16.0f)];
+        _textModel.textColor = context.presentation.pallete.chatIncomingTextColor;
+        _textModel.linkColor = context.presentation.pallete.chatIncomingLinkColor;
         _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:text highlightMentionsAndTags:true highlightCommands:true entities:nil];
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightCommands | TGReusableLabelLayoutHighlightLinks;
         [_textModel layoutForContainerSize:CGSizeMake([self maximumContentWidth], CGFLOAT_MAX)];

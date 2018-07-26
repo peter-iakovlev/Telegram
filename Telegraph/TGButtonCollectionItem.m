@@ -72,6 +72,14 @@
         [(TGButtonCollectionItemView *)self.view setTitle:title];
 }
 
+- (void)setTitleColor:(UIColor *)titleColor
+{
+    _titleColor = titleColor;
+    
+    if (self.view != nil)
+        [(TGButtonCollectionItemView *)self.view setTitleColor:titleColor];
+}
+
 - (void)setEnabled:(bool)enabled
 {
     if (_enabled != enabled)

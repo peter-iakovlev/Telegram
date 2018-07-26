@@ -3,6 +3,7 @@
 #import "TGSharedMediaFilter.h"
 
 @class TGMessage;
+@class TGPresentation;
 
 @protocol TGSharedMediaItem <NSObject, NSCopying>
 

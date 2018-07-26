@@ -53,7 +53,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x959ff644;
+    return (int32_t)0x5b51d63f;
 }
 
 - (int32_t)TLconstructorName

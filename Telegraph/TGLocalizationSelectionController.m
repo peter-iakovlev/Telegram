@@ -5,6 +5,8 @@
 #import "TGLocalizationSignals.h"
 
 #import "TGAppDelegate.h"
+#import "TGLegacyComponentsContext.h"
+#import "TGPresentation.h"
 
 @interface TGLocalizationSelectionControllerAccessory : UIView {
     UIImageView *_check;
@@ -18,7 +20,7 @@
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self != nil) {
-        _check = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernMenuCheck.png")];
+        _check = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
         _indicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         
         [self addSubview:_check];
@@ -38,7 +40,10 @@
     _indicator.frame = CGRectMake(CGFloor((self.bounds.size.width - _indicator.frame.size.width) / 2.0f), CGFloor((self.bounds.size.height - _indicator.frame.size.height) / 2.0f), _indicator.bounds.size.width, _indicator.bounds.size.height);
 }
 
-- (void)setType:(int32_t)type {
+- (void)setType:(int32_t)type presentation:(TGPresentation *) presentation {
+    _indicator.color = presentation.pallete.collectionMenuSpinnerColor;
+    _check.image = presentation.images.collectionMenuCheckImage;
+    
     switch (type) {
         case 0:
             _check.hidden = true;
@@ -62,9 +67,12 @@
 
 @end
 
-@interface TGLocalizationSelectionController () <UISearchBarDelegate, UISearchDisplayDelegate> {
-    UISearchDisplayController *_searchDisplayController;
-    UISearchBar *_searchBar;
+@interface TGLocalizationSelectionController () <TGSearchDisplayMixinDelegate, UITableViewDelegate, UITableViewDataSource> {
+    UITableView *_tableView;
+    TGSearchBar *_searchBar;
+    UIView *_searchTopBackgroundView;
+    TGSearchDisplayMixin *_searchMixin;
+    
     UIActivityIndicatorView *_activityIndicator;
     
     SMetaDisposable *_disposable;
@@ -99,7 +107,7 @@
                 if ([strongSelf isViewLoaded]) {
                     [strongSelf->_activityIndicator removeFromSuperview];
                     strongSelf->_searchBar.hidden = false;
-                    [strongSelf.tableView reloadData];
+                    [strongSelf->_tableView reloadData];
                 }
             }
         }]];
@@ -111,48 +119,68 @@
     }
     return self;
 }
-    
+
 - (void)dealloc {
     [_disposable dispose];
+    
+    _tableView.delegate = nil;
+    
+    _searchMixin.delegate = nil;
+    [_searchMixin unload];
+}
+
+- (void)controllerInsetUpdated:(UIEdgeInsets)previousInset
+{
+    if (_searchMixin != nil)
+        [_searchMixin controllerInsetUpdated:self.controllerInset];
+    
+    [super controllerInsetUpdated:previousInset];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    self.view.backgroundColor = self.presentation.pallete.backgroundColor;
+    
+    _tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
+    if (iosMajorVersion() >= 11)
+        _tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    _tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _tableView.delegate = self;
+    _tableView.dataSource = self;
+    _tableView.opaque = true;
+    _tableView.backgroundColor = _presentation.pallete.backgroundColor;
+    _tableView.separatorColor = self.presentation.pallete.separatorColor;
+    [self.view addSubview:_tableView];
+    
     if (_items == nil) {
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         _activityIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
+        _activityIndicator.color = self.presentation.pallete.secondaryTextColor;
         _activityIndicator.frame = CGRectMake(CGFloor((self.view.frame.size.width - _activityIndicator.frame.size.width) / 2.0f), CGFloor((self.view.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
         [self.view addSubview:_activityIndicator];
         [_activityIndicator startAnimating];
         _searchBar.hidden = true;
     }
     
-    UISearchBar *tempSearchBar = [[UISearchBar alloc] initWithFrame:CGRectMake(0, 0, self.tableView.frame.size.width, 0)];
-    _searchBar = tempSearchBar;
-    if (iosMajorVersion() >= 7)
-        _searchBar.barTintColor = [UIColor whiteColor];
+    _searchBar = [[TGSearchBar alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, [TGSearchBar searchBarBaseHeight]) style:TGSearchBarStyleLightPlain];
+    _searchBar.pallete = self.presentation.searchBarPallete;
+    _searchBar.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    _searchBar.safeAreaInset = [self controllerSafeAreaInset];
     _searchBar.placeholder = TGLocalized(@"ChatSearch.SearchPlaceholder");
-    _searchBar.delegate = self;
-    [_searchBar sizeToFit];
-    self.tableView.tableHeaderView = _searchBar;
     
-    CGSize size = CGSizeMake(28, 28);
-    UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-    [[UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.0f, 0.0f, 28.0f, 28.0f) cornerRadius:6.0f] addClip];
-    [UIColorRGB(0xe8e8e8) setFill];
-    UIRectFill(CGRectMake(0, 0, size.width, size.height));
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    [_searchBar setSearchFieldBackgroundImage:image forState:UIControlStateNormal];
+    _searchTopBackgroundView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, -320.0f, self.view.frame.size.width, 320.0f)];
+    _searchTopBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    [_tableView insertSubview:_searchTopBackgroundView atIndex:0];
     
-    _searchBar.layer.borderWidth = 1;
-    _searchBar.layer.borderColor = [[UIColor whiteColor] CGColor];
+    _searchMixin = [[TGSearchDisplayMixin alloc] init];
+    _searchMixin.searchBar = _searchBar;
+    _searchMixin.delegate = self;
     
-    _searchDisplayController = [[UISearchDisplayController alloc] initWithSearchBar:_searchBar contentsController:self];
-    _searchDisplayController.delegate = self;
-    _searchDisplayController.searchResultsDataSource = self;
-    _searchDisplayController.searchResultsDelegate = self;
+    _tableView.tableHeaderView = _searchBar;
+    
+    if (![self _updateControllerInset:false])
+        [self controllerInsetUpdated:UIEdgeInsetsZero];
 }
 
 - (void)filterItems {
@@ -164,6 +192,53 @@
     }
     _filteredItems = items;
 }
+
+- (UITableView *)createTableViewForSearchMixin:(TGSearchDisplayMixin *)__unused searchMixin
+{
+    UITableView *tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
+    tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    tableView.dataSource = self;
+    tableView.delegate = self;
+    tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    
+    tableView.backgroundColor = self.presentation.pallete.backgroundColor;
+    tableView.separatorColor = self.presentation.pallete.separatorColor;
+    
+    return tableView;
+}
+
+- (UIView *)referenceViewForSearchResults
+{
+    return _tableView;
+}
+
+- (void)searchMixin:(TGSearchDisplayMixin *)searchMixin hasChangedSearchQuery:(NSString *)searchQuery withScope:(int)__unused scope
+{
+    _filterString = [searchQuery lowercaseString];
+    [self filterItems];
+    
+    [searchMixin reloadSearchResults];
+    [searchMixin setSearchResultsTableViewHidden:searchQuery.length == 0];
+}
+
+- (void)searchMixinWillActivate:(bool)animated
+{
+    _tableView.scrollEnabled = false;
+    [self setNavigationBarHidden:true animated:animated];
+}
+
+- (void)searchMixinWillDeactivate:(bool)animated
+{
+    _tableView.scrollEnabled = true;
+    [self setNavigationBarHidden:false animated:animated];
+}
+
+
+
+
+
+
+
 
 - (BOOL)searchDisplayController:(UISearchDisplayController *)__unused controller shouldReloadTableForSearchString:(NSString *)searchString
 {
@@ -177,7 +252,7 @@
     if (_filterString.length != 0) {
         _filterString = nil;
         [self filterItems];
-        [self.tableView reloadData];
+        [_tableView reloadData];
     }
 }
 
@@ -185,8 +260,11 @@
     return 1;
 }
 
-- (NSInteger)tableView:(UITableView *)__unused tableView numberOfRowsInSection:(NSInteger)__unused section {
-    return (NSInteger)_filteredItems.count;
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)__unused section {
+    if (tableView == _tableView)
+        return (NSInteger)_items.count;
+    else
+        return (NSInteger)_filteredItems.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -195,23 +273,35 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"Cell"];
         cell.accessoryView = [[TGLocalizationSelectionControllerAccessory alloc] init];
         [cell.accessoryView sizeToFit];
+        cell.backgroundColor = self.presentation.pallete.backgroundColor;
+        
+        cell.selectedBackgroundView = [[UIView alloc] init];
+        cell.selectedBackgroundView.backgroundColor = self.presentation.pallete.selectionColor;
     }
     
-    cell.textLabel.text = _filteredItems[indexPath.row].title;
-    cell.detailTextLabel.text = _filteredItems[indexPath.row].localizedTitle;
+    TGAvailableLocalization *localization = nil;
+    if (tableView == _tableView)
+        localization = _items[indexPath.row];
+    else
+        localization = _filteredItems[indexPath.row];
+    
+    cell.textLabel.text = localization.title;
+    cell.textLabel.textColor = self.presentation.pallete.textColor;
+    cell.detailTextLabel.text = localization.localizedTitle;
+    cell.detailTextLabel.textColor = self.presentation.pallete.textColor;
     
     TGLocalizationSelectionControllerAccessory *accessoryView = (TGLocalizationSelectionControllerAccessory *)cell.accessoryView;
-    bool isCurrent = [_currentLocalization.code isEqualToString:_filteredItems[indexPath.row].code];
+    bool isCurrent = [_currentLocalization.code isEqualToString:localization.code];
     if (_currentCustomLocalization != nil && _currentCustomLocalization.isActive) {
-        isCurrent = [_filteredItems[indexPath.row].code isEqualToString:@"custom"];
+        isCurrent = [localization.code isEqualToString:@"custom"];
     }
-    
-    if ([_filteredItems[indexPath.row].code isEqualToString:_applyingLocalizationCode]) {
-        [accessoryView setType:2];
+
+    if ([localization.code isEqualToString:_applyingLocalizationCode]) {
+        [accessoryView setType:2 presentation:self.presentation];
     } else if (isCurrent) {
-        [accessoryView setType:1];
+        [accessoryView setType:1 presentation:self.presentation];
     } else {
-        [accessoryView setType:0];
+        [accessoryView setType:0 presentation:self.presentation];
     }
     
     return cell;
@@ -219,22 +309,24 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:true];
+
+    TGAvailableLocalization *localization = nil;
+    if (tableView == _tableView)
+        localization = _items[indexPath.row];
+    else
+        localization = _filteredItems[indexPath.row];
     
-    if (_searchDisplayController.isActive) {
-        [_searchDisplayController setActive:false animated:true];
-    }
-    
-    bool isCurrent = [_currentLocalization.code isEqualToString:_filteredItems[indexPath.row].code];
+    bool isCurrent = [_currentLocalization.code isEqualToString:localization.code];
     if (_currentCustomLocalization != nil && _currentCustomLocalization.isActive) {
-        isCurrent = [_filteredItems[indexPath.row].code isEqualToString:@"custom"];
+        isCurrent = [localization.code isEqualToString:@"custom"];
     }
     
     if (isCurrent) {
         if (_applyingLocalizationCode != nil) {
             _applyingLocalizationCode = nil;
             [_disposable setDisposable:nil];
-            [self.tableView reloadData];
-            [_searchDisplayController.searchResultsTableView reloadData];
+            [_tableView reloadData];
+            [_searchMixin.searchResultsTableView reloadData];
         }
     } else {
         if ([_filteredItems[indexPath.row].code isEqualToString:@"custom"]) {
@@ -261,14 +353,18 @@
                     strongSelf->_currentCustomLocalization = currentCustomLocalization();
                     strongSelf->_currentLocalization = currentNativeLocalization();
                     strongSelf->_applyingLocalizationCode = nil;
-                    [strongSelf.tableView reloadData];
-                    [_searchDisplayController.searchResultsTableView reloadData];
+                    [strongSelf->_tableView reloadData];
+                    [strongSelf->_searchMixin.searchResultsTableView reloadData];
                     [strongSelf localizationUpdated];
                 }
             }]];
         }
-        [self.tableView reloadData];
-        [_searchDisplayController.searchResultsTableView reloadData];
+        [_tableView reloadData];
+        [_searchMixin.searchResultsTableView reloadData];
+    }
+    
+    if (_searchMixin.isActive) {
+        [_searchMixin setIsActive:false animated:true];
     }
 }
 

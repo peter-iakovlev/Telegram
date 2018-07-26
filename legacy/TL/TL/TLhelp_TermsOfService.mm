@@ -33,7 +33,7 @@
 
 @end
 
-@implementation TLhelp_TermsOfService$help_termsOfService : TLhelp_TermsOfService
+@implementation TLhelp_TermsOfService$help_termsOfServiceMeta : TLhelp_TermsOfService
 
 
 - (int32_t)TLconstructorSignature
@@ -48,7 +48,7 @@
 
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
-    TLhelp_TermsOfService$help_termsOfService *object = [[TLhelp_TermsOfService$help_termsOfService alloc] init];
+    TLhelp_TermsOfService$help_termsOfServiceMeta *object = [[TLhelp_TermsOfService$help_termsOfServiceMeta alloc] init];
     object.text = metaObject->getString((int32_t)0x94f1580d);
     return object;
 }

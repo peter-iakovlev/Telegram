@@ -108,7 +108,7 @@
                     [[AVAudioSession sharedInstance] setCategory:[self nativeCategoryForType:type] withOptions:(type == TGAudioSessionTypePlayAndRecord || type == TGAudioSessionTypePlayAndRecordHeadphones || type == TGAudioSessionTypeCall) ? AVAudioSessionCategoryOptionAllowBluetooth : 0 error:&error];
                     if (error != nil)
                         TGLog(@"(TGAudioSessionManager setting category %d error %@)", (int)type, error);
-                    [[AVAudioSession sharedInstance] setMode:(type == TGAudioSessionTypeCall) ? AVAudioSessionModeVoiceChat : AVAudioSessionModeDefault error:&error];
+                    [[AVAudioSession sharedInstance] setMode:AVAudioSessionModeDefault error:&error];
                     if (error != nil)
                         TGLog(@"(TGAudioSessionManager setting mode error %@)", error);
                     [[AVAudioSession sharedInstance] setActive:true error:&error];
@@ -326,9 +326,18 @@
 
 @implementation TGAudioRoute
 
+static NSString *deviceModel = nil;
++ (void)load
+{
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        deviceModel = [UIDevice currentDevice].model;
+    });
+}
+
 + (instancetype)routeForBuiltIn:(bool)headphones
 {
-    NSString *deviceModel = [UIDevice currentDevice].model;
     TGAudioRoute *route = [[TGAudioRoute alloc] init];
     route->_name = headphones ? TGLocalized(@"Call.AudioRouteHeadphones") : deviceModel;
     route->_uid = @"builtin";

@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGAttachmentSheetCheckmarkVariantItemView () {
     TGModernButton *_button;
     UIImageView *_checkmarkView;
@@ -48,18 +50,26 @@
         _variantLabel = [[UILabel alloc] init];
         _variantLabel.backgroundColor = [UIColor clearColor];
         _variantLabel.textColor = UIColorRGB(0x8e8e93);
-        _variantLabel.font = TGSystemFontOfSize(20.0f);
+        _variantLabel.font = TGSystemFontOfSize(17.0f);
         _variantLabel.text = variant;
         _variantLabel.userInteractionEnabled = false;
         [self addSubview:_variantLabel];
         
         _checked = checked;
-        _checkmarkView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"ModernMenuCheck.png"]];
+        _checkmarkView = [[UIImageView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 14.0f, 11.0f)];
         _checkmarkView.hidden = !_checked;
         _checkmarkView.userInteractionEnabled = false;
         [self addSubview:_checkmarkView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    _titleLabel.textColor = presentation.pallete.menuTextColor;
+    _variantLabel.textColor = presentation.pallete.menuSecondaryTextColor;
+    _checkmarkView.image = presentation.images.collectionMenuCheckImage;
 }
 
 - (void)setHighlightedImage:(UIImage *)highlightedImage {
@@ -80,7 +90,7 @@
     CGSize variantSize = [_variantLabel.text sizeWithFont:_variantLabel.font];
     variantSize.width = CGCeil(variantSize.width);
     variantSize.height = CGCeil(variantSize.height);
-    _variantLabel.frame = CGRectMake(self.bounds.size.width - variantSize.width - 10.0f, CGFloor((self.bounds.size.height - variantSize.height) / 2.0f), variantSize.width, variantSize.height);
+    _variantLabel.frame = CGRectMake(self.bounds.size.width - variantSize.width - 14.0f, CGFloor((self.bounds.size.height - variantSize.height) / 2.0f), variantSize.width, variantSize.height);
     
     CGFloat titleOffset = 52.0f;
     if (_disableInsetIfNotChecked && !_checked) {

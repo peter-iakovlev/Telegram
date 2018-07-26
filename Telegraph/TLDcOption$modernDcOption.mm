@@ -17,6 +17,9 @@
     object.n_id = [is readInt32];
     object.ip_address = [is readString];
     object.port = [is readInt32];
+    if (object.flags & (1 << 10)) {
+        object.secret = [is readBytes];
+    }
     
     return object;
 }

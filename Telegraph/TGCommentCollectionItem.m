@@ -11,6 +11,12 @@
     NSAttributedString *_attributedText;
     CGFloat _lastContainerWidth;
     CGSize _calculatedSize;
+    
+    CGFloat _paragraphSpacing;
+    NSTextAlignment _textAlignment;
+    bool _clearFormatting;
+    
+    NSString *_currentText;
 }
 
 @end
@@ -27,6 +33,7 @@
         self.selectable = false;
         _alpha = 1.0f;
         
+        _currentText = text;
         _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f];
     }
     return self;
@@ -50,8 +57,12 @@
         self.highlightable = false;
         self.selectable = false;
         _alpha = 1.0f;
+        _paragraphSpacing = paragraphSpacing;
+        _textAlignment = alignment;
+        _clearFormatting = clearFormatting;
+        _currentText = text;
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing alignment:alignment fontSize:14.0f clearFormatting:clearFormatting];
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:true paragraphSpacing:paragraphSpacing alignment:alignment fontSize:14.0f clearFormatting:clearFormatting linkColor:nil];
     }
     return self;
 }
@@ -69,11 +80,18 @@
     return self;
 }
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing {
-    return [self attributedStringFromText:text allowFormatting:allowFormatting paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f clearFormatting:false];
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _attributedText = [TGCommentCollectionItem attributedStringFromText:_currentText allowFormatting:true paragraphSpacing:_paragraphSpacing alignment:_textAlignment fontSize:14.0f clearFormatting:_clearFormatting linkColor:presentation.pallete.collectionMenuAccentColor];
 }
 
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize clearFormatting:(bool)clearFormatting
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing {
+    return [self attributedStringFromText:text allowFormatting:allowFormatting paragraphSpacing:paragraphSpacing alignment:NSTextAlignmentNatural fontSize:14.0f clearFormatting:false linkColor:nil];
+}
+
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize clearFormatting:(bool)clearFormatting linkColor:(UIColor *)linkColor
 {
     if (text.length == 0)
         return [[NSAttributedString alloc] initWithString:@"" attributes:nil];
@@ -136,7 +154,7 @@
     }
     
     if (!clearFormatting) {
-        NSDictionary *linkAttributes = @{NSForegroundColorAttributeName: TGAccentColor()};
+        NSDictionary *linkAttributes = @{NSForegroundColorAttributeName: (linkColor ?: TGAccentColor())};
         for (NSValue *nRange in linkRanges)
         {
             [attributedString addAttributes:linkAttributes range:[nRange rangeValue]];
@@ -150,7 +168,8 @@
 {
     _text = text;
     
-    _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f];
+    _currentText = text;
+    _attributedText = [TGCommentCollectionItem attributedStringFromText:text allowFormatting:false paragraphSpacing:0.0f alignment:NSTextAlignmentLeft fontSize:14.0f clearFormatting:false linkColor:self.presentation.pallete.collectionMenuAccentColor];
     
     if (_lastContainerWidth > FLT_EPSILON)
     {
@@ -165,7 +184,8 @@
 {
     _text = nil;
     
-    _attributedText = [TGCommentCollectionItem attributedStringFromText:formattedText allowFormatting:true paragraphSpacing:0.0f];
+    _currentText = formattedText;
+    _attributedText = [TGCommentCollectionItem attributedStringFromText:formattedText allowFormatting:true paragraphSpacing:0.0f alignment:NSTextAlignmentLeft fontSize:14.0f clearFormatting:false linkColor:self.presentation.pallete.collectionMenuAccentColor];
     
     if (_lastContainerWidth > FLT_EPSILON)
     {
@@ -216,7 +236,7 @@
     if (_hidden)
         return CGSizeMake(containerSize.width, 1.0f);
     
-    return _calculatedSize;
+    return CGSizeMake(_calculatedSize.width, _calculatedSize.height + _sizeInset);
 }
 
 - (void)setAlpha:(CGFloat)alpha
@@ -233,10 +253,13 @@
     [((TGCommentCollectionItemView *)self.boundView) setLabelAlpha:_alpha];
     [((TGCommentCollectionItemView *)view) setCalculatedSize:_calculatedSize];
     [((TGCommentCollectionItemView *)view) setTopInset:_topInset];
+    [((TGCommentCollectionItemView *)view) setSizeInset:_sizeInset];
     [((TGCommentCollectionItemView *)view) setTextColor:_textColor];
     [((TGCommentCollectionItemView *)view) setShowProgress:_showProgress];
     [((TGCommentCollectionItemView *)view) setAttributedText:_attributedText];
     [((TGCommentCollectionItemView *)view) setAction:_action];
+    
+    view.userInteractionEnabled = !_inhibitInteraction;
 }
 
 - (void)unbindView
@@ -251,6 +274,12 @@
     _showProgress = showProgress;
     
     [((TGCommentCollectionItemView *)self.boundView) setShowProgress:_showProgress];
+}
+
+- (void)setInhibitInteraction:(bool)inhibitInteraction
+{
+    _inhibitInteraction = inhibitInteraction;
+    self.boundView.userInteractionEnabled = !inhibitInteraction;
 }
 
 @end

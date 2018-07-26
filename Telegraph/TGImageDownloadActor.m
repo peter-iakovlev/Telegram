@@ -8,6 +8,7 @@
 #import <LegacyComponents/SGraphObjectNode.h>
 #import <LegacyComponents/TGRemoteImageView.h>
 
+#import "TGImageInfo+Telegraph.h"
 #import "TGTelegraph.h"
 #import "TGTelegraphProtocols.h"
 
@@ -56,6 +57,8 @@ typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
     bool _updateMediaAccessTimeOnRelease;
     int32_t _messageId;
     int64_t _imageId;
+    bool _multipart;
+    NSString *_multipartFilePath;
 }
 
 @property (nonatomic, copy) TGRemoteImageDownloadCompletionBlock downloadCompletionBlock;
@@ -183,8 +186,22 @@ typedef void (^TGRemoteImageDownloadCompletionBlock)(NSData *data);
         int contentHints = [[options objectForKey:@"contentHints"] intValue];
         if (contentHints & TGRemoteImageContentHintLargeFile)
         {
-            if ([[self.path substringFromIndex:6] hasPrefix:@"download:"])
-                self.requestQueueName = @"imageDownload";
+            if ([[self.path substringFromIndex:6] hasPrefix:@"download:"]) {
+                int datacenterId = 0;
+                NSDictionary *userProperties = options[@"userProperties"];
+                if ([userProperties respondsToSelector:@selector(objectForKey:)]) {
+                    TGImageInfo *imageInfo = userProperties[@"imageInfo"];
+                    if (imageInfo != nil) {
+                        NSString *url = [imageInfo imageUrlForLargestSize:nil];
+                        if (url != nil) {
+                            if (!extractFileUrlComponents(url, &datacenterId, nil, nil, nil)) {
+                                datacenterId = 0;
+                            }
+                        }
+                    }
+                }
+                self.requestQueueName = [NSString stringWithFormat:@"imageDownload-%d", datacenterId];
+            }
         }
     }
 }
@@ -644,10 +661,61 @@ static inline double imageProcessingPriority()
                         _messageId = messageId;
                         TGMediaId *mediaId = [userProperties objectForKey:@"mediaId"];
                         _imageId = mediaId.itemId;
+                        
+                        TGImageInfo *imageInfo = [userProperties objectForKey:@"imageInfo"];
+                        if (imageInfo != nil)
+                        {
+                            int fileSize = [imageInfo fileSizeForUrl:url];
+                            if (fileSize > 1 * 1024 * 1024)
+                                _multipart = true;
+                        }
                     }
                     
                     _requestedActors = true;
-                    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/file/(%@)", url] options:[NSDictionary dictionaryWithObjectsAndKeys:url, @"url", @(TGNetworkMediaTypeTagImage), @"mediaTypeTag", nil] watcher:self];
+                    if (_multipart)
+                    {
+                        static NSString *filesDirectory = nil;
+                        static dispatch_once_t onceToken;
+                        dispatch_once(&onceToken, ^
+                        {
+                            filesDirectory = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"temp"];
+                        });
+                        
+                        NSString *fileDirectoryName = url;
+                        NSString *fileDirectory = [filesDirectory stringByAppendingPathComponent:fileDirectoryName];
+                        
+                        if ([[NSFileManager defaultManager] fileExistsAtPath:fileDirectory])
+                            [[NSFileManager defaultManager] removeItemAtPath:fileDirectory error:nil];
+                        
+                        [[NSFileManager defaultManager] createDirectoryAtPath:fileDirectory withIntermediateDirectories:true attributes:nil error:nil];
+                        
+                        _multipartFilePath = [fileDirectory stringByAppendingPathComponent:@"temporary"];
+                        
+                        int datacenterId = 0;
+                        int64_t volumeId = 0;
+                        int localId = 0;
+                        int64_t secret = 0;
+                        if (extractFileUrlComponents(url, &datacenterId, &volumeId, &localId, &secret))
+                        {
+                            TLInputFileLocation$inputFileLocation *fileLocation = [[TLInputFileLocation$inputFileLocation alloc] init];
+                            fileLocation.volume_id = volumeId;
+                            fileLocation.local_id = (int32_t)localId;
+                            fileLocation.secret = secret;
+
+                            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(image:%" PRId64 ":%d:%d)", volumeId, localId, datacenterId] options:@{
+                            @"fileLocation": fileLocation,
+                            @"storeFilePath": _multipartFilePath,
+                            @"datacenterId": @(datacenterId),
+                            @"encryptionArgs": @{},
+                            @"mediaTypeTag": @(TGNetworkMediaTypeTagImage),
+                            @"completeWithData": @true
+                            } watcher:self];
+                        }
+                    }
+                    else
+                    {
+                        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/file/(%@)", url] options:[NSDictionary dictionaryWithObjectsAndKeys:url, @"url", @(TGNetworkMediaTypeTagImage), @"mediaTypeTag", nil] watcher:self];
+                    }
                 }
                 else
                 {
@@ -664,12 +732,7 @@ static inline double imageProcessingPriority()
 
 - (void)actorReportedProgress:(NSString *)path progress:(float)progress
 {
-    if ([path hasPrefix:@"/tg/file/"])
-    {
-        _progress = progress;
-        [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"progress" message:[[NSNumber alloc] initWithFloat:_progress]];
-    }
-    else if ([path hasPrefix:@"/img/"])
+    if ([path hasPrefix:@"/tg/file/"] || [path hasPrefix:@"/tg/multipart-file/"] || [path hasPrefix:@"/img/"])
     {
         _progress = progress;
         [ActionStageInstance() dispatchMessageToWatchers:self.path messageType:@"progress" message:[[NSNumber alloc] initWithFloat:_progress]];
@@ -678,7 +741,7 @@ static inline double imageProcessingPriority()
 
 - (void)actorMessageReceived:(NSString *)path messageType:(NSString *)messageType message:(id)message
 {
-    if ([path hasPrefix:@"/img/"])
+    if ([path hasPrefix:@"/img/"] || [path hasPrefix:@"/tg/multipart-file/"])
     {
         if ([messageType isEqualToString:@"progress"])
         {
@@ -704,6 +767,21 @@ static inline double imageProcessingPriority()
         {
             if (self.downloadCompletionBlock)
                 self.downloadCompletionBlock(((SGraphObjectNode *)result).object);
+        }
+        else
+        {
+            [ActionStageInstance() nodeRetrieveFailed:self.path];
+            self.downloadCompletionBlock = nil;
+        }
+    }
+    else if ([path hasPrefix:@"/tg/multipart-file/"])
+    {
+        if (resultCode == ASStatusSuccess)
+        {
+            if (self.downloadCompletionBlock)
+                self.downloadCompletionBlock(result);
+            
+            [[NSFileManager defaultManager] removeItemAtPath:_multipartFilePath error:nil];
         }
         else
         {

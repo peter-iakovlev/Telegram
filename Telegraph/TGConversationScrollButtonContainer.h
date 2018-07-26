@@ -2,6 +2,8 @@
 
 @interface TGConversationScrollButtonContainer : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
+
 @property (nonatomic) bool displayDownButton;
 @property (nonatomic) int32_t unreadMessageCount;
 @property (nonatomic) int32_t unseenMentionCount;

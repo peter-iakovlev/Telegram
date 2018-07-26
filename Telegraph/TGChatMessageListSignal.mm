@@ -401,7 +401,7 @@
 {
     return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        [TGDatabaseInstance() transactionReadHistoryForPeerIds:[[NSSet alloc] initWithArray:@[@(peerId)]]];
+        [TGDatabaseInstance() transactionReadHistoryForPeerIds:@[[[TGReadPeerMessagesRequest alloc] initWithPeerId:peerId maxMessageIndex:nil date:0 length:0 unread:false]]];
         [subscriber putCompletion];
         
         return nil;

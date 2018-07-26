@@ -11,6 +11,8 @@
 
 #import "TGDialogListCellAssetsSource.h"
 
+@class TGPresentation;
+
 @interface TGDialogListSearchCell : UITableViewCell
 
 @property (nonatomic, strong) id<TGDialogListCellAssetsSource> assetsSource;
@@ -28,9 +30,12 @@
 @property (nonatomic) bool isChat;
 @property (nonatomic) bool isEncrypted;
 @property (nonatomic) bool isVerified;
+@property (nonatomic) bool hasExplicitContent;
 @property (nonatomic) int encryptedUserId;
 
 @property (nonatomic) int unreadCount;
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic) SMetaDisposable *channelDisposable;
 

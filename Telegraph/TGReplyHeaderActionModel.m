@@ -7,6 +7,8 @@
 #import "TGTelegraph.h"
 #import "TGCurrencyFormatter.h"
 
+#import "TGPresentation.h"
+
 @implementation TGReplyHeaderActionModel
 
 + (NSString *)titleForPeer:(id)peer shortName:(bool)shortName {
@@ -280,9 +282,9 @@
     return messageText;
 }
 
-- (instancetype)initWithPeer:(id)peer actionMedia:(TGActionMediaAttachment *)actionMedia otherAttachments:(NSArray *)otherAttachments incoming:(bool)incoming system:(bool)system
+- (instancetype)initWithPeer:(id)peer actionMedia:(TGActionMediaAttachment *)actionMedia otherAttachments:(NSArray *)otherAttachments incoming:(bool)incoming system:(bool)system presentation:(TGPresentation *)presentation
 {
-    self = [super initWithPeer:peer incoming:incoming text:[TGReplyHeaderActionModel messageTextForActionMedia:actionMedia otherAttachments:otherAttachments author:peer] truncateTextInTheMiddle:false textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:0.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:[TGReplyHeaderActionModel messageTextForActionMedia:actionMedia otherAttachments:otherAttachments author:peer] truncateTextInTheMiddle:false textColor:incoming ? presentation.pallete.chatIncomingSubtextColor : presentation.pallete.chatOutgoingSubtextColor leftInset:0.0f system:system presentation:presentation];
     if (self != nil)
     {
     }

@@ -9,6 +9,8 @@
 #import <LegacyComponents/TGCameraPreviewView.h>
 #import <LegacyComponents/TGPhotoEditorUtils.h>
 
+#import <LegacyComponents/TGMenuSheetController.h>
+
 #import <AVFoundation/AVFoundation.h>
 
 @interface TGAttachmentCameraView ()
@@ -115,6 +117,14 @@
         [self stopPreview];
     
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _pallete = pallete;
+    
+    _zoomedView.backgroundColor = pallete.backgroundColor;
+    _cornersView.image = pallete.cornersImage;
 }
 
 - (void)setZoomedProgress:(CGFloat)progress

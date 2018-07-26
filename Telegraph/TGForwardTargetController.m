@@ -14,6 +14,7 @@
 
 #import "TGDatabase.h"
 
+#import "TGCustomAlertView.h"
 #import "TGAlertView.h"
 
 #import "TGAppDelegate.h"
@@ -39,7 +40,7 @@
 
 #pragma mark -
 
-@interface TGForwardTargetController () <UIAlertViewDelegate>
+@interface TGForwardTargetController ()
 {
     NSString *_confirmationCustomFormat;
     bool _targetMode;
@@ -67,8 +68,6 @@
 @property (nonatomic, strong) NSURL *documentFileUrl;
 @property (nonatomic, strong) NSArray *documentFileDescs;
 
-@property (nonatomic, strong) UIAlertView *currentAlert;
-
 @end
 
 @implementation TGForwardTargetController
@@ -94,6 +93,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
@@ -121,6 +121,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
@@ -153,6 +154,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately | TGContactsModeCompose];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         _contactsController.composePlaceholder = placeholder;
@@ -182,6 +184,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
@@ -264,6 +267,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
@@ -306,6 +310,7 @@
         [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
         
         _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
         _contactsController.watcher = _actionHandle;
         _contactsController.customParentViewController = self;
         
@@ -317,8 +322,6 @@
 - (void)dealloc
 {
     [self doUnloadView];
-    
-    _currentAlert.delegate = nil;
     
     _dialogListController.customParentViewController = nil;
     _contactsController.customParentViewController = nil;
@@ -360,30 +363,31 @@
         _toolbarContainerView = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height - 44 - offset, self.view.frame.size.width, 44 + offset)];
         _toolbarContainerView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
 
+        TGPresentation *presentation = TGPresentation.current;
+        
         UIView *backgroundView = [TGBackdropView viewWithLightNavigationBarStyle];
+        backgroundView.backgroundColor = presentation.pallete.barBackgroundColor;
         backgroundView.frame = _toolbarContainerView.bounds;
         backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [_toolbarContainerView addSubview:backgroundView];
         
         UIView *stripeView = [[UIView alloc] init];
         stripeView.frame = CGRectMake(0.0f, 0.0f, _toolbarContainerView.frame.size.width, TGScreenPixel);
-        stripeView.backgroundColor = UIColorRGB(0xb2b2b2);
+        stripeView.backgroundColor = presentation.pallete.barSeparatorColor;
         stripeView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
         [_toolbarContainerView addSubview:stripeView];
         
         _segmentedControl = [[UISegmentedControl alloc] initWithItems:@[TGLocalized(@"DialogList.TabTitle"), TGLocalized(@"Contacts.TabTitle")]];
-        
-        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlBackground.png") forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlSelected.png") forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        [_segmentedControl setBackgroundImage:TGComponentsImageNamed(@"ModernSegmentedControlHighlighted.png") forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
-        UIImage *dividerImage = TGComponentsImageNamed(@"ModernSegmentedControlDivider.png");
-        [_segmentedControl setDividerImage:dividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:presentation.images.segmentedControlBackgroundImage forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:presentation.images.segmentedControlSelectedImage forState:UIControlStateSelected | UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setBackgroundImage:presentation.images.segmentedControlHighlightedImage forState:UIControlStateHighlighted barMetrics:UIBarMetricsDefault];
+        [_segmentedControl setDividerImage:presentation.images.segmentedControlDividerImage forLeftSegmentState:UIControlStateNormal rightSegmentState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
         _segmentedControl.frame = CGRectMake(CGFloor((_toolbarContainerView.frame.size.width - 182.0f) / 2), 8, 182.0f, 29.0f);
         _segmentedControl.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
         
-        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: TGAccentColor(), UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
-        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor: [UIColor whiteColor], UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
+        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:presentation.pallete.navigationButtonColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateNormal];
+        [_segmentedControl setTitleTextAttributes:@{UITextAttributeTextColor:presentation.pallete.accentContrastColor, UITextAttributeTextShadowColor: [UIColor clearColor], UITextAttributeFont: TGSystemFontOfSize(13)} forState:UIControlStateSelected];
         
         [_segmentedControl setSelectedSegmentIndex:0];
         [_segmentedControl addTarget:self action:@selector(segmentedControlChanged) forControlEvents:UIControlEventValueChanged];
@@ -555,16 +559,18 @@
                 {
                     if (!_skipConfirmation)
                     {
-                        _currentAlert.delegate = nil;
-                        
                         NSString *alertText = nil;
                         if (_confirmationCustomFormat != nil)
                             alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
                         else
                             alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
-                        
-                        _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                        [_currentAlert show];
+                     
+                         __weak TGForwardTargetController *weakSelf = self;
+                         [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
+                          {
+                              __strong TGForwardTargetController *strongSelf = weakSelf;
+                              [strongSelf alertViewFinished:okButtonPressed];
+                          }];
                     }
                     else
                     {
@@ -599,16 +605,18 @@
                     _selectedTarget = conversation;
                     
                     if (!_skipConfirmation)
-                    {
-                        _currentAlert.delegate = nil;
-                        
+                    {   
                         NSString *alertText = nil;
                         if (_privacyMode)
                         {
                             NSString *alertText = [effectiveLocalization() getPluralized:@"PrivacyLastSeenSettings.AddUsers" count:(int32_t)conversation.chatParticipants.chatParticipantUids.count];
                             
-                            _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                            [_currentAlert show];
+                            __weak TGForwardTargetController *weakSelf = self;
+                            [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
+                             {
+                                 __strong TGForwardTargetController *strongSelf = weakSelf;
+                                 [strongSelf alertViewFinished:okButtonPressed];
+                             }];
                         }
                         else
                         {
@@ -624,8 +632,12 @@
                             else
                                 alertText = [NSString stringWithFormat:_confirmationDefaultGroupFormat, conversation.chatTitle];
                             
-                            _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                            [_currentAlert show];
+                            __weak TGForwardTargetController *weakSelf = self;
+                            [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
+                             {
+                                 __strong TGForwardTargetController *strongSelf = weakSelf;
+                                 [strongSelf alertViewFinished:okButtonPressed];
+                             }];
                         }
                     }
                     else
@@ -656,16 +668,18 @@
                             
                             if (!_skipConfirmation)
                             {
-                                _currentAlert.delegate = nil;
-                                
                                 NSString *alertText = nil;
                                 if (_confirmationCustomFormat != nil)
                                     alertText = [[NSString alloc] initWithFormat:_confirmationCustomFormat, user.displayName];
                                 else
                                     alertText = [NSString stringWithFormat:_confirmationDefaultPersonFormat, user.displayName];
                                 
-                                _currentAlert = [[TGAlertView alloc] initWithTitle:nil message:alertText delegate:self cancelButtonTitle:TGLocalized(@"Common.No") otherButtonTitles:TGLocalized(@"Common.Yes"), nil];
-                                [_currentAlert show];
+                                __weak TGForwardTargetController *weakSelf = self;
+                                [TGCustomAlertView presentAlertWithTitle:nil message:alertText cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
+                                {
+                                    __strong TGForwardTargetController *strongSelf = weakSelf;
+                                    [strongSelf alertViewFinished:okButtonPressed];
+                                }];
                             }
                             else
                                 [self confirmAction];
@@ -677,9 +691,9 @@
     }
 }
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+- (void)alertViewFinished:(bool)okButtonPressed
 {
-    if (buttonIndex != alertView.cancelButtonIndex && _selectedTarget != nil)
+    if (okButtonPressed && _selectedTarget != nil)
     {
         if (_blockMode || _privacyMode)
         {
@@ -693,9 +707,6 @@
             [self confirmAction];
         }
     }
-
-    _currentAlert.delegate = nil;
-    _currentAlert = nil;
 }
 
 - (void)confirmAction
@@ -704,7 +715,7 @@
     {
         TGConversation *conversation = (TGConversation *)_selectedTarget;
         if (conversation.isChannel && !conversation.currentUserCanSendMessages) {
-            [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Forward.ChannelReadOnly") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Forward.ChannelReadOnly") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             return;
         }
     }
@@ -740,21 +751,30 @@
                 
                 if (user.uid == TGTelegraphInstance.clientUserId && _forwardMessages.count > 0)
                 {
-                    int64_t fromPeerId = [_forwardMessages.firstObject cid];
-                    int64_t fromPeerAccessHash = [TGDatabaseInstance() loadConversationWithId:fromPeerId].accessHash;
-                    
                     NSMutableArray *batches = [[NSMutableArray alloc] init];
                     NSUInteger i = 0;
                     int64_t currentGroupedId = 0;
+                    int64_t currentPeerId = 0;
+                    NSMutableDictionary *accessHashes = [[NSMutableDictionary alloc] init];
                     for (TGMessage *message in _forwardMessages)
                     {
+                        int64_t peerId = message.cid;
+                        int64_t accessHash = 0;
+                        if (accessHashes[@(peerId)] != nil) {
+                            accessHash = [accessHashes[@(peerId)] int64Value];
+                        } else {
+                            accessHash = [TGDatabaseInstance() loadConversationWithId:peerId].accessHash;
+                            accessHashes[@(peerId)] = @(accessHash);
+                        }
+                        
                         int64_t groupedId = 0;
                         if (message.groupedId != 0 && [self.completeGroups containsObject:@(message.groupedId)])
                             groupedId = message.groupedId;
                         
-                        if (groupedId != currentGroupedId && batches.count > 0)
+                        if ((groupedId != currentGroupedId || currentPeerId != peerId) && batches.count > 0)
                             i++;
                         
+                        currentPeerId = peerId;
                         currentGroupedId = groupedId;
                         
                         NSMutableArray *batch = nil;
@@ -765,7 +785,7 @@
                         else
                         {
                             batch = [[NSMutableArray alloc] init];
-                            NSDictionary *batchDict = @{@"items": batch, @"grouped": @(currentGroupedId != 0)};
+                            NSDictionary *batchDict = @{@"items": batch, @"peerId": @(peerId), @"accessHash": @(accessHash), @"grouped": @(currentGroupedId != 0)};
                             [batches addObject:batchDict];
                         }
                         
@@ -775,6 +795,8 @@
                     for (NSDictionary *batch in batches)
                     {
                         bool grouped = [batch[@"grouped"] boolValue];
+                        int64_t fromPeerId = [batch[@"peerId"] int64Value];
+                        int64_t fromPeerAccessHash = [batch[@"accessHash"] int64Value];
                         [[TGSendMessageSignals forwardMessagesWithMessageIds:batch[@"items"] toPeerIds:@[@(user.uid)] fromPeerId:fromPeerId fromPeerAccessHash:fromPeerAccessHash grouped:grouped] startWithNext:nil];
                     }
                     

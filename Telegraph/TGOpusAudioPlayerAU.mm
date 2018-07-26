@@ -35,14 +35,16 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     NSString *_filePath;
     NSInteger _fileSize;
     
+    CGFloat _rate;
     bool _isSeekable;
     int64_t _totalPcmDuration;
     
     bool _isPaused;
     
     OggOpusFile *_opusFile;
-    AudioComponentInstance _audioUnit;
-    bool _audioUnitInitialized;
+    AUGraph _graph;
+    AudioComponentInstance _timePitchAudioUnit;
+    bool _audioGraphInitialized;
     
     TGAudioBuffer *_filledAudioBuffers[TGOpusAudioPlayerBufferCount];
     int _filledAudioBufferCount;
@@ -76,6 +78,7 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     if (self != nil)
     {
         _filePath = path;
+        _rate = 1.0f;
         
         static intptr_t nextPlayerId = 1;
         _playerId = nextPlayerId++;
@@ -127,24 +130,34 @@ static volatile OSSpinLock audioPositionLock = OS_SPINLOCK_INIT;
     OggOpusFile *opusFile = _opusFile;
     _opusFile = NULL;
     
-    AudioUnit audioUnit = _audioUnit;
-    _audioUnit = NULL;
-    _audioUnitInitialized = false;
+    AUGraph audioGraph = _graph;
+    _graph = NULL;
+    _timePitchAudioUnit = NULL;
+    _audioGraphInitialized = false;
     
     intptr_t objectId = (intptr_t)self;
     
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
     {
-        if (audioUnit != NULL)
+        if (audioGraph != NULL)
         {
             OSStatus status = noErr;
-            status = AudioOutputUnitStop(audioUnit);
-            if (status != noErr)
-                TGLog(@"[TGOpusAudioPlayer#%x AudioOutputUnitStop failed: %d]", objectId, (int)status);
             
-            status = AudioComponentInstanceDispose(audioUnit);
+            status = AUGraphStop(audioGraph);
             if (status != noErr)
-                TGLog(@"[TGOpusAudioRecorder#%x AudioComponentInstanceDispose failed: %d]", objectId, (int)status);
+                TGLog(@"[TGOpusAudioPlayer#%x AUGraphStop failed: %d]", objectId, (int)status);
+            
+            status = AUGraphUninitialize(audioGraph);
+            if (status != noErr)
+                TGLog(@"[TGOpusAudioPlayer#%x AUGraphUninitialize failed: %d]", objectId, (int)status);
+            
+            status = AUGraphClose(audioGraph);
+            if (status != noErr)
+                TGLog(@"[TGOpusAudioPlayer#%x AUGraphClose failed: %d]", objectId, (int)status);
+            
+            status = DisposeAUGraph(audioGraph);
+            if (status != noErr)
+                TGLog(@"[TGOpusAudioPlayer#%x DisposeAUGraph failed: %d]", objectId, (int)status);
         }
         
         if (opusFile != NULL)
@@ -245,6 +258,28 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
     return noErr;
 }
 
+- (void)setRate:(CGFloat)rate {
+    [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
+    {
+        _rate = rate;
+        
+        if (_timePitchAudioUnit != NULL)
+            AudioUnitSetParameter(_timePitchAudioUnit, kTimePitchParam_Rate, kAudioUnitScope_Global, 0, (Float32)_rate, 0);
+    }];
+}
+
+- (bool)perform:(OSStatus)status error:(NSString *)error
+{
+    if (status == noErr) {
+        return true;
+    }
+    else {
+        TGLog(@"[TGOpusAudioPlayer#%x %@ failed: %d]", self, error, (int)status);
+        [self cleanupAndReportError];
+        return false;
+    }
+}
+
 - (void)playFromPosition:(NSTimeInterval)position
 {
     [[TGAudioPlayer _playerQueue] dispatchOnQueue:^
@@ -252,7 +287,7 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
         if (!_isPaused)
             return;
         
-        if (_audioUnit == NULL)
+        if (_graph == NULL)
         {
             [self _beginAudioSession];
             
@@ -264,33 +299,65 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
             {
                 TGLog(@"[TGOpusAudioPlayer#%p op_open_file failed: %d]", self, openError);
                 [self cleanupAndReportError];
-                
                 return;
             }
             
             _isSeekable = op_seekable(_opusFile);
             _totalPcmDuration = op_pcm_total(_opusFile, -1);
             
+            if (![self perform: NewAUGraph(&_graph) error:@"NewAUGraph"])
+                return;
+            
+            AUNode converterNode;
+            AudioComponentDescription converterDescription;
+            converterDescription.componentType = kAudioUnitType_FormatConverter;
+            converterDescription.componentSubType = kAudioUnitSubType_AUConverter;
+            converterDescription.componentManufacturer = kAudioUnitManufacturer_Apple;
+            if (![self perform: AUGraphAddNode(_graph, &converterDescription, &converterNode) error:@"AUGraphAddNode converter"])
+                return;
+            
+            AUNode timePitchNode;
+            AudioComponentDescription timePitchDescription;
+            timePitchDescription.componentType = kAudioUnitType_FormatConverter;
+            timePitchDescription.componentSubType = kAudioUnitSubType_AUiPodTimeOther;
+            timePitchDescription.componentManufacturer = kAudioUnitManufacturer_Apple;
+            if (![self perform: AUGraphAddNode(_graph, &timePitchDescription, &timePitchNode) error:@"AUGraphAddNode timePitch"])
+                return;
+            
+            AUNode outputNode;
             AudioComponentDescription desc;
             desc.componentType = kAudioUnitType_Output;
             desc.componentSubType = kAudioUnitSubType_RemoteIO;
             desc.componentFlags = 0;
             desc.componentFlagsMask = 0;
             desc.componentManufacturer = kAudioUnitManufacturer_Apple;
-            AudioComponent inputComponent = AudioComponentFindNext(NULL, &desc);
-            AudioComponentInstanceNew(inputComponent, &_audioUnit);
-            
-            OSStatus status = noErr;
-            
-            static const UInt32 one = 1;
-            status = AudioUnitSetProperty(_audioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, kOutputBus, &one, sizeof(one));
-            if (status != noErr)
-            {
-                TGLog(@"[TGOpusAudioPlayer#%x AudioUnitSetProperty kAudioOutputUnitProperty_EnableIO failed: %d]", self, (int)status);
-                [self cleanupAndReportError];
-                
+            if (![self perform: AUGraphAddNode(_graph, &desc, &outputNode) error:@"AUGraphAddNode output"])
                 return;
-            }
+
+            if (![self perform: AUGraphOpen(_graph) error:@"AUGraphOpen"])
+                return;
+            
+            if (![self perform: AUGraphConnectNodeInput(_graph, converterNode, 0, timePitchNode, 0) error:@"AUGraphConnectNodeInput converter"])
+                return;
+            
+            if (![self perform: AUGraphConnectNodeInput(_graph, timePitchNode, 0, outputNode, 0) error:@"AUGraphConnectNodeInput timePitch"])
+                return;
+            
+            AudioComponentInstance converterAudioUnit;
+            if (![self perform: AUGraphNodeInfo(_graph, converterNode, &converterDescription, &converterAudioUnit) error:@"AUGraphNodeInfo converter"])
+                return;
+            
+            AudioComponentInstance timePitchAudioUnit;
+            if (![self perform: AUGraphNodeInfo(_graph, timePitchNode, &timePitchDescription, &timePitchAudioUnit) error:@"AUGraphNodeInfo timePitch"])
+                return;
+
+            AudioUnitSetParameter(timePitchAudioUnit, kTimePitchParam_Rate, kAudioUnitScope_Global, 0, (Float32)_rate, 0);
+            
+            _timePitchAudioUnit = timePitchAudioUnit;
+            
+            AudioComponentInstance outputAudioUnit;
+            if (![self perform: AUGraphNodeInfo(_graph, outputNode, &desc, &outputAudioUnit) error:@"AUGraphNodeInfo output"])
+                return;
             
             AudioStreamBasicDescription outputAudioFormat;
             outputAudioFormat.mSampleRate = TGOpusAudioPlayerSampleRate;
@@ -301,34 +368,27 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
             outputAudioFormat.mBitsPerChannel = 16;
             outputAudioFormat.mBytesPerPacket = 2;
             outputAudioFormat.mBytesPerFrame = 2;
-            status = AudioUnitSetProperty(_audioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, kOutputBus, &outputAudioFormat, sizeof(outputAudioFormat));
-            if (status != noErr)
-            {
-                TGLog(@"[TGOpusAudioPlayer#%x AudioUnitSetProperty kAudioUnitProperty_StreamFormat failed: %d]", self, (int)status);
-                [self cleanupAndReportError];
-                
-                return;
-            }
+            
+            AudioUnitSetProperty(converterAudioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &outputAudioFormat, sizeof(outputAudioFormat));
+            
+            AudioStreamBasicDescription streamFormat;
+            AudioUnitSetProperty(converterAudioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &streamFormat, sizeof(streamFormat));
+            AudioUnitSetProperty(timePitchAudioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, 0, &streamFormat, sizeof(streamFormat));
+            AudioUnitSetProperty(converterAudioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 0, &streamFormat, sizeof(streamFormat));
             
             AURenderCallbackStruct callbackStruct;
             callbackStruct.inputProc = &TGOpusAudioPlayerCallback;
             callbackStruct.inputProcRefCon = (void *)_playerId;
-            if (AudioUnitSetProperty(_audioUnit, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Global, kOutputBus, &callbackStruct, sizeof(callbackStruct)) != noErr)
-            {
-                TGLog(@"[TGOpusAudioPlayer#%x AudioUnitSetProperty kAudioUnitProperty_SetRenderCallback failed]", self);
-                [self cleanupAndReportError];
-                
-                return;
-            }
             
-            status = AudioUnitInitialize(_audioUnit);
-            if (status != noErr)
-            {
-                TGLog(@"[TGOpusAudioRecorder#%x AudioUnitInitialize failed: %d]", self, (int)status);
-                [self cleanup];
-                
+            if (![self perform: AUGraphSetNodeInputCallback(_graph, converterNode, 0, &callbackStruct) error:@"AUGraphSetNodeInputCallback"])
                 return;
-            }
+            
+            static const UInt32 one = 1;
+            if (![self perform: AudioUnitSetProperty(outputAudioUnit, kAudioOutputUnitProperty_EnableIO, kAudioUnitScope_Output, kOutputBus, &one, sizeof(one)) error:@"AudioUnitSetProperty EnableIO"])
+                return;
+            
+            if (![self perform: AUGraphInitialize(_graph) error:@"AUGraphInitialize"])
+                return;
             
             TG_SYNCHRONIZED_BEGIN(filledBuffersLock);
             activeAudioPlayers[_playerId] = self;
@@ -352,16 +412,12 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
                 }
             }
             
-            status = AudioOutputUnitStart(_audioUnit);
-            if (status != noErr)
-            {
-                TGLog(@"[TGOpusAudioRecorder#%x AudioOutputUnitStart failed: %d]", self, (int)status);
-                [self cleanupAndReportError];
-            }
+            if (![self perform: AUGraphStart(_graph) error:@"AUGraphStart"])
+                return;
             
-            _audioUnitInitialized = true;
+            _audioGraphInitialized = true;
         }
-        else if (!_audioUnitInitialized) {
+        else if (!_audioGraphInitialized) {
             [self _beginAudioSession];
             
             if (_isSeekable && position >= 0.0)
@@ -388,8 +444,8 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
             self->_filledAudioBufferPosition = 0;
             TG_SYNCHRONIZED_END(filledBuffersLock);
             
-            AudioOutputUnitStart(_audioUnit);
-            _audioUnitInitialized = true;
+            AUGraphStart(_graph);
+            _audioGraphInitialized = true;
         }
         else
         {
@@ -529,9 +585,9 @@ static OSStatus TGOpusAudioPlayerCallback(void *inRefCon, __unused AudioUnitRend
         }
         TG_SYNCHRONIZED_END(filledBuffersLock);
         
-        if (_audioUnitInitialized) {
-            AudioOutputUnitStop(_audioUnit);
-            _audioUnitInitialized = false;
+        if (_audioGraphInitialized) {
+            AUGraphStop(_graph);
+            _audioGraphInitialized = false;
         }
         
         if (completion) {

@@ -7,11 +7,6 @@
 
 @interface TLRPChelp_getAppUpdate : TLMetaRpc
 
-@property (nonatomic, retain) NSString *device_model;
-@property (nonatomic, retain) NSString *system_version;
-@property (nonatomic, retain) NSString *app_version;
-@property (nonatomic, retain) NSString *lang_code;
-
 - (Class)responseClass;
 
 - (int)impliedResponseSignature;

@@ -305,7 +305,7 @@
 "Conversation.Contact" = "Contact";
 "Conversation.BlockUser" = "Block User";
 "Conversation.UnblockUser" = "Unblock User";
-"Conversation.UnsupportedMedia" = "This message is not supported on your version of Telegram. Update the app to view:\nhttp://telegram.org/update";
+"Conversation.UnsupportedMedia" = "This message is not supported on your version of Telegram. Update the app to view:\nhttps://telegram.org/update";
 "Conversation.EncryptionWaiting" = "Waiting for %@ to get online...";
 "Conversation.EncryptionProcessing" = "Exchanging encryption keys...";
 "Conversation.EmptyPlaceholder" = "No messages here yet...";
@@ -508,7 +508,7 @@
 "Settings.ChatBackground" = "Chat Background";
 "Settings.Support" = "Ask a Question";
 "Settings.FAQ" = "Telegram FAQ";
-"Settings.FAQ_URL" = "http://telegram.org/faq#general";
+"Settings.FAQ_URL" = "https://telegram.org/faq#general";
 "Settings.FAQ_Intro" = "Please note that Telegram Support is done by volunteers. We try to respond as quickly as possible, but it may take a while.\n\nPlease take a look at the Telegram FAQ: it has important troubleshooting tips and answers to most questions.";
 "Settings.FAQ_Button" = "FAQ";
 "Settings.SaveIncomingPhotos" = "Save Incoming Photos";
@@ -1785,6 +1785,7 @@
 "StickerPack.RemoveStickerCount_0" = "Remove %@ Stickers";
 
 "StickerPack.HideStickers" = "Hide Stickers";
+"StickerPack.ShowStickers" = "Show Stickers";
 
 "ShareMenu.ShareTo" = "Share to";
 "ShareMenu.SelectChats" = "Select chats";
@@ -2835,3 +2836,385 @@ Unused sets are archived when you add more.";
 "Conversation.ClearPrivateHistory" = "This will delete all messages and media in this chat from your Telegram cloud. Your chat partner will still have them.";
 "Conversation.ClearGroupHistory" = "This will delete all messages and media in this chat from your Telegram cloud. Other members of the group will still have them.";
 "Conversation.ClearSecretHistory" = "This will delete all messages and media in this chat for both you and your chat partner.";
+"Conversation.ClearSelfHistory" = "This will delete all messages and media in this chat from your Telegram cloud.";
+
+"MediaPicker.LivePhotoDescription" = "The live photo will be sent as a GIF.";
+
+"Settings.Appearance" = "Appearance";
+"Appearance.Title" = "Appearance";
+"Appearance.TextSize" = "TEXT SIZE";
+"Appearance.Preview" = "CHAT PREVIEW";
+"Appearance.ColorTheme" = "COLOR THEME";
+"Appearance.ThemeDayClassic" = "Day Classic";
+"Appearance.ThemeDay" = "Day";
+"Appearance.ThemeNight" = "Night";
+"Appearance.ThemeNightBlue" = "Night Blue";
+"Appearance.PreviewReplyAuthor" = "Lucio";
+"Appearance.PreviewReplyText" = "Reinhart, we need to find you some...";
+"Appearance.PreviewIncomingText" = "Ah you kids today with techno music! Enjoy the classics, like Hasselhoff!";
+"Appearance.PreviewOutgoingText" = "I can't take you seriously right now. Sorry..";
+"Appearance.AccentColor" = "Accent Color";
+"Appearance.PickAccentColor" = "Pick an Accent Color";
+
+"Appearance.AutoNightTheme" = "Auto-Night Theme";
+"Appearance.AutoNightThemeDisabled" = "Disabled";
+
+"AutoNightTheme.Title" = "Auto-Night Theme";
+"AutoNightTheme.Disabled" = "Disabled";
+"AutoNightTheme.Scheduled" = "Scheduled";
+"AutoNightTheme.Automatic" = "Automatic";
+
+"AutoNightTheme.ScheduleSection" = "SCHEDULE";
+"AutoNightTheme.UseSunsetSunrise" = "Use Location Sunset & Sunrise";
+"AutoNightTheme.ScheduledFrom" = "From";
+"AutoNightTheme.ScheduledTo" = "To";
+
+"AutoNightTheme.UpdateLocation" = "Update Location";
+"AutoNightTheme.LocationHelp" = "Calculating sunset & sunrise times requires a one-time check of your approximate location. Note that this location is stored locally on your device only.\n\nSunset: %@\nSunrise: %@";
+"AutoNightTheme.NotAvailable" = "N/A";
+
+"AutoNightTheme.AutomaticSection" = "BRIGHTNESS THRESHOLD";
+"AutoNightTheme.AutomaticHelp" = "Switch to night theme when brightness is %@%% or less. Auto-brightness should be enabled for this feature to work correctly.";
+
+"AutoNightTheme.PreferredTheme" = "PREFERRED THEME";
+
+"AuthSessions.Sessions" = "Sessions";
+"AuthSessions.LoggedIn" = "Websites";
+"AuthSessions.LogOutApplications" = "Disconnect All Websites";
+"AuthSessions.LogOutApplicationsHelp" = "You can log in on websites that support signing in with Telegram.";
+"AuthSessions.LoggedInWithTelegram" = "CONNECTED WEBSITES";
+"AuthSessions.LogOut" = "Disconnect";
+"AuthSessions.Message" = "You allowed this bot to message you when you logged in on %@.";
+
+"Conversation.ContextMenuReport" = "Report";
+
+"Stickers.Search" = "Search Stickers";
+"Stickers.NoStickersFound" = "No Stickers Found";
+
+"Camera.Discard" = "Discard All";
+
+"Stickers.SuggestStickers" = "Suggest Stickers by Emoji";
+"Stickers.SuggestAll" = "All Sets";
+"Stickers.SuggestAdded" = "My Sets";
+"Stickers.SuggestNone" = "None";
+
+"Settings.Proxy" = "Proxy";
+"Settings.ProxyDisabled" = "Disabled";
+"Settings.ProxyConnecting" = "Connecting...";
+"Settings.ProxyConnected" = "Connected";
+
+"SocksProxySetup.UseProxy" = "Use Proxy";
+"SocksProxySetup.SavedProxies" = "SAVED PROXIES";
+"SocksProxySetup.AddProxy" = "Add Proxy";
+"SocksProxySetup.SaveProxy" = "Save Proxy";
+"SocksProxySetup.ConnectAndSave" = "Connect Proxy";
+"SocksProxySetup.AddProxyTitle" = "Add Proxy";
+"SocksProxySetup.ProxyDetailsTitle" = "Proxy Details";
+"SocksProxySetup.ProxyStatusChecking" = "checking...";
+"SocksProxySetup.ProxyStatusPing" = "%@ ms ping";
+"SocksProxySetup.ProxyStatusUnavailable" = "unavailable";
+"SocksProxySetup.ProxyStatusConnecting" = "connecting";
+"SocksProxySetup.ProxyStatusConnected" = "connected";
+
+"SocksProxySetup.ProxyType" = "TYPE";
+"SocksProxySetup.ProxySocks5" = "SOCKS5";
+"SocksProxySetup.ProxyTelegram" = "MTProto";
+"SocksProxySetup.HostnamePlaceholder" = "Server";
+"SocksProxySetup.PortPlaceholder" = "Port";
+"SocksProxySetup.UsernamePlaceholder" = "Username";
+"SocksProxySetup.PasswordPlaceholder" = "Password";
+"SocksProxySetup.Secret" = "Secret";
+"SocksProxySetup.SecretPlaceholder" = "Secret";
+"SocksProxySetup.RequiredCredentials" = "CREDENTIALS";
+
+"SocksProxySetup.Connecting" = "Connecting...";
+"SocksProxySetup.FailedToConnect" = "Failed to connect";
+
+"SocksProxySetup.ProxyEnabled" = "Proxy\nEnabled";
+
+"DialogList.AdLabel" = "Proxy Sponsor";
+"DialogList.AdNoticeAlert" = "The proxy you are using displays a sponsored channel in your chat list.";
+"SocksProxySetup.AdNoticeHelp" = "This proxy may display a sponsored channel in your chat list. This doesn't reveal your Telegram traffic.";
+
+"SocksProxySetup.ShareProxyList" = "Share Proxy List";
+
+"Privacy.SecretChatsTitle" = "SECRET CHATS";
+"Privacy.SecretChatsLinkPreviews" = "Link Previews";
+"Privacy.SecretChatsLinkPreviewsHelp" = "Link previews will be generated on Telegram servers. We do not store data about the links you send.";
+
+"Privacy.ContactsTitle" = "CONTACTS";
+"Privacy.ContactsSync" = "Sync Contacts";
+"Privacy.ContactsSyncHelp" = "Turn on to continuously sync contacts from this device with your account.";
+"Privacy.ContactsReset" = "Delete Synced Contacts";
+"Privacy.ContactsResetConfirmation" = "This will remove your contacts from the Telegram servers.\nIf 'Sync Contacts' is enabled, contacts will be re-synced.";
+
+"Login.TermsOfServiceDecline" = "Decline";
+"Login.TermsOfServiceAgree" = "Accept & Continue";
+
+"Login.TermsOfServiceSignupDecline" = "We're very sorry, but this means you can't sign up for Telegram.\n\nUnlike others, we don't use your data for ad targeting or other commercial purposes. Telegram only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy & Security settings.\n\nBut if you're generally not OK with Telegram's modest needs, it won't be possible for us to provide this service.";
+
+"UserInfo.BotPrivacy" = "Privacy Policy";
+
+"PrivacyPolicy.Title" = "Privacy Policy and Terms of Service";
+"PrivacyPolicy.Decline" = "Decline";
+"PrivacyPolicy.Accept" = "Accept & Continue";
+
+"PrivacyPolicy.AgeVerificationTitle" = "Age Verification";
+"PrivacyPolicy.AgeVerificationMessage" = "Tap Agree to confirm that you are %@ or over.";
+"PrivacyPolicy.AgeVerificationAgree" = "Agree";
+
+"PrivacyPolicy.DeclineTitle" = "Decline";
+"PrivacyPolicy.DeclineMessage" = "We're very sorry, but this means we must part ways here. Unlike others, we don't use your data for ad targeting or other commercial purposes. Telegram only stores the information it needs to function as a feature-rich cloud service. You can adjust how we use your data (e.g., delete synced contacts) in Privacy & Security settings.\n\nBut if you're generally not OK with Telegram's modest needs, it won't be possible for us to provide this service.";
+"PrivacyPolicy.DeclineDeclineAndDelete" = "Decline and Delete";
+
+"PrivacyPolicy.DeclineLastWarning" = "Warning, this will irreversibly delete your Telegram account along with all the data you store in the Telegram cloud.\n\nWe will provide a tool to download your data before June, 23 – so you may want to wait a little before deleting.";
+"PrivacyPolicy.DeclineDeleteNow" = "Delete Now";
+
+"Settings.Passport" = "Telegram Passport";
+
+"Passport.Title" = "Passport";
+
+"Passport.RequestHeader" = "%@ requests access to your personal data to sign you up for their services.";
+
+"Passport.InfoTitle" = "What is Telegram Passport?";
+"Passport.InfoText" = "With **Telegram Passport** you can easily sign up for websites and services that require identity verification.\n\nYour information, personal data, and documents are protected by end-to-end encryption. Nobody, including Telegram, can access them without your permission.";
+"Passport.InfoLearnMore" = "Learn More";
+"Passport.InfoFAQ_URL" = "https://telegram.org/faq#passport";
+
+"Passport.PassportInformation" = "PASSPORT INFORMATION";
+"Passport.RequestedInformation" = "REQUESTED INFORMATION";
+"Passport.FieldIdentity" = "Identity Document";
+"Passport.FieldIdentityDetailsHelp" = "Fill in your personal details";
+"Passport.FieldIdentityUploadHelp" = "Upload a scan of your passport or other ID";
+"Passport.FieldIdentitySelfieHelp" = "Take a selfie with your document";
+"Passport.FieldAddress" = "Residential Address";
+"Passport.FieldAddressHelp" = "Please provide your address";
+"Passport.FieldAddressUploadHelp" = "Upload proof of your address";
+"Passport.FieldPhone" = "Phone Number";
+"Passport.FieldPhoneHelp" = "Provide your contact phone number";
+"Passport.FieldEmail" = "Email Address";
+"Passport.FieldEmailHelp" = "Provide your contact email address";
+"Passport.PrivacyPolicy" = "You accept the [%1$@ Privacy Policy] and allow their @%2$@ to send you messages.";
+"Passport.AcceptHelp" = "You are sending your documents directly to %1$@ and allowing their @%2$@ to send you messages.";
+"Passport.Authorize" = "Authorize";
+
+"Passport.DeletePassport" = "Delete Telegram Passport";
+"Passport.DeletePassportConfirmation" = "Are you sure you want to delete your Telegram Passport? All details will be lost.";
+
+"Passport.PasswordHelp" = "Please enter your Telegram Password\nto decrypt your data";
+"Passport.PasswordPlaceholder" = "Enter your password";
+"Passport.InvalidPasswordError" = "Invalid password. Please try again.";
+"Passport.FloodError" = "Limit exceeded. Please try again later.";
+"Passport.UpdateRequiredError" = "Sorry, your Telegram app is out of date and can’t handle this request. Please update Telegram.";
+
+"Passport.ForgottenPassword" = "Forgotten Password";
+"Passport.PasswordReset" = "All documents uploaded to your Telegram Passport will be lost. You will be able to upload new documents.";
+
+"Passport.PasswordDescription" = "Please create a password to secure your personal data with end-to-end encryption.\n\nThis password will also be required whenever you log in to Telegram on a new device.";
+"Passport.PasswordCreate" = "Create a Password";
+"Passport.PasswordNext" = "Next";
+
+"Passport.DeletePersonalDetails" = "Delete Personal Details";
+"Passport.DeletePersonalDetailsConfirmation" = "Are you sure you want to delete personal details?";
+
+"Passport.DeleteAddress" = "Delete Address";
+"Passport.DeleteAddressConfirmation" = "Are you sure you want to delete address?";
+
+"Passport.DeleteDocument" = "Delete Document";
+"Passport.DeleteDocumentConfirmation" = "Are you sure you want to delete this document? All details will be lost.";
+
+"Passport.Scans" = "SCANS";
+"Passport.Scans.Upload" = "Upload Scan";
+"Passport.Scans.UploadNew" = "Upload Additional Scan";
+"Passport.Scans.ScanIndex" = "Scan %@";
+
+"Passport.Identity.TypePersonalDetails" = "Personal Details";
+"Passport.Identity.TypePassport" = "Passport";
+"Passport.Identity.TypePassportUploadScan" = "Upload a scan of your passport";
+"Passport.Identity.TypeInternalPassport" = "Internal Passport";
+"Passport.Identity.TypeInternalPassportUploadScan" = "Upload a scan of your internal passport";
+"Passport.Identity.TypeIdentityCard" = "Identity Card";
+"Passport.Identity.TypeIdentityCardUploadScan" = "Upload a scan of your identity card";
+"Passport.Identity.TypeDriversLicense" = "Driver's License";
+"Passport.Identity.TypeDriversLicenseUploadScan" = "Upload a scan of your driver's license";
+
+"Passport.Identity.AddPersonalDetails" = "Add Personal Details";
+"Passport.Identity.AddPassport" = "Add Passport";
+"Passport.Identity.AddInternalPassport" = "Add Internal Passport";
+"Passport.Identity.AddIdentityCard" = "Add Identity Card";
+"Passport.Identity.AddDriversLicense" = "Add Driver's License";
+
+"Passport.Identity.EditPersonalDetails" = "Edit Personal Details";
+"Passport.Identity.EditPassport" = "Edit Passport";
+"Passport.Identity.EditInternalPassport" = "Edit Internal Passport";
+"Passport.Identity.EditIdentityCard" = "Edit Identity Card";
+"Passport.Identity.EditDriversLicense" = "Edit Driver's License";
+
+"Passport.Identity.DocumentDetails" = "DOCUMENT DETAILS";
+"Passport.Identity.Name" = "First Name";
+"Passport.Identity.NamePlaceholder" = "First Name";
+"Passport.Identity.Surname" = "Last Name";
+"Passport.Identity.SurnamePlaceholder" = "Last Name";
+"Passport.Identity.DateOfBirth" = "Date of Birth";
+"Passport.Identity.DateOfBirthPlaceholder" = "Date of Birth";
+"Passport.Identity.Gender" = "Gender";
+"Passport.Identity.GenderPlaceholder" = "Gender";
+"Passport.Identity.GenderMale" = "Male";
+"Passport.Identity.GenderFemale" = "Female";
+"Passport.Identity.Country" = "Citizenship";
+"Passport.Identity.CountryPlaceholder" = "Citizenship";
+"Passport.Identity.ResidenceCountry" = "Residence";
+"Passport.Identity.ResidenceCountryPlaceholder" = "Residence";
+"Passport.Identity.DocumentNumber" = "Document #";
+"Passport.Identity.DocumentNumberPlaceholder" = "Document Number";
+"Passport.Identity.IssueDate" = "Issue Date";
+"Passport.Identity.IssueDatePlaceholder" = "Issue Date";
+"Passport.Identity.ExpiryDate" = "Expiry Date";
+"Passport.Identity.ExpiryDatePlaceholder" = "Expiry Date";
+"Passport.Identity.ExpiryDateNone" = "None";
+"Passport.Identity.DoesNotExpire" = "Does Not Expire";
+
+"Passport.Identity.FilesTitle" = "REQUESTED FILES";
+"Passport.Identity.ScansHelp" = "The document must contain your photograph, first and last name, date of birth, document number, country of issue, and expiry date.";
+"Passport.Identity.FilesView" = "View";
+"Passport.Identity.FilesUploadNew" = "Upload New";
+"Passport.Identity.MainPage" = "Main Page";
+"Passport.Identity.MainPageHelp" = "Upload a main page photo of the document";
+"Passport.Identity.FrontSide" = "Front Side";
+"Passport.Identity.FrontSideHelp" = "Upload a front side photo of the document";
+"Passport.Identity.ReverseSide" = "Reverse Side";
+"Passport.Identity.ReverseSideHelp" = "Upload a reverse side photo of the document";
+"Passport.Identity.Selfie" = "Selfie";
+"Passport.Identity.SelfieHelp" = "Upload a selfie holding this document";
+
+"Passport.Address.TypeResidentialAddress" = "Residential Address";
+"Passport.Address.TypePassportRegistration" = "Passport Registration";
+"Passport.Address.TypeUtilityBill" = "Utility Bill";
+"Passport.Address.TypeBankStatement" = "Bank Statement";
+"Passport.Address.TypeRentalAgreement" = "Tenancy Agreement";
+"Passport.Address.TypeTemporaryRegistration" = "Temporary Registration";
+
+"Passport.Address.AddResidentialAddress" = "Add Residential Address";
+"Passport.Address.AddPassportRegistration" = "Add Passport Registration";
+"Passport.Address.AddUtilityBill" = "Add Utility Bill";
+"Passport.Address.AddBankStatement" = "Add Bank Statement";
+"Passport.Address.AddRentalAgreement" = "Add Tenancy Agreement";
+"Passport.Address.AddTemporaryRegistration" = "Add Temporary Registration";
+
+"Passport.Address.EditResidentialAddress" = "Edit Residential Address";
+"Passport.Address.EditPassportRegistration" = "Edit Passport Registration";
+"Passport.Address.EditUtilityBill" = "Edit Utility Bill";
+"Passport.Address.EditBankStatement" = "Edit Bank Statement";
+"Passport.Address.EditRentalAgreement" = "Edit Tenancy Agreement";
+"Passport.Address.EditTemporaryRegistration" = "Edit Temporary Registration";
+
+"Passport.Address.Address" = "ADDRESS";
+"Passport.Address.Street" = "Street";
+"Passport.Address.Street1Placeholder" = "Street and number, P.O. box";
+"Passport.Address.Street2Placeholder" = "Apt., suite, unit, building, floor";
+"Passport.Address.Postcode" = "Postcode";
+"Passport.Address.PostcodePlaceholder" = "Postcode";
+"Passport.Address.City" = "City";
+"Passport.Address.CityPlaceholder" = "City";
+"Passport.Address.Region" = "Region";
+"Passport.Address.RegionPlaceholder" = "State / Province / Region";
+"Passport.Address.Country" = "Country";
+"Passport.Address.CountryPlaceholder" = "Country";
+
+"Passport.Address.ScansHelp" = "The document must contain your first and last name, your residential address, a stamp / barcode / QR code / logo, and issue date, no more than 3 months ago";
+
+"Passport.Phone.Title" = "Phone Number";
+"Passport.Phone.UseTelegramNumber" = "Use %@";
+"Passport.Phone.UseTelegramNumberHelp" = "Use the same phone number as on Telegram.";
+"Passport.Phone.EnterOtherNumber" = "OR ENTER NEW PHONE NUMBER";
+"Passport.Phone.Help" = "Note: You will receive a confirmation code on the phone number you provide.";
+"Passport.Phone.Delete" = "Delete Phone Number";
+
+"Passport.Email.Title" = "Email";
+"Passport.Email.UseTelegramEmail" = "Use %@";
+"Passport.Email.UseTelegramEmailHelp" = "Use the same address as on Telegram.";
+"Passport.Email.EnterOtherEmail" = "OR ENTER NEW EMAIL ADDRESS";
+"Passport.Email.EmailPlaceholder" = "Enter your email address";
+"Passport.Email.Help" = "Note: You will receive a confirmation code to the email address you provide.";
+"Passport.Email.Delete" = "Delete Email Address";
+"Passport.Email.CodeHelp" = "Please enter the confirmation code we've just sent to %@";
+
+"Notification.PassportValuesSentMessage" = "%1$@ received the following documents: %2$@";
+"Notification.PassportValuePersonalDetails" = "personal details";
+"Notification.PassportValueProofOfIdentity" = "proof of identity";
+"Notification.PassportValueAddress" = "your address";
+"Notification.PassportValueProofOfAddress" = "proof of address";
+"Notification.PassportValuePhone" = "phone number";
+"Notification.PassportValueEmail" = "email address";
+
+"FastTwoStepSetup.HintSection" = "HINT";
+"FastTwoStepSetup.HintPlaceholder" = "Enter a hint";
+"FastTwoStepSetup.HintHelp" = "Please create an optional hint for your password.";
+
+"Passport.DiscardMessageTitle" = "Discard Changes";
+"Passport.DiscardMessageDescription" = "Are you sure you want to discard all changes?";
+"Passport.DiscardMessageAction" = "Discard";
+
+"Passport.ScanPassport" = "Scan Your Passport";
+"Passport.ScanPassportHelp" = "Scan your passport or identity card with machine-readable zone to fill personal details automatically.";
+
+"TwoStepAuth.PasswordRemovePassportConfirmation" = "Are you sure you want to disable your password?\n\nWarning! All data saved in your Telegram Passport will be lost!";
+
+"Application.Update" = "Update";
+
+"Conversation.EditingMessagePanelMedia" = "Tap to edit media";
+"Conversation.EditingMessageMediaChange" = "Change Photo or Video";
+"Conversation.EditingMessageMediaEditCurrentPhoto" = "Edit Current Photo";
+"Conversation.EditingMessageMediaEditCurrentVideo" = "Edit Current Video";
+
+"Conversation.InputTextCaptionPlaceholder" = "Caption";
+
+"Conversation.ViewContactDetails" = "VIEW CONTACT";
+
+"DialogList.Read" = "Read";
+"DialogList.Unread" = "Unread";
+
+"ContactInfo.Title" = "Contact Info";
+"ContactInfo.PhoneLabelHome" = "home";
+"ContactInfo.PhoneLabelWork" = "work";
+"ContactInfo.PhoneLabelMobile" = "mobile";
+"ContactInfo.PhoneLabelMain" = "main";
+"ContactInfo.PhoneLabelHomeFax" = "home fax";
+"ContactInfo.PhoneLabelWorkFax" = "work fax";
+"ContactInfo.PhoneLabelPager" = "pager";
+"ContactInfo.PhoneLabelOther" = "other";
+"ContactInfo.URLLabelHomepage" = "homepage";
+"ContactInfo.BirthdayLabel" = "birthday";
+"ContactInfo.Job" = "job";
+
+"UserInfo.NotificationsDefault" = "Default";
+"UserInfo.NotificationsDefaultSound" = "Default (%@)";
+
+"DialogList.ProxyConnectionIssuesTooltip" = "Can’t connect to your preferred proxy.\nTap to change settings.";
+
+"Conversation.TapAndHoldToRecord" = "Tap and hold to record";
+
+"Privacy.TopPeers" = "Suggest Frequent Contacts";
+"Privacy.TopPeersHelp" = "Display people you message frequently at the top of the search section for quick access.";
+"Privacy.TopPeersWarning" = "This will delete all data about the people you message frequently as well the inline bots you are likely to use.";
+"Privacy.TopPeersDelete" = "Delete";
+
+"Conversation.EditingCaptionPanelTitle" = "Edit Caption";
+
+"Passport.CorrectErrors" = "Tap to correct errors";
+
+"Passport.NotLoggedInMessage" = "Please log in to your account to use Telegram Passport";
+
+"Update.Title" = "Telegram Update";
+"Update.AppVersion" = "Telegram %@";
+"Update.UpdateApp" = "Update Telegram";
+"Update.Skip" = "Skip";
+
+"ReportPeer.ReasonCopyright" = "Copyright";
+
+"PrivacySettings.DataSettings" = "Data Settings";
+"PrivacySettings.DataSettingsHelp" = "Control which of your data is stored in the cloud and used by Telegram to enable advanced features.";
+
+"PrivateDataSettings.Title" = "Data Settings";
+"Privacy.ChatsTitle" = "CHATS";
+"Privacy.DeleteDrafts" = "Delete All Cloud Drafts";

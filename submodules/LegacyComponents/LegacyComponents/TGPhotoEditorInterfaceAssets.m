@@ -4,6 +4,8 @@
 #import "TGImageUtils.h"
 #import "TGFont.h"
 
+#import "TGMediaAssetsController.h"
+
 @implementation TGPhotoEditorInterfaceAssets
 
 + (UIColor *)toolbarBackgroundColor
@@ -23,7 +25,11 @@
 
 + (UIColor *)accentColor
 {
-    return UIColorRGB(0x65b3ff);
+    TGMediaAssetsPallete *pallete = nil;
+    if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(mediaAssetsPallete)])
+        pallete = [[LegacyComponentsGlobals provider] mediaAssetsPallete];
+    
+    return pallete.maybeAccentColor ?: UIColorRGB(0x65b3ff);
 }
 
 + (UIColor *)panelBackgroundColor
@@ -111,6 +117,24 @@
     return TGComponentsImageNamed(@"PhotoEditorCurvesIcon.png");
 }
 
++ (UIImage *)gifBackgroundImage
+{
+    static dispatch_once_t onceToken;
+    static UIImage *muteBackground;
+    dispatch_once(&onceToken, ^
+    {
+        CGRect rect = CGRectMake(0, 0, 39.0f, 39.0f);
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.6f).CGColor);
+        CGContextFillEllipseInRect(context, CGRectInset(rect, 3, 3));
+        
+        muteBackground = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    return muteBackground;
+}
+
 + (UIImage *)gifIcon
 {
     return TGComponentsImageNamed(@"PhotoEditorMute.png");
@@ -118,7 +142,7 @@
 
 + (UIImage *)gifActiveIcon
 {
-    return TGComponentsImageNamed(@"PhotoEditorMuteActive.png");
+    return TGTintedImage([self gifIcon], [self accentColor]);
 }
 
 + (UIImage *)groupIcon
@@ -299,6 +323,29 @@
 + (UIColor *)sliderTrackColor
 {
     return UIColorRGB(0xcccccc);
+}
+
++ (UIImage *)cameraIcon
+{
+    static dispatch_once_t onceToken;
+    static UIImage *image;
+    dispatch_once(&onceToken, ^
+    {
+        UIGraphicsBeginImageContextWithOptions(CGSizeMake(30.0f, 30.0f), false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetFillColorWithColor(context, UIColorRGBA(0x000000, 0.7f).CGColor);
+        
+        UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(0.5f, 0.5f, 29.0f, 29.0f) cornerRadius:8.5f];
+        CGContextAddPath(context, path.CGPath);
+        CGContextFillPath(context);
+        
+        [TGComponentsImageNamed(@"PhotoEditorCamera.png") drawAtPoint:CGPointZero];
+        
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
+    
+    return image;
 }
 
 @end

@@ -4,6 +4,8 @@
 
 #import "TGModernClockProgressView.h"
 
+#import "TGPresentation.h"
+
 @interface TGModernClockProgressViewModel ()
 {
     TGModernClockProgressType _type;
@@ -28,146 +30,55 @@
     return [TGModernClockProgressView class];
 }
 
-+ (CGImageRef)frameImageForType:(TGModernClockProgressType)type
++ (CGImageRef)frameImageForType:(TGModernClockProgressType)type presentation:(TGPresentation *)presentation
 {
     switch (type)
     {
         case TGModernClockProgressTypeOutgoingClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockFrame.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
+            return presentation.images.chatClockFrameIconOutgoing.CGImage;
+        
         case TGModernClockProgressTypeOutgoingMediaClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockWhiteFrame.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
+            return presentation.images.chatClockFrameIconMedia.CGImage;
+        
         case TGModernClockProgressTypeIncomingClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockIncomingFrame.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
+            return presentation.images.chatClockFrameIconIncoming.CGImage;
     }
     
-    return nil;
+    return NULL;
 }
 
-+ (CGImageRef)minImageForType:(TGModernClockProgressType)type
++ (CGImageRef)minImageForType:(TGModernClockProgressType)type presentation:(TGPresentation *)presentation
 {
     switch (type)
     {
         case TGModernClockProgressTypeOutgoingClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockMin.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
-        case TGModernClockProgressTypeOutgoingMediaClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockWhiteMin.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
-        case TGModernClockProgressTypeIncomingClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockIncomingMin.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
+            return presentation.images.chatClockMinuteIconOutgoing.CGImage;
 
-            return image;
-        }
-        default:
-            break;
+        case TGModernClockProgressTypeOutgoingMediaClock:
+            return presentation.images.chatClockMinuteIconMedia.CGImage;
+            
+        case TGModernClockProgressTypeIncomingClock:
+            return presentation.images.chatClockMinuteIconIncoming.CGImage;
     }
+    
+    return NULL;
 }
 
-+ (CGImageRef)hourImageForType:(TGModernClockProgressType)type
++ (CGImageRef)hourImageForType:(TGModernClockProgressType)type presentation:(TGPresentation *)presentation
 {
     switch (type)
     {
         case TGModernClockProgressTypeOutgoingClock:
-        {
-            static CGImageRef image = NULL;
+            return presentation.images.chatClockHourIconOutgoing.CGImage;
             
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockHour.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
         case TGModernClockProgressTypeOutgoingMediaClock:
-        {
-            static CGImageRef image = NULL;
+            return presentation.images.chatClockHourIconMedia.CGImage;
             
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockWhiteHour.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
         case TGModernClockProgressTypeIncomingClock:
-        {
-            static CGImageRef image = NULL;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^
-            {
-                UIImage *rawImage = TGImageNamed(@"ClockIncomingHour.png");
-                image = CGImageRetain(TGScaleAndRoundCorners(rawImage, CGSizeMake(rawImage.size.width, rawImage.size.height), CGSizeZero, 0, nil, false, nil).CGImage);
-            });
-            
-            return image;
-        }
+            return presentation.images.chatClockHourIconIncoming.CGImage;
     }
+    
+    return NULL;
 }
 
 - (void)bindViewToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage
@@ -176,11 +87,11 @@
     
     TGModernClockProgressView *view = (TGModernClockProgressView *)[self boundView];
 
-    [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:_type] hourImage:[TGModernClockProgressViewModel hourImageForType:_type] minImage:[TGModernClockProgressViewModel minImageForType:_type]];
+    [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:_type presentation:_presentation] hourImage:[TGModernClockProgressViewModel hourImageForType:_type presentation:_presentation] minImage:[TGModernClockProgressViewModel minImageForType:_type presentation:_presentation]];
 }
 
-+ (void)setupView:(TGModernClockProgressView *)view forType:(TGModernClockProgressType)type {
-    [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:type] hourImage:[TGModernClockProgressViewModel hourImageForType:type] minImage:[TGModernClockProgressViewModel minImageForType:type]];
++ (void)setupView:(TGModernClockProgressView *)view forType:(TGModernClockProgressType)type presentation:(TGPresentation *)presentation {
+    [view setFrameImage:[TGModernClockProgressViewModel frameImageForType:type presentation:presentation] hourImage:[TGModernClockProgressViewModel hourImageForType:type presentation:presentation] minImage:[TGModernClockProgressViewModel minImageForType:type presentation:presentation]];
 }
 
 - (void)drawInContext:(CGContextRef)context
@@ -193,15 +104,15 @@
         CGContextScaleCTM(context, 1.0f, -1.0f);
         CGContextTranslateCTM(context, -15.0f / 2.0f, -15.0f / 2.0f);
         
-        CGImageRef frameImage = [TGModernClockProgressViewModel frameImageForType:_type];
+        CGImageRef frameImage = [TGModernClockProgressViewModel frameImageForType:_type presentation:_presentation];
         if (frameImage != NULL)
             CGContextDrawImage(context, CGRectMake(0.0f, 0.0f, 15.0f, 15.0f), frameImage);
         
-        CGImageRef hourImage = [TGModernClockProgressViewModel hourImageForType:_type];
+        CGImageRef hourImage = [TGModernClockProgressViewModel hourImageForType:_type presentation:_presentation];
         if (hourImage != NULL)
             CGContextDrawImage(context, CGRectMake(0.0f, 0.0f, 15.0f, 15.0f), hourImage);
 
-        CGImageRef minImage = [TGModernClockProgressViewModel minImageForType:_type];
+        CGImageRef minImage = [TGModernClockProgressViewModel minImageForType:_type presentation:_presentation];
         if (minImage != NULL)
             CGContextDrawImage(context, CGRectMake(0.0f, 0.0f, 15.0f, 15.0f), minImage);
         

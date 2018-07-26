@@ -15,6 +15,8 @@
 
 #import "TGHeaderCollectionItem.h"
 
+#import "TGCallKitAdapter.h"
+
 @interface TGPrivacyLastSeenController () <ASWatcher>
 {
     TGPrivacySettingsMode _mode;
@@ -169,7 +171,7 @@
             ];
             [self.menuSections addSection:_p2pSection];
             
-            if (iosMajorVersion() >= 10)
+            if ([TGCallKitAdapter callKitAvailable])
             {
                 _integrationItem = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Privacy.Calls.Integration") isOn:!TGAppDelegateInstance.callsDisableCallKit];
                 _integrationItem.interfaceHandle = _actionHandle;

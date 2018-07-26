@@ -2,7 +2,7 @@
 
 #import "TLMetaClassStore.h"
 
-//botInlineMessageMediaContact flags:# phone_number:string first_name:string last_name:string reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
+//botInlineMessageMediaContact flags:# phone_number:string first_name:string last_name:string vcard:string reply_markup:flags.2?ReplyMarkup = BotInlineMessage;
 
 @implementation TLBotInlineMessage$botInlineMessageMediaContact
 
@@ -21,6 +21,7 @@
     result.phone_number = [is readString];
     result.first_name = [is readString];
     result.last_name = [is readString];
+    result.vcard = [is readString];
     
     if (flags & (1 << 2))
     {

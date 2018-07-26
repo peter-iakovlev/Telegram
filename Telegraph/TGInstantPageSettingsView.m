@@ -183,10 +183,10 @@
         _firstSepartorView.image = separatorImage;
         [_scrollView addSubview:_firstSepartorView];
         
-        _fontMinIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"InstantViewFontMinIcon"]];
+        _fontMinIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"InstantViewFontMinIcon")];
         [_scrollView addSubview:_fontMinIconView];
         
-        _fontMaxIconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"InstantViewFontMaxIcon"]];
+        _fontMaxIconView = [[UIImageView alloc] initWithImage:TGImageNamed(@"InstantViewFontMaxIcon")];
         [_scrollView addSubview:_fontMaxIconView];
         
         CGFloat fontValue = 1.0;

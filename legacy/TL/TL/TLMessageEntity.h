@@ -81,3 +81,12 @@
 
 @end
 
+@interface TLMessageEntity$messageEntityPhone : TLMessageEntity
+
+
+@end
+
+@interface TLMessageEntity$messageEntityCashtag : TLMessageEntity
+
+
+@end

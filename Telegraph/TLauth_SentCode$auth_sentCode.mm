@@ -44,6 +44,14 @@
         result.timeout = [is readInt32];
     }
     
+    if (flags & (1 << 3)) {
+        int32_t signature = [is readInt32];
+        result.terms_of_service = TLMetaClassStore::constructObject(is, signature, environment, nil, error);
+        if (error != nil && *error != nil) {
+            return nil;
+        }
+    }
+    
     return result;
 }
 

@@ -2,11 +2,13 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
-#import "TGAnimationUtils.h"
+#import <LegacyComponents/TGAnimationUtils.h>
 
 #import "TGCommentCollectionItem.h"
 
 #import <LegacyComponents/TGModernButton.h>
+
+#import "TGPresentation.h"
 
 @interface TGPaymentPasswordEntryControllerView () <UITextFieldDelegate> {
     UIView *_dimmingView;
@@ -38,7 +40,7 @@
 
 @implementation TGPaymentPasswordEntryControllerView
 
-- (instancetype)initWithCardTitle:(NSString *)cardTitle {
+- (instancetype)initWithCardTitle:(NSString *)cardTitle presentation:(TGPresentation *)presentation {
     self = [super initWithFrame:CGRectZero];
     if (self != nil) {
         _disposable = [[SMetaDisposable alloc] init];
@@ -51,32 +53,31 @@
         _dimmingView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.5f];
         [self addSubview:_dimmingView];
         
-        static UIImage *backgroundImage = nil;
-        static UIImage *textFieldBackgroundImage = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            {
-                CGFloat diameter = 26.0f;
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
-                UIGraphicsEndImageContext();
-            }
-            {
-                CGFloat diameter = 4.0f;
-                UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-                CGContextRef context = UIGraphicsGetCurrentContext();
-                CGContextSetFillColorWithColor(context, UIColorRGB(0x98979e).CGColor);
-                CGContextFillRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-                CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-                CGContextFillRect(context, CGRectMake(TGScreenPixel, TGScreenPixel, diameter - TGScreenPixel * 2.0, diameter - TGScreenPixel * 2.0f));
-                
-                textFieldBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
-                UIGraphicsEndImageContext();
-            }
-        });
+        UIImage *backgroundImage = nil;
+        UIImage *textFieldBackgroundImage = nil;
+
+        {
+            CGFloat diameter = 26.0f;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, presentation.pallete.menuBackgroundColor.CGColor);
+            CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            backgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+            UIGraphicsEndImageContext();
+        }
+        {
+            CGFloat diameter = 4.0f;
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
+            CGContextRef context = UIGraphicsGetCurrentContext();
+            CGContextSetFillColorWithColor(context, presentation.pallete.menuSeparatorColor.CGColor);
+            CGContextFillRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
+            CGContextSetFillColorWithColor(context, presentation.pallete.backgroundColor.CGColor);
+            CGContextFillRect(context, CGRectMake(TGScreenPixel, TGScreenPixel, diameter - TGScreenPixel * 2.0, diameter - TGScreenPixel * 2.0f));
+            
+            textFieldBackgroundImage = [UIGraphicsGetImageFromCurrentImageContext() stretchableImageWithLeftCapWidth:(NSInteger)(diameter / 2.0f) topCapHeight:(NSInteger)(diameter / 2.0f)];
+            UIGraphicsEndImageContext();
+        }
+
         _backgroundView = [[UIImageView alloc] initWithImage:backgroundImage];
         _backgroundView.userInteractionEnabled = true;
         [self addSubview:_backgroundView];
@@ -84,7 +85,7 @@
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = nil;
         _titleLabel.opaque = false;
-        _titleLabel.textColor = [UIColor blackColor];
+        _titleLabel.textColor = presentation.pallete.menuTextColor;
         _titleLabel.font = TGBoldSystemFontOfSize(17.0f);
         _titleLabel.text = TGLocalized(@"Checkout.PasswordEntry.Title");
         [_titleLabel sizeToFit];
@@ -93,12 +94,12 @@
         _textLabel = [[UILabel alloc] init];
         _textLabel.backgroundColor = nil;
         _textLabel.opaque = false;
-        _textLabel.textColor = [UIColor blackColor];
+        _textLabel.textColor = presentation.pallete.menuTextColor;
         _textLabel.numberOfLines = 0;
         _textLabel.lineBreakMode = NSLineBreakByWordWrapping;
         [_backgroundView addSubview:_textLabel];
         
-        _attributedText = [TGCommentCollectionItem attributedStringFromText:[NSString stringWithFormat:TGLocalized(@"Checkout.PasswordEntry.Text"), [NSString stringWithFormat:@"**%@**", cardTitle]] allowFormatting:true paragraphSpacing:1.0f alignment:NSTextAlignmentCenter fontSize:13.0f clearFormatting:false];
+        _attributedText = [TGCommentCollectionItem attributedStringFromText:[NSString stringWithFormat:TGLocalized(@"Checkout.PasswordEntry.Text"), [NSString stringWithFormat:@"**%@**", cardTitle]] allowFormatting:true paragraphSpacing:1.0f alignment:NSTextAlignmentCenter fontSize:13.0f clearFormatting:false linkColor:nil];
         _textLabel.attributedText = _attributedText;
         
         _textFieldBackground = [[UIImageView alloc] initWithImage:textFieldBackgroundImage];
@@ -106,34 +107,35 @@
         [_backgroundView addSubview:_textFieldBackground];
         
         _textField = [[UITextField alloc] init];
-        _textField.textColor = [UIColor blackColor];
+        _textField.textColor = presentation.pallete.menuTextColor;
         _textField.font = TGSystemFontOfSize(12.0f);
         _textField.typingAttributes = @{NSFontAttributeName: TGSystemFontOfSize(12.0f)};
         _textField.secureTextEntry = true;
+        _textField.keyboardAppearance = presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIReturnKeyDefault;
         [_textField addTarget:self action:@selector(textFieldTextChanged:) forControlEvents:UIControlEventEditingChanged];
         _textField.delegate = self;
         [_backgroundView addSubview:_textField];
         
         _buttonsHorizontalSeparator = [[UIView alloc] init];
         _buttonsHorizontalSeparator.userInteractionEnabled = false;
-        _buttonsHorizontalSeparator.backgroundColor = UIColorRGB(0x98979e);
+        _buttonsHorizontalSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_buttonsHorizontalSeparator];
         
         _buttonsVerticalSeparator = [[UIView alloc] init];
         _buttonsVerticalSeparator.userInteractionEnabled = false;
-        _buttonsVerticalSeparator.backgroundColor = UIColorRGB(0x98979e);
+        _buttonsVerticalSeparator.backgroundColor = presentation.pallete.menuSeparatorColor;
         [_backgroundView addSubview:_buttonsVerticalSeparator];
         
         _leftButton = [[TGModernButton alloc] init];
         _leftButton.titleLabel.font = TGSystemFontOfSize(17.0f);
-        [_leftButton setTitleColor:TGAccentColor()];
+        [_leftButton setTitleColor:presentation.pallete.menuAccentColor];
         [_backgroundView addSubview:_leftButton];
         [_leftButton setTitle:TGLocalized(@"Common.Cancel") forState:UIControlStateNormal];
         [_leftButton addTarget:self action:@selector(cancelPressed) forControlEvents:UIControlEventTouchUpInside];
         
         _rightButton = [[TGModernButton alloc] init];
         _rightButton.titleLabel.font = TGBoldSystemFontOfSize(17.0f);
-        [_rightButton setTitleColor:TGAccentColor()];
+        [_rightButton setTitleColor:presentation.pallete.menuAccentColor];
         //_rightButton.modernHighlight = true;
         [_backgroundView addSubview:_rightButton];
         [_rightButton setTitle:TGLocalized(@"Checkout.PasswordEntry.Pay") forState:UIControlStateNormal];
@@ -148,7 +150,7 @@
                 bool enabled = ![values[0] boolValue] && ![values[1] boolValue];
 
                 strongSelf->_rightButton.enabled = enabled;
-                [strongSelf->_rightButton setTitleColor:enabled ? TGAccentColor() : [UIColor grayColor]];
+                [strongSelf->_rightButton setTitleColor:enabled ? presentation.pallete.menuAccentColor : presentation.pallete.navigationDisabledButtonColor];
             }
         }];
         _enableTextFieldDisposable = [[_inProgress.signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *value) {

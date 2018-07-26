@@ -10,6 +10,7 @@
 #import "TGTelegramNetworking.h"
 
 #import "TGTimer.h"
+#import "TGTermsOfService.h"
 
 #import "TLauth_SentCode$auth_sentCode.h"
 
@@ -117,6 +118,12 @@
         }
     }
     
+    if (sendCode.terms_of_service != nil)
+    {
+        TGTermsOfService *tos = [[TGTermsOfService alloc] initWithTL:sendCode.terms_of_service];
+        if (tos != nil)
+            dict[@"termsOfService"] = tos;
+    }
     [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:dict]];
 }
 
@@ -175,6 +182,14 @@
                 dict[@"messageSentViaPhone"] = @true;
             }
         }
+        
+        if (sendCode.terms_of_service != nil)
+        {
+            TGTermsOfService *tos = [[TGTermsOfService alloc] initWithTL:sendCode.terms_of_service];
+            if (tos != nil)
+                dict[@"termsOfService"] = tos;
+        }
+        
         [ActionStageInstance() actionCompleted:self.path result:[[SGraphObjectNode alloc] initWithObject:dict]];
     }
     else

@@ -28,6 +28,9 @@ extern TGAppDelegate *TGAppDelegateInstance;
 
 @class TGGlobalContext;
 
+@class TGTermsOfService;
+@class TGUpdateAppInfo;
+
 @protocol TGStickerPackReference;
 
 extern NSString *TGDeviceProximityStateChangedNotification;
@@ -51,6 +54,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 @property (nonatomic, strong, readonly) SSignal *statusBarPressed;
 @property (nonatomic, strong, readonly) SSignal *localizationUpdated;
+@property (nonatomic, strong, readonly) SSignal *isActive;
 
 @property (nonatomic) bool isManuallyLocked;
 @property (nonatomic) int32_t automaticLockTimeout;
@@ -58,6 +62,8 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (bool)isCurrentlyLocked;
 - (void)resetRemoteDeviceLocked;
 - (bool)isDisplayingPasscodeWindow;
+
+- (void)displayPrivacyNoticeIfNeeded;
 
 // Settings
 @property (nonatomic) bool soundEnabled;
@@ -87,7 +93,10 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 @property (nonatomic) bool callsDisableCallKit;
 @property (nonatomic) bool callsUseProxy;
 
+@property (nonatomic) bool contactsInhibitSync;
+
 @property (nonatomic) int alwaysShowStickersMode;
+@property (nonatomic) int stickersSuggestMode;
 
 @property (nonatomic) bool useDifferentBackend;
 
@@ -116,7 +125,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 
 - (void)presentMainController;
 
-- (void)presentLoginController:(bool)clearControllerStates animated:(bool)animated phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram codeSentViaPhone:(bool)codeSentViaPhone profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName resetAccountState:(TGResetAccountState *)resetAccountState;
+- (void)presentLoginController:(bool)clearControllerStates animated:(bool)animated phoneNumber:(NSString *)phoneNumber phoneCode:(NSString *)phoneCode phoneCodeHash:(NSString *)phoneCodeHash codeSentToTelegram:(bool)codeSentToTelegram codeSentViaPhone:(bool)codeSentViaPhone profileFirstName:(NSString *)profileFirstName profileLastName:(NSString *)profileLastName resetAccountState:(TGResetAccountState *)resetAccountState termsOfService:(TGTermsOfService *)termsOfService;
 - (void)presentContentController:(UIViewController *)controller;
 - (void)dismissContentController;
 
@@ -144,12 +153,14 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)animated;
 - (void)handleOpenDocument:(NSURL *)url animated:(bool)animated keepStack:(bool)keepStack;
 
-- (void)handleOpenInstantView:(NSString *)url;
+- (void)handleOpenInstantView:(NSString *)url disableActions:(bool)disableActions;
 
 - (void)previewStickerPackWithReference:(id<TGStickerPackReference>)packReference;
 
 - (void)inviteBotToGroup:(TGUser *)user payload:(NSString *)payload;
 - (void)startGameInConversation:(NSString *)shortName user:(TGUser *)user;
+
+- (void)presentUpdateAppController:(TGUpdateAppInfo *)updateInfo;
 
 + (NSString *)documentsPath;
 + (NSString *)cachePath;
@@ -160,5 +171,7 @@ extern NSString *TGDeviceProximityStateChangedNotification;
 - (void)setupShortcutItems;
 
 - (void)updatePushRegistration;
+
+- (NSString *)applicationName;
 
 @end

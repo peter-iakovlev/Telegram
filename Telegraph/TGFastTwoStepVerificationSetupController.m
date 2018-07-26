@@ -16,16 +16,18 @@
 #import "TGPasswordConfirmationController.h"
 
 @interface TGFastTwoStepVerificationSetupController () {
-    void (^_completion)();
+    void (^_completion)(bool, TGTwoStepConfig *, NSString *);
     
     SMetaDisposable *_initialTwoStepCofigDisposable;
     TGTwoStepConfig *_currentConfig;
     
     TGCollectionMenuSection *_passwordSection;
+    TGCollectionMenuSection *_hintSection;
     TGCollectionMenuSection *_emailSection;
     
     TGUsernameCollectionItem *_passwordItem;
     TGUsernameCollectionItem *_passwordConfirmationItem;
+    TGUsernameCollectionItem *_hintItem;
     TGUsernameCollectionItem *_emailItem;
     
     TGCollectionMenuSection *_emailConfirmationSection;
@@ -35,13 +37,14 @@
     
     SMetaDisposable *_periodicCheckDisposable;
     bool _isPolling;
+    bool _didDisappear;
 }
 
 @end
 
 @implementation TGFastTwoStepVerificationSetupController
 
-- (instancetype)initWithTwoStepConfig:(SSignal *)twoStepConfig completion:(void (^)(bool))completion {
+- (instancetype)initWithTwoStepConfig:(SSignal *)twoStepConfig passport:(bool)passport completion:(void (^)(bool, TGTwoStepConfig *, NSString *))completion {
     self = [super init];
     if (self != nil) {
         _completion = [completion copy];
@@ -81,16 +84,35 @@
         _passwordConfirmationItem.usernameValid = true;
         _passwordConfirmationItem.returnPressed = focusOnNextItem;
         
-        _passwordSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+        NSMutableArray *passwordItems = [[NSMutableArray alloc] initWithArray:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"FastTwoStepSetup.PasswordSection")],
             _passwordItem,
-            _passwordConfirmationItem,
-            [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"FastTwoStepSetup.PasswordHelp")]
+            _passwordConfirmationItem
         ]];
+        
+        if (!passport)
+            [passwordItems addObject:[[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"FastTwoStepSetup.PasswordHelp")]];
+        
+        _passwordSection = [[TGCollectionMenuSection alloc] initWithItems:passwordItems];
         UIEdgeInsets topSectionInsets = _passwordSection.insets;
         topSectionInsets.top = 32.0f;
         _passwordSection.insets = topSectionInsets;
         //[self.menuSections addSection:passwordSection];
+        
+        _hintItem = [[TGUsernameCollectionItem alloc] init];
+        _hintItem.secureEntry = false;
+        _hintItem.title = @"";
+        _hintItem.username = @"";
+        _hintItem.placeholder = TGLocalized(@"FastTwoStepSetup.HintPlaceholder");
+        _hintItem.usernameChanged = checkFields;
+        _hintItem.usernameValid = true;
+        _hintItem.returnPressed = focusOnNextItem;
+        
+        _hintSection = [[TGCollectionMenuSection alloc] initWithItems:@[
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"FastTwoStepSetup.HintSection")],
+            _hintItem,
+            [[TGCommentCollectionItem alloc] initWithFormattedText:TGLocalized(@"FastTwoStepSetup.HintHelp")]
+        ]];
         
         _emailItem = [[TGUsernameCollectionItem alloc] init];
         _emailItem.secureEntry = false;
@@ -123,7 +145,7 @@
             if (strongSelf != nil && strongSelf->_currentConfig != nil) {
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
                 [progressWindow show:true];
-                [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil nextSalt:strongSelf->_currentConfig.nextSalt nextPassword:@"" nextHint:nil email:nil] deliverOn:[SQueue mainQueue]] onDispose:^{
+                [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil currentSecret:nil nextSalt:strongSelf->_currentConfig.nextSalt nextPassword:@"" nextHint:nil email:nil secretRandom:nil nextSecureSalt:nil] deliverOn:[SQueue mainQueue]] onDispose:^{
                     TGDispatchOnMainThread(^{
                         [progressWindow dismiss:true];
                     });
@@ -132,6 +154,7 @@
                     if (strongSelf != nil) {
                         strongSelf->_passwordItem.username = @"";
                         strongSelf->_passwordConfirmationItem.username = @"";
+                        strongSelf->_hintItem.username = @"";
                         strongSelf->_currentConfig = result;
                         if (strongSelf->_twoStepConfigUpdated) {
                             strongSelf->_twoStepConfigUpdated(result);
@@ -178,20 +201,31 @@
     [_periodicCheckDisposable dispose];
 }
 
+- (void)viewDidDisappear:(BOOL)animated
+{
+    [super viewDidDisappear:animated];
+    _didDisappear = true;
+}
+
 - (void)cancelPressed {
+    bool waiting = [self indexForSection:_emailConfirmationSection] != NSNotFound;
+    if (waiting && _completion) {
+        _completion(false, nil, nil);
+    }
     [self.presentingViewController dismissViewControllerAnimated:true completion:nil];
 }
 
 - (void)donePressed {
     if (_doneItem.enabled) {
-        NSString *password = _passwordItem.username;
         __weak TGFastTwoStepVerificationSetupController *weakSelf = self;
+        NSString *password = _passwordItem.username;
+        NSString *hint = _hintItem.username;
         NSString *email = _emailItem.username;
         dispatch_block_t block = ^{
             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
             [progressWindow show:true];
             
-            [[[[TGTwoStepSetPaswordSignal setPassword:password hint:@"" email:email] deliverOn:[SQueue mainQueue]] onDispose:^{
+            [[[[TGTwoStepSetPaswordSignal setPassword:password hint:hint email:email] deliverOn:[SQueue mainQueue]] onDispose:^{
                 TGDispatchOnMainThread(^{
                     [progressWindow dismiss:true];
                 });
@@ -210,7 +244,7 @@
                         __strong TGFastTwoStepVerificationSetupController *strongSelf = weakSelf;
                         if (strongSelf != nil) {
                             if (strongSelf->_completion) {
-                                strongSelf->_completion(true);
+                                strongSelf->_completion(true, result, password);
                             }
                         }
                     }
@@ -241,10 +275,10 @@
             }
             else
             {
-                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") completionBlock:^(bool okButtonPressed)
-                                          {
-                                              block();
-                                          }];
+                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") completionBlock:^(__unused bool okButtonPressed)
+                {
+                    block();
+                }];
                 [alertView show];
             }
         } else {
@@ -254,7 +288,7 @@
 }
 
 - (void)reloadSections {
-    if (_currentConfig != nil) {
+    if (!_didDisappear && _currentConfig != nil) {
         while (self.menuSections.sections.count != 0) {
             [self.menuSections deleteSection:0];
         }
@@ -288,13 +322,14 @@
             }
         } else {
             [self.menuSections addSection:_passwordSection];
+            [self.menuSections addSection:_hintSection];
             [self.menuSections addSection:_emailSection];
             [self setRightBarButtonItem:_doneItem];
             [self checkInputValues];
             
             if (_currentConfig.currentSalt.length != 0 && _currentConfig.unconfirmedEmailPattern.length == 0) {
                 if (_completion) {
-                    _completion();
+                    _completion(true, _currentConfig, _passwordItem.username);
                 }
             }
             if (_isPolling) {

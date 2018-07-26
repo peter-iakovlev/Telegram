@@ -85,6 +85,19 @@
     [_disposable dispose];
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    if (self.pallete == nil)
+        return;
+    
+    self.backgroundColor = pallete.backgroundColor;
+    _bottomView.backgroundColor = pallete.barBackgroundColor;
+    _tableView.separatorColor = pallete.separatorColor;
+    _stripeView.backgroundColor = pallete.barSeparatorColor;
+    _separatorView.backgroundColor = pallete.barSeparatorColor;
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
@@ -186,7 +199,7 @@
             }
         };
     }
-    
+    cell.pallete = self.pallete;
     TGUser *user = _commandList[indexPath.section][0];
     if (![user isKindOfClass:[TGUser class]])
         user = nil;

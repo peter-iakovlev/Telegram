@@ -11,6 +11,7 @@ typedef enum {
 @property (nonatomic, strong) NSString *title;
 @property (nonatomic, strong) NSString *action;
 @property (nonatomic) TGActionSheetActionType type;
+@property (nonatomic, assign) bool disableAutomaticSheetDismiss;
 
 - (instancetype)initWithTitle:(NSString *)title action:(NSString *)action;
 - (instancetype)initWithTitle:(NSString *)title action:(NSString *)action type:(TGActionSheetActionType)type;
@@ -18,8 +19,6 @@ typedef enum {
 @end
 
 @interface TGActionSheet : UIActionSheet
-
-@property (nonatomic, copy) bool (^dismissBlock)(id target, NSString *action);
 
 - (instancetype)initWithTitle:(NSString *)title actions:(NSArray *)actions actionBlock:(void (^)(id target, NSString *action))actionBlock target:(id)target;
 

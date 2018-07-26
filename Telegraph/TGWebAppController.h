@@ -1,6 +1,7 @@
 #import <LegacyComponents/LegacyComponents.h>
 
 @class TGMessage;
+@class TGPresentation;
 
 @interface TGWebAppControllerShareGameData : NSObject
 
@@ -15,6 +16,7 @@
 
 @interface TGWebAppController : TGViewController
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, strong) TGWebAppControllerShareGameData *shareGameData;
 
 - (instancetype)initWithUrl:(NSURL *)url title:(NSString *)title botName:(NSString *)botName peerIdForActivityUpdates:(int64_t)peerIdForActivityUpdates peerAccessHashForActivityUpdates:(int64_t)peerAccessHashForActivityUpdates;

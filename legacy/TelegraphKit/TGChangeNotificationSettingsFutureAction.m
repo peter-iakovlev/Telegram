@@ -1,37 +1,68 @@
 #import "TGChangeNotificationSettingsFutureAction.h"
 
+@interface TGChangeNotificationSettingsFutureAction ()
+{
+    int32_t _muteUntilRaw;
+    int32_t _soundIdRaw;
+    int32_t _previewTextRaw;
+    int8_t _messagesMutedRaw;
+}
+@end
+
 @implementation TGChangeNotificationSettingsFutureAction
 
-- (id)initWithPeerId:(int64_t)peerId muteUntil:(int)muteUntil soundId:(int)soundId previewText:(bool)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled messagesMuted:(bool)messagesMuted
+@dynamic muteUntil, soundId, previewText, messagesMuted;
+
+- (id)initWithPeerId:(int64_t)peerId muteUntil:(NSNumber *)muteUntil soundId:(NSNumber *)soundId previewText:(NSNumber *)previewText photoNotificationsEnabled:(bool)photoNotificationsEnabled messagesMuted:(NSNumber *)messagesMuted
 {
     self = [super initWithType:TGChangeNotificationSettingsFutureActionType];
     if (self != nil)
     {
         self.uniqueId = peerId;
         
-        _muteUntil = muteUntil;
-        _soundId = soundId;
-        _previewText = previewText;
+        _muteUntilRaw = muteUntil ? muteUntil.intValue : INT32_MIN;
+        _soundIdRaw = soundId ? soundId.intValue : INT32_MIN;
+        _previewTextRaw = previewText ? previewText.intValue : INT32_MIN;
         _photoNotificationsEnabled = photoNotificationsEnabled;
-        _messagesMuted = messagesMuted;
+        _messagesMutedRaw = messagesMuted ? messagesMuted.unsignedCharValue : INT8_MAX;
     }
     return self;
+}
+
+- (NSNumber *)muteUntil
+{
+    return _muteUntilRaw != INT32_MIN ? @(_muteUntilRaw) : nil;
+}
+
+- (NSNumber *)soundId
+{
+    return _soundIdRaw != INT32_MIN ? @(_soundIdRaw) : nil;
+}
+
+- (NSNumber *)previewText
+{
+    return _previewTextRaw != INT32_MIN ? @(_previewTextRaw) : nil;
+}
+
+- (NSNumber *)messagesMuted
+{
+    return _messagesMutedRaw != INT8_MAX ? @(_messagesMutedRaw) : nil;
 }
 
 - (NSData *)serialize
 {
     NSMutableData *data = [[NSMutableData alloc] init];
     
-    [data appendBytes:&_muteUntil length:4];
-    [data appendBytes:&_soundId length:4];
+    [data appendBytes:&_muteUntilRaw length:4];
+    [data appendBytes:&_soundIdRaw length:4];
     
-    int previewText = _previewText ? 1 : 0;
+    int previewText = _previewTextRaw;
     [data appendBytes:&previewText length:4];
     
     uint8_t valuePhotoNotificationsEnabled = _photoNotificationsEnabled ? 1 : 0;
     [data appendBytes:&valuePhotoNotificationsEnabled length:1];
     
-    uint8_t valueMessagesMuted = _messagesMuted ? 1 : 0;
+    uint8_t valueMessagesMuted = _messagesMutedRaw;
     [data appendBytes:&valueMessagesMuted length:1];
     
     return data;
@@ -69,7 +100,7 @@
         ptr += 1;
     }
     
-    action = [[TGChangeNotificationSettingsFutureAction alloc] initWithPeerId:0 muteUntil:muteUntil soundId:soundId previewText:previewText != 0 photoNotificationsEnabled:valuePhotoNotificationsEnabled != 0 messagesMuted:valueMessagesMuted != 0];
+    action = [[TGChangeNotificationSettingsFutureAction alloc] initWithPeerId:0 muteUntil:muteUntil != INT32_MIN ? @(muteUntil) : nil soundId:soundId != INT32_MIN ? @(soundId) : nil previewText:previewText != INT32_MIN ? @(previewText) : nil photoNotificationsEnabled:valuePhotoNotificationsEnabled != 0 messagesMuted:valueMessagesMuted != INT8_MAX ? @(valueMessagesMuted) : nil];
     
     return action;
 }

@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGChangePhoneNumberHelpView ()
 {
     UIEdgeInsets _insets;
@@ -11,6 +13,7 @@
     UIImageView *_iconView;
     UILabel *_label;
     TGModernButton *_changeButton;
+    UIImageView *_arrowView;
 }
 
 @end
@@ -58,7 +61,7 @@
         
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:cleanText attributes:@{
             NSFontAttributeName: _label.font,
-            NSForegroundColorAttributeName: _label.textColor
+            //NSForegroundColorAttributeName: _label.textColor
         }];
         
         NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
@@ -87,15 +90,24 @@
         CGSize buttonSize = _changeButton.frame.size;
         _changeButton.frame = CGRectMake(0.0f, 0.0f, buttonSize.width, buttonSize.height + 20.0f);
         
-        UIImageView *arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernTourButtonRightArrow.png")];
-        CGSize arrowSize = arrowView.frame.size;
-        arrowView.frame = CGRectMake(_changeButton.frame.size.width - arrowSize.width, CGFloor((_changeButton.frame.size.height - arrowView.frame.size.height) / 2.0f) + 1.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
+        _arrowView = [[UIImageView alloc] initWithImage:TGImageNamed(@"ModernTourButtonRightArrow.png")];
+        CGSize arrowSize = _arrowView.frame.size;
+        _arrowView.frame = CGRectMake(_changeButton.frame.size.width - arrowSize.width, CGFloor((_changeButton.frame.size.height - _arrowView.frame.size.height) / 2.0f) + 1.0f + TGRetinaPixel, arrowSize.width, arrowSize.height);
         
-        [_changeButton addSubview:arrowView];
+        [_changeButton addSubview:_arrowView];
         [_changeButton addTarget:self action:@selector(actionButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_changeButton];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _label.textColor = presentation.pallete.collectionMenuCommentColor;
+    [_changeButton setTitleColor:presentation.pallete.accentColor];
+    _arrowView.image = TGTintedImage(TGImageNamed(@"ModernTourButtonRightArrow.png"), presentation.pallete.accentColor);
 }
 
 - (void)actionButtonPressed

@@ -213,6 +213,16 @@
             __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
             [strongSelf pausePressed];
         };
+        _footerView.backwardPressed = ^
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            [strongSelf backwardPressed];
+        };
+        _footerView.forwardPressed = ^
+        {
+            __strong TGModernGalleryVideoItemView *strongSelf = weakSelf;
+            [strongSelf forwardPressed];
+        };
         
         TGModernGalleryRotationGestureRecognizer *rotationRecognizer = [[TGModernGalleryRotationGestureRecognizer alloc] initWithTarget:self action:@selector(rotationGesture:)];
         rotationRecognizer.cancelsTouchesInView = false;
@@ -473,6 +483,7 @@
         }
     }
     
+    _footerView.duration = duration;
     [_scrubbingInterfaceView setDuration:duration currentTime:0.0 isPlaying:false isPlayable:false animated:false];
     
     if (videoPath != nil)
@@ -681,6 +692,18 @@
     _actionButton.hidden = true;
 }
 
+- (void)backwardPressed
+{
+    NSTimeInterval positionSeconds = MAX(0.0, CMTimeGetSeconds(self.player.currentItem.currentTime) - 15.0);
+    [self.player.currentItem seekToTime:CMTimeMake((int64_t)(positionSeconds * 1000.0), 1000.0)];
+}
+
+- (void)forwardPressed
+{
+    NSTimeInterval positionSeconds = MIN(CMTimeGetSeconds(self.player.currentItem.duration), CMTimeGetSeconds(self.player.currentItem.currentTime) + 15.0);
+    [self.player.currentItem seekToTime:CMTimeMake((int64_t)(positionSeconds * 1000.0), 1000.0)];
+}
+
 - (void)playerItemDidPlayToEndTime:(NSNotification *)notification
 {
     _currentLoopCount++;
@@ -749,11 +772,6 @@
             _imageView.frame = playerBounds;
         }
     }
-}
-
-- (UIView *)headerView
-{
-    return _scrubbingInterfaceView;
 }
 
 - (UIView *)footerView

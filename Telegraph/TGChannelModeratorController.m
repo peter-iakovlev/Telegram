@@ -13,6 +13,8 @@
 
 #import "TGTelegraph.h"
 
+#import "TGPresentation.h"
+
 @interface TGChannelModeratorController () {
     TGConversation *_conversation;
     TGUser *_user;
@@ -152,7 +154,7 @@
         [rightsItems addObject:_canDeleteMessages];
     }
     
-    if (isPreview || sourceMember.isCreator || sourceMember.adminRights.canBanUsers) {
+    if (conversation.isChannelGroup && (isPreview || sourceMember.isCreator || sourceMember.adminRights.canBanUsers)) {
         [rightsItems addObject:_canBanUsers];
     }
     
@@ -190,7 +192,7 @@
     
     if (_originalMember != nil && (sourceMember.isCreator || _originalMember.adminCanManage)) {
         TGButtonCollectionItem *dismissItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Channel.Moderator.AccessLevelRevoke") action:@selector(dismissPressed)];
-        dismissItem.titleColor = TGDestructiveAccentColor();
+        dismissItem.titleColor = self.presentation.pallete.collectionMenuDestructiveColor;
         TGCollectionMenuSection *dismissModeratorSection = [[TGCollectionMenuSection alloc] initWithItems:@[dismissItem]];
         [self.menuSections addSection:dismissModeratorSection];
     }
@@ -226,6 +228,7 @@
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         _activityIndicator.frame = CGRectMake(CGFloor((self.view.frame.size.width - _activityIndicator.frame.size.width) / 2.0f), CGFloor((self.view.frame.size.height - _activityIndicator.frame.size.height) / 2.0f), _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
         _activityIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
+        _activityIndicator.color = self.presentation.pallete.secondaryTextColor;
         [_activityIndicator startAnimating];
         [self.view addSubview:_activityIndicator];
         

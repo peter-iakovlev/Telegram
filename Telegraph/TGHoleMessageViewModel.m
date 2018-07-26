@@ -16,6 +16,8 @@
 #import "TGReusableLabel.h"
 #import <LegacyComponents/TGDoubleTapGestureRecognizer.h>
 
+#import "TGPresentation.h"
+
 @interface TGHoleMessageViewModel () <UIGestureRecognizerDelegate> {
     TGModernImageViewModel *_backgroundModel;
     TGModernFlatteningViewModel *_contentModel;
@@ -38,7 +40,7 @@
         _mid = message.mid;
         _message = message;
         
-        _backgroundModel = [[TGModernImageViewModel alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackground]];
+        _backgroundModel = [[TGModernImageViewModel alloc] initWithImage:context.presentation.images.chatSystemBackground];
         _backgroundModel.skipDrawInContext = true;
         [self addSubmodel:_backgroundModel];
         
@@ -47,7 +49,7 @@
         [self addSubmodel:_contentModel];
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:[self actionTextForMessage:message] font:[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleFont]];
-        _textModel.textColor = [UIColor whiteColor];
+        _textModel.textColor = context.presentation.pallete.chatSystemTextColor;
         _textModel.alignment = NSTextAlignmentCenter;
         [_contentModel addSubmodel:_textModel];
     }

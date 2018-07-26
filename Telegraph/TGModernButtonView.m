@@ -46,7 +46,7 @@
 {
     [self removeTarget:nil action:nil forControlEvents:UIControlEventTouchUpInside];
     
-    [self setDisplayProgress:false animated:false];
+    [self setDisplayProgress:false animated:false presentation:nil];
     [_fadingActivityIndicator removeFromSuperview];
     _fadingActivityIndicator = nil;
 }
@@ -116,11 +116,11 @@
     [super layoutSubviews];
 }
 
-- (void)setDisplayProgress:(bool)displayProgress animated:(bool)animated {
+- (void)setDisplayProgress:(bool)displayProgress animated:(bool)animated presentation:(TGPresentation *)presentation {
     if (displayProgress) {
         if (_activityIndicator == nil) {
             _activityIndicator = [[TGModernClockProgressView alloc] initWithFrame:CGRectMake(self.frame.size.width - 15.0f - 2.0f, self.frame.size.height - 15.0f - 2.0f, 15.0f, 15.0f)];
-            [TGModernClockProgressViewModel setupView:_activityIndicator forType:TGModernClockProgressTypeOutgoingMediaClock];
+            [TGModernClockProgressViewModel setupView:_activityIndicator forType:TGModernClockProgressTypeOutgoingMediaClock presentation:presentation];
             _activityIndicator.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin;
             [self addSubview:_activityIndicator];
             if (animated) {

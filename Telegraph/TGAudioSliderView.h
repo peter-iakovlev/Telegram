@@ -12,6 +12,7 @@
 
 @class TGAudioSliderView;
 @class TGMusicPlayerStatus;
+@class TGPresentation;
 
 typedef enum
 {
@@ -34,6 +35,7 @@ typedef enum
 
 @property (nonatomic, weak) id<TGAudioSliderViewDelegate> delegate;
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic) TGAudioSliderViewStyle style;
 @property (nonatomic) int32_t duration;
 @property (nonatomic) bool manualPositionAdjustmentEnabled;

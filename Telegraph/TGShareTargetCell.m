@@ -9,6 +9,8 @@
 #import <LegacyComponents/TGCheckButtonView.h>
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
+
 @interface TGShareTargetCell ()
 {
     TGCheckButtonView *_checkButton;
@@ -18,6 +20,7 @@
     
     CALayer *_separatorLayer;
     
+    bool _feed;
     int64_t _peerId;
     bool _isLastCell;
     
@@ -33,9 +36,9 @@
     if (self != nil)
     {
         if (iosMajorVersion() >= 7)
-        {
             self.contentView.superview.clipsToBounds = false;
-        }
+        
+        self.selectedBackgroundView = [[UIView alloc] init];
         
         if (iosMajorVersion() <= 6) {
             _separatorLayer = [[CALayer alloc] init];
@@ -68,6 +71,15 @@
         _channelDisposable = [[SMetaDisposable alloc] init];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    _nameLabel.textColor = presentation.pallete.textColor;
+    _separatorLayer.backgroundColor = presentation.pallete.separatorColor.CGColor;
 }
 
 - (void)dealloc
@@ -108,29 +120,17 @@
     [self setNeedsLayout];
 }
 
-- (void)setupWithPeer:(id)peer
+- (void)setupWithPeer:(id)peer feed:(bool)feed
 {
+    _feed = feed;
+    
     CGFloat diameter = TGIsPad() ? 45.0f : 40.0f;
     
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(diameter, diameter), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, diameter, diameter));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, diameter - 1.0f, diameter - 1.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:diameter];
+    UIColor *subLabelColor = self.presentation.pallete.secondaryTextColor;
+    UIColor *backgroundColor = self.presentation.pallete.backgroundColor;
     
-    UIColor *subLabelColor = UIColorRGB(0x8e8e93);
-    UIColor *backgroundColor = [UIColor whiteColor];
+    _nameLabel.textColor = self.presentation.pallete.textColor;
     
     NSString *title = nil;
     NSString *subtitle = TGLocalized(@"Channel.NotificationLoading");
@@ -140,7 +140,7 @@
         _peerId = conversation.conversationId;
         
         if (conversation.pinnedToTop)
-            backgroundColor = UIColorRGB(0xf7f7f7);
+            backgroundColor = self.presentation.pallete.dialogPinnedBackgroundColor;
         
         if (conversation.additionalProperties[@"user"] != nil)
         {
@@ -171,7 +171,7 @@
                 if (user.presence.online)
                 {
                     presenceString = TGLocalized(@"Presence.online");
-                    subLabelColor = TGAccentColor();
+                    subLabelColor = self.presentation.pallete.accentColor;
                 }
                 else if (user.presence.lastSeen != 0)
                 {
@@ -185,7 +185,7 @@
         {
             if (conversation.conversationId == TGTelegraphInstance.clientUserId)
             {
-                backgroundColor = UIColorRGB(0xf7f7f7);
+                backgroundColor = self.presentation.pallete.dialogPinnedBackgroundColor;
                 title = TGLocalized(@"DialogList.SavedMessages");
                 subtitle = @"";
                 [_avatarView loadSavedMessagesWithSize:CGSizeMake(diameter, diameter) placeholder:placeholder];
@@ -213,18 +213,21 @@
                         }
                     }];
                     
-                    __weak TGShareTargetCell *weakSelf = self;
-                    [_channelDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *memberCount)
+                    if (!_feed)
                     {
-                        __strong TGShareTargetCell *strongSelf = weakSelf;
-                        if (strongSelf != nil) {
-                            strongSelf->_subLabel.text = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:memberCount.int32Value];
-                            strongSelf->_subLabel.textColor = subLabelColor;
-                            [strongSelf->_subLabel sizeToFit];
-                            
-                            [strongSelf setNeedsLayout];
-                        }
-                    }]];
+                        __weak TGShareTargetCell *weakSelf = self;
+                        [_channelDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(NSNumber *memberCount)
+                        {
+                            __strong TGShareTargetCell *strongSelf = weakSelf;
+                            if (strongSelf != nil) {
+                                strongSelf->_subLabel.text = [effectiveLocalization() getPluralized:@"Conversation.StatusMembers" count:memberCount.int32Value];
+                                strongSelf->_subLabel.textColor = subLabelColor;
+                                [strongSelf->_subLabel sizeToFit];
+                                
+                                [strongSelf setNeedsLayout];
+                            }
+                        }]];
+                    }
                 }
                 
                 if (conversation.chatPhotoSmall.length != 0)
@@ -272,7 +275,7 @@
             if (user.presence.online)
             {
                 presenceString = TGLocalized(@"Presence.online");
-                subLabelColor = TGAccentColor();
+                subLabelColor = self.presentation.pallete.accentColor;
             }
             else if (user.presence.lastSeen != 0)
             {
@@ -282,6 +285,9 @@
         
         subtitle = presenceString;
     }
+    
+    if (_feed)
+        subtitle = nil;
     
     self.backgroundColor = backgroundColor;
     
@@ -306,13 +312,16 @@
     [super layoutSubviews];
     
     CGFloat separatorHeight = TGSeparatorHeight();
-    CGFloat separatorInset = _isLastCell ? 0.0f : 65;
+    CGFloat separatorInset = _isLastCell ? 0.0f : _feed ? 99.0f : 65.0f;
     _separatorLayer.frame = CGRectMake(separatorInset, self.frame.size.height - separatorHeight, self.frame.size.width - separatorInset, separatorHeight);
     
     CGRect frame = self.selectedBackgroundView.frame;
     frame.origin.y = -1;
     frame.size.height = self.frame.size.height + 1;
     self.selectedBackgroundView.frame = frame;
+    
+    if (_feed)
+        _avatarView.frame = CGRectMake(48.0f, _avatarView.frame.origin.y, _avatarView.frame.size.width, _avatarView.frame.size.height);
     
     CGFloat leftPadding = CGRectGetMaxX(_avatarView.frame) + 12.0f;
     CGFloat nameOrigin = 5.0f;
@@ -322,7 +331,7 @@
     _nameLabel.frame = CGRectMake(leftPadding, nameOrigin, MIN(_nameLabel.frame.size.width, self.frame.size.width - leftPadding - _checkButton.frame.size.width - 30.0f), _nameLabel.frame.size.height);
     _subLabel.frame = CGRectMake(leftPadding, 26.0f, MIN(_subLabel.frame.size.width, self.frame.size.width - leftPadding - _checkButton.frame.size.width - 30.0f), _subLabel.frame.size.height);
     
-    CGRect checkFrame = CGRectMake(self.frame.size.width - _checkButton.frame.size.width - 10.0f, (CGFloat)ceil((self.frame.size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);
+    CGRect checkFrame = CGRectMake(_feed ? 7.0f : self.frame.size.width - _checkButton.frame.size.width - 10.0f, (CGFloat)ceil((self.frame.size.height - _checkButton.frame.size.height) / 2.0f), _checkButton.frame.size.width, _checkButton.frame.size.height);
     _checkButton.frame = checkFrame;
 }
 

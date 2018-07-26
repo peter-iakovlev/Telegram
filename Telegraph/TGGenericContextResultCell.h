@@ -2,6 +2,8 @@
 
 #import "TGBotContextResult.h"
 
+@class TGConversationAssociatedInputPanelPallete;
+
 @interface TGGenericContextResultCellContent : UIView
 
 @property (nonatomic, strong, readonly) TGBotContextResult *result;
@@ -12,6 +14,7 @@
 
 @property (nonatomic, copy) void (^preview)(TGBotContextResult *result);
 
+@property (nonatomic, strong) TGConversationAssociatedInputPanelPallete *pallete;
 @property (nonatomic, strong) TGBotContextResult *result;
 
 - (TGGenericContextResultCellContent *)_takeContent;

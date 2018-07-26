@@ -4,7 +4,7 @@
 
 @implementation TGPreparedContactMessage
 
-- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
+- (instancetype)initWithUid:(int32_t)uid firstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber vcard:(NSString *)vcard replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
     self = [super init];
     if (self != nil)
@@ -13,15 +13,16 @@
         _firstName = firstName;
         _lastName = lastName;
         _phoneNumber = phoneNumber;
+        _vcard = vcard;
         self.replyMessage = replyMessage;
         self.replyMarkup = replyMarkup;
     }
     return self;
 }
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
+- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName phoneNumber:(NSString *)phoneNumber vcard:(NSString *)vcard replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
-    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber replyMessage:replyMessage replyMarkup:replyMarkup];
+    return [self initWithUid:0 firstName:firstName lastName:lastName phoneNumber:phoneNumber vcard:vcard replyMessage:replyMessage replyMarkup:replyMarkup];
 }
 
 - (TGMessage *)message
@@ -39,6 +40,7 @@
     contactAttachment.firstName = _firstName;
     contactAttachment.lastName = _lastName;
     contactAttachment.phoneNumber = _phoneNumber;
+    contactAttachment.vcard = _vcard;
     [attachments addObject:contactAttachment];
     
     if (self.replyMessage != nil)

@@ -14,10 +14,13 @@
 
 + (instancetype)instance;
 
+- (void)restoreCurrentWallpaper;
 - (void)setCurrentWallpaperWithInfo:(TGWallpaperInfo *)wallpaperInfo;
+- (void)setCurrentWallpaperWithInfo:(TGWallpaperInfo *)wallpaperInfo temporary:(bool)temporary;
 
 - (UIImage *)currentWallpaperImage;
 - (TGWallpaperInfo *)currentWallpaperInfo;
+- (TGWallpaperInfo *)savedWallpaperInfo;
 
 - (NSArray *)builtinWallpaperList;
 

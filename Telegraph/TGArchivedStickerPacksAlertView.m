@@ -49,24 +49,24 @@
     static UIImage *image = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
-                  {
-                      CGSize size = CGSizeMake(13.0f, 13.0f);
-                      UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-                      CGContextRef context = UIGraphicsGetCurrentContext();
-                      CGContextSetStrokeColorWithColor(context, UIColorRGB(0x9c9d9e).CGColor);
-                      CGFloat lineWidth = 1.4f;
-                      CGFloat lineInset = lineWidth / 2.0f;
-                      CGContextSetLineWidth(context, lineWidth);
-                      CGPoint lineSegments[4] = {
-                          CGPointMake(lineInset, lineInset),
-                          CGPointMake(size.width - lineInset, size.height - lineInset),
-                          CGPointMake(size.width - lineInset, lineInset),
-                          CGPointMake(lineInset, size.height - lineInset)
-                      };
-                      CGContextStrokeLineSegments(context, lineSegments, 4);
-                      image = UIGraphicsGetImageFromCurrentImageContext();
-                      UIGraphicsEndImageContext();
-                  });
+    {
+        CGSize size = CGSizeMake(13.0f, 13.0f);
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
+        CGContextRef context = UIGraphicsGetCurrentContext();
+        CGContextSetStrokeColorWithColor(context, UIColorRGB(0x9c9d9e).CGColor);
+        CGFloat lineWidth = 1.4f;
+        CGFloat lineInset = lineWidth / 2.0f;
+        CGContextSetLineWidth(context, lineWidth);
+        CGPoint lineSegments[4] = {
+            CGPointMake(lineInset, lineInset),
+            CGPointMake(size.width - lineInset, size.height - lineInset),
+            CGPointMake(size.width - lineInset, lineInset),
+            CGPointMake(lineInset, size.height - lineInset)
+        };
+        CGContextStrokeLineSegments(context, lineSegments, 4);
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    });
     return image;
 }
 

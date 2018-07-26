@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGGroupManagementSignals.h"
+
 #import "TGDatabase.h"
 #import "TGInterfaceAssets.h"
 
@@ -22,6 +24,8 @@
 #import "TGTelegraph.h"
 
 @interface TGModernConversationEditingMessageInputPanel () {
+    TGMessage *_message;
+    
     CGFloat _sendAreaWidth;
     CGFloat _attachmentAreaWidth;
     
@@ -136,6 +140,15 @@
     [_timer invalidate];
 }
 
+- (void)setPallete:(TGConversationAssociatedInputPanelPallete *)pallete
+{
+    [super setPallete:pallete];
+    
+    _lineView.backgroundColor = pallete.accentColor;
+    [self setLargeDismissButton:_largeDismissButton];
+    [self updateMessage:_message];
+}
+
 - (void)updateTimer {
     if (_editingTimeout <= DBL_EPSILON) {
         _timerLabel.hidden = true;
@@ -173,11 +186,11 @@
     _largeDismissButton = largeDismissButton;
     
     if (largeDismissButton) {
-        UIImage *closeImage = TGImageNamed(@"PinnedMessagePanelClose.png");
+        UIImage *closeImage = self.pallete.largeCloseIcon;
         _closeButton.frame = CGRectMake(0.0f, 0.0f, closeImage.size.width, closeImage.size.height);
         [_closeButton setBackgroundImage:closeImage forState:UIControlStateNormal];
     } else {
-        UIImage *closeImage = TGImageNamed(@"ReplyPanelClose.png");
+        UIImage *closeImage = self.pallete.closeIcon;
         _closeButton.frame = CGRectMake(0.0f, 0.0f, closeImage.size.width, closeImage.size.height);
         [_closeButton setBackgroundImage:closeImage forState:UIControlStateNormal];
     }
@@ -262,6 +275,8 @@
 }
 
 - (void)updateMessage:(TGMessage *)message {
+    _message = message;
+    
     [_imageView removeFromSuperview];
     _imageView = nil;
     
@@ -270,7 +285,7 @@
     
     _message = message;
     
-    UIColor *color = UIColorRGB(0x34a5ff);
+    UIColor *color = self.pallete.accentColor;
     
     NSString *title = @"";
     id author = nil;
@@ -290,7 +305,7 @@
     if (_customTitle != nil) {
         title = _customTitle;
     }
-    
+
     _nameLabel.textColor = color;
     _nameLabel.text = title;
     [self addSubview:_nameLabel];
@@ -298,10 +313,13 @@
     SSignal *imageSignal = nil;
     UIImage *imageIcon = nil;
     NSString *text = message.text;
-    UIColor *textColor = [UIColor blackColor];
+    UIColor *textColor = self.pallete.textColor;
     NSLineBreakMode lineBreakMode = NSLineBreakByTruncatingTail;
     
-    UIColor *mediaTextColor = UIColorRGB(0x8c8c92);
+    UIColor *mediaTextColor = self.pallete.secondaryTextColor;
+    
+    bool canEdit = false; // message.messageLifetime == 0;
+    bool useCaptionTitle = false;
     
     for (TGMediaAttachment *attachment in message.mediaAttachments)
     {
@@ -309,6 +327,7 @@
         {
             text = TGLocalized(@"Message.Photo");
             textColor = mediaTextColor;
+            useCaptionTitle = true;
             
             imageSignal = [TGSharedPhotoSignals squarePhotoThumbnail:(TGImageMediaAttachment *)attachment ofSize:CGSizeMake(35.0f, 35.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]] downloadLargeImage:true placeholder:nil];
         }
@@ -316,19 +335,22 @@
         {
             text = TGLocalized(@"Message.Video");
             textColor = mediaTextColor;
+            useCaptionTitle = true;
             
             imageSignal = [TGSharedVideoSignals squareVideoThumbnail:(TGVideoMediaAttachment *)attachment ofSize:CGSizeMake(35.0f, 35.0f) threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:[TGReplyHeaderModel thumbnailCornerRadius]]];
-            imageIcon = TGImageNamed(@"ReplyHeaderThumbnailVideoPlay.png");
         }
         else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]])
         {
             text = TGLocalized(@"Message.Audio");
             textColor = mediaTextColor;
+            useCaptionTitle = true;
         }
         else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
             bool isSticker = false;
             bool isVoice = false;
+            useCaptionTitle = true;
+            
             for (id attribute in ((TGDocumentMediaAttachment *)attachment).attributes)
             {
                 if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]])
@@ -337,6 +359,7 @@
                     break;
                 }
                 else if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]]) {
+                    canEdit = false;
                     isVoice = ((TGDocumentAttributeAudio *)attribute).isVoice;
                 }
             }
@@ -401,6 +424,9 @@
             [_imageView addSubview:_imageIconView];
         }
     }
+    
+    if (useCaptionTitle)
+        _nameLabel.text = TGLocalized(@"Conversation.EditingCaptionPanelTitle");
     
     _contentLabel.text = [text stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
     _contentLabel.textColor = textColor;

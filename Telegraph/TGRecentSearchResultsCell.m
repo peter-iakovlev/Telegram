@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGRecentSearchResultsCell ()
 {
     UIImageView *_iconView;
@@ -17,6 +19,9 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self != nil)
     {
+        self.selectedBackgroundView = [[UIView alloc] init];
+        self.selectedBackgroundView.backgroundColor = TGSelectionColor();
+        
         _iconView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"RecentSearchResultsItemLoupe.png"]];
         [self.contentView addSubview:_iconView];
         
@@ -27,6 +32,20 @@
         [self.contentView addSubview:_labelView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    if (presentation == nil || _presentation == presentation)
+        return;
+    
+    _presentation = presentation;
+    
+    self.backgroundColor = presentation.pallete.backgroundColor;
+    self.selectedBackgroundView.backgroundColor = presentation.pallete.selectionColor;
+    
+    _labelView.textColor = presentation.pallete.textColor;
+    _iconView.image = TGTintedImage(_iconView.image, presentation.pallete.textColor);
 }
 
 - (void)setTitle:(NSString *)title

@@ -1,6 +1,6 @@
 #import "TGConversationScrollButtonContainer.h"
 
-#import "TGAnimationUtils.h"
+#import <LegacyComponents/TGAnimationUtils.h>
 
 @implementation TGConversationScrollButtonContainer
 
@@ -27,6 +27,14 @@
         [self updateLayoutAnimated:false];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _downButton.presentation = presentation;
+    _mentionsButton.presentation = presentation;
 }
 
 - (void)setDisplayDownButton:(bool)displayDownButton {

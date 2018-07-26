@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGToastTitlePanel () {
     UILabel *_label;
     TGModernButton *_closeButton;
@@ -43,6 +45,17 @@
         [self addSubview:_separatorView];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _separatorView.backgroundColor = presentation.pallete.barSeparatorColor;
+    
+    _label.textColor = presentation.pallete.navigationTitleColor;    
+    [_closeButton setImage:presentation.images.pinCloseIcon forState:UIControlStateNormal];
 }
 
 - (void)setDismiss:(void (^)())dismiss {

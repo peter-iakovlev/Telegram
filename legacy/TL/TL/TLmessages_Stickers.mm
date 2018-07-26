@@ -64,7 +64,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x8a8ecd32;
+    return (int32_t)0xe4599bbd;
 }
 
 - (int32_t)TLconstructorName
@@ -75,7 +75,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLmessages_Stickers$messages_stickers *object = [[TLmessages_Stickers$messages_stickers alloc] init];
-    object.n_hash = metaObject->getString((int32_t)0xc152e470);
+    object.n_hash = metaObject->getInt32((int32_t)0xc152e470);
     object.stickers = metaObject->getArray((int32_t)0x6863de1a);
     return object;
 }
@@ -84,8 +84,8 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeString;
-        value.nativeObject = self.n_hash;
+        value.type = TLConstructedValueTypePrimitiveInt32;
+        value.primitive.int32Value = self.n_hash;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc152e470, value));
     }
     {

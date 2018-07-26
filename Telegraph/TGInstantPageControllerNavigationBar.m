@@ -68,6 +68,11 @@ static UIImage *arrowImage() {
     return self;
 }
 
+- (void)setShareHidden:(bool)hidden
+{
+    _shareButton.hidden = hidden;
+}
+
 - (void)setProgress:(CGFloat)progress {
     _progress = progress;
     [self layoutProgress];

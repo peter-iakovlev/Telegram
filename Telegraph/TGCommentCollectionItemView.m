@@ -37,6 +37,8 @@
     
     if (_customTextColor == nil)
         _label.textColor = presentation.pallete.collectionMenuCommentColor;
+    
+    _activityIndicator.color = presentation.pallete.collectionMenuCommentColor;
 }
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
@@ -94,6 +96,7 @@
     if (_showProgress && _activityIndicator == nil)
     {
         _activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        _activityIndicator.color = self.presentation.pallete.collectionMenuCommentColor;
         _activityIndicator.hidden = true;
         _activityIndicator.alpha = _label.alpha;
         [self addSubview:_activityIndicator];
@@ -116,7 +119,7 @@
 {
     [super layoutSubviews];
     
-    _label.frame = CGRectMake(15.0f + self.safeAreaInset.left, 7.0f + _topInset, self.bounds.size.width - 30.0f - self.safeAreaInset.left - self.safeAreaInset.right, _calculatedSize.height - 7.0f - 7.0f);
+    _label.frame = CGRectMake(15.0f + self.safeAreaInset.left, 7.0f + _topInset + _sizeInset, self.bounds.size.width - 30.0f - self.safeAreaInset.left - self.safeAreaInset.right, _calculatedSize.height - 7.0f - 7.0f);
     _activityIndicator.frame = CGRectMake(15.0f + self.safeAreaInset.left, 14.0f, _activityIndicator.frame.size.width, _activityIndicator.frame.size.height);
 }
 

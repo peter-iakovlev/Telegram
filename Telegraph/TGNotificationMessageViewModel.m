@@ -22,6 +22,8 @@
 
 #import "TGChannelAdminLogEntry.h"
 
+#import "TGPresentation.h"
+
 @interface TGNotificationMessageViewModel () <UIGestureRecognizerDelegate, TGDoubleTapGestureRecognizerDelegate>
 {
     TGModernImageViewModel *_backgroundModel;
@@ -80,6 +82,8 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         authorTitle = ((TGConversation *)authorPeer).chatTitle;
         authorShortTitle = authorTitle;
     }
+    
+    bool underlineLinks = false;
     
     switch (actionMedia.actionType)
     {
@@ -320,7 +324,6 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         }
         case TGMessageActionChannelInviter:
         {
-            NSString *authorName = authorTitle;
             NSString *formatString = nil;
             if (_context.conversation.isChannelGroup) {
                 formatString = TGLocalized(@"Notification.GroupInviter");
@@ -730,6 +733,86 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             }
             break;
         }
+        case TGMessageActionBotAllowed:
+        {
+            NSString *formatString = TGLocalized(@"AuthSessions.Message");
+            NSString *domainName = actionMedia.actionData[@"domain"];
+            
+            actionText = [[NSString alloc] initWithFormat:formatString, domainName];
+            
+            NSRange formatDomainRange = [formatString rangeOfString:@"%@"];
+            if (formatDomainRange.location != NSNotFound && domainName.length > 0)
+            {
+                NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+                NSRange range = NSMakeRange(formatDomainRange.location, domainName.length);
+                additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
+                
+                textCheckingResults = [[NSArray alloc] initWithObjects:[NSTextCheckingResult linkCheckingResultWithRange:range URL:[[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"http://%@", domainName]]], nil];
+                
+                underlineLinks = true;
+            }
+        }
+            break;
+        case TGMessageActionSecureValuesSent:
+        {
+            NSString *formatString = TGLocalized(@"Notification.PassportValuesSentMessage");
+            NSString *authorName = [additionalUsers.firstObject displayName];
+            
+            NSArray *components = [actionMedia.actionData[@"values"] componentsSeparatedByString:@","];
+            NSString *values = @"";
+            for (NSString *component in components)
+            {
+                NSString *value = nil;
+                if ([component isEqualToString:@"personal_details"])
+                {
+                    value = TGLocalized(@"Notification.PassportValuePersonalDetails");
+                }
+                else if ([component isEqualToString:@"passport"] || [component isEqualToString:@"identity_card"] || [component isEqualToString:@"driver_license"])
+                {
+                    value = TGLocalized(@"Notification.PassportValueProofOfIdentity");
+                }
+                else if ([component isEqualToString:@"address"])
+                {
+                    value = TGLocalized(@"Notification.PassportValueAddress");
+                }
+                else if ([component isEqualToString:@"utility_bill"] || [component isEqualToString:@"bank_statement"] || [component isEqualToString:@"rental_agreement"])
+                {
+                    value = TGLocalized(@"Notification.PassportValueProofOfAddress");
+                }
+                else if ([component isEqualToString:@"phone"])
+                {
+                    value = TGLocalized(@"Notification.PassportValuePhone");
+                }
+                else if ([component isEqualToString:@"email"])
+                {
+                    value = TGLocalized(@"Notification.PassportValueEmail");
+                }
+                
+                if (values.length == 0)
+                    values = value;
+                else
+                    values = [values stringByAppendingString:[NSString stringWithFormat:@", %@", value]];
+            }
+            
+            actionText = [[NSString alloc] initWithFormat:formatString, authorName, values];
+            
+            
+            NSRange formatNameRange = [formatString rangeOfString:@"%1$@"];
+            if (formatNameRange.location != NSNotFound)
+            {
+                NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+                NSRange range = NSMakeRange(formatNameRange.location, authorName.length);
+                additionalAttributes = [[NSArray alloc] initWithObjects:[[NSValue alloc] initWithBytes:&range objCType:@encode(NSRange)], fontAttributes, nil];
+            }
+            
+//            NSRange valuesRange = [actionText rangeOfString:values];
+//            if (valuesRange.location != NSNotFound)
+//            {
+//                NSArray *fontAttributes = [[NSArray alloc] initWithObjects:(__bridge id)[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleBoldFont], (NSString *)kCTFontAttributeName, nil];
+//                [additionalAttributes arrayByAddingObjectsFromArray:@[[[NSValue alloc] initWithBytes:&valuesRange objCType:@encode(NSRange)], fontAttributes]];
+//            }
+        }
+            break;
         case TGMessageActionPaymentSent: {
             TGMessage *replyMessage = nil;
             for (id attachment in message.mediaAttachments) {
@@ -1137,14 +1220,20 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                     NSRange formatNameRange = NSMakeRange(NSNotFound, 0);
                     formatString = TGLocalized(@"Channel.AdminLog.MessageEdited");
                     bool isMedia = false;
-                    for (id media in value.message.mediaAttachments) {
+                    int64_t previousId = 0;
+                    int64_t currentId = 0;
+                    for (id media in value.previousMessage.mediaAttachments) {
                         if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+                            previousId = ((TGImageMediaAttachment *)media).imageId;
                             isMedia = true;
                         } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+                            previousId = ((TGVideoMediaAttachment *)media).videoId;
                             isMedia = true;
                         } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                            previousId = ((TGDocumentMediaAttachment *)media).documentId;
                             isMedia = true;
                         } else if ([media isKindOfClass:[TGAudioMediaAttachment class]]) {
+                            previousId = ((TGAudioMediaAttachment *)media).audioId;
                             isMedia = true;
                         } else if ([media isKindOfClass:[TGLocationMediaAttachment class]]) {
                             isMedia = true;
@@ -1152,7 +1241,22 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                             isMedia = true;
                         }
                     }
-                    if (isMedia) {
+                    for (id media in value.message.mediaAttachments) {
+                        if ([media isKindOfClass:[TGImageMediaAttachment class]]) {
+                            currentId = ((TGImageMediaAttachment *)media).imageId;
+                            isMedia = true;
+                        } else if ([media isKindOfClass:[TGVideoMediaAttachment class]]) {
+                            currentId = ((TGVideoMediaAttachment *)media).videoId;
+                            isMedia = true;
+                        } else if ([media isKindOfClass:[TGDocumentMediaAttachment class]]) {
+                            currentId = ((TGDocumentMediaAttachment *)media).documentId;
+                            isMedia = true;
+                        } else if ([media isKindOfClass:[TGAudioMediaAttachment class]]) {
+                            currentId = ((TGAudioMediaAttachment *)media).audioId;
+                            isMedia = true;
+                        }
+                    }
+                    if (isMedia && previousId == currentId) {
                         formatString = TGLocalized(@"Channel.AdminLog.CaptionEdited");
                     }
                     formatNameRange = [formatString rangeOfString:@"%@"];
@@ -1255,6 +1359,9 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         _textModel.text = actionText;
         _textModel.additionalAttributes = additionalAttributes;
         _textModel.textCheckingResults = textCheckingResults;
+        if (underlineLinks) {
+            _textModel.layoutFlags |= TGReusableLabelLayoutHighlightLinks;
+        }
         
         return true;
     }
@@ -1273,7 +1380,7 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         _actionMedia = actionMedia;
         _message = message;
         
-        _backgroundModel = [[TGModernImageViewModel alloc] initWithImage:[[TGTelegraphConversationMessageAssetsSource instance] systemMessageBackground]];
+        _backgroundModel = [[TGModernImageViewModel alloc] initWithImage:context.presentation.images.chatSystemBackground];
         _backgroundModel.skipDrawInContext = true;
         [self addSubmodel:_backgroundModel];
         
@@ -1282,7 +1389,8 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         [self addSubmodel:_contentModel];
         
         _textModel = [[TGModernTextViewModel alloc] initWithText:@"" font:[[TGTelegraphConversationMessageAssetsSource instance] messageActionTitleFont]];
-        _textModel.textColor = [UIColor whiteColor];
+        _textModel.textColor = context.presentation.pallete.chatSystemTextColor;
+        _textModel.linkColor = context.presentation.pallete.chatSystemTextColor;
         _textModel.layoutFlags = TGReusableLabelLayoutMultiline;
         _textModel.alignment = NSTextAlignmentCenter;
         
@@ -1315,7 +1423,7 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
 
 - (void)updateMediaVisibility
 {
-    _imageModel.alpha = [_context isMediaVisibleInMessage:_mid] ? 1.0f : 0.0f;
+    _imageModel.alpha = [_context isMediaVisibleInMessage:_mid peerId:_authorPeerId] ? 1.0f : 0.0f;
 }
 
 - (CGRect)effectiveContentFrame
@@ -1397,7 +1505,7 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             NSString *linkCandidate = [_textModel linkAtPoint:CGPointMake(point.x - _textModel.frame.origin.x, point.y - _textModel.frame.origin.y) regionData:NULL];
             
             if (recognizer.longTapped || recognizer.doubleTapped)
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             else if (linkCandidate != nil)
                 [_context.companionHandle requestAction:@"openLinkRequested" options:@{@"url": linkCandidate}];
             else if (_navigateToMessageId != 0) {
@@ -1416,9 +1524,9 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
         if (recognizer.state == UIGestureRecognizerStateRecognized)
         {
             if (recognizer.longTapped)
-                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"messageSelectionRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
             else
-                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid)}];
+                [_context.companionHandle requestAction:@"openMediaRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
         }
     }
 }

@@ -2,6 +2,8 @@
 #import <LegacyComponents/TGPhotoEditorSliderView.h>
 #import <LegacyComponents/TGFont.h>
 
+#import "TGPresentation.h"
+
 @interface TGSizeSliderCollectionItemView ()
 {
     UILabel *_label;
@@ -58,6 +60,16 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _label.textColor = presentation.pallete.collectionMenuTextColor;
+    _sliderView.trackColor = presentation.pallete.collectionMenuAccentColor;
+    _sliderView.backgroundColor = presentation.pallete.collectionMenuCellBackgroundColor;
+    _sliderView.backColor = presentation.pallete.collectionMenuAccessoryColor;
+}
+
 - (void)setValue:(int32_t)value
 {
     NSInteger i = 0;
@@ -98,7 +110,7 @@
     [super layoutSubviews];
     
     _label.frame = CGRectMake(0.0f, 14.0f, self.frame.size.width, 20.0f);
-    _sliderView.frame = CGRectMake(15.0f, 34.0f, self.frame.size.width - 30.0f, 44.0f);
+    _sliderView.frame = CGRectMake(15.0f + self.safeAreaInset.left, 34.0f, self.frame.size.width - 30.0f - self.safeAreaInset.left - self.safeAreaInset.right, 44.0f);
 }
 
 @end

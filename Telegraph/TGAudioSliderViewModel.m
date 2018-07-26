@@ -31,6 +31,7 @@
     
     ((TGAudioSliderView *)self.boundView).viewStateIdentifier = self.viewStateIdentifier;
     
+    ((TGAudioSliderView *)self.boundView).presentation = _presentation;
     ((TGAudioSliderView *)self.boundView).style = _incoming ? TGAudioSliderViewStyleIncoming : TGAudioSliderViewStyleOutgoing;
     ((TGAudioSliderView *)self.boundView).duration = _duration;
     [((TGAudioSliderView *)self.boundView) setStatus:_status];
@@ -42,6 +43,13 @@
 - (void)unbindView:(TGModernViewStorage *)viewStorage
 {
     [super unbindView:viewStorage];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    ((TGAudioSliderView *)self.boundView).presentation = _presentation;
 }
 
 - (void)setIncoming:(bool)incoming

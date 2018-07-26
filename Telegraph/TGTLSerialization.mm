@@ -195,7 +195,7 @@
                     dict[@(dcOption.n_id)] = array;
                 }
                 
-                MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3)  preferForProxy:dcOption.flags & (1 << 4)];
+                MTDatacenterAddress *address = [[MTDatacenterAddress alloc] initWithIp:dcOption.ip_address port:(uint16_t)dcOption.port preferForMedia:dcOption.flags & (1 << 1) restrictToTcp:dcOption.flags & (1 << 2) cdn:dcOption.flags & (1 << 3)  preferForProxy:dcOption.flags & (1 << 4) secret:dcOption.secret];
                 [array addObject:address];
             }
             
@@ -205,9 +205,22 @@
     };
 }
 
+- (MTRequestNoopParser)requestNoop:(__autoreleasing NSData **)data
+{
+    NSData *testData = [TGTLSerialization serializeMessage:[[TLRPChelp_test$help_test alloc] init]];
+    if (data)
+        *data = testData;
+    
+    return ^id (NSData *response)
+    {
+        __unused id result = [self parseMessage:response];
+        return @(result != nil);
+    };
+}
+
 - (NSUInteger)currentLayer
 {
-    return 73;
+    return 82;
 }
 
 @end

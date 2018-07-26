@@ -62,10 +62,10 @@ const int32_t TGNotificationMediaCornerRadius = 5;
                 TGImageMediaAttachment *imageMedia = (TGImageMediaAttachment *)attachment;
                 
                 NSString *text = TGLocalized(@"Message.Photo");
-                if (imageMedia.caption.length > 0)
+                if (message.caption.length > 0)
                 {
                     _hasCaption = true;
-                    text = imageMedia.caption;
+                    text = message.caption;
                 }
                 
                 [self setIcon:[UIImage imageNamed:@"MediaPhoto"] text:text];
@@ -127,10 +127,10 @@ const int32_t TGNotificationMediaCornerRadius = 5;
             {
                 TGVideoMediaAttachment *video = (TGVideoMediaAttachment *)attachment;
                 NSString *text = video.roundMessage ? TGLocalized(@"Message.VideoMessage") : TGLocalized(@"Message.Video");
-                if (video.caption.length > 0)
+                if (message.caption.length > 0)
                 {
                     _hasCaption = true;
-                    text = video.caption;
+                    text = message.caption;
                 }
                 
                 [self setIcon:[UIImage imageNamed:@"MediaVideo"] text:text];

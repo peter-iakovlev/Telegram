@@ -26,9 +26,10 @@
 
 #import "TGCurrencyFormatter.h"
 
-#import "TGAnimationUtils.h"
+#import <LegacyComponents/TGAnimationUtils.h>
 
 #import "TGPresentationAssets.h"
+#import "TGPresentation.h"
 
 static UIImage *instantPageButtonBackground(UIColor *color, bool fill) {
     CGFloat diameter = 14.0f;
@@ -196,7 +197,7 @@ static UIImage *durationGameBackgroundImage()
         if (webPage.siteName.length != 0)
         {
             _siteModel = [[TGModernTextViewModel alloc] initWithText:webPage.siteName font:titleFont()];
-            _siteModel.textColor = [TGWebpageFooterModel colorForAccentText:incoming];
+            _siteModel.textColor = incoming ? context.presentation.pallete.chatIncomingAccentColor : context.presentation.pallete.chatOutgoingAccentColor;
             [self addSubmodel:_siteModel];
         }
         
@@ -223,13 +224,13 @@ static UIImage *durationGameBackgroundImage()
             _titleModel = [[TGModernTextViewModel alloc] initWithText:title font:titleFont()];
             _titleModel.layoutFlags = TGReusableLabelLayoutMultiline;
             _titleModel.maxNumberOfLines = 4;
-            _titleModel.textColor = [UIColor blackColor];
+            _titleModel.textColor = incoming ? context.presentation.pallete.chatIncomingTextColor : context.presentation.pallete.chatOutgoingTextColor;
             [self addSubmodel:_titleModel];
         }
         
         bool isInstagram = [webPage.siteName.lowercaseString isEqualToString:@"instagram"];
         bool isTwitter = [webPage.siteName.lowercaseString isEqualToString:@"twitter"];
-        bool isInstantGallery = isInstagram || isTwitter;
+        bool isInstantGallery = [_webPage.pageType isEqualToString:@"telegram_album"] || isInstagram || isTwitter;
         bool isCoub = [webPage.siteName.lowercaseString isEqualToString:@"coub"];
         bool isGame = [webPage.pageType isEqualToString:@"game"];
         bool isInvoice = [webPage.pageType isEqualToString:@"invoice"];
@@ -260,24 +261,31 @@ static UIImage *durationGameBackgroundImage()
                 
                 UIColor *labelColor = nil;
                 if (incoming) {
-                    labelColor = UIColorRGBA(0x525252, 0.6f);
+                    labelColor = context.presentation.pallete.chatIncomingSubtextColor;
                 } else {
-                    labelColor = UIColorRGBA(0x008c09, 0.8f);
+                    labelColor = context.presentation.pallete.chatOutgoingSubtextColor;
                 }
                 
                 [textCheckingResults addObject:[[TGTextCheckingResult alloc] initWithRange:NSMakeRange(updatedString.length - shipmentString.length, shipmentString.length) type:TGTextCheckingResultTypeColor contents:@"" value:labelColor highlightAsLink:false]];
                 
                 _textModel = [[TGModernTextViewModel alloc] initWithText:updatedString font:textFont()];
+                _textModel.underlineAllLinks = incoming ? context.presentation.pallete.underlineAllIncomingLinks : context.presentation.pallete.underlineAllOutgoingLinks;
                 _textModel.textCheckingResults = textCheckingResults;
                 _textModel.layoutFlags |= TGReusableLabelLayoutOffsetLastLine;
             } else {
-                _textModel = [[TGModernTextViewModel alloc] initWithText:webPage.pageDescription font:textFont()];
-                _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:webPage.pageDescription highlightMentionsAndTags:false highlightCommands:false entities:webPage.pageDescriptionEntities];
+                NSString *pageDescription = webPage.pageDescription;
+                if (pageDescription.length > 1024)
+                    pageDescription = [pageDescription substringToIndex:1024];
+                _textModel = [[TGModernTextViewModel alloc] initWithText:pageDescription font:textFont()];
+                _textModel.underlineAllLinks = incoming ? context.presentation.pallete.underlineAllIncomingLinks : context.presentation.pallete.underlineAllOutgoingLinks;
+                bool highlightExternalTags = isInstagram || isTwitter;
+                _textModel.textCheckingResults = [TGMessage textCheckingResultsForText:pageDescription highlightMentionsAndTags:highlightExternalTags highlightCommands:false entities:webPage.pageDescriptionEntities highlightAsExternalMentionsAndHashtags:highlightExternalTags];
             }
             
             _textModel.layoutFlags |= TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
             _textModel.maxNumberOfLines = (_isGame || _isInvoice) ? 1000 : 16;
-            _textModel.textColor = [UIColor blackColor];
+            _textModel.textColor = incoming ? context.presentation.pallete.chatIncomingTextColor : context.presentation.pallete.chatOutgoingTextColor;
+            _textModel.linkColor = incoming ? context.presentation.pallete.chatIncomingLinkColor : context.presentation.pallete.chatOutgoingLinkColor;
             if (_imageInText)
             {
                 _textModel.linesInset = [[TGModernTextViewLinesInset alloc] initWithNumberOfLinesToInset:_titleModel != nil ? 2 : 3 inset:60.0f];
@@ -289,7 +297,7 @@ static UIImage *durationGameBackgroundImage()
         
         bool hasSize = false;
         
-        if (!_imageInText && webPage.document != nil && ([webPage.document.mimeType isEqualToString:@"image/gif"] || [webPage.document.mimeType isEqualToString:@"video/mp4"]) && !isInstantGallery) {
+        if (!_imageInText && webPage.document != nil && ([webPage.document.mimeType isEqualToString:@"image/gif"] || [webPage.document.mimeType isEqualToString:@"video/mp4"]) && !isInstagram) {
             
             if ([webPage.document isAnimated]) {
                 _isAnimation = true;
@@ -539,59 +547,15 @@ static UIImage *durationGameBackgroundImage()
             buttonType = @"viewMessage";
         
         if (buttonType != nil) {
-            static UIImage *incomingBackground = nil;
-            static UIImage *incomingSolidBackground = nil;
-            static UIImage *outgoingBackground = nil;
-            static UIImage *outgoingSolidBackground = nil;
-            
-            static dispatch_once_t onceToken;
-            dispatch_once(&onceToken, ^{
-                incomingBackground = instantPageButtonBackground(UIColorRGB(0x3ca7fe), false);
-                incomingSolidBackground = instantPageButtonBackground(UIColorRGB(0x3ca7fe), true);
-                outgoingBackground = instantPageButtonBackground(UIColorRGB(0x29cc10), false);
-                outgoingSolidBackground = instantPageButtonBackground(UIColorRGB(0x29cc10), true);
-            });
-            
-            static NSDictionary *cachedButtons = nil;
-            if (cachedButtons == nil)
-                cachedButtons = [[NSDictionary alloc] init];
-            
-            NSDictionary *button = cachedButtons[buttonType];
-            if (button == nil || ![button[@"localeVersion"] isEqualToNumber:@(TGLocalizedStaticVersion)])
-            {
-                NSString *title = nil;
-                UIImage *iconImage = nil;
-                if ([buttonType isEqualToString:@"instantPage"])
-                {
-                    title = TGLocalized(@"Conversation.InstantPagePreview");
-                    iconImage = [TGPresentationAssets chatInstantViewIcon:UIColorRGB(0x3ca7fe)];
-                }
-                else if ([buttonType isEqualToString:@"viewChannel"])
-                {
-                    title = TGLocalized(@"Conversation.ViewChannel");
-                }
-                else if ([buttonType isEqualToString:@"viewGroup"])
-                {
-                    title = TGLocalized(@"Conversation.ViewGroup");
-                }
-                else if ([buttonType isEqualToString:@"viewMessage"])
-                {
-                    title = TGLocalized(@"Conversation.ViewMessage");
-                }
-                
-                button = [TGArticleWebpageFooterModel cachedActionButtonForTitle:title iconImage:iconImage];
-                NSMutableDictionary *updatedCachedButtons = [cachedButtons mutableCopy];
-                updatedCachedButtons[buttonType] = button;
-                cachedButtons = updatedCachedButtons;
-            }
+            NSDictionary *button = [TGArticleWebpageFooterModel buttonForType:buttonType context:context];
             
             if (button != nil)
             {
                 _actionButtonModel = [[TGModernButtonViewModel alloc] init];
                 _actionButtonModel.image = incoming ? button[@"incoming"] : button[@"outgoing"];
                 _actionButtonModel.highlightedImage = incoming ? button[@"incomingHighlighted"] : button[@"outgoingHighlighted"];
-                _actionButtonModel.backgroundImage = incoming ? incomingBackground : outgoingBackground;
-                _actionButtonModel.highlightedBackgroundImage = incoming ? incomingSolidBackground : outgoingSolidBackground;
+                _actionButtonModel.backgroundImage = incoming ? button[@"incomingBg"] : button[@"outgoingBg"];
+                _actionButtonModel.highlightedBackgroundImage = incoming ? button[@"incomingSolidBg"] : button[@"outgoingSolidBg"];
                 _actionButtonModel.skipDrawInContext = true;
                 
                 __weak TGArticleWebpageFooterModel *weakSelf = self;
@@ -611,14 +575,78 @@ static UIImage *durationGameBackgroundImage()
     return self;
 }
 
-+ (NSDictionary *)cachedActionButtonForTitle:(NSString *)title iconImage:(UIImage *)iconImage
++ (NSDictionary *)buttonForType:(NSString *)buttonType context:(TGModernViewContext *)context
 {
-    UIImage *incomingImage = instantPageButtonContent(UIColorRGB(0x0b8bed), [UIColor clearColor], title, iconImage);
-    UIImage *incomingSolidImage = instantPageButtonContent([UIColor whiteColor], UIColorRGB(0x3ca7fe), title, iconImage);
-    UIImage *outgoingImage = instantPageButtonContent(UIColorRGB(0x17b300), [UIColor clearColor], title, iconImage);
-    UIImage *outgoingSolidImage = instantPageButtonContent(UIColorRGB(0xe1ffc7), UIColorRGB(0x29cc10), title, iconImage);
+    static UIImage *incomingBackground = nil;
+    static UIImage *incomingSolidBackground = nil;
+    static UIImage *outgoingBackground = nil;
+    static UIImage *outgoingSolidBackground = nil;
+    static int32_t cachedPresentation = 0;
     
-    return @{ @"localeVersion": @(TGLocalizedStaticVersion), @"incoming": incomingImage, @"incomingHighlighted": incomingSolidImage, @"outgoing": outgoingImage, @"outgoingHighlighted": outgoingSolidImage };
+    if (cachedPresentation != context.presentation.currentId)
+    {
+        cachedPresentation = context.presentation.currentId;
+        
+        incomingBackground = instantPageButtonBackground(context.presentation.pallete.chatIncomingLineColor, false);
+        incomingSolidBackground = instantPageButtonBackground(context.presentation.pallete.chatIncomingLineColor, true);
+        outgoingBackground = instantPageButtonBackground(context.presentation.pallete.chatOutgoingLineColor, false);
+        outgoingSolidBackground = instantPageButtonBackground(context.presentation.pallete.chatOutgoingLineColor, true);
+    };
+    
+    static NSDictionary *cachedButtons = nil;
+    if (cachedButtons == nil)
+        cachedButtons = [[NSDictionary alloc] init];
+    
+    NSDictionary *button = cachedButtons[buttonType];
+    if (button == nil || ![button[@"localeVersion"] isEqualToNumber:@(TGLocalizedStaticVersion)] || [button[@"presentation"] int32Value] != context.presentation.currentId)
+    {
+        NSString *title = nil;
+        UIImage *iconImage = nil;
+        if ([buttonType isEqualToString:@"instantPage"])
+        {
+            title = TGLocalized(@"Conversation.InstantPagePreview");
+            iconImage = [TGPresentationAssets chatInstantViewIcon:context.presentation.pallete.chatIncomingLineColor];
+        }
+        else if ([buttonType isEqualToString:@"viewChannel"])
+        {
+            title = TGLocalized(@"Conversation.ViewChannel");
+        }
+        else if ([buttonType isEqualToString:@"viewGroup"])
+        {
+            title = TGLocalized(@"Conversation.ViewGroup");
+        }
+        else if ([buttonType isEqualToString:@"viewMessage"])
+        {
+            title = TGLocalized(@"Conversation.ViewMessage");
+        }
+        else if ([buttonType isEqualToString:@"viewContactDetails"])
+        {
+            title = TGLocalized(@"Conversation.ViewContactDetails");
+        }
+        
+        button = [TGArticleWebpageFooterModel cachedActionButtonForTitle:title iconImage:iconImage presentation:context.presentation];
+        NSMutableDictionary *updatedCachedButtons = [cachedButtons mutableCopy];
+        updatedCachedButtons[buttonType] = button;
+        cachedButtons = updatedCachedButtons;
+    }
+    
+    NSMutableDictionary *finalButton = [button mutableCopy];
+    finalButton[@"incomingBg"] = incomingBackground;
+    finalButton[@"incomingSolidBg"] = incomingSolidBackground;
+    finalButton[@"outgoingBg"] = outgoingBackground;
+    finalButton[@"outgoingSolidBg"] = outgoingSolidBackground;
+    
+    return finalButton;
+}
+
++ (NSDictionary *)cachedActionButtonForTitle:(NSString *)title iconImage:(UIImage *)iconImage presentation:(TGPresentation *)presentation
+{
+    UIImage *incomingImage = instantPageButtonContent(presentation.pallete.chatIncomingAccentColor, [UIColor clearColor], title, iconImage);
+    UIImage *incomingSolidImage = instantPageButtonContent(presentation.pallete.chatIncomingBubbleColor, presentation.pallete.chatIncomingLineColor, title, iconImage);
+    UIImage *outgoingImage = instantPageButtonContent(presentation.pallete.chatOutgoingAccentColor, [UIColor clearColor], title, iconImage);
+    UIImage *outgoingSolidImage = instantPageButtonContent(presentation.pallete.chatOutgoingBubbleColor, presentation.pallete.chatOutgoingLineColor, title, iconImage);
+    
+    return @{ @"localeVersion": @(TGLocalizedStaticVersion), @"presentation": @(presentation.currentId), @"incoming": incomingImage, @"incomingHighlighted": incomingSolidImage, @"outgoing": outgoingImage, @"outgoingHighlighted": outgoingSolidImage };
 }
 
 - (void)bindSpecialViewsToContainer:(UIView *)container viewStorage:(TGModernViewStorage *)viewStorage atItemPosition:(CGPoint)itemPosition
@@ -901,8 +929,9 @@ static UIImage *durationGameBackgroundImage()
     
     if (_durationModel != nil)
     {
+        bool isInstantGallery = [_webPage.pageType isEqualToString:@"telegram_album"] || [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"];
+        
         CGRect durationBackgroundFrame = CGRectMake(0.0f, 0.0f, _durationLabelModel.frame.size.width + 12.0f - ((_isGame || _isInvoice) ? 1.0f : 0.0f), 18.0f);
-        bool isInstantGallery = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"];
         if (!_isGame && !_isInvoice && _webPage.instantPage != nil && !isInstantGallery) {
             durationBackgroundFrame.size.width += 20.0f;
             durationBackgroundFrame.size.height += 8.0f;
@@ -937,7 +966,7 @@ static UIImage *durationGameBackgroundImage()
         CGFloat instantOffset = MAX(CGRectGetMaxY(_titleModel.frame), MAX(CGRectGetMaxY(_textModel.frame), CGRectGetMaxY(_imageViewModel.frame)));
         
         CGFloat instantPageButtonWidth = rect.size.width;
-        _actionButtonModel.frame = CGRectMake(2.0f, instantOffset + 8.0f, instantPageButtonWidth, 33.0f);;
+        _actionButtonModel.frame = CGRectMake(2.0f, instantOffset + 8.0f, instantPageButtonWidth, 33.0f);
         finalBottomInset += _actionButtonModel.frame.size.height + (_imageInText ? 18.0f : 20.0f) - 11.0f;
         if (_textModel != nil) {
             finalBottomInset += 8.0f;
@@ -1084,7 +1113,7 @@ static UIImage *durationGameBackgroundImage()
 
 - (void)updateOverlayAnimated:(bool)animated {
     bool isCoub = [[_webPage.siteName lowercaseString] isEqualToString:@"coub"];
-    bool isInstantGallery = [[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"];
+    bool isInstantGallery = [_webPage.pageType isEqualToString:@"telegram_album"] || ([[_webPage.siteName lowercaseString] isEqualToString:@"instagram"] || [[_webPage.siteName lowercaseString] isEqualToString:@"twitter"]);
     
     if (!_isVideo && isInstantGallery) {
         [_imageViewModel setNone];

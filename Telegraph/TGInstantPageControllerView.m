@@ -281,6 +281,12 @@
     }
 }
 
+- (void)setDisableActions:(bool)disableActions
+{
+    _disableActions = disableActions;
+    [_navigationBar setShareHidden:disableActions];
+}
+
 - (TGInstantPagePresentation *)presentation {
     if (_presentation)
         return _presentation;
@@ -339,7 +345,7 @@
     if (self.frame.size.width > self.frame.size.height)
         orientation = UIInterfaceOrientationLandscapeLeft;
     UIEdgeInsets safeAreaInset = [TGViewController safeAreaInsetForOrientation:orientation];
-    _currentLayout = [TGInstantPageLayout makeLayoutForWebPage:_webPage peerId:_peerId messageId:_messageId boundingWidth:self.bounds.size.width safeAreaInset:safeAreaInset presentation:self.presentation];
+    _currentLayout = [TGInstantPageLayout makeLayoutForWebPage:_webPage peerId:_peerId messageId:_messageId boundingWidth:self.bounds.size.width safeAreaInset:safeAreaInset presentation:self.presentation showFeedbackButton:!self.disableActions];
     [_visibleTiles enumerateKeysAndObjectsUsingBlock:^(__unused NSNumber *key, TGInstantPageTileView *tileView, __unused BOOL *stop) {
         [tileView removeFromSuperview];
     }];

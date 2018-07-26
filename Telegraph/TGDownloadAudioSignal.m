@@ -9,6 +9,8 @@
 
 #import "TGPreparedLocalDocumentMessage.h"
 
+#import "TGVideoDownloadActor.h"
+
 #import "TGAudioMediaAttachment+Telegraph.h"
 
 @interface TGDownloadMediaAdapter : NSObject <ASWatcher>
@@ -65,6 +67,53 @@
                 
                 [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/audio/(%" PRId32 ":%" PRId64 ":%@)", audioAttachment.datacenterId, audioAttachment.audioId, audioAttachment.audioUri.length != 0 ? audioAttachment.audioUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:audioAttachment, @"audioAttachment", nil] changePriority:true messageId:mid itemId:_mediaId groupId:cid itemClass:TGDownloadItemClassAudio];
                 
+                _attachment = attachment;
+            }
+            else
+            {
+                return nil;
+            }
+        }
+        else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
+        {
+            TGVideoMediaAttachment *video = (TGVideoMediaAttachment *)attachment;
+            if (video.videoId != 0) {
+                _mediaId = [[TGMediaId alloc] initWithType:1 itemId:video.videoId];
+                
+                NSString *videoUri = [video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL];
+                if (videoUri != nil)
+                {
+                    [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/as/media/video/(%@)", videoUri] options:[[NSDictionary alloc] initWithObjectsAndKeys:video, @"videoAttachment", nil] changePriority:true messageId:mid itemId:_mediaId groupId:cid itemClass:TGDownloadItemClassVideo];
+                }
+                _attachment = attachment;
+            }
+            else
+            {
+                return nil;
+            }
+        }
+        else if ([attachment isKindOfClass:[TGImageMediaAttachment class]])
+        {
+            TGImageMediaAttachment *image = (TGImageMediaAttachment *)attachment;
+            if (image.imageId != 0) {
+                _mediaId = [[TGMediaId alloc] initWithType:2 itemId:image.imageId];
+                
+                NSString *url = [[image imageInfo] closestImageUrlWithSize:CGSizeMake(1136, 1136) resultingSize:NULL pickLargest:true];
+                if (url != nil)
+                {
+                    int contentHints = TGRemoteImageContentHintLargeFile;
+                    NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
+                    
+                    [options setObject:[[NSDictionary alloc] initWithObjectsAndKeys:
+                                        [[NSNumber alloc] initWithInt:mid], @"messageId",
+                                        [[NSNumber alloc] initWithLongLong:cid], @"conversationId",
+                                        [[NSNumber alloc] initWithBool:false], @"forceSave",
+                                        _mediaId, @"mediaId", image.imageInfo, @"imageInfo",
+                                        [[NSNumber alloc] initWithBool:false], @"storeAsAsset",
+                                        nil] forKey:@"userProperties"];
+                    
+                    [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/img/(download:{filter:%@}%@)", @"maybeScale", url] options:options changePriority:true messageId:mid itemId:_mediaId groupId:cid itemClass:TGDownloadItemClassImage];
+                }
                 _attachment = attachment;
             }
             else
@@ -139,6 +188,10 @@
                             path = [TGDownloadAudioSignal pathForDocumentMediaAttachment:(TGDocumentMediaAttachment *)_attachment];
                         else if ([_attachment isKindOfClass:[TGAudioMediaAttachment class]])
                             path = ((TGAudioMediaAttachment *)_attachment).localFilePath;
+                        else if ([_attachment isKindOfClass:[TGVideoMediaAttachment class]])
+                            path = [TGVideoDownloadActor localPathForVideoUrl:[((TGVideoMediaAttachment *)_attachment).videoInfo urlWithQuality:0 actualQuality:NULL actualSize:NULL]];
+                        else if ([_attachment isKindOfClass:[TGImageMediaAttachment class]])
+                            path = [[TGRemoteImageView sharedCache] pathForCachedData:[((TGImageMediaAttachment *)_attachment).imageInfo closestImageUrlWithSize:CGSizeMake(1280, 1280) resultingSize:NULL]];
                         
                         self.completionBlock(path);
                     }
@@ -157,7 +210,7 @@
 
 @implementation TGDownloadAudioSignal
 
-+ (SSignal *)downloadAudioWithAttachment:(TGMediaAttachment *)attachment conversationId:(int64_t)cid messageId:(int32_t)mid
++ (SSignal *)downloadMediaWithAttachment:(TGMediaAttachment *)attachment conversationId:(int64_t)cid messageId:(int32_t)mid
 {
     if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]] && ((TGDocumentMediaAttachment *)attachment).documentId == 0 && ((TGDocumentMediaAttachment *)attachment).localDocumentId == 0)
         return [SSignal fail:nil];

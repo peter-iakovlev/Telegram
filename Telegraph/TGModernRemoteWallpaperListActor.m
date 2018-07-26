@@ -83,7 +83,9 @@ static bool alreadyCachedList = false;
             TGImageInfo *imageInfo = [[TGImageInfo alloc] initWithTelegraphSizesDescription:concreteWallpaper.sizes];
             
             NSString *thumbnailUri = [imageInfo closestImageUrlWithSize:CGSizeMake(256.0f, 256.0f) resultingSize:NULL];
-            NSString *fullscreenUri = [imageInfo closestImageUrlWithSize:CGSizeMake(640.0f, 1136.0f) resultingSize:NULL];
+            
+            CGSize fullscreenSize = TGScreenScaling() > 2 ? CGSizeMake(1080, 1920) : CGSizeMake(640.0f, 1136.0f);
+            NSString *fullscreenUri = [imageInfo closestImageUrlWithSize:fullscreenSize resultingSize:NULL];
             if (thumbnailUri != nil && fullscreenUri != nil)
             {
                 TGRemoteWallpaperInfo *wallpaperInfo = [[TGRemoteWallpaperInfo alloc] initWithRemoteId:concreteWallpaper.n_id thumbnailUri:thumbnailUri fullscreenUri:fullscreenUri tintColor:concreteWallpaper.color];

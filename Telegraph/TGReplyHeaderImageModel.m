@@ -6,6 +6,8 @@
 
 #import "TGModernImageViewModel.h"
 
+#import "TGPresentation.h"
+
 @interface TGReplyHeaderImageModel ()
 {
 }
@@ -14,9 +16,9 @@
 
 @implementation TGReplyHeaderImageModel
 
-- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text imageSignalGenerator:(SSignal *(^)())imageSignalGenerator imageSignalIdentifier:(NSString *)imageSignalIdentifier icon:(UIImage *)icon truncateTextInTheMiddle:(bool)truncateTextInTheMiddle system:(bool)system
+- (instancetype)initWithPeer:(id)peer incoming:(bool)incoming text:(NSString *)text imageSignalGenerator:(SSignal *(^)())imageSignalGenerator imageSignalIdentifier:(NSString *)imageSignalIdentifier icon:(UIImage *)icon truncateTextInTheMiddle:(bool)truncateTextInTheMiddle system:(bool)system presentation:(TGPresentation *)presentation
 {
-    self = [super initWithPeer:peer incoming:incoming text:text truncateTextInTheMiddle:truncateTextInTheMiddle textColor:[TGReplyHeaderModel colorForMediaText:incoming] leftInset:44.0f system:system];
+    self = [super initWithPeer:peer incoming:incoming text:text truncateTextInTheMiddle:truncateTextInTheMiddle textColor:incoming ? presentation.pallete.chatIncomingSubtextColor : presentation.pallete.chatOutgoingSubtextColor leftInset:44.0f system:system presentation:presentation];
     if (self != nil)
     {
         if (imageSignalGenerator != nil) {

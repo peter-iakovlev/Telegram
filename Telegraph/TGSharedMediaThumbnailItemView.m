@@ -1,13 +1,12 @@
 #import "TGSharedMediaThumbnailItemView.h"
 
 #import <LegacyComponents/LegacyComponents.h>
-
-#import "TGImagePickerCellCheckButton.h"
+#import <LegacyComponents/TGCheckButtonView.h>
 
 @interface TGSharedMediaThumbnailItemView ()
 {
     UIView *_checkButtonContainer;
-    TGImagePickerCellCheckButton *_checkButton;
+    TGCheckButtonView *_checkButton;
     
     UIGestureRecognizer *_tapRecognizer;
 }
@@ -24,11 +23,9 @@
         _checkButtonContainer = [[UIView alloc] init];
         [self.contentView addSubview:_checkButtonContainer];
         
-        _checkButton = [[TGImagePickerCellCheckButton alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 33.0f, 33.0f)];
-        [_checkButton setChecked:false animated:false];
-        _checkButton.hidden = true;
-        _checkButton.userInteractionEnabled = false;
+        _checkButton = [[TGCheckButtonView alloc] initWithStyle:TGCheckButtonStyleMedia];
         _checkButton.transform = CGAffineTransformMakeScale(0.01f, 0.01f);
+        _checkButton.userInteractionEnabled = false;
         [_checkButtonContainer addSubview:_checkButton];
         
         _tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapGesture:)];
@@ -93,7 +90,7 @@
 {
     [super updateItemSelected];
     
-    [_checkButton setChecked:self.isItemSelected && self.item != nil && self.isItemSelected(self.item) animated:false];
+    [_checkButton setSelected:self.isItemSelected && self.item != nil && self.isItemSelected(self.item) animated:false];
 }
 
 - (void)tapGesture:(UITapGestureRecognizer *)recognizer
@@ -102,7 +99,7 @@
     {
         if (self.toggleItemSelection && self.item != nil)
             self.toggleItemSelection(self.item);
-        [_checkButton setChecked:self.isItemSelected && self.item != nil && self.isItemSelected(self.item) animated:true];
+        [_checkButton setSelected:self.isItemSelected && self.item != nil && self.isItemSelected(self.item) animated:true];
     }
 }
 
@@ -112,7 +109,7 @@
     
     CGRect frame = self.frame;
     
-    _checkButtonContainer.frame = CGRectMake(frame.size.width - 33.0f - 0.0f, 1.0f, 33.0f, 33.0f);
+    _checkButtonContainer.frame = CGRectMake(frame.size.width - 32.0f - 0.0f, 1.0f, 32.0f, 32.0f);
 }
 
 @end

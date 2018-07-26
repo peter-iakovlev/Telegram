@@ -20,6 +20,21 @@
 
 @end
 
+@interface CloudSecureMediaResource: NSObject <TelegramCloudMediaResource>
+
+@property (nonatomic, readonly) int32_t datacenterId;
+@property (nonatomic, readonly) int64_t fileId;
+@property (nonatomic, readonly) int64_t accessHash;
+@property (nonatomic, strong, readonly) NSNumber *size;
+@property (nonatomic, strong, readonly) NSData *fileHash;
+@property (nonatomic, readonly) bool thumbnail;
+
+@property (nonatomic, strong, readonly) id mediaType;
+
+- (instancetype)initWithDatacenterId:(int32_t)datacenterId fileId:(int64_t)fileId accessHash:(int64_t)accessHash size:(NSNumber *)size fileHash:(NSData *)fileHash thumbnail:(bool)thumbnail mediaType:(id)mediaType;
+
+@end
+
 @interface CloudDocumentMediaResource: NSObject <TelegramCloudMediaResource>
 
 @property (nonatomic, readonly) int32_t datacenterId;

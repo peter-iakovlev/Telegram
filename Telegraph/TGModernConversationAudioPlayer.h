@@ -39,6 +39,8 @@
 - (void)pause:(void (^)())completion;
 - (void)stop;
 
+- (void)setRate:(CGFloat)rate;
+
 - (float)playbackPosition;
 - (float)playbackPositionSync:(bool)sync;
 - (NSTimeInterval)absolutePlaybackPosition;

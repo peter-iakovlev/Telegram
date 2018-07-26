@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGLetteredAvatarView.h>
 
+#import "TGPresentation.h"
+
 @interface TGRevokeLinkConversationItemView () {
     TGLetteredAvatarView *_avatarView;
     UILabel *_titleLabel;
@@ -39,25 +41,17 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.collectionMenuTextColor;
+}
+
 - (void)setConversation:(TGConversation *)conversation {
     CGSize size = _avatarView.bounds.size;
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIGraphicsBeginImageContextWithOptions(size, false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, size.width, size.height));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, size.width - 1.0f, size.height - 1.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];
+   
     if (conversation.chatPhotoSmall.length != 0) {
         [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:40x40" placeholder:placeholder];
     } else {
@@ -67,8 +61,8 @@
     
     NSMutableAttributedString *attributedUsername = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:@"https://t.me/%@", conversation.username]];
     [attributedUsername addAttribute:NSFontAttributeName value:_usernameLabel.font range:NSMakeRange(0, attributedUsername.length)];
-    [attributedUsername addAttribute:NSForegroundColorAttributeName value:UIColorRGB(0x8e8e93) range:NSMakeRange(0, @"https://t.me/".length)];
-    [attributedUsername addAttribute:NSForegroundColorAttributeName value:TGAccentColor() range:NSMakeRange(@"https://t.me/".length, attributedUsername.length - @"https://t.me/".length)];
+    [attributedUsername addAttribute:NSForegroundColorAttributeName value:self.presentation.pallete.collectionMenuVariantColor range:NSMakeRange(0, @"https://t.me/".length)];
+    [attributedUsername addAttribute:NSForegroundColorAttributeName value:self.presentation.pallete.collectionMenuAccentColor range:NSMakeRange(@"https://t.me/".length, attributedUsername.length - @"https://t.me/".length)];
     
     _usernameLabel.attributedText = attributedUsername;
     

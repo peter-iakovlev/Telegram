@@ -1,6 +1,10 @@
 #import <UIKit/UIKit.h>
 
+@class TGPresentation;
+
 @interface TGShareCommentView : UIView
+
+@property (nonatomic, strong) TGPresentation *presentation;
 
 @property (nonatomic, assign) CGFloat maxHeight;
 @property (nonatomic, readonly) UITextView *textView;

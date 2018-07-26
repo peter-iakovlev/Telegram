@@ -1,6 +1,8 @@
 #import "TGStickerItemPreviewView.h"
 
+#import "TGMenuSheetController.h"
 #import "LegacyComponentsInternal.h"
+#import "LegacyComponentsGlobals.h"
 
 #import "TGStickerPack.h"
 #import "TGStickerAssociation.h"
@@ -32,7 +34,11 @@ static const CGFloat TGStickersTopMargin = 140.0f;
     
         [self insertSubview:self.dimView belowSubview:self.wrapperView];
         
-        self.dimView.backgroundColor = [UIColor colorWithWhite:1.0f alpha:0.7f];
+        bool isDark = false;
+        if ([[LegacyComponentsGlobals provider] respondsToSelector:@selector(menuSheetPallete)])
+            isDark = [[LegacyComponentsGlobals provider] menuSheetPallete].isDark;
+        
+        self.dimView.backgroundColor = [UIColor colorWithWhite:isDark ? 0.0f : 1.0f alpha:0.7f];
         
         _altWrapperView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 40.0f)];
         [self.wrapperView addSubview:_altWrapperView];
@@ -86,11 +92,13 @@ static const CGFloat TGStickersTopMargin = 140.0f;
 {
     CGRect bounds = self.bounds;
     
-    CGFloat y = bounds.size.height / 2.0f;
+    CGFloat y = 0.0f;
     if (bounds.size.height > bounds.size.width && self.eccentric)
         y = bounds.size.height / 3.0f;
     else if (!TGIsPad() && bounds.size.height < bounds.size.width && self.actionsPresented)
         y = bounds.size.height / 4.0f;
+    else
+        y = bounds.size.height / 2.0f;
     
     return CGPointMake(bounds.size.width / 2.0f, y);
 }
@@ -195,6 +203,7 @@ static const CGFloat TGStickersTopMargin = 140.0f;
     for (NSString *alt in alts)
     {
         UILabel *altView = [[UILabel alloc] initWithFrame:CGRectZero];
+        altView.backgroundColor = [UIColor clearColor];
         altView.font = TGSystemFontOfSize(32);
         altView.text = alt;
         [altView sizeToFit];

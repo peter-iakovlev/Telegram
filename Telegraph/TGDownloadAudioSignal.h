@@ -5,7 +5,7 @@
 
 @interface TGDownloadAudioSignal : NSObject
 
-+ (SSignal *)downloadAudioWithAttachment:(TGMediaAttachment *)audioAttachment conversationId:(int64_t)cid messageId:(int32_t)mid;
++ (SSignal *)downloadMediaWithAttachment:(TGMediaAttachment *)audioAttachment conversationId:(int64_t)cid messageId:(int32_t)mid;
 
 + (NSString *)pathForDocumentMediaAttachment:(TGDocumentMediaAttachment *)documentMedia;
 

@@ -1,10 +1,4 @@
-/*
- * This is the source code of Telegram for iOS v. 1.1
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
- *
- * Copyright Peter Iakovlev, 2013.
- */
+
 
 #import <LegacyComponents/TGMediaAttachment.h>
 
@@ -43,6 +37,8 @@ typedef enum {
     TGMessageActionPaymentSent = 29,
     TGMessageActionText = 30,
     TGMessageActionGroupCall = 31,
+    TGMessageActionBotAllowed = 32,
+    TGMessageActionSecureValuesSent = 33,
     TGMessageActionCustom = 1000
 } TGMessageAction;
 

@@ -22,7 +22,7 @@
 @property (nonatomic, copy) void (^didFinishEditingItem)(id<TGMediaEditableItem>item, id<TGMediaEditAdjustments> adjustments, UIImage *resultImage, UIImage *thumbnailImage);
 @property (nonatomic, copy) void (^didFinishRenderingFullSizeImage)(id<TGMediaEditableItem> item, UIImage *fullSizeImage);
 
-@property (nonatomic, copy) void (^saveItemCaption)(id<TGMediaEditableItem> item, NSString *caption);
+@property (nonatomic, copy) void (^saveItemCaption)(id<TGMediaEditableItem> item, NSString *caption, NSArray *entities);
 
 @property (nonatomic, copy) void (^storeOriginalImageForItem)(id<TGMediaEditableItem> item, UIImage *originalImage);
 
@@ -34,6 +34,8 @@
 @property (nonatomic, assign) bool useGalleryImageAsEditableItemImage;
 @property (nonatomic, weak) TGModernGalleryController *controller;
 
+@property (nonatomic, assign) bool inhibitMute;
+
 @property (nonatomic, readonly, strong) TGMediaPickerGalleryInterfaceView *interfaceView;
 @property (nonatomic, readonly, strong) TGMediaPickerGallerySelectedItemsModel *selectedItemsModel;
 
@@ -42,7 +44,7 @@
 @property (nonatomic, readonly) TGMediaSelectionContext *selectionContext;
 @property (nonatomic, strong) TGSuggestionContext *suggestionContext;
 
-- (instancetype)initWithContext:(id<LegacyComponentsContext>)context items:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions hasTimer:(bool)hasTimer inhibitDocumentCaptions:(bool)inhibitDocumentCaptions hasSelectionPanel:(bool)hasSelectionPanel recipientName:(NSString *)recipientName;
+- (instancetype)initWithContext:(id<LegacyComponentsContext>)context items:(NSArray *)items focusItem:(id<TGModernGalleryItem>)focusItem selectionContext:(TGMediaSelectionContext *)selectionContext editingContext:(TGMediaEditingContext *)editingContext hasCaptions:(bool)hasCaptions allowCaptionEntities:(bool)allowCaptionEntities hasTimer:(bool)hasTimer onlyCrop:(bool)onlyCrop inhibitDocumentCaptions:(bool)inhibitDocumentCaptions hasSelectionPanel:(bool)hasSelectionPanel hasCamera:(bool)hasCamera recipientName:(NSString *)recipientName;
 
 - (void)setCurrentItem:(id<TGMediaSelectableItem>)item direction:(TGModernGalleryScrollAnimationDirection)direction;
 

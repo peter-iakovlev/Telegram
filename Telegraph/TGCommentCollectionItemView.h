@@ -11,6 +11,7 @@
 @interface TGCommentCollectionItemView : TGCollectionItemView
 
 @property (nonatomic) CGFloat topInset;
+@property (nonatomic) CGFloat sizeInset;
 @property (nonatomic) CGFloat labelAlpha;
 @property (nonatomic) CGSize calculatedSize;
 @property (nonatomic) bool showProgress;

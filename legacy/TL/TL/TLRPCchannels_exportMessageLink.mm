@@ -16,7 +16,7 @@
 
 - (int)impliedResponseSignature
 {
-    return (int)0x1f486803;
+    return (int)0x5dab1af4;
 }
 
 - (int)layerVersion
@@ -55,7 +55,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xc846d22d;
+    return (int32_t)0xceb77163;
 }
 
 - (int32_t)TLconstructorName
@@ -68,6 +68,7 @@
     TLRPCchannels_exportMessageLink$channels_exportMessageLink *object = [[TLRPCchannels_exportMessageLink$channels_exportMessageLink alloc] init];
     object.channel = metaObject->getObject((int32_t)0xe11f3d41);
     object.n_id = metaObject->getInt32((int32_t)0x7a5601fb);
+    object.grouped = metaObject->getBool((int32_t)0xc09de8b2);
     return object;
 }
 
@@ -84,6 +85,12 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.n_id;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x7a5601fb, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypePrimitiveBool;
+        value.primitive.boolValue = self.grouped;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc09de8b2, value));
     }
 }
 

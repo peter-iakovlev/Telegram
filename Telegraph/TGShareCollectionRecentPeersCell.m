@@ -12,6 +12,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 NSString *const TGShareCollectionRecentPeersCellIdentifier = @"TGShareCollectionRecentPeersCell";
 
 @interface TGShareCollectionRecentPeersCell () <UICollectionViewDelegateFlowLayout, UICollectionViewDataSource> {
@@ -79,6 +81,18 @@ NSString *const TGShareCollectionRecentPeersCellIdentifier = @"TGShareCollection
 }
 
 - (void)dealloc {
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _headerBackground.backgroundColor = presentation.pallete.menuSectionHeaderBackgroundColor;
+    _headerLabel.backgroundColor = presentation.pallete.menuSectionHeaderBackgroundColor;
+    _bottomHeaderLabel.backgroundColor = presentation.pallete.menuSectionHeaderBackgroundColor;
+    _bottomHeaderBackground.backgroundColor = presentation.pallete.menuSectionHeaderBackgroundColor;
+    _headerLabel.textColor = presentation.pallete.sectionHeaderTextColor;
+    _bottomHeaderLabel.textColor = presentation.pallete.sectionHeaderTextColor;
 }
 
 - (void)setRecentPeers:(TGDialogListRecentPeers *)recentPeers {
@@ -158,7 +172,7 @@ NSString *const TGShareCollectionRecentPeersCellIdentifier = @"TGShareCollection
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     TGShareCollectionCell *cell = (TGShareCollectionCell *)[collectionView dequeueReusableCellWithReuseIdentifier:TGShareCollectionCellIdentifier forIndexPath:indexPath];
-    
+    cell.presentation = self.presentation;
     [cell setShowOnlyFirstName:true];
     
     id peer = _recentPeers[indexPath.item];

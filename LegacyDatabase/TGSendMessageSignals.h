@@ -8,6 +8,6 @@
 @interface TGSendMessageSignals : NSObject
 
 + (SSignal *)sendTextMessageWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users text:(NSString *)text;
-+ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api73_InputMedia *)inputMedia;
++ (SSignal *)sendMediaWithContext:(TGShareContext *)context peerId:(TGPeerId)peerId users:(NSArray *)users inputMedia:(Api82_InputMedia *)inputMedia;
 
 @end

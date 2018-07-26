@@ -9,6 +9,16 @@
 
 @implementation TGUserInfoCallsCollectionItem
 
+- (instancetype)init
+{
+    self = [super init];
+    if (self != nil)
+    {
+        self.transparent = true;
+    }
+    return self;
+}
+
 - (bool)highlightable
 {
     return false;

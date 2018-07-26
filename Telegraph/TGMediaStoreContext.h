@@ -6,6 +6,8 @@
 
 - (TGModernCache *)temporaryFilesCache;
 
+- (void)clearMemoryCache;
+
 - (NSNumber *)mediaImageAverageColor:(NSString *)key;
 - (void)setMediaImageAverageColorForKey:(NSString *)key averageColor:(NSNumber *)averageColor;
 

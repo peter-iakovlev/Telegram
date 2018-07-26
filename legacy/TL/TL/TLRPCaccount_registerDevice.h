@@ -8,11 +8,8 @@
 
 @property (nonatomic) int32_t token_type;
 @property (nonatomic, retain) NSString *token;
-@property (nonatomic, retain) NSString *device_model;
-@property (nonatomic, retain) NSString *system_version;
-@property (nonatomic, retain) NSString *app_version;
 @property (nonatomic) bool app_sandbox;
-@property (nonatomic, retain) NSString *lang_code;
+@property (nonatomic, retain) NSArray *other_uids;
 
 - (Class)responseClass;
 

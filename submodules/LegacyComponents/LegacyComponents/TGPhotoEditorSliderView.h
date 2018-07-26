@@ -14,6 +14,8 @@
 @property (nonatomic, assign) CGFloat startValue;
 @property (nonatomic, assign) CGFloat value;
 
+@property (nonatomic, assign) CGFloat markValue;
+
 @property (nonatomic, readonly) bool knobStartedDragging;
 
 @property (nonatomic, assign) CGFloat knobPadding;
@@ -28,6 +30,8 @@
 
 @property (nonatomic, assign) NSInteger positionsCount;
 @property (nonatomic, assign) CGFloat dotSize;
+
+@property (nonatomic, assign) bool enablePanHandling;
 
 - (void)setValue:(CGFloat)value animated:(BOOL)animated;
 

@@ -8,6 +8,7 @@
 
 @property (nonatomic) int32_t token_type;
 @property (nonatomic, retain) NSString *token;
+@property (nonatomic, retain) NSArray *other_uids;
 
 - (Class)responseClass;
 

@@ -109,7 +109,7 @@
         }
         else
         {
-            return [[TGDownloadAudioSignal downloadAudioWithAttachment:attachment conversationId:conversationId messageId:messageId] mapToSignal:^(NSString *audioPath)
+            return [[TGDownloadAudioSignal downloadMediaWithAttachment:attachment conversationId:conversationId messageId:messageId] mapToSignal:^(NSString *audioPath)
             {
                 return processSignal([NSURL fileURLWithPath:audioPath]);
             }];

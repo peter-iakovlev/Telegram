@@ -25,9 +25,3 @@
 
 
 @end
-
-@interface TLNotifyPeer$notifyAll : TLNotifyPeer
-
-
-@end
-

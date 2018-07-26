@@ -88,6 +88,10 @@
             [result appendString:entry.symbol];
         }
         
+        if ([currency isEqualToString:@"IRR"] && [result hasSuffix:@"/00"]) {
+            [result deleteCharactersInRange:NSMakeRange(result.length - 3, 3)];
+        }
+        
         return result;
     } else {
         NSAssert(false, @"Unknown currency");

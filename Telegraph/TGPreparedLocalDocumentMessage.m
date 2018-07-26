@@ -11,7 +11,7 @@
 
 @implementation TGPreparedLocalDocumentMessage
 
-+ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
++ (instancetype)messageWithTempDataItem:(TGDataItem *)tempDataItem size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup {
 #ifdef DEBUG
     NSAssert(tempDataItem != nil, @"tempDataItem should not be nil");
 #endif
@@ -52,7 +52,8 @@
         message.thumbnailSize = networkThumbnailSize;
     }
     
-    message.caption = caption;
+    message.text = text;
+    message.entities = entities;
     
     message.replyMessage = replyMessage;
     message.replyMarkup = replyMarkup;
@@ -60,7 +61,7 @@
     return message;
 }
 
-+ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes caption:(NSString *)caption replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
++ (instancetype)messageWithTempDocumentPath:(NSString *)tempDocumentPath size:(int32_t)size mimeType:(NSString *)mimeType thumbnailImage:(UIImage *)thumbnailImage thumbnailSize:(CGSize)thumbnailSize attributes:(NSArray *)attributes text:(NSString *)text entities:(NSArray *)entities replyMessage:(TGMessage *)replyMessage replyMarkup:(TGReplyMarkupAttachment *)replyMarkup
 {
 #ifdef DEBUG
     NSAssert(tempDocumentPath != nil, @"tempDocumentPath should not be nil");
@@ -102,7 +103,8 @@
         message.thumbnailSize = networkThumbnailSize;
     }
     
-    message.caption = caption;
+    message.text = text;
+    message.entities = entities;
     
     message.replyMessage = replyMessage;
     message.replyMarkup = replyMarkup;
@@ -129,7 +131,10 @@
     {
         if ([mediaAttachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
-            return [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage replyMarkup:replyMarkup];
+            TGPreparedLocalDocumentMessage *message = [self messageByCopyingDataFromMedia:mediaAttachment replyMessage:replyMessage replyMarkup:replyMarkup];
+            message.text = source.text;
+            message.entities = source.entities;
+            return message;
         }
     }
     
@@ -183,8 +188,6 @@
         
         message.thumbnailSize = thumbnailSize;
     }
-    
-    message.caption = documentAttachment.caption;
     
     message.replyMessage = replyMessage;
     message.replyMarkup = replyMarkup;
@@ -269,6 +272,7 @@
     message.date = self.date;
     message.isBroadcast = self.isBroadcast;
     message.messageLifetime = self.messageLifetime;
+    message.text = self.text;
     
     NSMutableArray *attachments = [[NSMutableArray alloc] init];
     
@@ -277,7 +281,6 @@
     documentAttachment.size = _size;
     documentAttachment.attributes = _attributes;
     documentAttachment.mimeType = _mimeType;
-    documentAttachment.caption = self.caption;
     
     if (_localThumbnailDataPath != nil)
     {
@@ -304,6 +307,7 @@
     }
     
     message.mediaAttachments = attachments;
+    message.entities = self.entities;
     
     return message;
 }

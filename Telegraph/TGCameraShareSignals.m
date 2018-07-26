@@ -46,6 +46,8 @@
         message.deliveryState = TGMessageDeliveryStatePending;
         message.sortKey = TGMessageSortKeyMake(conversationId, TGMessageSpaceImportant, (int32_t)message.date, message.mid);
         message.cid = conversationId;
+        message.text = preparedMessage.text;
+        message.entities = preparedMessage.entities;
         
         if (message.randomId == 0)
         {
@@ -53,16 +55,6 @@
             arc4random_buf(&randomId, sizeof(randomId));
             message.randomId = randomId;
         }
-        
-        //                if (_isGroup) {
-        //                    message.sortKey = TGMessageSortKeyMake(conversationId, TGMessageSpaceUnimportant, (int32_t)message.date, message.mid);
-        //                }
-        //
-        //                if (!_isGroup && (_adminRights.canPostMessages)/* && _postAsChannel*/) {
-        //                    if (message.viewCount == nil) {
-        //                        message.viewCount = [[TGMessageViewCountContentProperty alloc] initWithViewCount:1];
-        //                    }
-        //                }
         
         if (TGPeerIdIsChannel(conversationId)) {
             NSMutableDictionary *contentProperties = [[NSMutableDictionary alloc] initWithDictionary:message.contentProperties];
@@ -102,14 +94,13 @@
             UIImage *previewImage = TGScaleImageToPixelSize(fullImage, TGFitSize(originalSize, preferredThumnailSize));
             NSData *thumbnailData = UIImageJPEGRepresentation(previewImage, 0.9f);
 
-            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil caption:description[@"caption"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] messageLifetime:0 groupedId:0];
+            TGPreparedLocalImageMessage *preparedMessage = [TGPreparedLocalImageMessage messageWithImageData:imageData imageSize:imageSize thumbnailData:thumbnailData thumbnailSize:thumbnailSize assetUrl:nil text:description[@"caption"] entities:description[@"entities"] replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] messageLifetime:0 groupedId:0];
             
             NSArray *messages = [self _setupMessages:preparedMessage peerIds:peerIds];
             
             return [[TGUploadFileSignals uploadedFileWithData:imageData mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(TLInputFile *file) {
                 TLInputMediaUploadedPhoto *uploadedPhoto = [[TLInputMediaUploadedPhoto alloc] init];
                 uploadedPhoto.file = file;
-                uploadedPhoto.caption = preparedMessage.caption;
                 
                 if (preparedMessage.stickerDocuments.count != 0) {
                     NSMutableArray *inputStickers = [[NSMutableArray alloc] init];
@@ -154,13 +145,13 @@
                         sendSignal = [sendSignal then:[TGSendMessageSignals commitSendMediaWithMessage:message mediaProducer:^TLInputMedia *(__unused NSDictionary *uploadInfo) {
                             TGImageMediaAttachment *attachment = [initialAttachment value];
                             
-                            TLInputMedia$inputMediaPhoto *remotePhoto = [[TLInputMedia$inputMediaPhoto alloc] init];
+                            TLInputMediaPhoto *remotePhoto = [[TLInputMediaPhoto alloc] init];
                             TLInputPhoto$inputPhoto *inputPhoto = [[TLInputPhoto$inputPhoto alloc] init];
                             inputPhoto.n_id = attachment.imageId;
                             inputPhoto.access_hash = attachment.accessHash;
                             
                             remotePhoto.n_id = inputPhoto;
-                            remotePhoto.caption = attachment.caption;
+                            remotePhoto.ttl_seconds = preparedMessage.messageLifetime;
                             
                             return remotePhoto;
                         }]];
@@ -265,7 +256,7 @@
             int64_t localVideoId = isAnimation ? 0 : localId;
             int64_t localDocumentId = isAnimation ? localId : 0;
             
-            TGPreparedAssetVideoMessage *preparedMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:nil assetURL:description[@"url"] localVideoId:localVideoId imageInfo:nil duration:duration dimensions:finalDimensions adjustments:[adjustments dictionary] useMediaCache:false liveUpload:true passthrough:false caption:description[@"caption"] isCloud:false document:isAnimation localDocumentId:localDocumentId fileSize:INT_MAX mimeType:mimeType attributes:attributes replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] roundMessage:false groupedId:0];
+            TGPreparedAssetVideoMessage *preparedMessage = [[TGPreparedAssetVideoMessage alloc] initWithAssetIdentifier:nil assetURL:description[@"url"] localVideoId:localVideoId imageInfo:nil duration:duration dimensions:finalDimensions adjustments:[adjustments dictionary] useMediaCache:false liveUpload:true passthrough:false text:description[@"caption"] entities:description[@"entities"] isCloud:false document:isAnimation localDocumentId:localDocumentId fileSize:INT_MAX mimeType:mimeType attributes:attributes replyMessage:nil replyMarkup:nil stickerDocuments:description[@"stickers"] roundMessage:false groupedId:0];
             
             [preparedMessage setImageInfoWithThumbnailData:thumbnailData thumbnailSize:finalDimensions];
             
@@ -352,9 +343,6 @@
                         filename.file_name = @"video.mp4";
                         
                         uploadedDocument.attributes = @[video, filename];
-                        
-                        uploadedDocument.caption = preparedMessage.caption;
-                        
                         uploadedDocument.mime_type = @"video/mp4";
                         
                         if (preparedMessage.stickerDocuments.count != 0) {
@@ -400,21 +388,20 @@
                                 sendSignal = [sendSignal then:[TGSendMessageSignals commitSendMediaWithMessage:message mediaProducer:^TLInputMedia *(__unused NSDictionary *uploadInfo) {
                                     TGMediaAttachment *attachment = [initialAttachment value];
                                     
-                                    TLInputMedia$inputMediaDocument *remoteDocument = [[TLInputMedia$inputMediaDocument alloc] init];
+                                    TLInputMediaDocument *remoteDocument = [[TLInputMediaDocument alloc] init];
                                     TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
                                     if ([attachment isKindOfClass:[TGVideoMediaAttachment class]])
                                     {
                                         inputDocument.n_id = ((TGVideoMediaAttachment *)attachment).videoId;
                                         inputDocument.access_hash = ((TGVideoMediaAttachment *)attachment).accessHash;
-                                        remoteDocument.caption = ((TGVideoMediaAttachment *)attachment).caption;
                                     }
                                     else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
                                     {
                                         inputDocument.n_id = ((TGDocumentMediaAttachment *)attachment).documentId;
                                         inputDocument.access_hash = ((TGDocumentMediaAttachment *)attachment).accessHash;
-                                        remoteDocument.caption = ((TGDocumentMediaAttachment *)attachment).caption;
                                     }
                                     remoteDocument.n_id = inputDocument;
+                                    remoteDocument.ttl_seconds = preparedMessage.messageLifetime;
 
                                     return remoteDocument;
                                 }]];

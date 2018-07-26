@@ -11,6 +11,7 @@
 @interface TGVariantCollectionItemView : TGCollectionItemView
 
 - (void)setTitle:(NSString *)title;
+- (void)setTitleColor:(UIColor *)titleColor;
 - (void)setVariant:(NSString *)variant variantColor:(UIColor *)variantColor;
 - (void)setIcon:(UIImage *)icon;
 - (void)setVariantIcon:(UIImage *)variantIcon;

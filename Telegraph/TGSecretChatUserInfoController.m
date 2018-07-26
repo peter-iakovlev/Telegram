@@ -11,8 +11,6 @@
 
 #import "TGEncryptionKeyViewController.h"
 
-#import "TGActionSheet.h"
-
 #import <MTProtoKit/MTEncryption.h>
 
 @interface TGSecretChatUserInfoController ()
@@ -119,7 +117,9 @@
 
 - (void)encryptionKeyPressed
 {
-    [self.navigationController pushViewController:[[TGEncryptionKeyViewController alloc] initWithEncryptedConversationId:_encryptedConversationId userId:self.uid] animated:true];
+    TGEncryptionKeyViewController *controller = [[TGEncryptionKeyViewController alloc] initWithEncryptedConversationId:_encryptedConversationId userId:self.uid];
+    controller.presentation = self.presentation;
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments

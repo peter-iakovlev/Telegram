@@ -11,6 +11,7 @@
 @interface TGCommentCollectionItem : TGCollectionItem
 
 @property (nonatomic) bool skipLastLineInSizeComputation;
+@property (nonatomic) CGFloat sizeInset;
 @property (nonatomic) CGFloat topInset;
 @property (nonatomic) CGFloat bottomInset;
 @property (nonatomic) CGFloat alpha;
@@ -19,6 +20,7 @@
 @property (nonatomic, strong) NSString *text;
 @property (nonatomic) bool showProgress;
 @property (nonatomic, copy) void (^action)();
+@property (nonatomic) bool inhibitInteraction;
 
 - (instancetype)initWithText:(NSString *)text;
 - (instancetype)initWithFormattedText:(NSString *)text;
@@ -27,6 +29,6 @@
 - (void)setFormattedText:(NSString *)formattedText;
 
 + (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing;
-+ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize clearFormatting:(bool)clearFormatting;
++ (NSAttributedString *)attributedStringFromText:(NSString *)text allowFormatting:(bool)allowFormatting paragraphSpacing:(CGFloat)paragraphSpacing alignment:(NSTextAlignment)alignment fontSize:(CGFloat)fontSize clearFormatting:(bool)clearFormatting linkColor:(UIColor *)linkColor;
 
 @end

@@ -12,6 +12,7 @@
 
 @interface TGGroupInfoUserCollectionItemViewContent : UIView
 
+@property (nonatomic, strong) TGPresentation *presentation;
 @property (nonatomic, strong) NSString *firstName;
 @property (nonatomic, strong) NSString *lastName;
 @property (nonatomic, strong) NSString *status;
@@ -39,31 +40,34 @@
 {
     static UIFont *regularNameFont = nil;
     static UIFont *boldNameFont = nil;
-    static CGColorRef nameColor = NULL;
-    static CGColorRef secretNameColor = NULL;
-    
     static UIFont *statusFont = nil;
     static dispatch_once_t onceToken;
-    static CGColorRef activeStatusColor = NULL;
-    static CGColorRef regularStatusColor = NULL;
+    
+    CGColorRef nameColor = self.presentation.pallete.collectionMenuTextColor.CGColor;
+    CGColorRef secretNameColor = self.presentation.pallete.dialogEncryptedColor.CGColor;
+    CGColorRef activeStatusColor = self.presentation.pallete.collectionMenuAccentColor.CGColor;
+    CGColorRef regularStatusColor = self.presentation.pallete.collectionMenuVariantColor.CGColor;
     dispatch_once(&onceToken, ^
     {
         regularNameFont = TGSystemFontOfSize(17.0f);
         boldNameFont = TGMediumSystemFontOfSize(17.0f);
         statusFont = TGSystemFontOfSize(13.0f);
-        
-        nameColor = CGColorRetain([UIColor blackColor].CGColor);
-        secretNameColor = CGColorRetain(UIColorRGB(0x00a629).CGColor);
-        activeStatusColor = CGColorRetain(TGAccentColor().CGColor);
-        regularStatusColor = CGColorRetain(UIColorRGB(0xb3b3b3).CGColor);
     });
+    
+    NSString *firstName = _firstName;
+    NSString *lastName = _lastName;
+    if (TGIsKorean() && lastName.length > 0)
+    {
+        lastName = _firstName;
+        firstName = _lastName;
+    }
     
     CGRect bounds = self.bounds;
     CGFloat availableWidth = bounds.size.width - 20.0f - 1.0f;
     CGContextRef context = UIGraphicsGetCurrentContext();
     
-    CGSize firstNameSize = [_firstName sizeWithFont:regularNameFont];
-    CGSize lastNameSize = [_lastName sizeWithFont:boldNameFont];
+    CGSize firstNameSize = [firstName sizeWithFont:regularNameFont];
+    CGSize lastNameSize = [lastName sizeWithFont:boldNameFont];
     CGFloat nameSpacing = 4.0f;
     
     CGSize labelSize = [_label sizeWithFont:statusFont];
@@ -81,8 +85,8 @@
     lastNameSize.width = MIN(lastNameSize.width, availableWidth - nameSpacing - firstNameSize.width);
     
     CGContextSetFillColorWithColor(context, _isSecretChat ? secretNameColor : nameColor);
-    [_firstName drawInRect:CGRectMake(1.0f, 1.0f, firstNameSize.width, firstNameSize.height) withFont:regularNameFont lineBreakMode:NSLineBreakByTruncatingTail];
-    [_lastName drawInRect:CGRectMake(1.0f + firstNameSize.width + nameSpacing, TGScreenPixel, lastNameSize.width, lastNameSize.height) withFont:boldNameFont lineBreakMode:NSLineBreakByTruncatingTail];
+    [firstName drawInRect:CGRectMake(1.0f, 1.0f, firstNameSize.width, firstNameSize.height) withFont:regularNameFont lineBreakMode:NSLineBreakByTruncatingTail];
+    [lastName drawInRect:CGRectMake(1.0f + firstNameSize.width + nameSpacing, TGScreenPixel, lastNameSize.width, lastNameSize.height) withFont:boldNameFont lineBreakMode:NSLineBreakByTruncatingTail];
     
     CGSize statusSize = [_status sizeWithFont:statusFont];
     CGContextSetFillColorWithColor(context, _statusIsActive ? activeStatusColor : regularStatusColor);
@@ -187,7 +191,12 @@
 {
     [super setPresentation:presentation];
     
+    _content.presentation = presentation;
+    [_content setNeedsDisplay];
+    
     _checkView.image = presentation.images.collectionMenuCheckImage;
+    
+    _wrapView.presentation = presentation;
 }
 
 - (void)setFirstName:(NSString *)firstName lastName:(NSString *)lastName uidForPlaceholderCalculation:(int32_t)uidForPlaceholderCalculation canPromote:(bool)canPromote canRestrict:(bool)canRestrict canBan:(bool)canBan canDelete:(bool)canDelete
@@ -219,7 +228,7 @@
         [actions addObject:@(TGDialogListCellEditingControlsDelete)];
     }
     [_wrapView setSmallLabels:actions.count > 1];
-    [_wrapView setButtonBytes:actions];
+    [_wrapView setLeftButtonTypes:@[] rightButtonTypes:actions];
     
     [_content setNeedsDisplay];
 }
@@ -236,23 +245,7 @@
 
 - (void)setAvatarUri:(NSString *)avatarUri
 {
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(40.0f, 40.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 40.0f, 40.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 39.0f, 39.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];
     
     if (avatarUri.length == 0)
         [_avatarView loadUserPlaceholderWithSize:CGSizeMake(40.0f, 40.0f) uid:_uidForPlaceholderCalculation firstName:_content.firstName lastName:_content.lastName placeholder:placeholder];

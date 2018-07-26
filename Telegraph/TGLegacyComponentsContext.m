@@ -5,7 +5,9 @@
 
 #import "TGImageDownloadActor.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
+
+#import "TGPresentation.h"
 
 @interface TGLegacyComponentsOverlayWindowManager : NSObject <LegacyComponentsOverlayWindowManager>
 
@@ -80,6 +82,11 @@
     [(TGApplication *)[UIApplication sharedApplication] forceSetStatusBarHidden:hidden withAnimation:animation];
 }
 
+- (bool)prefersLightStatusBar
+{
+    return TGAppDelegateInstance.rootController.presentation.pallete.isDark;
+}
+
 - (void)forceStatusBarAppearanceUpdate {
     static void (*methodImpl)(id, SEL) = NULL;
     static dispatch_once_t onceToken;
@@ -124,6 +131,10 @@
 }
 
 - (void)presentActionSheet:(NSArray<LegacyComponentsActionSheetAction *> *)actions view:(UIView *)view completion:(void (^)(LegacyComponentsActionSheetAction *))completion {
+    [self presentActionSheet:actions view:view sourceRect:nil completion:completion];
+}
+
+- (void)presentActionSheet:(NSArray<LegacyComponentsActionSheetAction *> *)actions view:(UIView *)view sourceRect:(CGRect (^)(void))sourceRect completion:(void (^)(LegacyComponentsActionSheetAction *))completion {
     NSMutableArray *convertedActions = [[NSMutableArray alloc] init];
     for (LegacyComponentsActionSheetAction *action in actions) {
         TGActionSheetActionType type;
@@ -141,11 +152,13 @@
         [convertedActions addObject:[[TGActionSheetAction alloc] initWithTitle:action.title action:action.action type:type]];
     }
     
-    [[[TGActionSheet alloc] initWithTitle:nil actions:convertedActions actionBlock:^(__unused id target, NSString *action) {
+    TGCustomActionSheet *sheet = [[TGCustomActionSheet alloc] initWithTitle:nil actions:convertedActions actionBlock:^(__unused id target, NSString *action) {
         if (completion) {
             completion([[LegacyComponentsActionSheetAction alloc] initWithTitle:nil action:action]);
         }
-    } target:self] showInView:view];
+    } target:self];
+    sheet.controller.sourceRect = sourceRect;
+    [sheet showInView:view];
 }
 
 - (bool)rootCallStatusBarHidden {

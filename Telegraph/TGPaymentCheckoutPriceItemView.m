@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGPaymentCheckoutPriceItemView () {
     UILabel *_titleLabel;
     UILabel *_valueLabel;
@@ -33,13 +35,13 @@
     if (bold) {
         _titleLabel.font = TGBoldSystemFontOfSize(17.0f);
         _valueLabel.font = TGBoldSystemFontOfSize(17.0f);
-        _titleLabel.textColor = [UIColor blackColor];
-        _valueLabel.textColor = [UIColor blackColor];
+        _titleLabel.textColor = self.presentation.pallete.textColor;
+        _valueLabel.textColor = self.presentation.pallete.textColor;
     } else {
         _titleLabel.font = TGSystemFontOfSize(17.0f);
         _valueLabel.font = TGSystemFontOfSize(17.0f);
-        _titleLabel.textColor = UIColorRGB(0x999999);
-        _valueLabel.textColor = UIColorRGB(0x999999);
+        _titleLabel.textColor = self.presentation.pallete.secondaryTextColor;
+        _valueLabel.textColor = self.presentation.pallete.secondaryTextColor;
     }
     _titleLabel.text = title;
     _valueLabel.text = value;

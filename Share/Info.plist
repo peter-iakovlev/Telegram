@@ -21,11 +21,11 @@
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
-	<string>4.6</string>
+	<string>4.9</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>66000</string>
+	<string>69844</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -49,6 +49,8 @@
     ).@count == $extensionItem.attachments.@count
 ).@count &gt; 0</string>
 		</dict>
+		<key>NSExtensionOverridesHostUIAppearance</key>
+		<true/>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.share-services</string>
 		<key>NSExtensionPrincipalClass</key>

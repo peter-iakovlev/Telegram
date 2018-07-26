@@ -7,12 +7,16 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGMenuSheetController.h"
+
 const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
 
 @interface TGMenuSheetButtonItemView ()
 {
     bool _dark;
     bool _requiresDivider;
+    
+    TGMenuSheetPallete *_pallete;
 }
 @end
 
@@ -31,6 +35,8 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
         _button.exclusiveTouch = true;
         _button.highlightBackgroundColor = UIColorRGB(0xebebeb);
         [self _updateForType:type];
+        _button.titleLabel.adjustsFontSizeToFitWidth = true;
+        _button.titleLabel.minimumScaleFactor = 0.7f;
         [_button setTitle:title forState:UIControlStateNormal];
         [_button addTarget:self action:@selector(buttonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_button];
@@ -54,6 +60,13 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
     
     if (iosMajorVersion() >= 11)
         self.accessibilityIgnoresInvertColors = true;
+}
+
+- (void)setPallete:(TGMenuSheetPallete *)pallete
+{
+    _pallete = pallete;
+    _button.highlightBackgroundColor = pallete.selectionColor;
+    [self _updateForType:_buttonType];
 }
 
 - (void)buttonPressed
@@ -102,12 +115,24 @@ const CGFloat TGMenuSheetButtonItemViewHeight = 57.0f;
 {
     _button.titleLabel.font = (type == TGMenuSheetButtonTypeCancel || type == TGMenuSheetButtonTypeSend) ? TGMediumSystemFontOfSize(20) : TGSystemFontOfSize(20);
     UIColor *accentColor = _dark ? UIColorRGB(0x4fbcff) : TGAccentColor();
-    [_button setTitleColor:(type == TGMenuSheetButtonTypeDestructive) ? TGDestructiveAccentColor() : accentColor];
+    if (_pallete != nil)
+        accentColor = _pallete.accentColor;
+    UIColor *destructiveColor = TGDestructiveAccentColor();
+    if (_pallete != nil)
+        destructiveColor = _pallete.destructiveColor;
+    [_button setTitleColor:(type == TGMenuSheetButtonTypeDestructive) ? destructiveColor : accentColor];
+}
+
+- (void)setCollapsed:(bool)collapsed animated:(bool)animated
+{
+    _collapsed = collapsed;
+    [self _updateHeightAnimated:animated];
 }
 
 - (CGFloat)preferredHeightForWidth:(CGFloat)__unused width screenHeight:(CGFloat)__unused screenHeight
 {
-    return TGMenuSheetButtonItemViewHeight;
+    _button.alpha = _collapsed ? 0.0f : 1.0f;
+    return _collapsed ? 0.0f : TGMenuSheetButtonItemViewHeight;
 }
 
 - (bool)requiresDivider

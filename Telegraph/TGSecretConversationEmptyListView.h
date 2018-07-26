@@ -10,6 +10,6 @@
 
 @interface TGSecretConversationEmptyListView : TGModernConversationEmptyListPlaceholderView
 
-- (instancetype)initWithIncoming:(bool)incoming userName:(NSString *)userName;
+- (instancetype)initWithIncoming:(bool)incoming userName:(NSString *)userName presentation:(TGPresentation *)presentation;
 
 @end

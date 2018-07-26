@@ -11,6 +11,8 @@
 #import "TGModernDataImageViewModel.h"
 #import "TGModernFlatteningViewModel.h"
 
+#import "TGPresentation.h"
+
 #import <LegacyComponents/TGLocationSignals.h>
 
 @interface TGLocationMessageViewModel ()
@@ -58,20 +60,11 @@
         self.imageModel.frame = CGRectMake(0, 0, size.width, size.height);
         _textModel.maxNumberOfLines = 1;
         
-        static UIColor *incomingAddressColor = nil;
-        static UIColor *outgoingAddressColor = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^
-        {
-            incomingAddressColor = UIColorRGB(0x999999);
-            outgoingAddressColor = UIColorRGB(0x2da32e);
-        });
-        
         if (subtitle.length > 0)
         {
             _venueAddressModel = [[TGModernTextViewModel alloc] initWithText:subtitle font:TGCoreTextSystemFontOfSize(14.0f)];
             _venueAddressModel.maxNumberOfLines = 1;
-            _venueAddressModel.textColor = _incomingAppearance ? incomingAddressColor : outgoingAddressColor;
+            _venueAddressModel.textColor = _incomingAppearance ? _context.presentation.pallete.chatIncomingSubtextColor : _context.presentation.pallete.chatOutgoingSubtextColor;
             [_contentModel addSubmodel:_venueAddressModel];
         }
         
@@ -79,7 +72,7 @@
         [_pinShadowModel setViewUserInteractionDisabled:true];
         [self addSubmodel:_pinShadowModel];
         
-        UIColor *pinColor = UIColorRGB(0x008df2);
+        UIColor *pinColor = _context.presentation.pallete.locationPinColor;
         _pinBackgroundModel = [[TGModernImageViewModel alloc] initWithImage:TGTintedImage(TGComponentsImageNamed(@"LocationMessagePinBackground"), pinColor)];
         [_pinBackgroundModel setViewUserInteractionDisabled:true];
         [self addSubmodel:_pinBackgroundModel];
@@ -89,11 +82,13 @@
         [_pinIconModel setViewUserInteractionDisabled:true];
         if (venue == nil || venue.type.length == 0 || ![venue.provider isEqualToString:@"foursquare"])
         {
-            [_pinIconModel setUri:@"embedded-image://" options:@{TGImageViewOptionEmbeddedImage: TGComponentsImageNamed(@"LocationMessagePinIcon")}];
+            UIImage *iconImage = TGTintedImage(TGComponentsImageNamed(@"LocationMessagePinIcon"), _context.presentation.pallete.accentContrastColor);
+            if (iconImage != nil)
+                [_pinIconModel setUri:@"embedded-image://" options:@{TGImageViewOptionEmbeddedImage: iconImage}];
         }
         else
         {
-            [_pinIconModel setUri:[NSString stringWithFormat:@"location-venue-icon://type=%@&width=%d&height=%d&color=%d", venue.type, 48, 48, 0xffffff] options:@{}];
+            [_pinIconModel setUri:[NSString stringWithFormat:@"location-venue-icon://type=%@&width=%d&height=%d&color=%d", venue.type, 48, 48, [_context.presentation.pallete.accentContrastColor hexCode]] options:@{}];
         }
         [self addSubmodel:_pinIconModel];
     }

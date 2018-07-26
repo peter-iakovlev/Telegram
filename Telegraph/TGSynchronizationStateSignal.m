@@ -55,13 +55,23 @@
             
             if (state & 2)
             {
-                if (state & 4)
+                if (state & 4) {
                     value = TGSynchronizationStateWaitingForNetwork;
-                else
-                    value = TGSynchronizationStateConnecting;
+                }
+                else {
+                    if (state & 8) {
+                        value = TGSynchronizationStateConnectingToProxy;
+                    } else {
+                        value = TGSynchronizationStateConnecting;
+                    }
+                }
             }
             else if (state & 1)
                 value = TGSynchronizationStateUpdating;
+            
+            if (state & 16) {
+                value = TGSynchronizationStateProxyIssues;
+            }
             
             if (_updated)
                 _updated(@((int)value));

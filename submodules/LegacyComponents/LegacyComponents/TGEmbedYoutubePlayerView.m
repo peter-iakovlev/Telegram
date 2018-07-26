@@ -30,9 +30,9 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
 
 @implementation TGEmbedYoutubePlayerView
 
-- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal
+- (instancetype)initWithWebPageAttachment:(TGWebPageMediaAttachment *)webPage thumbnailSignal:(SSignal *)thumbnailSignal alternateCachePathSignal:(SSignal *)alternateCachePathSignal
 {
-    self = [super initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal];
+    self = [super initWithWebPageAttachment:webPage thumbnailSignal:thumbnailSignal alternateCachePathSignal:alternateCachePathSignal];
     if (self != nil)
     {
         NSTimeInterval start = 0.0;
@@ -65,10 +65,12 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
 {
     [super _watermarkAction];
     
+    if (self.onWatermarkAction != nil)
+        self.onWatermarkAction();
+    
     NSString *videoId =  _playerParams[@"videoId"];
     
-    NSURL *appUrl = [[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"youtube-x-callback://watch?v=%@&x-success=telegram://1&x-source=Telegram", videoId]];
-    
+    NSURL *appUrl = [[NSURL alloc] initWithString:[[NSString alloc] initWithFormat:@"youtube://watch?v=%@", videoId]];
     if ([[LegacyComponentsGlobals provider] canOpenURL:appUrl])
     {
         [[LegacyComponentsGlobals provider] openURL:appUrl];
@@ -105,7 +107,7 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
     NSString *command = [NSString stringWithFormat:@"player.seekTo(%@, true);", @(position)];
     [self _evaluateJS:command completion:nil];
     
-    TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:self.state.isPlaying duration:self.state.duration position:position downloadProgress:self.state.downloadProgress];
+    TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:self.state.isPlaying duration:self.state.duration position:position downloadProgress:self.state.downloadProgress buffering:self.state.buffering];
     [self updateState:newState];
     
     _ignorePositionUpdates = 2;
@@ -150,6 +152,7 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
         NSTimeInterval position = self.state.position;
         NSTimeInterval duration = self.state.duration;
         CGFloat downloadProgress = self.state.downloadProgress;
+        bool buffering = self.state.buffering;
         
         for (NSURLQueryItem *queryItem in queryItems)
         {
@@ -157,6 +160,7 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
             {
                 playing = ([queryItem.value integerValue] == TGYTPlayerStatePlayingCode);
                 finished = ([queryItem.value integerValue] == TGYTPlayerStateEndedCode);
+                buffering = ([queryItem.value integerValue] == TGYTPlayerStateBufferingCode);
             }
             else if ([queryItem.name isEqualToString:@"position"])
             {
@@ -195,7 +199,7 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
         if (finished)
             position = 0.0;
         
-        TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:playing duration:duration position:position downloadProgress:downloadProgress];
+        TGEmbedPlayerState *newState = [TGEmbedPlayerState stateWithPlaying:playing duration:duration position:position downloadProgress:downloadProgress buffering:buffering];
         [self updateState:newState];
         
         if (_playAfterTicks > 0)
@@ -406,6 +410,8 @@ const NSInteger TGYTPlayerStateBufferingCode = 3;
             }
             
             NSString *timeParam = params[@"t"];
+            if (timeParam == nil)
+                timeParam = params[@"time_continue"];
             if (timeParam != nil)
             {
                 NSTimeInterval position = 0.0;

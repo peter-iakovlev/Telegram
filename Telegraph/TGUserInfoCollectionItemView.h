@@ -15,6 +15,7 @@
 @interface TGUserInfoCollectionItemView : TGCollectionItemView
 
 @property (nonatomic) bool isVerified;
+@property (nonatomic, strong) NSDictionary *customProperties;
 
 @property (nonatomic, strong) ASHandle *itemHandle;
 
@@ -31,6 +32,8 @@
 - (void)setShowCall:(bool)showCall;
 - (void)setShowDisclosureIndicator:(bool)show;
 - (void)setShowCameraIcon:(bool)show;
+
+- (void)setMultilineName:(bool)multilineName;
 
 - (void)setPhoneNumber:(NSString *)phoneNumber;
 - (void)setUsername:(NSString *)username;

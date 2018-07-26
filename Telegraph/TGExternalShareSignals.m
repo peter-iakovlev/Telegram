@@ -255,36 +255,49 @@
         contact.givenName = firstName;
         contact.familyName = lastName;
         
-        CNLabeledValue<CNPhoneNumber *> *phoneValue = [CNLabeledValue labeledValueWithLabel:nil value:[CNPhoneNumber phoneNumberWithStringValue:phoneNumber]];
-        contact.phoneNumbers = @[ phoneValue ];
-        
-        NSError *error;
-        contactData = [CNContactVCardSerialization dataWithContacts:@[ contact ] error:&error];
-        
-        if (error != nil)
-            return nil;
+        if (contactAttachment.vcard.length > 0)
+        {
+            contactData = [contactAttachment.vcard dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        else
+        {
+            CNLabeledValue<CNPhoneNumber *> *phoneValue = [CNLabeledValue labeledValueWithLabel:nil value:[CNPhoneNumber phoneNumberWithStringValue:phoneNumber]];
+            contact.phoneNumbers = @[ phoneValue ];
+            
+            NSError *error;
+            contactData = [CNContactVCardSerialization dataWithContacts:@[ contact ] error:&error];
+            if (error != nil)
+                return nil;
+        }
         
         filename = [CNContactFormatter stringFromContact:contact style:CNContactFormatterStyleFullName];
     }
     else
     {
-        ABRecordRef contact = ABPersonCreate();
-        
-        ABMutableMultiValueRef phoneNumberMultiValue  = ABMultiValueCreateMutable(kABMultiStringPropertyType);
-        ABMultiValueAddValueAndLabel(phoneNumberMultiValue, (__bridge CFTypeRef)(phoneNumber), kABPersonPhoneMobileLabel, NULL);
-        
-        CFErrorRef error = NULL;
-        if (firstName.length > 0)
-            ABRecordSetValue(contact, kABPersonFirstNameProperty, (__bridge CFTypeRef)(firstName), &error);
-        if (lastName.length > 0)
-            ABRecordSetValue(contact, kABPersonLastNameProperty, (__bridge CFTypeRef)(lastName), &error);
-        
-        ABRecordSetValue(contact, kABPersonPhoneProperty, phoneNumberMultiValue, &error);
-        
-        if (error != NULL)
-            return nil;
-        
-        contactData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge id)contact ]));
+        if (contactAttachment.vcard.length > 0)
+        {
+            contactData = [contactAttachment.vcard dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        else
+        {
+            ABRecordRef contact = ABPersonCreate();
+            
+            ABMutableMultiValueRef phoneNumberMultiValue  = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+            ABMultiValueAddValueAndLabel(phoneNumberMultiValue, (__bridge CFTypeRef)(phoneNumber), kABPersonPhoneMobileLabel, NULL);
+            
+            CFErrorRef error = NULL;
+            if (firstName.length > 0)
+                ABRecordSetValue(contact, kABPersonFirstNameProperty, (__bridge CFTypeRef)(firstName), &error);
+            if (lastName.length > 0)
+                ABRecordSetValue(contact, kABPersonLastNameProperty, (__bridge CFTypeRef)(lastName), &error);
+            
+            ABRecordSetValue(contact, kABPersonPhoneProperty, phoneNumberMultiValue, &error);
+            
+            if (error != NULL)
+                return nil;
+            
+            contactData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge id)contact ]));
+        }
         
         filename = [[NSString stringWithFormat:@"%@ %@", firstName, lastName] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     }

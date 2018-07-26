@@ -53,6 +53,7 @@ extern int32_t TGMessageModernConversationItemLocalUserId;
 - (void)clearHighlights;
 
 - (id)currentAuthorPeer;
+- (bool)isFeedItem;
 
 - (bool)isExpiredLiveLocation;
 

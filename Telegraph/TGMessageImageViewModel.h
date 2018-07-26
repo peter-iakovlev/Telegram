@@ -28,7 +28,7 @@ typedef enum {
 @property (nonatomic, strong) NSString *uri;
 
 @property (nonatomic) CGFloat overlayDiameter;
-@property (nonatomic) UIColor *overlayBackgroundColorHint;
+@property (nonatomic, strong) UIColor *overlayBackgroundColorHint;
 @property (nonatomic) int overlayType;
 @property (nonatomic) CGFloat progress;
 @property (nonatomic) bool timestampHidden;
@@ -38,6 +38,9 @@ typedef enum {
 @property (nonatomic) CGFloat inlineVideoCornerRadius;
 @property (nonatomic) int inlineVideoPosition;
 @property (nonatomic) bool flexibleTimestamp;
+
+@property (nonatomic, strong) UIColor *timestampTextColor;
+@property (nonatomic) bool serviceTimestampStyle;
 
 @property (nonatomic, strong) NSArray *detailStrings;
 @property (nonatomic) UIEdgeInsets detailStringsInsets;

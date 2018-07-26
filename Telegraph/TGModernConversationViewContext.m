@@ -4,22 +4,24 @@
 
 @implementation TGModernConversationViewContext
 
-- (bool)isFocusedOnMessage:(int32_t)messageId
+- (bool)isFocusedOnMessage:(int32_t)messageId peerId:(int64_t)peerId
 {
     TGModernConversationCompanion *companion = _companion;
-    return [companion focusedOnMessageId] == messageId;
+    TGMessageIndex *messageIndex = [companion focusedOnMessageIndex];
+    return messageIndex.peerId == peerId && messageIndex.messageId == messageId;
 }
 
-- (bool)isMediaVisibleInMessage:(int32_t)messageId
+- (bool)isMediaVisibleInMessage:(int32_t)messageId peerId:(int64_t)peerId
 {
     TGModernConversationCompanion *companion = _companion;
-    return [companion mediaHiddenMessageId] != messageId;
+    TGMessageIndex *messageIndex = [companion mediaHiddenMessageIndex];
+    return messageIndex.peerId != peerId || messageIndex.messageId != messageId;
 }
 
-- (bool)isMessageChecked:(int32_t)messageId
+- (bool)isMessageChecked:(int32_t)messageId peerId:(int64_t)peerId
 {
     TGModernConversationCompanion *companion = _companion;
-    return [companion _isMessageChecked:messageId];
+    return [companion _isMessageChecked:[TGMessageIndex indexWithPeerId:peerId messageId:messageId]];
 }
 
 - (bool)isGroupChecked:(int64_t)groupedId

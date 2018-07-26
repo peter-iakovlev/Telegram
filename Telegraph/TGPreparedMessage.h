@@ -20,8 +20,13 @@
 @property (nonatomic) int32_t date;
 @property (nonatomic) bool isBroadcast;
 @property (nonatomic) int64_t groupedId;
+@property (nonatomic, strong) NSString *text;
+@property (nonatomic, strong) NSArray *entities;
 
 @property (nonatomic) int32_t replacingMid;
+
+@property (nonatomic) int64_t targetPeerId;
+@property (nonatomic) int32_t targetMessageId;
 
 @property (nonatomic) int32_t messageLifetime;
 

@@ -4,7 +4,7 @@
 #import <MTProtoKitDynamic/MTProto.h>
 #import <MTProtoKitDynamic/MTRequestMessageService.h>
 #import <SSignalKit/SSignalKit.h>
-#import "ApiLayer73.h"
+#import "ApiLayer82.h"
 
 @interface TGDatacenterConnectionContext : NSObject
 
@@ -15,7 +15,7 @@
 
 - (instancetype)initWithDatacenterId:(NSInteger)datacenterId mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService;
 
-- (SSignal *)function:(Api73_FunctionContext *)functionContext;
+- (SSignal *)function:(Api82_FunctionContext *)functionContext;
 
 @end
 

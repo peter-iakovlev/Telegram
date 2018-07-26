@@ -10,6 +10,7 @@
 #import "TGAppDelegate.h"
 #import "TGDatabase.h"
 #import "TGTelegraph.h"
+#import "TGTelegramNetworking.h"
 
 #import "TGModernConversationController.h"
 #import "TGModernConversationGroupTitlePanel.h"
@@ -39,7 +40,7 @@
 
 #import "TGLiveLocationTitlePanel.h"
 
-#import "TGPresentationAssets.h"
+#import "TGPresentation.h"
 
 typedef enum {
     TGGroupParticipationStatusMember = 0,
@@ -59,6 +60,9 @@ typedef enum {
     bool _hasLeavePanel;
     
     bool _isMuted; // Main Thread
+    
+    NSMutableDictionary *_defaultNotificationSettings;
+    NSMutableDictionary *_groupNotificationSettings;
     
     bool _hasBots;
     bool _hasSingleBot;
@@ -485,13 +489,14 @@ typedef enum {
     }
     
     NSMutableArray *actions = [[NSMutableArray alloc] init];
-    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": [TGPresentationAssets chatTitleSearchIcon], @"action": @"search"}];
+    TGPresentation *presentation = self.controller.presentation;
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Search"), @"icon": presentation.images.chatTitleSearchIcon, @"action": @"search"}];
     if (_isMuted)
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": [TGPresentationAssets chatTitleUnmuteIcon], @"action": @"unmute"}];
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Unmute"), @"icon": presentation.images.chatTitleUnmuteIcon, @"action": @"unmute"}];
     else
-        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": [TGPresentationAssets chatTitleMuteIcon], @"action": @"mute"}];
-    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": [TGPresentationAssets chatTitleInfoIcon], @"action": @"info"}];
-    
+        [actions addObject:@{@"title": TGLocalized(@"Conversation.Mute"), @"icon": presentation.images.chatTitleMuteIcon, @"action": @"mute"}];
+    [actions addObject:@{@"title": TGLocalized(@"Conversation.Info"), @"icon": presentation.images.chatTitleInfoIcon, @"action": @"info"}];
+    [groupTitlePanel setPresentation:presentation];
     [groupTitlePanel setButtonsWithTitlesAndActions:actions];
     
     [controller setPrimaryTitlePanel:groupTitlePanel];
@@ -589,10 +594,12 @@ typedef enum {
     [ActionStageInstance() watchForPaths:@[
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", _conversationId],
         [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId],
+        [[NSString alloc] initWithFormat:@"/tg/peerSettings/(%" PRId32 ")", INT_MAX - 2]
     ] watcher:self];
     
     [ActionStageInstance() watchForPath:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId64 ")", _conversationId] watcher:self];
     [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId64 ",cachedOnly)", _conversationId] options:@{@"peerId": @(_conversationId)} watcher:self];
+    [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/peerSettings/(%d,cachedOnly)", INT_MAX - 2] options:[NSDictionary dictionaryWithObject:[NSNumber numberWithLongLong:INT_MAX - 2] forKey:@"peerId"] watcher:self];
     
     [super subscribeToUpdates];
 }
@@ -601,12 +608,15 @@ typedef enum {
 
 - (void)requestGroupMute:(bool)mute
 {
-    [self _updateGroupMute:mute];
+    NSNumber *muteUntil = mute ? @(INT32_MAX) : @0;
+    _groupNotificationSettings[@"muteUntil"] = muteUntil;
+    
+    [self _updateNotifcationSettings];
     
     [ActionStageInstance() dispatchOnStageQueue:^
     {
         static int actionId = 0;
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(conversationController%d)", _conversation.conversationId, actionId++] options:@{@"peerId": @(_conversationId), @"muteUntil": @(mute ? INT_MAX : 0)} watcher:TGTelegraphInstance];
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/changePeerSettings/(%" PRId64 ")/(conversationController%d)", _conversation.conversationId, actionId++] options:@{@"peerId": @(_conversationId), @"muteUntil": muteUntil} watcher:TGTelegraphInstance];
     }];
 }
 
@@ -626,7 +636,7 @@ typedef enum {
                 muteIcon.offsetWeight = 0.5f;
                 muteIcon.imageOffset = CGPointMake(4.0f, 7.0f);
                 
-                muteIcon.image = [TGPresentationAssets chatTitleMutedIcon];
+                muteIcon.image = self.controller.presentation.images.chatTitleMutedIcon;
                 muteIcon.iconPosition = TGModernConversationTitleIconPositionAfterTitle;
                 [self _setTitleIcons:@[muteIcon]];
             }
@@ -824,13 +834,37 @@ typedef enum {
 
 - (void)actorCompleted:(int)status path:(NSString *)path result:(id)result
 {
-    if ([path hasPrefix:@"/tg/peerSettings/"])
+    if ([path hasPrefix:[NSString stringWithFormat:@"/tg/peerSettings/(%" PRId32 "", INT_MAX - 2]])
     {
-        bool isMuted = [[((SGraphObjectNode *)result).object objectForKey:@"muteUntil"] intValue] != 0;
-        [self _updateGroupMute:isMuted];
+        TGDispatchOnMainThread(^
+        {
+            _defaultNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+            [self _updateNotifcationSettings];
+        });
+    }
+    else if ([path hasPrefix:@"/tg/peerSettings/"])
+    {
+        TGDispatchOnMainThread(^
+        {
+            _groupNotificationSettings = [((SGraphObjectNode *)result).object mutableCopy];
+            [self _updateNotifcationSettings];
+        });
     }
     
     [super actorCompleted:status path:path result:result];
+}
+
+- (void)_updateNotifcationSettings
+{
+    NSNumber *muteUntil = _groupNotificationSettings[@"muteUntil"];
+    if (muteUntil == nil)
+        muteUntil = _defaultNotificationSettings[@"muteUntil"];
+    
+    bool isMuted = true;
+    if (muteUntil.intValue <= [[TGTelegramNetworking instance] approximateRemoteTime])
+        isMuted = false;
+    
+    [self _updateGroupMute:isMuted];
 }
 
 - (bool)allowReplies

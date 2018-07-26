@@ -1693,7 +1693,7 @@ typedef enum {
         NSInteger embedIndex = *embedIndexCounter;
         (*embedIndexCounter)++;
         
-        TGPIPSourceLocation *location = [[TGPIPSourceLocation alloc] initWithEmbed:true peerId:peerId messageId:messageId localId:(int32_t)embedIndex webPage:webPage];
+        TGPIPSourceLocation *location = [[TGPIPSourceLocation alloc] initWithEmbed:true conversationId:peerId messageId:messageId localId:(int32_t)embedIndex webPage:webPage];
         TGInstantPageEmbedItem *item = [[TGInstantPageEmbedItem alloc] initWithFrame:CGRectMake(CGFloor((boundingWidth - size.width) / 2.0f), 0.0f, size.width, size.height) url:embedBlock.url html:embedBlock.html posterMedia:posterMedia location:location enableScrolling:embedBlock.enableScrolling];
         return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(boundingWidth, item.frame.size.height) items:@[item]];
     } else if ([block isKindOfClass:[TGInstantPageBlockSlideshow class]]) {
@@ -1922,7 +1922,7 @@ typedef enum {
     return [[TGInstantPageLayout alloc] initWithOrigin:CGPointMake(0.0f, 0.0f) contentSize:CGSizeMake(0.0f, 0.0f) items:@[]];
 }
 
-+ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth safeAreaInset:(UIEdgeInsets)safeAreaInset presentation:(TGInstantPagePresentation *)presentation {
++ (TGInstantPageLayout *)makeLayoutForWebPage:(TGWebPageMediaAttachment *)webPage peerId:(int64_t)peerId messageId:(int32_t)messageId boundingWidth:(CGFloat)boundingWidth safeAreaInset:(UIEdgeInsets)safeAreaInset presentation:(TGInstantPagePresentation *)presentation showFeedbackButton:(bool)showFeedbackButton {
     NSArray<TGInstantPageBlock *> *pageBlocks = webPage.instantPage.blocks;
     
     CGSize contentSize = CGSizeMake(boundingWidth, 0.0f);
@@ -1968,6 +1968,10 @@ typedef enum {
     TGInstantPageBlock *previousBlock = nil;
     TGInstantPageLayout *previousLayout = nil;
     for (TGInstantPageBlock *block in pageBlocks) {
+        if (!showFeedbackButton && [block isKindOfClass:[TGInstantPageBlockChannel class]]) {
+            continue;
+        }
+        
         CGFloat spacingBetween = spacingBetweenBlocks(previousBlock, block);
         if (spacingBetween > FLT_EPSILON)
             spacingBetween *= presentation.fontSizeMultiplier;
@@ -1988,7 +1992,7 @@ typedef enum {
     CGFloat closingSpacing = spacingBetweenBlocks(previousBlock, nil) * presentation.fontSizeMultiplier;
     contentSize.height += closingSpacing;
     
-    {
+    if (showFeedbackButton) {
         CGFloat height = CGCeil([TGInstantPageFooterButtonView heightForWidth:boundingWidth]);
         
         TGInstantPageFooterButtonItem *item = [[TGInstantPageFooterButtonItem alloc] initWithFrame:CGRectMake(0.0f, contentSize.height, boundingWidth, height) presentation:presentation];

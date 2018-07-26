@@ -9,6 +9,8 @@
 #import "TGShareSheetSharePeersCell.h"
 #import "TGGroupInviteSheetMoreCell.h"
 
+#import "TGPresentation.h"
+
 @interface TGGroupInviteSheetItemView () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout> {
     TGLetteredAvatarView *_avatarView;
     UILabel *_titleLabel;
@@ -99,6 +101,14 @@
     return self;
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _titleLabel.textColor = presentation.pallete.menuTextColor;
+    _infoLabel.textColor = presentation.pallete.menuSecondaryTextColor;
+}
+
 - (CGFloat)preferredHeightForMaximumHeight:(CGFloat)__unused maximumHeight {
     return 266.0;
 }
@@ -139,12 +149,13 @@
 {
     if (indexPath.section == 0) {
         TGShareSheetSharePeersCell *cell = (TGShareSheetSharePeersCell *)[collectionView dequeueReusableCellWithReuseIdentifier:@"TGAttachmentSheetSharePeersCell" forIndexPath:indexPath];
-        
+        cell.presentation = self.presentation;
         id peer = _recentPeers[indexPath.row];
         [cell setPeer:peer];
         return cell;
     } else {
         TGGroupInviteSheetMoreCell *cell = (TGGroupInviteSheetMoreCell *)[collectionView dequeueReusableCellWithReuseIdentifier:@"TGGroupInviteSheetMoreCell" forIndexPath:indexPath];
+        cell.presentation = self.presentation;
         [cell setCount:_moreCount];
         return cell;
     }

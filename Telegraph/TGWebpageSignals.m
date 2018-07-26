@@ -9,6 +9,8 @@
 
 #import "TLWebPage_manual.h"
 
+#import "TGLocalizationSignals.h"
+
 #import "TGDatabase.h"
 
 @interface TGWebpageSignalsResourceHelper : NSObject <ASWatcher>
@@ -160,6 +162,25 @@
             }];
         }
     }] switchToLatest];
+}
+
++ (SSignal *)updatedWebpageForUrl:(NSString *)url {
+    TLRPCmessages_getWebPage$messages_getWebPage *getWebPage = [[TLRPCmessages_getWebPage$messages_getWebPage alloc] init];
+    getWebPage.url = url;
+    getWebPage.n_hash = 0;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getWebPage] mapToSignal:^SSignal *(TLWebPage *desc) {
+        if ([desc isKindOfClass:[TLWebPage$webPageNotModified class]]) {
+            return [SSignal fail:nil];
+        } else {
+            TGWebPageMediaAttachment *updatedWebPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:desc];
+            if (updatedWebPage != nil) {
+                return [SSignal single:updatedWebPage];
+            } else {
+                return [SSignal fail:nil];
+            }
+        }
+    }];
 }
 
 @end

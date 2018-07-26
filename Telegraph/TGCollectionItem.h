@@ -14,6 +14,7 @@
 @interface TGCollectionItem : NSObject
 
 @property (nonatomic) bool highlightable;
+@property (nonatomic) bool highlightDisabled;
 @property (nonatomic) bool selectable;
 @property (nonatomic) bool deselectAutomatically;
 @property (nonatomic) bool transparent;

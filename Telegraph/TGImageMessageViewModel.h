@@ -59,15 +59,14 @@
 
 - (CGSize)contentSizeForContainerSize:(CGSize)containerSize needsContentsUpdate:(bool *)needsContentsUpdate infoWidth:(CGFloat)infoWidth;
 
-- (void)updateImageInfo:(TGImageInfo *)imageInfo;
+- (NSString *)updatedImageUri;
+- (NSString *)updatedImageUriForMessage:(TGMessage *)message outImageInfo:(TGImageInfo **)outImageInfo;
+- (NSString *)updatedImageUriForInfo:(TGImageInfo *)imageInfo;
 - (void)setAuthorNameColor:(UIColor *)authorNameColor;
 
 - (void)setWebPageFooter:(TGWebPageMediaAttachment *)webPage invoice:(TGInvoiceMediaAttachment *)invoice viewStorage:(TGModernViewStorage *)viewStorage;
 
-- (UIImage *)dateBackground;
 - (UIColor *)dateColor;
-- (UIImage *)checkPartialImage;
-- (UIImage *)checkCompleteImage;
 - (int)clockProgressType;
 - (CGPoint)dateOffset;
 - (bool)instantPreviewGesture;
@@ -80,7 +79,6 @@
 - (NSString *)defaultAdditionalDataString;
 
 - (void)updateImageOverlay:(bool)animated;
-- (void)updateImage;
 
 - (bool)isInstant;
 

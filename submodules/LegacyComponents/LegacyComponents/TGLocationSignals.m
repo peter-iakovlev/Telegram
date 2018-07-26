@@ -11,18 +11,6 @@
 #import "TGLocationVenue.h"
 #import "TGLocationReverseGeocodeResult.h"
 
-NSString *const TGLocationFoursquareSearchEndpointUrl = @"https://api.foursquare.com/v2/venues/search/";
-NSString *const TGLocationFoursquareClientId = @"DGCOWIDKBO5UQSI41R4JPXMIHFEBU35C1FPQX11ZXF45HX0U";
-NSString *const TGLocationFoursquareClientSecret = @"COGTBZEZE4POPSGOZIJ5USK0NHRLC1RAGTYWQREZ4KQHZKON";
-NSString *const TGLocationFoursquareVersion = @"20150326";
-NSString *const TGLocationFoursquareVenuesCountLimit = @"25";
-NSString *const TGLocationFoursquareLocale = @"en";
-
-NSString *const TGLocationGooglePlacesSearchEndpointUrl = @"https://maps.googleapis.com/maps/api/place/nearbysearch/json";
-NSString *const TGLocationGooglePlacesApiKey = @"AIzaSyBCTH4aAdvi0MgDGlGNmQAaFS8GTNBrfj4";
-NSString *const TGLocationGooglePlacesRadius = @"150";
-NSString *const TGLocationGooglePlacesLocale = @"en";
-
 NSString *const TGLocationGoogleGeocodeLocale = @"en";
 
 @interface TGLocationHelper : NSObject <CLLocationManagerDelegate> {
@@ -90,6 +78,58 @@ NSString *const TGLocationGoogleGeocodeLocale = @"en";
 
 @implementation TGLocationSignals
 
++ (SSignal *)geocodeAddress:(NSString *)address
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        CLGeocoder *geocoder = [[CLGeocoder alloc] init];
+        [geocoder geocodeAddressString:address completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error)
+        {
+            if (error != nil)
+            {
+                [subscriber putError:error];
+                return;
+            }
+            else
+            {
+                [subscriber putNext:placemarks.firstObject];
+                [subscriber putCompletion];
+            }
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [geocoder cancelGeocode];
+        }];
+    }];
+}
+
++ (SSignal *)geocodeAddressDictionary:(NSDictionary *)dictionary
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        CLGeocoder *geocoder = [[CLGeocoder alloc] init];
+        [geocoder geocodeAddressDictionary:dictionary completionHandler:^(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error)
+        {
+            if (error != nil)
+            {
+                [subscriber putError:error];
+                return;
+            }
+            else
+            {
+                [subscriber putNext:placemarks.firstObject];
+                [subscriber putCompletion];
+            }
+        }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [geocoder cancelGeocode];
+        }];
+    }];
+}
+
 + (SSignal *)reverseGeocodeCoordinate:(CLLocationCoordinate2D)coordinate
 {
     NSURL *url = [NSURL URLWithString:[[NSString alloc] initWithFormat:@"https://maps.googleapis.com/maps/api/geocode/json?latlng=%f,%f&sensor=true&language=%@", coordinate.latitude, coordinate.longitude, TGLocationGoogleGeocodeLocale]];
@@ -107,6 +147,32 @@ NSString *const TGLocationGoogleGeocodeLocale = @"en";
             return nil;
         
         return [TGLocationReverseGeocodeResult reverseGeocodeResultWithDictionary:results.firstObject];
+    }];
+}
+
++ (SSignal *)cityForCoordinate:(CLLocationCoordinate2D)coordinate
+{
+    return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
+    {
+        CLGeocoder *geocoder = [[CLGeocoder alloc] init];
+        [geocoder reverseGeocodeLocation:[[CLLocation alloc] initWithLatitude:coordinate.latitude longitude:coordinate.longitude] completionHandler:^(NSArray *placemarks, NSError *error)
+         {
+             if (error != nil)
+             {
+                 [subscriber putError:error];
+                 return;
+             }
+             else
+             {
+                 [subscriber putNext:[placemarks.firstObject locality]];
+                 [subscriber putCompletion];
+             }
+         }];
+        
+        return [[SBlockDisposable alloc] initWithBlock:^
+        {
+            [geocoder cancelGeocode];
+        }];
     }];
 }
 
@@ -145,142 +211,6 @@ NSString *const TGLocationGoogleGeocodeLocale = @"en";
             [directions cancel];
         }];
     }];
-}
-
-+ (SSignal *)searchNearbyPlacesWithQuery:(NSString *)query coordinate:(CLLocationCoordinate2D)coordinate service:(TGLocationPlacesService)service
-{
-    switch (service)
-    {
-        case TGLocationPlacesServiceGooglePlaces:
-            return [self _searchGooglePlacesWithQuery:query coordinate:coordinate];
-            
-        default:
-            return [self _searchFoursquareVenuesWithQuery:query coordinate:coordinate];
-    }
-}
-
-+ (SSignal *)_searchFoursquareVenuesWithQuery:(NSString *)query coordinate:(CLLocationCoordinate2D)coordinate
-{
-    NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
-    parameters[@"limit"] = TGLocationFoursquareVenuesCountLimit;
-    parameters[@"ll"] = [NSString stringWithFormat:@"%lf,%lf", coordinate.latitude, coordinate.longitude];
-    if (query.length > 0)
-        parameters[@"query"] = query;
-    
-    NSString *url = [self _urlForService:TGLocationPlacesServiceFoursquare parameters:parameters];
-    return [[[LegacyComponentsGlobals provider] jsonForHttpLocation:url] map:^id(id json)
-    {
-        if (![json respondsToSelector:@selector(objectForKey:)])
-            return nil;
-
-        NSArray *results = json[@"response"][@"venues"];
-        if (![results respondsToSelector:@selector(objectAtIndex:)])
-            return nil;
-
-        NSMutableArray *venues = [[NSMutableArray alloc] init];
-        for (NSDictionary *result in results)
-        {
-            TGLocationVenue *venue = [TGLocationVenue venueWithFoursquareDictionary:result];
-            if (venue != nil)
-                [venues addObject:venue];
-        }
-        
-        return venues;
-    }];
-}
-
-+ (SSignal *)_searchGooglePlacesWithQuery:(NSString *)query coordinate:(CLLocationCoordinate2D)coordinate
-{
-    NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
-    parameters[@"location"] = [NSString stringWithFormat:@"%lf,%lf", coordinate.latitude, coordinate.longitude];
-    if (query.length > 0)
-        parameters[@"name"] = query;
-    
-    NSString *url = [self _urlForService:TGLocationPlacesServiceGooglePlaces parameters:parameters];
-    return [[[LegacyComponentsGlobals provider] jsonForHttpLocation:url] map:^id(id json)
-    {
-        if (![json respondsToSelector:@selector(objectForKey:)])
-            return nil;
-        
-        NSArray *results = json[@"results"];
-        if (![results respondsToSelector:@selector(objectAtIndex:)])
-            return nil;
-        
-        NSMutableArray *venues = [[NSMutableArray alloc] init];
-        for (NSDictionary *result in results)
-        {
-            TGLocationVenue *venue = [TGLocationVenue venueWithGooglePlacesDictionary:result];
-            if (venue != nil)
-                [venues addObject:venue];
-        }
-        
-        return venues;
-    }];
-}
-
-+ (NSString *)_urlForService:(TGLocationPlacesService)service parameters:(NSDictionary *)parameters
-{
-    if (service == TGLocationPlacesServiceNone)
-        return nil;
-    
-    NSMutableDictionary *finalParameters = [[self _defaultParametersForService:service] mutableCopy];
-    [finalParameters addEntriesFromDictionary:parameters];
-    
-    NSMutableString *queryString = [[NSMutableString alloc] init];
-    [finalParameters enumerateKeysAndObjectsUsingBlock:^(id key, id obj, __unused BOOL *stop) {
-        if (queryString.length != 0) {
-            [queryString appendString:@"&"];
-        }
-        [queryString appendString:[TGStringUtils stringByEscapingForURL:[NSString stringWithFormat:@"%@", key]]];
-        [queryString appendString:@"="];
-        [queryString appendString:[TGStringUtils stringByEscapingForURL:[NSString stringWithFormat:@"%@", obj]]];
-    }];
-    
-    NSString *urlString = [NSString stringWithFormat:@"%@?%@", [self _endpointUrlForService:service], queryString];
-    
-    return urlString;
-}
-
-+ (NSString *)_endpointUrlForService:(TGLocationPlacesService)service
-{
-    switch (service)
-    {
-        case TGLocationPlacesServiceGooglePlaces:
-            return TGLocationGooglePlacesSearchEndpointUrl;
-            
-        case TGLocationPlacesServiceFoursquare:
-            return TGLocationFoursquareSearchEndpointUrl;
-            
-        default:
-            return nil;
-    }
-}
-
-+ (NSDictionary *)_defaultParametersForService:(TGLocationPlacesService)service
-{
-    switch (service)
-    {
-        case TGLocationPlacesServiceGooglePlaces:
-            return @
-            {
-                @"key": TGLocationGooglePlacesApiKey,
-                @"language": TGLocationGooglePlacesLocale,
-                @"radius": TGLocationGooglePlacesRadius,
-                @"sensor": @"true"
-            };
-            
-        case TGLocationPlacesServiceFoursquare:
-            return @
-            {
-                @"v": TGLocationFoursquareVersion,
-                @"locale": TGLocationFoursquareLocale,
-                @"client_id": TGLocationFoursquareClientId,
-                @"client_secret" :TGLocationFoursquareClientSecret
-            };
-            
-        default:
-            return nil;
-    }
 }
 
 #pragma mark -

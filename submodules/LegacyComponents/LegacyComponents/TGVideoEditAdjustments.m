@@ -4,7 +4,7 @@
 
 #import "TGPaintingData.h"
 
-const NSTimeInterval TGVideoEditMinimumTrimmableDuration = 3.0;
+const NSTimeInterval TGVideoEditMinimumTrimmableDuration = 1.0;
 const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
 
 @implementation TGVideoEditAdjustments
@@ -15,6 +15,7 @@ const NSTimeInterval TGVideoEditMaximumGifDuration = 30.5;
 @synthesize cropLockedAspectRatio = _cropLockedAspectRatio;
 @synthesize cropMirrored = _cropMirrored;
 @synthesize paintingData = _paintingData;
+@synthesize sendAsGif = _sendAsGif;
 
 + (instancetype)editAdjustmentsWithOriginalSize:(CGSize)originalSize
                                        cropRect:(CGRect)cropRect

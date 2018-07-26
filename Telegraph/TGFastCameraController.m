@@ -16,6 +16,8 @@
 #import <LegacyComponents/TGCameraPreviewView.h>
 #import "TGFastCameraControlPanel.h"
 
+#import <LegacyComponents/TGCameraCapturedVideo.h>
+
 #import <LegacyComponents/TGCameraTimeCodeView.h>
 #import <LegacyComponents/TGCameraFlipButton.h>
 
@@ -130,12 +132,12 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     };
     [_interfaceView addSubview:_controlPanel];
     
-    _topPanelView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 40.0f + self.controllerSafeAreaInset.top)];
+    _topPanelView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 40.0f + self.calculatedSafeAreaInset.top)];
     _topPanelView.alpha = 0.0f;
     _topPanelView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.37f];
     [_interfaceView addSubview:_topPanelView];
     
-    _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 44.0f, _topPanelView.frame.size.height - 40.0f, 40.0f, 40.0f)];
+    _flipButton = [[TGCameraFlipButton alloc] initWithFrame:CGRectMake(self.view.frame.size.width - 48.0f, _topPanelView.frame.size.height - 40.0f, 40.0f, 40.0f) large:false];
     [_flipButton addTarget:self action:@selector(flipButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     [_topPanelView addSubview:_flipButton];
     
@@ -379,14 +381,14 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
             [strongSelf dismissTransitionForResultController:strongController success:false];
     };
     
-    controller.sendPressed = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *stickers, NSNumber *timer)
+    controller.sendPressed = ^(__unused TGOverlayController *controller, UIImage *resultImage, NSString *caption, NSArray *entities, NSArray *stickers, NSNumber *timer)
     {
         __strong TGFastCameraController *strongSelf = weakSelf;
         if (strongSelf == nil)
             return;
         
         if (strongSelf.finishedWithPhoto != nil)
-            strongSelf.finishedWithPhoto(resultImage, caption, stickers, timer);
+            strongSelf.finishedWithPhoto(resultImage, caption, entities, stickers, timer);
         
         __strong TGOverlayController *strongController = weakController;
         if (strongController != nil)
@@ -425,7 +427,9 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     
     __weak TGFastCameraController *weakSelf = self;
     
-    TGMediaPickerGalleryVideoItem *videoItem = [[TGMediaPickerGalleryVideoItem alloc] initWithFileURL:url dimensions:dimensions duration:duration];
+    TGCameraCapturedVideo *capturedVideo = [[TGCameraCapturedVideo alloc] initWithURL:url];
+    
+    TGMediaPickerGalleryVideoItem *videoItem = [[TGMediaPickerGalleryVideoItem alloc] initWithAsset:capturedVideo]; //[[TGMediaPickerGalleryVideoItem alloc] initWithFileURL:url dimensions:dimensions duration:duration];
     videoItem.editingContext = _editingContext;
     videoItem.immediateThumbnailImage = thumbnailImage;
     
@@ -433,7 +437,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     galleryController.adjustsStatusBarVisibility = false;
     galleryController.hasFadeOutTransition = true;
     
-    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:[TGLegacyComponentsContext shared] items:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions hasTimer:self.hasTimer inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false recipientName:self.recipientName];
+    TGMediaPickerGalleryModel *model = [[TGMediaPickerGalleryModel alloc] initWithContext:[TGLegacyComponentsContext shared] items:@[ videoItem ] focusItem:videoItem selectionContext:nil editingContext:_editingContext hasCaptions:self.allowCaptions allowCaptionEntities:self.allowCaptionEntities hasTimer:self.hasTimer onlyCrop:false inhibitDocumentCaptions:self.inhibitDocumentCaptions hasSelectionPanel:false hasCamera:false recipientName:self.recipientName];
     model.controller = galleryController;
     model.suggestionContext = self.suggestionContext;
     
@@ -455,11 +459,11 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [editingContext setImage:resultImage thumbnailImage:thumbnailImage forItem:editableItem synchronous:false];
     };
     
-    model.saveItemCaption = ^(__unused id<TGMediaEditableItem> item, NSString *caption)
+    model.saveItemCaption = ^(__unused id<TGMediaEditableItem> item, NSString *caption, NSArray *entities)
     {
         __strong TGFastCameraController *strongSelf = weakSelf;
         if (strongSelf != nil)
-            [strongSelf->_editingContext setCaption:caption forItem:videoItem.avAsset];
+            [strongSelf->_editingContext setCaption:caption entities:entities forItem:videoItem.avAsset];
     };
     
     model.interfaceView.hasSwipeGesture = false;
@@ -491,6 +495,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         
         TGVideoEditAdjustments *adjustments = (TGVideoEditAdjustments *)[strongSelf->_editingContext adjustmentsForItem:videoItem.avAsset];
         NSString *caption = [strongSelf->_editingContext captionForItem:videoItem.avAsset];
+        NSArray *entities = [strongSelf->_editingContext entitiesForItem:videoItem.avAsset];
         NSNumber *timer = [strongSelf->_editingContext timerForItem:videoItem.avAsset];
         
         SSignal *thumbnailSignal = [SSignal single:thumbnailImage];
@@ -512,7 +517,7 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
         [[thumbnailSignal deliverOn:[SQueue mainQueue]] startWithNext:^(UIImage *thumbnailImage)
         {
             if (strongSelf.finishedWithVideo != nil)
-                strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, adjustments.paintingData.stickers, timer);
+                strongSelf.finishedWithVideo(url, thumbnailImage, duration, dimensions, adjustments, caption, entities, adjustments.paintingData.stickers, timer);
         }];
         
         if (strongSelf.shouldStoreCapturedAssets && timer == nil)
@@ -688,6 +693,9 @@ NSString *const TGFastCameraUseRearCameraKey = @"fastCameraUseRear_v1";
     } completion:^(__unused BOOL finished)
     {
         self.view.backgroundColor = [UIColor blackColor];
+        
+        if (self.transitionedIn != nil)
+            self.transitionedIn();
     }];
 }
 

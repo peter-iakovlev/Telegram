@@ -139,7 +139,7 @@
     }];
 }
 
-+ (SSignal *)shareLinkForChannelMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId {
++ (SSignal *)shareLinkForChannelMessage:(int64_t)peerId accessHash:(int64_t)accessHash messageId:(int32_t)messageId grouped:(bool)grouped {
     TLRPCchannels_exportMessageLink$channels_exportMessageLink *exportMessageLink = [[TLRPCchannels_exportMessageLink$channels_exportMessageLink alloc] init];
     TLInputChannel$inputChannel *inputChannel = [[TLInputChannel$inputChannel alloc] init];
     inputChannel.channel_id = TGChannelIdFromPeerId(peerId);
@@ -147,6 +147,7 @@
     exportMessageLink.channel = inputChannel;
     
     exportMessageLink.n_id = messageId;
+    exportMessageLink.grouped = grouped;
     
     if (false) {
         return [[[TGDatabaseInstance() existingChannel:peerId] take:1] map:^id(TGConversation *conversation) {

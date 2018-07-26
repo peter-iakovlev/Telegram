@@ -17,7 +17,7 @@
     
     _dimView = [[UIButton alloc] initWithFrame:self.view.bounds];
     _dimView.alpha = 0.0f;
-    _dimView.backgroundColor = UIColorRGBA(0x000000, 0.6f);
+    _dimView.backgroundColor = UIColorRGBA(0x000000, 0.4f);
     [_dimView addTarget:self action:@selector(tapped) forControlEvents:UIControlEventTouchDown];
     [self.view addSubview:_dimView];
 }

@@ -90,7 +90,7 @@
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
     }
     
-    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:video.caption textCheckingResults:video.textCheckingResults webPage:webPage];
+    self = [super initWithMessage:message imageInfo:previewImageInfo authorPeer:authorPeer context:context forwardPeer:forwardPeer forwardAuthor:forwardAuthor forwardMessageId:forwardMessageId replyHeader:replyHeader replyAuthor:replyAuthor viaUser:viaUser caption:message.caption textCheckingResults:message.textCheckingResults webPage:webPage];
     if (self != nil)
     {
         _video = video;
@@ -114,10 +114,8 @@
     return self;
 }
 
-- (void)updateImage
+- (NSString *)updatedImageUriForMessage:(TGMessage *)message outImageInfo:(TGImageInfo **)outImageInfo
 {
-    TGMessage *message = _message;
-    
     TGVideoMediaAttachment *video = nil;
     for (id attachment in message.mediaAttachments)
     {
@@ -149,7 +147,7 @@
         
         if (self.groupedLayout != nil)
         {
-            CGRect frame = [self.groupedLayout frameForMessageId:_message.mid];
+            CGRect frame = [self.groupedLayout frameForMessageId:message.mid];
             thumbnailSize = frame.size;
             renderSize = TGScaleToFill(largestSize, thumbnailSize);
         }
@@ -169,8 +167,12 @@
         
         [previewImageInfo addImageWithSize:renderSize url:previewUri];
         
-        [self updateImageInfo:previewImageInfo];
+        if (outImageInfo != NULL)
+            *outImageInfo = previewImageInfo;
+        
+        return [self updatedImageUriForInfo:previewImageInfo];
     }
+    return nil;
 }
 
 - (void)updateMessage:(TGMessage *)message viewStorage:(TGModernViewStorage *)viewStorage sizeUpdated:(bool *)sizeUpdated
@@ -193,13 +195,6 @@
     
     _video = video;
     [_video.videoInfo urlWithQuality:0 actualQuality:NULL actualSize:&_videoSize];
-}
-
-- (void)updateMediaAvailability:(bool)mediaIsAvailable viewStorage:(TGModernViewStorage *)__unused viewStorage delayDisplay:(bool)delayDisplay
-{
-    //_touchAreaModel.touchesBeganAction = mediaIsAvailable ? @"openMediaRequested" : @"mediaDownloadRequested";
-    
-    [super updateMediaAvailability:mediaIsAvailable viewStorage:viewStorage delayDisplay:delayDisplay];
 }
 
 - (void)updateProgress:(bool)progressVisible progress:(float)progress viewStorage:(TGModernViewStorage *)viewStorage animated:(bool)animated

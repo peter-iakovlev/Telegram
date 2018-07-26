@@ -114,24 +114,7 @@
 
 - (void)setAvatarUri:(NSString *)avatarUri animated:(bool)animated
 {
-    static UIImage *placeholder = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        UIGraphicsBeginImageContextWithOptions(CGSizeMake(64.0f, 64.0f), false, 0.0f);
-        CGContextRef context = UIGraphicsGetCurrentContext();
-        
-        //!placeholder
-        CGContextSetFillColorWithColor(context, [UIColor whiteColor].CGColor);
-        CGContextFillEllipseInRect(context, CGRectMake(0.0f, 0.0f, 64.0f, 64.0f));
-        CGContextSetStrokeColorWithColor(context, UIColorRGB(0xd9d9d9).CGColor);
-        CGContextSetLineWidth(context, 1.0f);
-        CGContextStrokeEllipseInRect(context, CGRectMake(0.5f, 0.5f, 63.0f, 63.0f));
-        
-        placeholder = UIGraphicsGetImageFromCurrentImageContext();
-        UIGraphicsEndImageContext();
-    });
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:64.0f];
     UIImage *currentPlaceholder = [_avatarView currentImage];
     if (currentPlaceholder == nil)
         currentPlaceholder = placeholder;
@@ -293,6 +276,7 @@
                 _titleField = [[TGTextField alloc] init];
                 [_titleField addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
                 _titleField.textColor = self.presentation.pallete.collectionMenuTextColor;
+                _titleField.keyboardAppearance = self.presentation.pallete.isDark ? UIKeyboardAppearanceAlert : UIKeyboardAppearanceDefault;
                 _titleField.font = TGSystemFontOfSize(20);
                 _titleField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
                 _titleField.enabled = !_updatingTitle;
@@ -432,8 +416,8 @@
     
     titleSize.width = MIN(titleSize.width, maxTitleWidth);
     CGRect titleLabelFrame = CGRectMake(92 + self.safeAreaInset.left, floor((93.0f - titleSize.height) / 2.0f) - 2.0f, titleSize.width, titleSize.height);
-    
     _titleLabel.frame = titleLabelFrame;
+    
     _titleField.frame = CGRectMake(titleLabelFrame.origin.x, 22, maxTitleWidth, 44);
     
     if (_verifiedIcon.superview != nil) {

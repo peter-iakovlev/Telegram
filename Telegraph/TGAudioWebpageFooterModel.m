@@ -23,6 +23,7 @@
     bool _hasViews;
     bool _incoming;
     int32_t _mid;
+    int64_t _authorPeerId;
     
     int32_t _duration;
     int32_t _size;
@@ -46,17 +47,19 @@
 
 @implementation TGAudioWebpageFooterModel
 
-- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews {
+- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId authorPeerId:(int64_t)authorPeerId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews {
     self = [super initWithContext:context incoming:incoming webpage:webPage];
     if (self != nil) {
         _webPage = webPage;
         _incoming = incoming;
         _hasViews = hasViews;
         _mid = messageId;
+        _authorPeerId = authorPeerId;
         
         TGDocumentMediaAttachment *document = webPage.document;
         
         _iconModel = [[TGDocumentMessageIconModel alloc] init];
+        _iconModel.presentation = context.presentation;
         _iconModel.skipDrawInContext = true;
         _iconModel.frame = CGRectMake(0.0f, 0.0f, 37.0f, 37.0f);
         _iconModel.incoming = incoming;
@@ -321,12 +324,12 @@
         }
     }
     else
-        [self.context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+        [self.context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)cancelMediaDownload
 {
-    [self.context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid)}];
+    [self.context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)messageImageViewActionButtonPressed:(TGMessageImageView *)messageImageView withAction:(TGMessageImageViewActionType)action

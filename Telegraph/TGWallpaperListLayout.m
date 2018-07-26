@@ -63,9 +63,10 @@
 {
     NSMutableArray *array = [[NSMutableArray alloc] initWithArray:[super layoutAttributesForElementsInRect:rect]];
     
-    UICollectionViewLayoutAttributes *attributes = [UICollectionViewLayoutAttributes layoutAttributesForDecorationViewOfKind:[TGWallpaperItemsBackgroundDecorationView kind] withIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
+    TGWallpaperItemsBackgroundDecorationAttributes *attributes = [TGWallpaperItemsBackgroundDecorationAttributes layoutAttributesForDecorationViewOfKind:[TGWallpaperItemsBackgroundDecorationView kind] withIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
     attributes.frame = CGRectMake(0.0f, 106.0f, self.collectionView.frame.size.width, self.collectionViewContentSize.height - 106.0f - 32.0f);
     attributes.zIndex = -1;
+    attributes.presentation = self.presentation;
     [array addObject:attributes];
     
     return array;

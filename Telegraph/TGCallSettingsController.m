@@ -14,7 +14,7 @@
 #import "TGCommentCollectionItem.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGRecentCallsController.h"
 #import "TGCallDataSettingsController.h"
@@ -214,7 +214,7 @@
                     accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
                 [self setAccountSettings:accountSettings];
                 
-                [[[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
         });
     }

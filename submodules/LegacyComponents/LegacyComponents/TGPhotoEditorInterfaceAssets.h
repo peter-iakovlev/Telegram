@@ -25,6 +25,7 @@
 + (UIImage *)paintIcon;
 + (UIImage *)stickerIcon;
 + (UIImage *)textIcon;
++ (UIImage *)gifBackgroundImage;
 + (UIImage *)gifIcon;
 + (UIImage *)gifActiveIcon;
 + (UIImage *)qualityIconForPreset:(TGMediaVideoConversionPreset)preset;
@@ -54,5 +55,7 @@
 
 + (UIColor *)sliderBackColor;
 + (UIColor *)sliderTrackColor;
+
++ (UIImage *)cameraIcon;
 
 @end

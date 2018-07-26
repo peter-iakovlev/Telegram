@@ -12,11 +12,14 @@
 
 #import "TGModernViewContext.h"
 
+#import "TGPresentation.h"
+
 @interface TGMusicWebpageFooterModel () <TGMessageImageViewDelegate> {
     TGWebPageMediaAttachment *_webPage;
     bool _hasViews;
     bool _incoming;
     int32_t _mid;
+    int64_t _authorPeerId;
     
     TGDocumentMessageIconModel *_iconModel;
     TGModernLabelViewModel *_titleModel;
@@ -32,33 +35,23 @@
 
 @implementation TGMusicWebpageFooterModel
 
-- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews {
+- (instancetype)initWithContext:(TGModernViewContext *)context messageId:(int32_t)messageId authorPeerId:(int64_t)authorPeerId incoming:(bool)incoming webPage:(TGWebPageMediaAttachment *)webPage hasViews:(bool)hasViews {
     self = [super initWithContext:context incoming:incoming webpage:webPage];
     if (self != nil) {
         _webPage = webPage;
         _incoming = incoming;
         _hasViews = hasViews;
         _mid = messageId;
+        _authorPeerId = authorPeerId;
         
         TGDocumentMediaAttachment *document = webPage.document;
         
         _iconModel = [[TGDocumentMessageIconModel alloc] init];
+        _iconModel.presentation = context.presentation;
         _iconModel.skipDrawInContext = true;
         _iconModel.frame = CGRectMake(0.0f, 0.0f, 60.0f, 60.0f);
         _iconModel.incoming = incoming;
         [self addSubmodel:_iconModel];
-        
-        static UIColor *incomingNameColor = nil;
-        static UIColor *outgoingNameColor = nil;
-        static UIColor *incomingSizeColor = nil;
-        static UIColor *outgoingSizeColor = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            incomingNameColor = [UIColor blackColor];
-            outgoingNameColor = UIColorRGB(0x3faa3c);
-            incomingSizeColor = UIColorRGB(0x999999);
-            outgoingSizeColor = UIColorRGB(0x3faa3c);
-        });
         
         NSString *performer = @"";
         NSString *title = @"";
@@ -90,10 +83,10 @@
         
         CGFloat maxWidth = [TGViewController hasLargeScreen] ? 170.0f : 150.0f;
         
-        _titleModel = [[TGModernLabelViewModel alloc] initWithText:title textColor:incoming ? incomingNameColor : outgoingNameColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:maxWidth truncateInTheMiddle:false];
+        _titleModel = [[TGModernLabelViewModel alloc] initWithText:title textColor:incoming ? context.presentation.pallete.chatIncomingAccentColor : context.presentation.pallete.chatOutgoingAccentColor font:TGCoreTextSystemFontOfSize(16.0f) maxWidth:maxWidth truncateInTheMiddle:false];
         [self addSubmodel:_titleModel];
         
-        _performerModel = [[TGModernLabelViewModel alloc] initWithText:performer textColor:incoming ? incomingSizeColor : outgoingSizeColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:maxWidth truncateInTheMiddle:false];
+        _performerModel = [[TGModernLabelViewModel alloc] initWithText:performer textColor:incoming ? context.presentation.pallete.chatIncomingSubtextColor : context.presentation.pallete.chatOutgoingSubtextColor font:TGCoreTextSystemFontOfSize(13.0f) maxWidth:maxWidth truncateInTheMiddle:false];
         [self addSubmodel:_performerModel];
     }
     return self;
@@ -267,12 +260,12 @@
         }
     }
     else
-        [self.context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid)}];
+        [self.context.companionHandle requestAction:@"mediaDownloadRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (void)cancelMediaDownload
 {
-    [self.context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid)}];
+    [self.context.companionHandle requestAction:@"mediaProgressCancelRequested" options:@{@"mid": @(_mid), @"peerId": @(_authorPeerId)}];
 }
 
 - (bool)activateWebpageContents {

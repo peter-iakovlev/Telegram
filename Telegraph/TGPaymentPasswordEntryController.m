@@ -28,7 +28,7 @@
     
     __weak TGPaymentPasswordEntryController *weakSelf = self;
     
-    _controllerView = [[TGPaymentPasswordEntryControllerView alloc] initWithCardTitle:_cardTitle];
+    _controllerView = [[TGPaymentPasswordEntryControllerView alloc] initWithCardTitle:_cardTitle presentation:self.presentation];
     _controllerView.payWithPassword = ^(NSString *password) {
         __strong TGPaymentPasswordEntryController *strongSelf = weakSelf;
         if (strongSelf != nil && strongSelf->_payWithPassword) {

@@ -38,3 +38,7 @@
 "Share.PasscodeTryAgainIn1Minute" = "Vuelve a intentarlo en 1 minuto";
 
 "Share.SavedMessages" = "Mensajes guardados";
+
+"Share.ContactInfo" = "Información del contacto";
+"Share.ContactJob" = "trabajo";
+"Share.ContactBirthday" = "cumpleaños";

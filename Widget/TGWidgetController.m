@@ -118,7 +118,8 @@ const UIEdgeInsets TGWidgetCollectionSmallInsets = { 16.0f, 4.0f, 8.0f, 4.0f };
         [_collectionView layoutSubviews];
     }
     
-    [self.extensionContext setWidgetLargestAvailableDisplayMode:users.count > 4 ? NCWidgetDisplayModeExpanded : NCWidgetDisplayModeCompact];
+    if ([self.extensionContext respondsToSelector:@selector(setWidgetLargestAvailableDisplayMode:)])
+        [self.extensionContext setWidgetLargestAvailableDisplayMode:users.count > 4 ? NCWidgetDisplayModeExpanded : NCWidgetDisplayModeCompact];
 }
 
 - (void)setPasscodeRequired
@@ -141,7 +142,8 @@ const UIEdgeInsets TGWidgetCollectionSmallInsets = { 16.0f, 4.0f, 8.0f, 4.0f };
 - (void)_hideCollectionView
 {
     _collectionView.hidden = true;
-    [self.extensionContext setWidgetLargestAvailableDisplayMode:NCWidgetDisplayModeCompact];
+    if ([self.extensionContext respondsToSelector:@selector(setWidgetLargestAvailableDisplayMode:)])
+        [self.extensionContext setWidgetLargestAvailableDisplayMode:NCWidgetDisplayModeCompact];
 }
 
 - (void)_setLabelText:(NSString *)text

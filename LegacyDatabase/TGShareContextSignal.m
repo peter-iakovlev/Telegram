@@ -10,8 +10,12 @@
 #import "../../config.h"
 
 #import "TGLocalization.h"
+#import "TGNetworkSettings.h"
+
+#import "TGICloudEmergencyDataSignals.h"
 
 #import "TGLegacyDatabase.h"
+#import "TGLegacyUser.h"
 
 @implementation TGUnauthorizedShareContext
 
@@ -70,6 +74,24 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
     NSLogv(format, args);
 }
 
++ (NSData *)dataWithHexString:(NSString *)hex
+{
+    char buf[3];
+    buf[2] = '\0';
+    NSAssert(0 == [hex length] % 2, @"Hex strings should have an even number of digits (%@)", hex);
+    uint8_t *bytes = (uint8_t *)malloc(hex.length / 2);
+    uint8_t *bp = bytes;
+    for (CFIndex i = 0; i < [hex length]; i += 2) {
+        buf[0] = [hex characterAtIndex:i];
+        buf[1] = [hex characterAtIndex:i+1];
+        char *b2 = NULL;
+        *bp++ = strtol(buf, &b2, 16);
+        NSAssert(b2 == buf + 2, @"String should be all hex digits: %@ (bad digit around %d)", hex, i);
+    }
+    
+    return [NSData dataWithBytesNoCopy:bytes length:[hex length]/2 freeWhenDone:YES];
+}
+
 + (SSignal *)shareContext
 {
     static dispatch_once_t onceToken;
@@ -92,7 +114,9 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                 {
                     NSNumber *nDatacenterId = authInfo[@"datacenterId"];
                     MTDatacenterAuthInfo *datacenterAuthInfo = authInfo[@"authInfo"];
+                    NSDictionary *datacenterAddressSets = authInfo[@"addressSets"];
                     int32_t clientUserId = (int32_t)[authInfo[@"clientUserId"] integerValue];
+                    bool isTestingEnvironment = [authInfo[@"isTesting"] boolValue];
                     
                     if (nDatacenterId != nil && datacenterAuthInfo != nil)
                     {
@@ -132,8 +156,28 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         if (socksProxyData != nil) {
                             NSDictionary *socksProxyDict = [NSKeyedUnarchiver unarchiveObjectWithData:socksProxyData];
                             if (socksProxyDict[@"ip"] != nil && socksProxyDict[@"port"] != nil && ![socksProxyDict[@"inactive"] boolValue]) {
-                                apiEnvironment = [apiEnvironment withUpdatedSocksProxySettings:[[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"]]];
+                                NSData *secret = [socksProxyDict[@"secret"] length] > 0 && [socksProxyDict[@"secret"] length] % 2 == 0 ? [TGShareContextSignal dataWithHexString:socksProxyDict[@"secret"]] : nil;
+                                apiEnvironment = [apiEnvironment withUpdatedSocksProxySettings:[[MTSocksProxySettings alloc] initWithIp:socksProxyDict[@"ip"] port:(uint16_t)[socksProxyDict[@"port"] intValue] username:socksProxyDict[@"username"] password:socksProxyDict[@"password"] secret:secret]];
                             }
+                        }
+                        
+                        NSData *networkSettingsData = [database customPropertySync:@"networkSettingsData"];
+                        TGNetworkSettings *networkSettings = nil;
+                        if (networkSettingsData != nil) {
+                            networkSettings = [NSKeyedUnarchiver unarchiveObjectWithData:networkSettingsData];
+                        }
+                        if (networkSettings == nil) {
+                            TGLegacyUser *user = [database userWithIdSync:clientUserId];
+                            NSString *phoneNumber = @"";
+                            if (user != nil) {
+                                phoneNumber = [TGLegacyDatabase cleanPhone:user.phoneNumber clip:false];
+                            }
+                            if ([phoneNumber hasPrefix:@"7"]) {
+                                networkSettings = [[TGNetworkSettings alloc] initWithReducedBackupDiscoveryTimeout:true];
+                            }
+                        }
+                        if (networkSettings != nil) {
+                            apiEnvironment = [apiEnvironment withUpdatedNetworkSettings:[[MTNetworkSettings alloc] initWithReducedBackupDiscoveryTimeout:networkSettings.reducedBackupDiscoveryTimeout]];
                         }
                         
                         int32_t apiId = 0;
@@ -141,6 +185,9 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         
                         if ([bundleIdentifier hasPrefix:@"org.telegram.TelegramEnterprise"])
                             apiEnvironment.apiId = 16352;
+                        else if ([bundleIdentifier hasPrefix:@"co.one.Teleapp"]) {
+                            apiEnvironment.apiId = 200440;
+                        }
                         else
                             apiEnvironment.apiId = 1;
                         
@@ -155,36 +202,51 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         if (authInfo[@"version"] != nil)
                             apiEnvironment.appVersion = authInfo[@"version"];
                         
-                        MTContext *mtContext = [[MTContext alloc] initWithSerialization:serialization apiEnvironment:apiEnvironment];
+                        MTContext *mtContext = [[MTContext alloc] initWithSerialization:serialization apiEnvironment:apiEnvironment isTestingEnvironment:isTestingEnvironment useTempAuthKeys:false];
                         
                         MTFileBasedKeychain *keychain = [MTFileBasedKeychain keychainWithName:@"Share" documentsPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true)[0]];
                         
                         [mtContext performBatchUpdates:^
                         {
-                            [mtContext setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                                                                                                                                   [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
-                            ]]];
+                            if (isTestingEnvironment)
+                            {
+                                [mtContext updateAddressSetForDatacenterWithId:1 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                                                                                                                                 [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.10" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                                                                                                                                 ]] forceUpdateSchemes:true];
+                                [mtContext updateAddressSetForDatacenterWithId:2 addressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                                                                                                                                 [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.40" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                                                                                                                                 ]] forceUpdateSchemes:true];
+                            }
+                            else
+                            {
+                                [mtContext setSeedAddressSetForDatacenterWithId:1 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                                                                                                                                       [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.50" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                ]]];
 
-                            [mtContext setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
-                            ]]];
+                                [mtContext setSeedAddressSetForDatacenterWithId:2 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.51" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                ]]];
 
-                            [mtContext setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
-                            ]]];
+                                [mtContext setSeedAddressSetForDatacenterWithId:3 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.175.100" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                ]]];
 
-                            [mtContext setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
-                            ]]];
+                                [mtContext setSeedAddressSetForDatacenterWithId:4 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.167.91" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                ]]];
 
-                            [mtContext setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
-                                [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false]
-                            ]]];
+                                [mtContext setSeedAddressSetForDatacenterWithId:5 seedAddressSet:[[MTDatacenterAddressSet alloc] initWithAddressList:@[
+                                    [[MTDatacenterAddress alloc] initWithIp:@"149.154.171.5" port:443 preferForMedia:false restrictToTcp:false cdn:false preferForProxy:false secret:nil]
+                                ]]];
+                            }
                         }];
                         
+                        NSDictionary *currentAddressSetById = [keychain objectForKey:@"datacenterAddressSetById" group:@"persistent"];
                         NSDictionary *currentAuthInfoById = [keychain objectForKey:@"datacenterAuthInfoById" group:@"persistent"];
+                        
+                        MTDatacenterAddressSet *currentAddressSet = currentAddressSetById[nDatacenterId];
                         MTDatacenterAuthInfo *currentAuthInfo = currentAuthInfoById[nDatacenterId];
-                        if (currentAuthInfo.authKey == nil || ![currentAuthInfo.authKey isEqualToData:datacenterAuthInfo.authKey])
+                        if (currentAuthInfo.authKey == nil || ![currentAuthInfo.authKey isEqualToData:datacenterAuthInfo.authKey] || currentAddressSet == nil || (datacenterAddressSets[nDatacenterId] != nil && ![currentAddressSet isEqual:datacenterAddressSets[nDatacenterId]]))
                         {
                             [keychain dropGroup:@"persistent"];
                             [keychain dropGroup:@"temp"];
@@ -195,10 +257,48 @@ static void TGShareLoggingFunction(NSString *format, va_list args)
                         [mtContext performBatchUpdates:^
                         {
                             if ([mtContext authInfoForDatacenterWithId:[nDatacenterId integerValue]] == nil)
-                            {
                                 [mtContext updateAuthInfoForDatacenterWithId:[nDatacenterId integerValue] authInfo:datacenterAuthInfo];
-                            }
+                            
+                            [datacenterAddressSets enumerateKeysAndObjectsUsingBlock:^(NSNumber *nDatacenterId, MTDatacenterAddressSet *addressSet, BOOL * _Nonnull stop)
+                            {
+                                [mtContext updateAddressSetForDatacenterWithId:[nDatacenterId integerValue] addressSet:addressSet forceUpdateSchemes:true];
+                            }];
                         }];
+                        
+                        MTSignal *discoverBackupAddressList = [[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *subscriber) {
+                            TGLegacyUser *user = [database userWithIdSync:clientUserId];
+                            NSString *phoneNumber = @"";
+                            if (user != nil) {
+                                phoneNumber = [TGLegacyDatabase cleanPhone:user.phoneNumber clip:false];
+                            }
+                            id<MTDisposable> disposable = [[MTBackupAddressSignals fetchBackupIps:isTestingEnvironment currentContext:mtContext additionalSource:nil
+//                            [[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *internalSubscriber) {
+//                                TGLegacyUser *user = [database userWithIdSync:clientUserId];
+//                                NSString *prefix = @"0";
+//                                if (user != nil) {
+//                                    NSString *phone = [TGLegacyDatabase cleanPhone:user.phoneNumber clip:false];
+//                                    if (phone.length > 0) {
+//                                        prefix = [phone substringToIndex:1];
+//                                    }
+//                                }
+//                                id<SDisposable> disposable = [[TGICloudEmergencyDataSignals fetchBackupAddressInfo:prefix phoneNumber:phoneNumber] startWithNext:^(MTBackupDatacenterData *result) {
+//                                    [internalSubscriber putNext:result];
+//                                    [internalSubscriber putCompletion];
+//                                }];
+//                                return [[MTBlockDisposable alloc] initWithBlock:^{
+//                                    [disposable dispose];
+//                                }];
+//                            }]
+                            phoneNumber:phoneNumber] startWithNext:nil error:^(__unused id error) {
+                                [subscriber putCompletion];
+                            } completed:^{
+                                [subscriber putCompletion];
+                            }];
+                            return [[MTBlockDisposable alloc] initWithBlock:^{
+                                [disposable dispose];
+                            }];
+                        }];
+                        [mtContext setDiscoverBackupAddressListSignal:discoverBackupAddressList];
                         
                         MTProto *mtProto = [[MTProto alloc] initWithContext:mtContext datacenterId:[nDatacenterId integerValue] usageCalculationInfo:nil];
                         

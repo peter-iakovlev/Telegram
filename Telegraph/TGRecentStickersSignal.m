@@ -109,23 +109,38 @@ static bool _syncedStickers = false;
         NSData *data = [NSData dataWithContentsOfFile:[self filePath]];
         if (data == nil) {
             data = [[NSUserDefaults standardUserDefaults] objectForKey:@"recentStickers_v0"];
-            [data writeToFile:[self filePath] atomically:true];
-            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"recentStickers_v0"];
+            if (data != nil)
+            {
+                [data writeToFile:[self filePath] atomically:true];
+                [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"recentStickers_v0"];
+            }
         }
         if (data == nil) {
-            [subscriber putNext:@[]];
+            [subscriber putNext:@{}];
             [subscriber putCompletion];
         } else {
-            NSArray *array = nil;
+            id object = nil;
             @try {
-                array = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+                object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
             } @catch (NSException *e) {
             }
-            if (array == nil) {
-                [subscriber putNext:@[]];
+            if (object == nil) {
+                [subscriber putNext:@{}];
                 [subscriber putCompletion];
             } else {
-                [subscriber putNext:array];
+                if ([object isKindOfClass:[NSArray class]])
+                {
+                    NSDictionary *dict = @{@"documents": object};
+                    [subscriber putNext:dict];
+                }
+                else if ([object isKindOfClass:[NSDictionary class]])
+                {
+                    [subscriber putNext:object];
+                }
+                else
+                {
+                    [subscriber putNext:@{}];
+                }
                 [subscriber putCompletion];
             }
         }
@@ -138,12 +153,11 @@ static bool _syncedStickers = false;
     uint32_t acc = 0;
     
     for (TGDocumentMediaAttachment *document in [documents reverseObjectEnumerator]) {
-        uint32_t low = (int32_t)(document.documentId & 0xffffffff);
-        uint32_t high = (int32_t)((document.documentId >> 32) & 0xffffffff);
-        acc = (acc * 20261) + high;
-        acc = (acc * 20261) + low;
+        int64_t docId = document.documentId;
+        acc = (acc * 20261) + (uint32_t)(docId >> 32);
+        acc = (acc * 20261) + (uint32_t)(docId & 0xFFFFFFFF);
     }
-    return acc % 0x7FFFFFFF;
+    return (int32_t)(acc % 0x7FFFFFFF);
 }
 
 + (void)sync {
@@ -185,30 +199,37 @@ static bool _syncedStickers = false;
             }]];
         }
         
-        return [[actionsSignal then:[[self _loadRecentStickers] mapToSignal:^SSignal *(NSArray *array) {
+        return [[actionsSignal then:[[self _loadRecentStickers] mapToSignal:^SSignal *(NSDictionary *dict) {
             TLRPCmessages_getRecentStickers$messages_getRecentStickers *getRecentStickers = [[TLRPCmessages_getRecentStickers$messages_getRecentStickers alloc] init];
-            getRecentStickers.n_hash = [self hashForDocumentsReverse:array];
+            getRecentStickers.n_hash = [self hashForDocumentsReverse:dict[@"documents"]];
 
             return [[[TGTelegramNetworking instance] requestSignal:getRecentStickers] mapToSignal:^SSignal *(id result) {
                 if ([result isKindOfClass:[TLmessages_RecentStickers$messages_recentStickers class]]) {
                     TLmessages_RecentStickers$messages_recentStickers *recentStickers = result;
                 
+                    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
                     NSMutableArray *array = [[NSMutableArray alloc] init];
-                    for (id desc in [recentStickers.stickers reverseObjectEnumerator]) {
+                    NSMutableDictionary *dates = [[NSMutableDictionary alloc] init];
+                    [recentStickers.stickers enumerateObjectsWithOptions:NSEnumerationReverse usingBlock:^(id desc, NSUInteger index, __unused BOOL *stop) {
+                        int32_t date = [recentStickers.dates[index] int32Value];
                         TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
                         if (document.documentId != 0) {
                             [array addObject:document];
+                            
+                            dates[@(document.documentId)] = @(date);
                         }
-                    }
+                    }];
+                    
+                    dict[@"documents"] = array;
+                    dict[@"dates"] = dates;
                     
                     int32_t localHash = [self hashForDocumentsReverse:array];
-                    if (localHash != recentStickers.n_hash) {
+                    if (localHash != recentStickers.n_hash)
                         TGLog(@"(TGRecentStickersSignal hash mismatch)");
-                    }
                     
-                    [self _storeRecentStickers:array];
+                    [self _storeRecentStickers:dict];
                     
-                    [[self _recentStickers] set:[SSignal single:array]];
+                    [[self _recentStickers] set:[SSignal single:dict]];
                     
                     return [SSignal complete];
                 } else {
@@ -229,7 +250,7 @@ static bool _syncedStickers = false;
     return [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"recentStickers.data"];
 }
 
-+ (void)_storeRecentStickers:(NSArray *)array {
++ (void)_storeRecentStickers:(NSDictionary *)array {
     [[self queue] dispatch:^{
         [[NSKeyedArchiver archivedDataWithRootObject:array] writeToFile:[self filePath] atomically:true];
     }];
@@ -237,8 +258,8 @@ static bool _syncedStickers = false;
 
 + (void)clearRecentStickers {
     [[self queue] dispatch:^{
-        [self _storeRecentStickers:@[]];
-        [[self _recentStickers] set:[SSignal single:@[]]];
+        [self _storeRecentStickers:@{}];
+        [[self _recentStickers] set:[SSignal single:@{}]];
         [[self _stickerActions] removeAllObjects];
         _syncedStickers = false;
     }];
@@ -249,10 +270,16 @@ static bool _syncedStickers = false;
         return;
     }
     
-    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSArray *documents) {
-        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:documents];
+    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSDictionary *dict) {
+        NSMutableDictionary *updatedDict = [dict mutableCopy];
+        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:updatedDict[@"documents"]];
+        NSMutableDictionary *updatedDates = [[NSMutableDictionary alloc] initWithDictionary:updatedDict[@"dates"]];
         NSInteger index = -1;
         int64_t documentId = document.documentId;
+        
+        int32_t currentTime = (int32_t)[[NSDate date] timeIntervalSince1970];
+        updatedDates[@(documentId)] = @(currentTime);
+        
         for (TGDocumentMediaAttachment *document in updatedDocuments) {
             index++;
             if (document.documentId == documentId) {
@@ -265,10 +292,11 @@ static bool _syncedStickers = false;
         if (updatedDocuments.count > limit) {
             [updatedDocuments removeObjectsInRange:NSMakeRange(0, updatedDocuments.count - limit)];
         }
+        updatedDict[@"documents"] = updatedDocuments;
+        updatedDict[@"dates"] = updatedDates;
+        [self _storeRecentStickers:updatedDict];
         
-        [self _storeRecentStickers:updatedDocuments];
-        
-        return updatedDocuments;
+        return updatedDict;
     }];
     [signal startWithNext:^(id next) {
         [[self _recentStickers] set:[SSignal single:next]];
@@ -277,9 +305,13 @@ static bool _syncedStickers = false;
     [self _enqueueStickerAction:[[TGStickerSyncAction alloc] initWithDocument:document action:TGStickerSyncActionAdd]];
 }
 
-+ (void)addRemoteRecentStickerFromDocuments:(NSArray *)addedDocuments {
-    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSArray *documents) {
-        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:documents];
++ (void)addRemoteRecentStickerFromDocuments:(NSArray *)addedDocuments sync:(bool)sync {
+    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSDictionary *dict) {
+        NSMutableDictionary *updatedDict = [dict mutableCopy];
+        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:updatedDict[@"documents"]];
+        NSMutableDictionary *updatedDates = [[NSMutableDictionary alloc] initWithDictionary:updatedDict[@"dates"]];
+        
+        int32_t currentTime = (int32_t)[[NSDate date] timeIntervalSince1970];
         for (TGDocumentMediaAttachment *addedDocument in addedDocuments) {
             int64_t documentId = addedDocument.documentId;
             NSInteger index = -1;
@@ -291,24 +323,34 @@ static bool _syncedStickers = false;
                 }
             }
             [updatedDocuments addObject:addedDocument];
+            
+            updatedDates[@(addedDocument.documentId)] = @(currentTime);
         }
         NSUInteger limit = [self maxSavedStickers];
         if (updatedDocuments.count > limit) {
             [updatedDocuments removeObjectsInRange:NSMakeRange(0, updatedDocuments.count - limit)];
         }
+        updatedDict[@"documents"] = updatedDocuments;
+        updatedDict[@"dates"] = updatedDates;
+        [self _storeRecentStickers:updatedDict];
         
-        [self _storeRecentStickers:updatedDocuments];
-        
-        return updatedDocuments;
+        return updatedDict;
     }];
     [signal startWithNext:^(id next) {
         [[self _recentStickers] set:[SSignal single:next]];
     }];
+    
+    if (sync) {
+        for (TGDocumentMediaAttachment *addedDocument in addedDocuments) {
+            [self _enqueueStickerAction:[[TGStickerSyncAction alloc] initWithDocument:addedDocument  action:TGStickerSyncActionAdd]];
+        }
+    }
 }
 
 + (void)removeRecentStickerByDocumentId:(int64_t)documentId {
-    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSArray *documents) {
-        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:documents];
+    SSignal *signal = [[[[self _recentStickers] signal] take:1] map:^id(NSDictionary *dict) {
+        NSMutableDictionary *updatedDict = [dict mutableCopy];
+        NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:updatedDict[@"documents"]];
         NSInteger index = -1;
         for (TGDocumentMediaAttachment *document in updatedDocuments) {
             index++;
@@ -318,10 +360,11 @@ static bool _syncedStickers = false;
                 break;
             }
         }
+        updatedDict[@"documents"] = updatedDocuments;
         
-        [self _storeRecentStickers:updatedDocuments];
+        [self _storeRecentStickers:updatedDict];
         
-        return updatedDocuments;
+        return updatedDict;
     }];
     [signal startWithNext:^(id next) {
         [[self _recentStickers] set:[SSignal single:next]];

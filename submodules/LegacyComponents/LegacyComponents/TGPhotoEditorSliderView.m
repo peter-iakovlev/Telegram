@@ -14,6 +14,7 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
     CGFloat _knobTouchCenterStart;
     CGFloat _knobDragCenter;
     
+    UIPanGestureRecognizer *_panGestureRecognizer;
     UITapGestureRecognizer *_tapGestureRecognizer;
     UITapGestureRecognizer *_doubleTapGestureRecognizer;
     
@@ -63,6 +64,10 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
         _knobView = [[UIImageView alloc] initWithFrame:CGRectZero];
         _knobView.image = knobViewImage;
         [self addSubview:_knobView];
+        
+        _panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        _panGestureRecognizer.enabled = false;
+        [self addGestureRecognizer:_panGestureRecognizer];
         
         _tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
         _tapGestureRecognizer.enabled = false;
@@ -144,6 +149,13 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
         trackFrame = CGRectMake(trackFrame.origin.y, trackFrame.origin.x, trackFrame.size.height, trackFrame.size.width);
         startFrame = CGRectMake(startFrame.origin.y, startFrame.origin.x, startFrame.size.height, startFrame.size.width);
         knobFrame = CGRectMake(knobFrame.origin.y, knobFrame.origin.x, knobFrame.size.width, knobFrame.size.height);
+    }
+    
+    CGFloat markPosition = visualMargin + visualTotalLength / (_maximumValue - _minimumValue) * (ABS(_minimumValue) + _startValue);
+    if (_markValue > FLT_EPSILON)
+    {
+        CGContextSetFillColorWithColor(context, _backColor.CGColor);
+        [self drawRectangle:backFrame cornerRadius:0.0f context:context];
     }
     
     if (_bordered)
@@ -384,7 +396,23 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
     return MIN(MAX(value, _minimumValue), _maximumValue);
 }
 
+- (void)setEnablePanHandling:(bool)enablePanHandling {
+    _panGestureRecognizer.enabled = enablePanHandling;
+}
+
 #pragma mark - Touch Handling
+
+- (void)handlePan:(UIPanGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        [self handleBeginTracking:[gestureRecognizer locationInView:self]];
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateChanged) {
+        [self handleContinueTracking:[gestureRecognizer locationInView:self]];
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+        [self handleEndTracking];
+    } else if (gestureRecognizer.state == UIGestureRecognizerStateCancelled) {
+        [self handleCancelTracking];
+    }
+}
 
 - (void)handleTap:(UITapGestureRecognizer *)gestureRecognizer
 {
@@ -454,8 +482,14 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
 
 - (BOOL)beginTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)__unused event
 {
-    CGPoint touchLocation = [touch locationInView:self];
-    
+    if (!_enablePanHandling) {
+        CGPoint touchLocation = [touch locationInView:self];
+        [self handleBeginTracking:touchLocation];
+    }
+    return true;
+}
+
+- (void)handleBeginTracking:(CGPoint)touchLocation {
     _knobView.highlighted = true;
     
     if (self.frame.size.width > self.frame.size.height)
@@ -474,14 +508,19 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
     [_feedbackGenerator prepare];
     
     [self maybeCancelParentViewScrolling:self.superview depth:0];
-    
-    return true;
 }
 
 - (BOOL)continueTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)__unused event
 {
-    CGPoint touchLocation = [touch locationInView:self];
-    
+    if (!_enablePanHandling) {
+        CGPoint touchLocation = [touch locationInView:self];
+        [self handleContinueTracking:touchLocation];
+    }
+    return true;
+}
+
+- (BOOL)handleContinueTracking:(CGPoint)touchLocation
+{
     if (fabs(touchLocation.x - _knobTouchStart) > 1.0f && !_knobStartedDragging)
     {
         _knobStartedDragging = true;
@@ -529,6 +568,13 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
 
 - (void)endTrackingWithTouch:(UITouch *)__unused touch withEvent:(UIEvent *)__unused event
 {
+    if (!_enablePanHandling) {
+        [self handleEndTracking];
+    }
+}
+
+- (void)handleEndTracking
+{
     _knobView.highlighted = false;
     
     [self sendActionsForControlEvents:UIControlEventValueChanged];
@@ -539,6 +585,13 @@ const CGFloat TGPhotoEditorSliderViewInternalMargin = 7.0f;
 }
 
 - (void)cancelTrackingWithEvent:(UIEvent *)__unused event
+{
+    if (!_enablePanHandling) {
+        [self handleCancelTracking];
+    }
+}
+
+- (void)handleCancelTracking
 {
     _knobView.highlighted = false;
     

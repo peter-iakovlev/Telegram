@@ -6,7 +6,7 @@
 
 #import "TGGenericPeerMediaGalleryDeleteAccessoryView.h"
 
-#import "TGActionSheet.h"
+#import "TGCustomActionSheet.h"
 
 @implementation TGProfileUserAvatarGalleryModel
 
@@ -29,6 +29,7 @@
 {
     TGGenericPeerMediaGalleryDeleteAccessoryView *accessoryView = [[TGGenericPeerMediaGalleryDeleteAccessoryView alloc] init];
     __weak TGProfileUserAvatarGalleryModel *weakSelf = self;
+    __weak TGGenericPeerMediaGalleryDeleteAccessoryView *weakAccessoryView = accessoryView;
     accessoryView.action = ^(id<TGModernGalleryItem> item)
     {
         __strong TGProfileUserAvatarGalleryModel *strongSelf = weakSelf;
@@ -46,14 +47,14 @@
                 [actions addObject:[[TGActionSheetAction alloc] initWithTitle:actionTitle action:@"delete" type:TGActionSheetActionTypeDestructive]];
                 [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"Common.Cancel") action:@"cancel" type:TGActionSheetActionTypeCancel]];
                 
-                [[[TGActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
+                [[[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
                 {
                     __strong TGProfileUserAvatarGalleryModel *strongSelf = weakSelf;
                     if ([action isEqualToString:@"delete"])
                     {
                         [strongSelf _commitDeleteItem:item];
                     }
-                } target:strongSelf] showInView:actionSheetView];
+                } target:strongSelf] showFromRect:[weakAccessoryView convertRect:weakAccessoryView.bounds toView:actionSheetView] inView:actionSheetView animated:true];
             }
         }
     };

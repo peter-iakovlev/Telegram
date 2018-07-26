@@ -1,4 +1,5 @@
 #import "TGRawHttpRequest.h"
+#import <MTProtoKit/AFHTTPRequestOperation.h>
 
 @implementation TGRawHttpRequest
 

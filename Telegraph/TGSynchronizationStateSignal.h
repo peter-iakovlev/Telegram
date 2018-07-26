@@ -5,7 +5,9 @@ typedef enum {
     TGSynchronizationStateSynchronized,
     TGSynchronizationStateWaitingForNetwork,
     TGSynchronizationStateConnecting,
-    TGSynchronizationStateUpdating
+    TGSynchronizationStateConnectingToProxy,
+    TGSynchronizationStateUpdating,
+    TGSynchronizationStateProxyIssues,
 } TGSynchronizationStateValue;
 
 @interface TGSynchronizationStateSignal : NSObject

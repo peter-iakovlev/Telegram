@@ -2,6 +2,8 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGPresentation.h"
+
 @interface TGGroupInfoShareLinkLinkItemView ()
 {
     UILabel *_label;
@@ -25,6 +27,13 @@
         [self.contentView addSubview:_label];
     }
     return self;
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _label.textColor = presentation.pallete.collectionMenuTextColor;
 }
 
 - (void)setText:(NSString *)text

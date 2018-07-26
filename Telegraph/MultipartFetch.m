@@ -312,7 +312,7 @@
             [queue dispatch:^{
                 __strong MultipartFetchManager *strongSelf = weakSelf;
                 if (strongSelf != nil) {
-                    for (TLCdnFileHash$cdnFileHash *nHash in hashes) {
+                    for (TLFileHash$fileHash *nHash in hashes) {
                         dict[@(nHash.offset)] = nHash.n_hash;
                     }
                     

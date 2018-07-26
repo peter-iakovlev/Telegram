@@ -4,6 +4,8 @@
 
 #import <LegacyComponents/TGModernButton.h>
 
+#import "TGPresentation.h"
+
 @interface TGSharedMediaSelectionPanelView ()
 {
     UIView *_separatorView;
@@ -29,20 +31,21 @@
         
         _forwardButton = [[TGModernButton alloc] init];
         _forwardButton.modernHighlight = true;
+        _forwardButton.enabled = false;
         [_forwardButton addTarget:self action:@selector(forwardButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_forwardButton];
         
         _deleteButton = [[TGModernButton alloc] init];
         _deleteButton.modernHighlight = true;
+        _deleteButton.enabled = false;
         [_deleteButton addTarget:self action:@selector(deleteButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_deleteButton];
         
         _shareButton = [[TGModernButton alloc] init];
         _shareButton.modernHighlight = true;
+        _shareButton.enabled = false;
         [_shareButton addTarget:self action:@selector(shareButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:_shareButton];
-
-        [self _updateButtonImages];
     }
     return self;
 }
@@ -68,12 +71,11 @@
 
 - (void)setSelecterItemCount:(NSUInteger)selecterItemCount
 {
-    bool updateImages = (_selecterItemCount == 0) != (selecterItemCount == 0);
     _selecterItemCount = selecterItemCount;
-    if (updateImages)
-        [self _updateButtonImages];
-    _forwardButton.userInteractionEnabled = _selecterItemCount != 0;
-    _deleteButton.userInteractionEnabled = _selecterItemCount != 0;
+
+    _forwardButton.enabled = _selecterItemCount != 0;
+    _deleteButton.enabled = _selecterItemCount != 0;
+    _shareButton.enabled = _selecterItemCount != 0;
     
     if (_selecterItemCount == 0)
         _label.text = @"";
@@ -85,16 +87,20 @@
     [self layoutLabel];
 }
 
-- (void)_updateButtonImages
+- (void)setPresentation:(TGPresentation *)presentation
 {
-    UIImage *forwardImage = _selecterItemCount == 0 ? [UIImage imageNamed:@"ModernConversationActionForward_Disabled.png"] : [UIImage imageNamed:@"ModernConversationActionForward.png"];
-    [_forwardButton setImage:forwardImage forState:UIControlStateNormal];
+    _presentation = presentation;
+    self.backgroundColor = presentation.pallete.barBackgroundColor;
+    _separatorView.backgroundColor = presentation.pallete.barSeparatorColor;
     
-    UIImage *deleteImage = _selecterItemCount == 0 ? [UIImage imageNamed:@"ModernConversationActionDelete_Disabled.png"] : [UIImage imageNamed:@"ModernConversationActionDelete.png"];
-    [_deleteButton setImage:deleteImage forState:UIControlStateNormal];
+    [_deleteButton setImage:presentation.images.chatEditDeleteIcon forState:UIControlStateNormal];
+    [_deleteButton setImage:presentation.images.chatEditDeleteDisabledIcon forState:UIControlStateDisabled];
     
-    UIImage *shareImage = _selecterItemCount == 0 ? TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], UIColorRGB(0xd0d0d0)) : TGTintedImage([UIImage imageNamed:@"ActionsWhiteIcon"], TGAccentColor());
-    [_shareButton setImage:shareImage forState:UIControlStateNormal];
+    [_forwardButton setImage:presentation.images.chatEditForwardIcon forState:UIControlStateNormal];
+    [_forwardButton setImage:presentation.images.chatEditForwardDisabledIcon forState:UIControlStateDisabled];
+    
+    [_shareButton setImage:presentation.images.chatEditShareIcon forState:UIControlStateNormal];
+    [_shareButton setImage:presentation.images.chatEditShareDisabledIcon forState:UIControlStateDisabled];
 }
 
 - (void)forwardButtonPressed

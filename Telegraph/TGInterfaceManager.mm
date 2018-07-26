@@ -33,7 +33,7 @@
 
 #import "TGHashtagOverviewController.h"
 
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import "TGCallSession.h"
 #import "TGCallController.h"
@@ -46,6 +46,7 @@
 #import "TGMusicPlayerController.h"
 
 #import "TGAdminLogConversationCompanion.h"
+#import "TGFeedConversationCompanion.h"
 
 #import "TGLegacyComponentsContext.h"
 
@@ -58,6 +59,8 @@
     
     SPipe *_conversationControllerPipe;
     SPipe *_callControllerPipe;
+    
+    TGModernConversationController *_feedContr;
 }
 
 @property (nonatomic, strong) UIWindow *preloadWindow;
@@ -89,6 +92,19 @@
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:false];
         _conversationControllerPipe = [[SPipe alloc] init];
         _callControllerPipe = [[SPipe alloc] init];
+        
+//        TGDispatchAfter(3.0, dispatch_get_main_queue(), ^{
+//            TGModernConversationController *conversationController = [[TGModernConversationController alloc] init];
+//            conversationController.presentation = TGPresentation.current;
+//            
+//            TGFeedConversationCompanion *companion = [[TGFeedConversationCompanion alloc] init];
+//            conversationController.companion = companion;
+//            
+//            [conversationController.companion bindController:conversationController];
+//            
+//            //conversationController.shouldIgnoreAppearAnimationOnce = !animated;
+//            _feedContr = conversationController;
+//        });
     }
     return self;
 }
@@ -125,6 +141,19 @@
 
 - (void)navigateToConversationWithId:(int64_t)conversationId conversation:(TGConversation *)__unused conversation performActions:(NSDictionary *)performActions atMessage:(NSDictionary *)atMessage clearStack:(bool)clearStack openKeyboard:(bool)openKeyboard canOpenKeyboardWhileInTransition:(bool)canOpenKeyboardWhileInTransition animated:(bool)animated
 {
+    if (TGPeerIdIsAd(conversationId)) {
+        conversationId = TGPeerIdFromChannelId(TGAdIdFromPeerId(conversationId));
+        
+        NSData *data = [TGDatabaseInstance() customProperty:@"didDisplayProxyAdNotice"];
+        if (data.length == 0) {
+            int8_t one = 1;
+            [TGDatabaseInstance() setCustomProperty:@"didDisplayProxyAdNotice" value:[NSData dataWithBytes:&one length:1]];
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"DialogList.AdNoticeAlert") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed) {
+                [[TGInterfaceManager instance] navigateToConversationWithId:conversationId conversation:conversation performActions:performActions atMessage:atMessage clearStack:clearStack openKeyboard:openKeyboard canOpenKeyboardWhileInTransition:canOpenKeyboardWhileInTransition animated:animated];
+            }];
+        }
+    }
+    
     [self navigateToConversationWithId:conversationId conversation:conversation performActions:performActions atMessage:atMessage clearStack:clearStack openKeyboard:openKeyboard canOpenKeyboardWhileInTransition:canOpenKeyboardWhileInTransition navigationController:nil selectChat:true animated:animated];
 }
 
@@ -188,13 +217,13 @@
                     if (!navigationController)
                         [TGAppDelegateInstance.rootController.dialogListController selectConversationWithId:0];
                     
-                    [[[TGAlertView alloc] initWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:conversation.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertChannel") : [self explicitContentReason:conversation.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                    [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:conversation.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertChannel") : [self explicitContentReason:conversation.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                     
                     return;
                 }
                 TGChannelConversationCompanion *companion = [[TGChannelConversationCompanion alloc] initWithConversation:conversation userActivities:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId]];
                 if (atMessage != nil)
-                    [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+                    [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
                 [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
                 [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
                 conversationController.companion = companion;
@@ -208,7 +237,7 @@
             TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:conversationId];
             TGSecretModernConversationCompanion *companion = [[TGSecretModernConversationCompanion alloc] initWithConversation:conversation encryptedConversationId:encryptedConversationId accessHash:accessHash uid:uid activity:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId][@(uid)] mayHaveUnreadMessages:conversationUnreadCount != 0];
             if (atMessage != nil)
-                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
             [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
             conversationController.companion = companion;
@@ -221,7 +250,7 @@
             }
             TGGroupModernConversationCompanion *companion = [[TGGroupModernConversationCompanion alloc] initWithConversation:conversation userActivities:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId] mayHaveUnreadMessages:conversationUnreadCount != 0];
             if (atMessage != nil)
-                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
             [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
             conversationController.companion = companion;
@@ -233,7 +262,7 @@
                 if (!navigationController)
                     [TGAppDelegateInstance.rootController.dialogListController selectConversationWithId:0];
                 
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:user.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertUser") : [self explicitContentReason:user.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:user.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertUser") : [self explicitContentReason:user.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 
                 return;
             }
@@ -247,7 +276,7 @@
             companion.botContextPeerId = performActions[@"contextPeerId"];
             companion.botAutostartPayload = performActions[@"botAutostartPayload"];
             if (atMessage != nil)
-                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+                [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
             [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
             conversationController.companion = companion;
@@ -351,7 +380,7 @@
                 }
                 else
                 {
-                    [conversationController openMediaFromMessage:mid cancelPIP:false];
+                    [conversationController openMediaFromMessage:mid peerId:0 cancelPIP:false];
                 }
             }
         }
@@ -381,6 +410,17 @@
     _conversationControllerPipe.sink(weakController);
 }
 
+- (void)navigateToChannelsFeed:(int32_t)feedId animated:(bool)animated
+{
+    TGModernConversationController *conversationController = [self configuredFeedControllerWithId:feedId preview:false];
+    conversationController.shouldIgnoreAppearAnimationOnce = !animated;
+    
+    [TGAppDelegateInstance.rootController pushContentController:conversationController];
+    
+    __weak TGModernConversationController *weakController = conversationController;
+    _conversationControllerPipe.sink(weakController);
+}
+
 - (NSString *)explicitContentReason:(NSString *)text {
     NSRange range = [text rangeOfString:@":"];
     if (range.location != NSNotFound) {
@@ -394,7 +434,34 @@
     return [self configuredConversationControlerWithId:conversationId performActions:nil preview:true];
 }
 
+- (TGModernConversationController *)configuredPreviewFeedControllerWithId:(int32_t)feedId
+{
+    return [self configuredFeedControllerWithId:feedId preview:true];
+}
+
+- (TGModernConversationController *)configuredFeedControllerWithId:(int32_t)feedId preview:(bool)preview
+{
+    int conversationUnreadCount = 0; //[TGDatabaseInstance() unreadCountForConversation:conversationId];
+    int globalUnreadCount = [TGDatabaseInstance() cachedUnreadCount];
+    
+    TGModernConversationController *conversationController = [[TGModernConversationController alloc] init];
+    conversationController.presentation = TGPresentation.current;
+    
+    TGFeed *feed = [TGDatabaseInstance() loadFeed:feedId];
+    TGFeedConversationCompanion *companion = [[TGFeedConversationCompanion alloc] initWithFeed:feed];
+    companion.previewMode = preview;
+    [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
+    conversationController.companion = companion;
+    [conversationController.companion bindController:conversationController];
+    
+    return conversationController;
+}
+
 - (TGModernConversationController *)configuredConversationControlerWithId:(int64_t)conversationId performActions:(NSDictionary *)performActions preview:(bool)preview {
+    if (TGPeerIdIsAd(conversationId)) {
+        conversationId = TGPeerIdFromChannelId(TGAdIdFromPeerId(conversationId));
+    }
+    
     NSDictionary *atMessage = nil;
     
     int conversationUnreadCount = [TGDatabaseInstance() unreadCountForConversation:conversationId];
@@ -417,15 +484,13 @@
             if (conversation.hasExplicitContent) {
                 [TGAppDelegateInstance.rootController.dialogListController selectConversationWithId:0];
                 
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:conversation.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertChannel") : [self explicitContentReason:conversation.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:conversation.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertChannel") : [self explicitContentReason:conversation.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 
                 return nil;
             }
             
             TGChannelConversationCompanion *companion = [[TGChannelConversationCompanion alloc] initWithConversation:conversation userActivities:nil];
             companion.previewMode = preview;
-            //if (atMessage != nil)
-            //    [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue]];
             [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
             [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
             conversationController.companion = companion;
@@ -443,7 +508,7 @@
         TGSecretModernConversationCompanion *companion = [[TGSecretModernConversationCompanion alloc] initWithConversation:conversation encryptedConversationId:encryptedConversationId accessHash:accessHash uid:uid activity:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId][@(uid)] mayHaveUnreadMessages:conversationUnreadCount != 0];
         companion.previewMode = preview;
         if (atMessage != nil)
-            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
         [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
         [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
         conversationController.companion = companion;
@@ -457,7 +522,7 @@
         TGGroupModernConversationCompanion *companion = [[TGGroupModernConversationCompanion alloc] initWithConversation:conversation userActivities:[TGTelegraphInstance typingUserActivitiesInConversationFromMainThread:conversationId] mayHaveUnreadMessages:conversationUnreadCount != 0];
         companion.previewMode = preview;
         if (atMessage != nil)
-            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
         [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
         [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
         conversationController.companion = companion;
@@ -468,7 +533,7 @@
         if (user.hasExplicitContent) {
             [TGAppDelegateInstance.rootController.dialogListController selectConversationWithId:0];
             
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:user.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertUser") : [self explicitContentReason:user.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"ExplicitContent.AlertTitle") message:user.restrictionReason.length == 0 ? TGLocalized(@"ExplicitContent.AlertUser") : [self explicitContentReason:user.restrictionReason] cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             
             return nil;
         }
@@ -483,7 +548,7 @@
         companion.botAutostartPayload = performActions[@"botAutostartPayload"];
         companion.botContextPeerId = performActions[@"contextPeerId"];
         if (atMessage != nil)
-            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] pipLocation:atMessage[@"pipLocation"]];
+            [companion setPreferredInitialMessagePositioning:[atMessage[@"mid"] intValue] peerId:[atMessage[@"peerId"] longLongValue] groupedSingle:[atMessage[@"groupedSingle"] boolValue] pipLocation:atMessage[@"pipLocation"]];
         [companion setInitialMessagePayloadWithForwardMessages:performActions[@"forwardMessages"] initialCompleteGroups:performActions[@"completeGroups"] sendMessages:performActions[@"sendMessages"] sendFiles:performActions[@"sendFiles"]];
         [companion setOthersUnreadCount:MAX(globalUnreadCount - conversationUnreadCount, 0)];
         conversationController.companion = companion;
@@ -722,7 +787,7 @@
 {
     if (TGAppDelegateInstance.isDisplayingPasscodeWindow || !TGAppDelegateInstance.bannerEnabled || TGAppDelegateInstance.rootController.isSplitView)
         return;
-        
+    
     TGBotReplyMarkup *replyMarkup = message.replyMarkup;
     if (replyMarkup.isInline)
     {
@@ -823,9 +888,10 @@
                     }
                     
                     int32_t replyToMid = (TGPeerIdIsGroup(message.cid) || TGPeerIdIsChannel(message.cid)) ? message.mid : 0;
-                    [_notificationController displayNotificationForConversation:conversation identifier:message.mid replyToMid:replyToMid duration:5.0 configure:^(TGNotificationContentView *view, bool *isRepliable)
+                    [_notificationController displayNotificationForConversation:conversation identifier:message.mid replyToMid:replyToMid duration:5.0 configure:^(TGNotificationContentView *view, bool *isRepliable, TGBotReplyMarkup **replyMarkup)
                     {
                         *isRepliable = (!conversation.isChannel || conversation.isChannelGroup) && (conversation.encryptedData == nil);
+                        *replyMarkup = conversation.conversationId == 777000 && message.replyMarkup.isInline ? message.replyMarkup : nil;
                         [view configureWithMessage:message conversation:conversation peers:peers];
                     }];
                 }
@@ -937,8 +1003,7 @@
             TGUser *newUser = [TGDatabaseInstance() loadUser:(int)peerId];
             NSString *message = [NSString stringWithFormat:TGLocalized(@"Call.CallInProgressMessage"), currentCallController.peer.displayName, newUser.displayName];
            
-            [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:message cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:
-            ^(bool okButtonPressed)
+            [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:message cancelButtonTitle:TGLocalized(@"Common.No") okButtonTitle:TGLocalized(@"Common.Yes") completionBlock:^(bool okButtonPressed)
             {
                 if (okButtonPressed)
                 {
@@ -952,13 +1017,13 @@
                         });
                     }];
                 }
-            }] show];
+            }];
         }
         else
         {
             if ([TGCallUtils isOnPhoneCall])
             {
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.CallInProgressTitle") message:TGLocalized(@"Call.PhoneCallInProgressMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:TGLocalized(@"Call.PhoneCallInProgressMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             }
             else
             {
@@ -1010,7 +1075,7 @@
     
     if (networkType == TGNetworkTypeNone)
     {
-        [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:TGLocalized(@"Call.ConnectionErrorMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+        [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Call.ConnectionErrorTitle") message:TGLocalized(@"Call.ConnectionErrorMessage") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     }
     else
     {
@@ -1079,7 +1144,7 @@
     }
 }
 
-- (SSignal *)messageVisibilitySignalWithConversationId:(int64_t)conversationId messageId:(int32_t)messageId
+- (SSignal *)messageVisibilitySignalWithConversationId:(int64_t)conversationId messageId:(int32_t)messageId peerId:(int64_t)peerId
 {
     SSignal *initialConversationSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
@@ -1117,7 +1182,7 @@
             if ([companion isKindOfClass:[TGGenericModernConversationCompanion class]])
             {
                 if (((TGGenericModernConversationCompanion *)companion).conversationId == conversationId)
-                    return [controller messageVisiblitySignalForMessageId:messageId];
+                    return [controller messageVisiblitySignalForMessageId:messageId peerId:peerId];
             }
             return [SSignal single:@false];
         }

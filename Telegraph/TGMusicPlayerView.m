@@ -12,6 +12,9 @@
 #import "TGMusicPlayerController.h"
 #import "TGVideoMessagePIPController.h"
 
+#import "TGPresentation.h"
+#import "TGPresentationAssets.h"
+
 @interface TGMusicPlayerView ()
 {
     __weak UINavigationController *_navigationController;
@@ -26,6 +29,7 @@
     TGModernButton *_closeButton;
     TGModernButton *_pauseButton;
     TGModernButton *_playButton;
+    TGModernButton *_rateButton;
     
     id<SDisposable> _playerStatusDisposable;
     
@@ -40,6 +44,9 @@
     MPVolumeView *_volumeOverlayFixView;
     
     TGVideoMessagePIPController *_pipController;
+    
+    TGPresentation *_presentation;
+    id<SDisposable> _presentationDisposable;
 }
 @end
 
@@ -54,54 +61,66 @@
         
         self.clipsToBounds = true;
         
+        __weak TGMusicPlayerView *weakSelf = self;
+        _presentationDisposable = [TGPresentation.signal startWithNext:^(TGPresentation *next)
+        {
+            __strong TGMusicPlayerView *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                [strongSelf setPresentation:next];
+        }];
+        
         _minimizedBar = [[UIView alloc] init];
-        _minimizedBar.backgroundColor = UIColorRGB(0xf7f7f7);
+        _minimizedBar.backgroundColor = _presentation.pallete.barBackgroundColor;
         _minimizedButton = [[UIButton alloc] init];
         [_minimizedButton addTarget:self action:@selector(minimizedButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_minimizedButton];
         [self addSubview:_minimizedBar];
         
         _minimizedBarStripe = [[UIView alloc] init];
-        _minimizedBarStripe.backgroundColor = UIColorRGB(0xb2b2b2);
+        _minimizedBarStripe.backgroundColor = _presentation.pallete.barSeparatorColor;
         [_minimizedBar addSubview:_minimizedBarStripe];
         
         _closeButton = [[TGModernButton alloc] init];
         _closeButton.adjustsImageWhenHighlighted = false;
-        [_closeButton setImage:TGImageNamed(@"MusicPlayerMinimizedClose.png") forState:UIControlStateNormal];
+        [_closeButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerMinimizedClose.png"), _presentation.pallete.navigationSubtitleColor) forState:UIControlStateNormal];
         [_closeButton addTarget:self action:@selector(closeButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_closeButton];
         
         _playButton = [[TGModernButton alloc] init];
         _playButton.adjustsImageWhenHighlighted = false;
-        [_playButton setImage:TGImageNamed(@"MusicPlayerMinimizedPlay.png") forState:UIControlStateNormal];
+        [_playButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerMinimizedPlay.png"), _presentation.pallete.navigationButtonColor) forState:UIControlStateNormal];
         [_playButton addTarget:self action:@selector(playButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_playButton];
         _playButton.hidden = true;
         
         _pauseButton = [[TGModernButton alloc] init];
         _pauseButton.adjustsImageWhenHighlighted = false;
-        [_pauseButton setImage:TGImageNamed(@"MusicPlayerMinimizedPause.png") forState:UIControlStateNormal];
+        [_pauseButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerMinimizedPause.png"), _presentation.pallete.navigationButtonColor) forState:UIControlStateNormal];
         [_pauseButton addTarget:self action:@selector(pauseButtonPressed) forControlEvents:UIControlEventTouchUpInside];
         [_minimizedBar addSubview:_pauseButton];
         _pauseButton.hidden = true;
         
+        _rateButton = [[TGModernButton alloc] init];
+        [_rateButton setImage:_presentation.images.musicPlayerRate2xIcon forState:UIControlStateNormal];
+        [_rateButton addTarget:self action:@selector(rateButtonPressed) forControlEvents:UIControlEventTouchUpInside];
+        [_minimizedBar addSubview:_rateButton];
+        
         _titleLabel = [[UILabel alloc] init];
         _titleLabel.backgroundColor = [UIColor clearColor];
-        _titleLabel.textColor = [UIColor blackColor];
+        _titleLabel.textColor = _presentation.pallete.navigationTitleColor;
         _titleLabel.font = TGSystemFontOfSize(12.0f);
         [_minimizedBar addSubview:_titleLabel];
         
         _performerLabel = [[UILabel alloc] init];
         _performerLabel.backgroundColor = [UIColor clearColor];
-        _performerLabel.textColor = UIColorRGB(0x8b8b8b);
+        _performerLabel.textColor = _presentation.pallete.navigationSubtitleColor;
         _performerLabel.font = TGSystemFontOfSize(10.0f);
         [_minimizedBar addSubview:_performerLabel];
         
         _scrubbingIndicator = [[UIView alloc] init];
-        _scrubbingIndicator.backgroundColor = TGAccentColor();
+        _scrubbingIndicator.backgroundColor = _presentation.pallete.navigationButtonColor;
         [_minimizedBar addSubview:_scrubbingIndicator];
         
-        __weak TGMusicPlayerView *weakSelf = self;
         _playerStatusDisposable = [[TGTelegraphInstance.musicPlayer playingStatus] startWithNext:^(TGMusicPlayerStatus *status)
         {
             __strong TGMusicPlayerView *strongSelf = weakSelf;
@@ -114,9 +133,9 @@
         _updateLabelsLayout = true;
         
         _pipController = [[TGVideoMessagePIPController alloc] init];
-        _pipController.messageVisibilitySignal = ^SSignal *(int64_t peerId, int32_t messageId)
+        _pipController.messageVisibilitySignal = ^SSignal *(int64_t cid, int32_t messageId, int64_t peerId)
         {
-            return [[[TGInterfaceManager instance] messageVisibilitySignalWithConversationId:peerId messageId:messageId] deliverOn:[SQueue mainQueue]];
+            return [[[TGInterfaceManager instance] messageVisibilitySignalWithConversationId:cid messageId:messageId peerId:peerId] deliverOn:[SQueue mainQueue]];
         };
         _pipController.requestedDismissal = ^
         {
@@ -129,6 +148,23 @@
 - (void)dealloc
 {
     [_playerStatusDisposable dispose];
+    [_presentationDisposable dispose];
+}
+
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    _presentation = presentation;
+    
+    _minimizedBar.backgroundColor = presentation.pallete.barBackgroundColor;
+    _minimizedBarStripe.backgroundColor = presentation.pallete.barSeparatorColor;
+    _titleLabel.textColor = presentation.pallete.navigationTitleColor;
+    _performerLabel.textColor = presentation.pallete.navigationSubtitleColor;
+    
+    _scrubbingIndicator.backgroundColor = presentation.pallete.navigationButtonColor;
+    
+    [_closeButton setImage:presentation.images.pinCloseIcon forState:UIControlStateNormal];
+    [_playButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerMinimizedPlay.png"), _presentation.pallete.navigationButtonColor) forState:UIControlStateNormal];
+    [_pauseButton setImage:TGTintedImage(TGImageNamed(@"MusicPlayerMinimizedPause.png"), _presentation.pallete.navigationButtonColor) forState:UIControlStateNormal];
 }
 
 - (void)setFrame:(CGRect)frame
@@ -197,6 +233,8 @@
         
         if (status != nil)
         {
+            _rateButton.hidden = !status.item.isVoice;
+            
             if (!TGStringCompare(_title, title) || !TGStringCompare(_performer, performer))
             {
                 _updateLabelsLayout = true;
@@ -238,6 +276,12 @@
     _playButton.hidden = !status.paused;
     _pauseButton.hidden = status.paused;
     _scrubbingIndicator.hidden = status.isVoice;
+    
+    if (status != nil && fabs(previousStatus.rate - status.rate) > FLT_EPSILON)
+    {
+        UIImage *img = status.rate > 1.5f ? _presentation.images.musicPlayerRate2xActiveIcon : _presentation.images.musicPlayerRate2xIcon;
+        [_rateButton setImage:img forState:UIControlStateNormal];
+    }
     
     if (status == nil || status.paused || status.duration < FLT_EPSILON || status.offset < 0.01 || _scrubbingIndicator.hidden)
     {
@@ -283,6 +327,7 @@
     
     _pauseButton.frame = CGRectMake(0.0f, 0.0f, 46.0f, 36.0f);
     _playButton.frame = CGRectMake(0.0f, 0.0f, 48.0f, 36.0f);
+    _rateButton.frame = CGRectMake(self.frame.size.width - 80.0f, 0.0f, 48.0f, 36.0f);
     
     CGSize titleSize = _titleLabel.frame.size;
     CGSize performerSize = _performerLabel.frame.size;
@@ -318,6 +363,11 @@
     [TGTelegraphInstance.musicPlayer controlPlay];
 }
 
+- (void)rateButtonPressed
+{
+    [TGTelegraphInstance.musicPlayer controlToggleRate];
+}
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
     CGRect closeButtonFrame = CGRectOffset(_closeButton.frame, _minimizedBar.frame.origin.x, _minimizedBar.frame.origin.y);
@@ -344,11 +394,12 @@
         if (mid == 0)
             return;
         
-        [[TGInterfaceManager instance] navigateToConversationWithId:_currentStatus.item.peerId conversation:nil performActions:nil atMessage:@{ @"mid": @(mid), @"useExisting": @true } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
+        [[TGInterfaceManager instance] navigateToConversationWithId:_currentStatus.item.conversationId conversation:nil performActions:nil atMessage:@{ @"mid": @(mid), @"useExisting": @true } clearStack:true openKeyboard:false canOpenKeyboardWhileInTransition:false animated:true];
         return;
     }
     
     TGMusicPlayerController *controller = [[TGMusicPlayerController alloc] init];
+    controller.presentation = _presentation;
     UIViewController *rootController = _navigationController.parentViewController;
     [rootController.view endEditing:true];
     

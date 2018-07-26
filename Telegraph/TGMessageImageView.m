@@ -102,6 +102,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     if (self != nil)
     {
         _overlayDiameter = 50.0f;
+        _timestampTextColor = [UIColor whiteColor];
         
         if (iosMajorVersion() >= 11)
             self.accessibilityIgnoresInvertColors = true;
@@ -435,6 +436,21 @@ static const CGFloat additionalDataTopPadding = 6.0f;
     [_additionalDataView setTimestampColor:color];
 }
 
+- (void)setTimestampTextColor:(UIColor *)color
+{
+    _timestampTextColor = color;
+    
+    [_timestampView setTimestampTextColor:color];
+    [_additionalDataView setTimestampTextColor:color];
+}
+
+- (void)setServiceTimestampStyle:(bool)serviceTimestampStyle
+{
+    _serviceTimestampStyle = serviceTimestampStyle;
+    
+    [_timestampView setServiceStyle:serviceTimestampStyle];
+}
+
 - (void)setTimestampHidden:(bool)timestampHidden
 {
     _timestampView.alpha = timestampHidden ? 0.0f : 1.0f;
@@ -495,6 +511,7 @@ static const CGFloat additionalDataTopPadding = 6.0f;
             _additionalDataView.frame = frame;
     
         [_additionalDataView setTimestampColor:_timestampColor];
+        [_additionalDataView setTimestampTextColor:_timestampTextColor];
         [_additionalDataView setBackdropArea:_additionalDataBackdropArea transitionDuration:0.0];
         [_additionalDataView setText:additionalDataString];
         

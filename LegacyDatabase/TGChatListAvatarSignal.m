@@ -13,14 +13,14 @@ static OSSpinLock imageDataLock;
 + (SSignal *)remoteChatListAvatarWithContext:(TGShareContext *)context location:(TGFileLocation *)location imageSize:(CGSize)imageSize
 {
     NSString *key = [NSString stringWithFormat:@"%@-%d", [location description], (int)imageSize.width];
-    Api73_InputFileLocation_inputFileLocation *inputFileLocation = [Api73_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
-    return [[context datacenter:location.datacenterId function:[Api73 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api73_upload_File *result)
+    Api82_InputFileLocation_inputFileLocation *inputFileLocation = [Api82_InputFileLocation inputFileLocationWithVolumeId:@(location.volumeId) localId:@(location.localId) secret:@(location.secret)];
+    return [[context datacenter:location.datacenterId function:[Api82 upload_getFileWithLocation:inputFileLocation offset:@(0) limit:@(1024 * 1024)]] map:^id(Api82_upload_File *result)
     {
-        if ([result isKindOfClass:[Api73_upload_File_upload_file class]]) {
-            [context.persistentCache setValue:((Api73_upload_File_upload_file *)result).bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
+        if ([result isKindOfClass:[Api82_upload_File_upload_file class]]) {
+            [context.persistentCache setValue:((Api82_upload_File_upload_file *)result).bytes forKey:[[location description] dataUsingEncoding:NSUTF8StringEncoding]];
             
             OSSpinLockLock(&imageDataLock);
-            UIImage *image = [[UIImage alloc] initWithData:((Api73_upload_File_upload_file *)result).bytes];
+            UIImage *image = [[UIImage alloc] initWithData:((Api82_upload_File_upload_file *)result).bytes];
             OSSpinLockUnlock(&imageDataLock);
             
             image = TGRoundImage(image, imageSize);
@@ -115,10 +115,10 @@ static OSSpinLock imageDataLock;
         CGContextAddEllipseInRect(contextRef, CGRectMake(0.0f, 0.0f, imageSize.width, imageSize.height));
         CGContextClip(contextRef);
         
-        NSArray *gradientColors = [self gradientColorsForPeerId:peerId myUserId:context.clientUserId];
+        NSArray *gradientColors = peerId.peerId == 0 ? @[TGColorWithHex(0xb1b1b1), TGColorWithHex(0xcdcdcd)] : [self gradientColorsForPeerId:peerId myUserId:context.clientUserId];
         CGColorRef colors[2] = {
-            CGColorRetain(((UIColor *)gradientColors[0]).CGColor),
-            CGColorRetain(((UIColor *)gradientColors[1]).CGColor)
+            CGColorRetain(((UIColor *)gradientColors[1]).CGColor),
+            CGColorRetain(((UIColor *)gradientColors[0]).CGColor)
         };
         
         CFArrayRef colorsArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&colors, 2, NULL);

@@ -4,6 +4,7 @@
 
 @property (nonatomic, copy) void (^codeChanged)(NSString *);
 
+- (void)resignCodeFieldFirstResponder;
 - (void)makeCodeFieldFirstResponder;
 
 @end

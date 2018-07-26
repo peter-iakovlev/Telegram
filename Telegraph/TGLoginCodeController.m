@@ -31,6 +31,13 @@
 
 #import "TGAccountSignals.h"
 
+#import "TGCustomAlertView.h"
+
+#import "TGTermsOfService.h"
+#import "TGCollectionStaticMultilineTextItemView.h"
+#import "TGModernTextViewModel.h"
+#import "TGReusableLabel.h"
+
 @interface TGLoginCodeController () <UITextFieldDelegate, UIAlertViewDelegate, MFMailComposeViewControllerDelegate, UINavigationControllerDelegate>
 {
     bool _dismissing;
@@ -40,8 +47,14 @@
     UIView *_fieldSeparatorView;
     
     bool _didDisappear;
+    bool _notOnScreen;
+    
+    bool _restoreTermsAlert;
+    __weak TGCustomAlertView *_alertView;
     
     SMetaDisposable *_twoStepConfigDisposable;
+    
+    TGTermsOfService *_termsOfService;
     
     UIImageView *_otherDeviceView;
 }
@@ -78,7 +91,7 @@
 
 @implementation TGLoginCodeController
 
-- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram messageSentViaPhone:(bool)messageSentViaPhone
+- (id)initWithShowKeyboard:(bool)__unused showKeyboard phoneNumber:(NSString *)phoneNumber phoneCodeHash:(NSString *)phoneCodeHash phoneTimeout:(NSTimeInterval)phoneTimeout messageSentToTelegram:(bool)messageSentToTelegram messageSentViaPhone:(bool)messageSentViaPhone termsOfService:(TGTermsOfService *)termsOfService
 {
     self = [super initWithNibName:nil bundle:nil];
     if (self)
@@ -92,6 +105,7 @@
         _phoneTimeout = phoneTimeout;
         _messageSentToTelegram = messageSentToTelegram;
         _messageSentViaPhone = messageSentViaPhone;
+        _termsOfService = termsOfService;
         
 #ifdef DEBUG
         _phoneTimeout = 60.0;
@@ -219,6 +233,13 @@
     _codeField.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
     _codeField.placeholder = TGLocalized(@"Login.Code");
     _codeField.keyboardType = UIKeyboardTypeNumberPad;
+    
+    #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 120000
+    if (iosMajorVersion() >= 12) {
+        _codeField.textContentType = UITextContentTypeOneTimeCode;
+    }
+    #endif
+    
     _codeField.delegate = self;
     _codeField.frame = CGRectMake(0.0f, _fieldSeparatorView.frame.origin.y - 56.0f, screenSize.width, 56.0f);
     [self.view addSubview:_codeField];
@@ -376,7 +397,8 @@
 
 - (void)viewDidLayoutSubviews
 {
-    [_codeField becomeFirstResponder];
+    if (!_notOnScreen)
+        [_codeField becomeFirstResponder];
     
     [super viewDidLayoutSubviews];
 }
@@ -392,7 +414,10 @@
     [self updateInterface:self.interfaceOrientation];
     
     if (_didDisappear)
+    {
         [_codeField becomeFirstResponder];
+        _didDisappear = false;
+    }
     
     [super viewWillAppear:animated];
 }
@@ -460,10 +485,28 @@
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    _notOnScreen = false;
+    
+    if (_restoreTermsAlert)
+    {
+        
+        [self showTermsOfServiceWithCompletion:^(bool accepted)
+        {
+            if (accepted)
+            {
+                int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
+                [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
+                
+                [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode termsOfService:nil]];
+            }
+        }];
+        _restoreTermsAlert = false;
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
+    _notOnScreen = true;
     _dismissing = ![((TGNavigationController *)self.navigationController).viewControllers containsObject:self];
     
     [_countdownTimer invalidate];
@@ -827,11 +870,25 @@
                 
                 if (resultCode == TGSignInResultNotRegistered)
                 {
-                    int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
-                    [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
-                    
                     errorText = nil;
-                    [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode]];
+                    
+                    if (_termsOfService.popup)
+                    {
+                        [self showTermsOfServiceWithCompletion:^(bool accepted)
+                        {
+                            if (accepted)
+                            {
+                                int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
+                                [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:_phoneCode phoneCodeHash:_phoneCodeHash codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
+                                
+                                [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode termsOfService:nil]];
+                            }
+                        }];
+                    }
+                    else
+                    {
+                        [self pushControllerRemovingSelf:[[TGLoginProfileController alloc] initWithShowKeyboard:_codeField.isFirstResponder phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneCode:_phoneCode termsOfService:_termsOfService]];
+                    }
                 }
                 else if (resultCode == TGSignInResultTokenExpired)
                 {
@@ -870,7 +927,7 @@
                     
                     bool messageSentViaPhone = [(((SGraphObjectNode *)result).object)[@"messageSentViaPhone"] intValue];
                     
-                    TGLoginCodeController *controller = [[TGLoginCodeController alloc] initWithShowKeyboard:(_codeField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneTimeout:_phoneTimeout messageSentToTelegram:false messageSentViaPhone:messageSentViaPhone];
+                    TGLoginCodeController *controller = [[TGLoginCodeController alloc] initWithShowKeyboard:(_codeField.isFirstResponder) phoneNumber:_phoneNumber phoneCodeHash:_phoneCodeHash phoneTimeout:_phoneTimeout messageSentToTelegram:false messageSentViaPhone:messageSentViaPhone termsOfService:_termsOfService];
                     
                     NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:self.navigationController.viewControllers];
                     [viewControllers removeLastObject];
@@ -892,8 +949,7 @@
                     else if (resultCode == TGSendCodeErrorPhoneBanned)
                         errorText = TGLocalized(@"Login.PhoneBannedError");
                     
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                    [alertView show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil disableKeyboardWorkaround:false];
                 }
             }
             else
@@ -925,12 +981,64 @@
                     else if (resultCode == TGSendCodeErrorPhoneBanned)
                         errorText = TGLocalized(@"Login.PhoneBannedError");
                     
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                    [alertView show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil disableKeyboardWorkaround:false];
                 }
             }
         });
     }
+}
+
+- (void)showCancelRegistration:(void (^)(bool))termsCompletion
+{
+    [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"PrivacyPolicy.Decline") message:TGLocalized(@"Login.TermsOfServiceSignupDecline") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Login.TermsOfServiceDecline") completionBlock:^(bool okButtonPressed) {
+        if (okButtonPressed)
+            [self.navigationController popToRootViewControllerAnimated:true];
+        else
+            [self showTermsOfServiceWithCompletion:termsCompletion];
+    } disableKeyboardWorkaround:false];
+}
+
+- (void)showTermsOfServiceWithCompletion:(void (^)(bool accepted))completion {
+    TGCollectionStaticMultilineTextItemViewTextView *textView = [[TGCollectionStaticMultilineTextItemViewTextView alloc] init];
+    textView.userInteractionEnabled = true;
+    
+    __weak TGLoginCodeController *weakSelf = self;
+    textView.followLink = ^(NSString *url)
+    {
+        __strong TGLoginCodeController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf->_alertView dismiss:true fromDim:true animated:true];
+            strongSelf->_restoreTermsAlert = true;
+        }
+        [TGAppDelegateInstance handleOpenInstantView:url disableActions:true];
+    };
+    
+    TGModernTextViewModel *textModel = [[TGModernTextViewModel alloc] initWithText:_termsOfService.text font:TGCoreTextSystemFontOfSize(13.0f)];
+    textModel.textColor = [UIColor blackColor];
+    textModel.linkColor = TGAccentColor();
+    textModel.textCheckingResults = [TGMessage textCheckingResultsForText:_termsOfService.text highlightMentionsAndTags:true highlightCommands:false entities:_termsOfService.entities];
+    textModel.layoutFlags = TGReusableLabelLayoutMultiline | TGReusableLabelLayoutHighlightLinks;
+    
+    [textModel layoutForContainerSize:CGSizeMake(270.0f - 36.0f, CGFLOAT_MAX)];
+    [textView setTextModel:textModel];
+    textView.frame = CGRectMake(10.0f, -10.0f, textModel.frame.size.width, textModel.frame.size.height);
+    
+    UIView *wrapperView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, textView.frame.size.width + 20.0f, textView.frame.size.height - 10.0f)];
+    [wrapperView addSubview:textView];
+
+    TGCustomAlertView *alertView = [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Login.TermsOfServiceHeader") customView:wrapperView cancelButtonTitle:TGLocalized(@"Login.TermsOfServiceDecline") okButtonTitle:TGLocalized(@"Login.TermsOfServiceAgree") completionBlock:^(__unused bool okButtonPressed)
+    {
+        if (completion != nil)
+        {
+            if (okButtonPressed)
+                completion(okButtonPressed);
+            else
+                [self showCancelRegistration:completion];
+        }
+    } disableKeyboardWorkaround:false];
+    alertView.noActionOnDimTap = true;
+    
+    _alertView = alertView;
 }
 
 - (void)alertView:(UIAlertView *)__unused alertView clickedButtonAtIndex:(NSInteger)__unused buttonIndex
@@ -946,43 +1054,9 @@
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/service/auth/sendCode/(sms%d)", actionId++] options:[[NSDictionary alloc] initWithObjectsAndKeys:_phoneNumber, @"phoneNumber", _phoneCodeHash, @"phoneHash", [[NSNumber alloc] initWithBool:true], @"requestSms", nil] watcher:self];
 }
 
-- (void)termsOfServiceTapGesture:(UITapGestureRecognizer *)recognizer {
-    if (recognizer.state == UIGestureRecognizerStateEnded) {
-        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
-        [progressWindow showWithDelay:0.1];
-        
-        [[[[TGAccountSignals termsOfService] deliverOn:[SQueue mainQueue]] onDispose:^{
-            TGDispatchOnMainThread(^{
-                [progressWindow dismiss:true];
-            });
-        }] startWithNext:^(NSString *termsText) {
-            if (NSClassFromString(@"UIAlertController") != nil) {
-                UIAlertController *alertVC = [UIAlertController alertControllerWithTitle:@"" message:@"" preferredStyle:UIAlertControllerStyleAlert];
-                
-                NSString *headerText = TGLocalized(@"Login.TermsOfServiceHeader");
-                
-                NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-                style.lineSpacing = 5.0;
-                style.lineBreakMode = NSLineBreakByWordWrapping;
-                style.alignment = NSTextAlignmentLeft;
-                
-                NSMutableAttributedString *text = [[NSMutableAttributedString alloc] initWithString:[[NSString alloc] initWithFormat:@"%@\n\n%@", headerText, termsText] attributes:@{NSFontAttributeName: TGSystemFontOfSize(13.0f)}];
-                [text addAttribute:NSFontAttributeName value:TGMediumSystemFontOfSize(17.0f) range:NSMakeRange(0, headerText.length)];
-                
-                [text addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(headerText.length + 2, text.length - headerText.length - 2)];
-                
-                [alertVC setValue:text forKey:@"attributedTitle"];
-                
-                UIAlertAction *button = [UIAlertAction actionWithTitle:TGLocalized(@"Common.OK") style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
-                }];
-                
-                [alertVC addAction:button];
-                [self presentViewController:alertVC animated:true completion:nil];
-            } else {
-                [[[TGAlertView alloc] initWithTitle:TGLocalized(@"Login.TermsOfServiceHeader") message:termsText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
-            }
-        }];
-    }
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    return UIStatusBarStyleDefault;
 }
 
 @end

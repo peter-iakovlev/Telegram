@@ -131,7 +131,7 @@ static std::set<int> autorotationLockIds;
 @property (nonatomic, weak) UIViewController *targetNavigationTitleController;
 
 @property (nonatomic, strong) UIBarButtonItem *leftBarButtonItem;
-@property (nonatomic, strong) UIBarButtonItem *rightBarButtonItem;
+@property (nonatomic, strong) NSArray *rightBarButtonItems;
 @property (nonatomic, strong) NSString *titleText;
 @property (nonatomic, strong) UIView *titleView;
 
@@ -636,6 +636,9 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 
 - (void)viewWillAppear:(BOOL)animated
 {
+    if (_ignoreAppearEvents) {
+        return;
+    }
     _viewControllerIsAnimatingAppearanceTransition = true;
     _viewControllerIsAppearing = true;
     //_viewControllerHasEverAppeared = true;
@@ -664,6 +667,10 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 
 - (void)viewDidAppear:(BOOL)animated
 {
+    if (_ignoreAppearEvents) {
+        return;
+    }
+    
     _viewControllerIsAppearing = false;
     _viewControllerIsAnimatingAppearanceTransition = false;
     _viewControllerHasEverAppeared = true;
@@ -806,7 +813,7 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 
 - (CGFloat)_currentStatusBarHeight
 {
-    if (_context.safeAreaInset.top > FLT_EPSILON)
+    if (_context.safeAreaInset.top > 20.0f)
         return _context.safeAreaInset.top;
     
     CGRect statusBarFrame = [[LegacyComponentsGlobals provider] statusBarFrame];
@@ -943,9 +950,16 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     if (![_context rootCallStatusBarHidden])
+    {
         return UIStatusBarStyleLightContent;
+    }
     else
-        return UIStatusBarStyleDefault;
+    {
+        if ([_context respondsToSelector:@selector(prefersLightStatusBar)])
+            return [_context prefersLightStatusBar] ? UIStatusBarStyleLightContent : UIStatusBarStyleDefault;
+        else
+            return UIStatusBarStyleDefault;
+    }
 }
 
 - (void)setNeedsStatusBarAppearanceUpdate
@@ -1323,7 +1337,8 @@ static id<LegacyComponentsContext> _defaultContext = nil;
     if (targetNavigationItem != nil && updated)
     {
         [[self _currentNavigationItem] setLeftBarButtonItem:_leftBarButtonItem animated:false];
-        [[self _currentNavigationItem] setRightBarButtonItem:_rightBarButtonItem animated:false];
+        [self _setRightBarButtonItems:_rightBarButtonItems animated:false];
+        [[self _currentNavigationItem] setRightBarButtonItems:_rightBarButtonItems animated:false];
         [[self _currentNavigationItem] setTitle:_titleText];
         [[self _currentTitleController] setTitle:_titleText];
         [[self _currentNavigationItem] setTitleView:_titleView];
@@ -1358,8 +1373,44 @@ static id<LegacyComponentsContext> _defaultContext = nil;
 
 - (void)setRightBarButtonItem:(UIBarButtonItem *)rightBarButtonItem animated:(BOOL)animated
 {
-    _rightBarButtonItem = rightBarButtonItem;
-    [[self _currentNavigationItem] setRightBarButtonItem:rightBarButtonItem animated:animated];
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    if (rightBarButtonItem != nil)
+        [items addObject:rightBarButtonItem];
+    
+    _rightBarButtonItems = items;
+    [self _setRightBarButtonItems:items animated:animated];
+}
+
+- (void)setRightBarButtonItems:(NSArray *)rightBarButtonItems animated:(BOOL)animated {
+    _rightBarButtonItems = rightBarButtonItems;
+    
+    [self _setRightBarButtonItems:rightBarButtonItems animated:animated];
+}
+
+- (void)_setRightBarButtonItems:(NSArray *)rightBarButtonItems animated:(BOOL)animated
+{
+    if (rightBarButtonItems.count < 2)
+    {
+        UIBarButtonItem *rightBarButtonItem = rightBarButtonItems.firstObject;
+        if (iosMajorVersion() >= 11 && !TGIsPad() && rightBarButtonItem.customView != nil)
+        {
+            UIBarButtonItem *spacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+            spacer.width = 8.0f;
+            [[self _currentNavigationItem] setRightBarButtonItem:nil animated:false];
+            [[self _currentNavigationItem] setRightBarButtonItems:@[spacer, rightBarButtonItem] animated:animated];
+        }
+        else
+        {
+            if (iosMajorVersion() >= 11 && !TGIsPad())
+                [[self _currentNavigationItem] setRightBarButtonItems:nil animated:false];
+            [[self _currentNavigationItem] setRightBarButtonItem:rightBarButtonItem animated:animated];
+        }
+    }
+    else
+    {
+        [[self _currentNavigationItem] setRightBarButtonItem:nil animated:false];
+        [[self _currentNavigationItem] setRightBarButtonItems:rightBarButtonItems animated:false];
+    }
 }
 
 - (void)setTitleText:(NSString *)titleText

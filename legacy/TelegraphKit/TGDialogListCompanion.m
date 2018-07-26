@@ -34,6 +34,11 @@
     
 }
 
+- (void)loadMoreItems:(int)limit
+{
+    
+}
+
 - (void)composeMessageAndOpenSearch:(bool)__unused openSearch
 {
     
@@ -106,6 +111,9 @@
 
 - (int64_t)openedConversationId {
     return 0;
+}
+
+- (void)scrollToNextUnreadChat {
 }
 
 - (void)hintMoveConversationAtIndex:(NSUInteger)__unused fromIndex toIndex:(NSUInteger)__unused toIndex {

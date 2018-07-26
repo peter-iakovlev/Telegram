@@ -23,6 +23,7 @@
 
 @property (nonatomic) bool editing;
 @property (nonatomic) bool allowEditingCells;
+@property (nonatomic) bool blockScrolling;
 
 @property (nonatomic, copy) void (^layoutForSize)(CGSize size);
 

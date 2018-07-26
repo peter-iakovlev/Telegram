@@ -30,7 +30,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
 
 @implementation TGMusicPlayerStatus
 
-- (instancetype)initWithItem:(TGMusicPlayerItem *)item player:(TGAudioPlayer *)player position:(TGMusicPlayerItemPosition)position paused:(bool)paused offset:(CGFloat)offset duration:(CGFloat)duration albumArt:(SSignal *)albumArt albumArtSync:(SSignal *)albumArtSync downloadedStatus:(TGMusicPlayerDownloadingStatus)downloadedStatus isVoice:(bool)isVoice orderType:(TGMusicPlayerOrderType)orderType repeatType:(TGMusicPlayerRepeatType)repeatType
+- (instancetype)initWithItem:(TGMusicPlayerItem *)item player:(TGAudioPlayer *)player position:(TGMusicPlayerItemPosition)position paused:(bool)paused offset:(CGFloat)offset duration:(CGFloat)duration rate:(CGFloat)rate albumArt:(SSignal *)albumArt albumArtSync:(SSignal *)albumArtSync downloadedStatus:(TGMusicPlayerDownloadingStatus)downloadedStatus isVoice:(bool)isVoice orderType:(TGMusicPlayerOrderType)orderType repeatType:(TGMusicPlayerRepeatType)repeatType
 {
     self = [super init];
     if (self != nil)
@@ -41,6 +41,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
         _paused = paused;
         _offset = offset;
         _duration = duration;
+        _rate = rate;
         _timestamp = CACurrentMediaTime();
         _albumArt = albumArt;
         _albumArtSync = albumArtSync;
@@ -83,6 +84,8 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     
     TGMusicPlayerPlaylist *_currentTemporaryPlaylist;
     
+    CGFloat _rate;
+    
     id<SDisposable> _routeChangeDisposable;
     TGHolder *_proximityChangeHolder;
     TGObserverProxy *_proximityChangedNotification;
@@ -101,6 +104,8 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     self = [super init];
     if (self != nil)
     {
+        _rate = 1.0f;
+        
         _playingStatusPipe = [[SPipe alloc] init];
         _playlistFinishedPipe = [[SPipe alloc] init];
         _playlistPipe = [[SPipe alloc] init];
@@ -296,7 +301,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
             else
                 duration = 0.0f;
             
-            [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:offset duration:duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+            [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:offset duration:duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
         }
         
         [_player pause:^{
@@ -355,7 +360,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                     else
                         duration = 0.0f;
                     
-                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:false offset:offset duration:duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:false offset:offset duration:duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                     
                     [self requestControlsWithPlay:false];
                     [_player play];
@@ -382,7 +387,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                     else
                         duration = 0.0f;
                     
-                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:offset duration:duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:offset duration:duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                     
                     if (_player != nil) {
                         [_player pause:^{
@@ -442,7 +447,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                         }
                         else
                         {
-                            [strongSelf setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:true offset:0.0f duration:duration albumArt:nil albumArtSync:nil downloadedStatus:TGMusicPlayerDownloadingStatusMake(false, availability.downloading, availability.progress) isVoice:item.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                            [strongSelf setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:true offset:0.0f duration:duration rate:_currentStatus.rate albumArt:nil albumArtSync:nil downloadedStatus:TGMusicPlayerDownloadingStatusMake(false, availability.downloading, availability.progress) isVoice:item.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                         }
                     }
                 }]];
@@ -497,6 +502,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
         }
     }
     _player = [[TGModernConversationAudioPlayer alloc] initWithFilePath:path music:!_currentPlaylist.voice controlAudioSession:false];
+    [_player setRate:_rate];
     _player.delegate = self;
     
     CGFloat duration = _player.duration;
@@ -521,7 +527,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     
     NSURL *itemUrl = [NSURL fileURLWithPath:path];
     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
-    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:false offset:offset duration:duration albumArt:[TGMusicPlayerItemSignals _albumArtForUrl:itemUrl multicastManager:_albumArtMulticastManager] albumArtSync:[TGMusicPlayerItemSignals _albumArtSyncForUrl:itemUrl] downloadedStatus:TGMusicPlayerDownloadingStatusMake(true, false, 1.0f) isVoice:item.isVoice orderType:!item.isVoice ? orderType : TGMusicPlayerOrderTypeOldestFirst repeatType:!item.isVoice ? repeatType : TGMusicPlayerRepeatTypeNone]];
+    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:false offset:offset duration:duration rate:_rate albumArt:[TGMusicPlayerItemSignals _albumArtForUrl:itemUrl multicastManager:_albumArtMulticastManager] albumArtSync:[TGMusicPlayerItemSignals _albumArtSyncForUrl:itemUrl] downloadedStatus:TGMusicPlayerDownloadingStatusMake(true, false, 1.0f) isVoice:item.isVoice orderType:!item.isVoice ? orderType : TGMusicPlayerOrderTypeOldestFirst repeatType:!item.isVoice ? repeatType : TGMusicPlayerRepeatTypeNone]];
     
     [self requestControlsWithPlay:false];
     [_player play];
@@ -601,8 +607,10 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
             _currentPlaylistDisposable = [[SMetaDisposable alloc] init];
         [_currentPlaylistDisposable setDisposable:nil];
         
-        if (playlist == nil)
+        if (playlist == nil) {
+            _rate = 1.0f;
             [self _setPlaylist:nil initialItemKey:nil forceRestart:true];
+        }
         else
         {
             __weak TGMusicPlayer *weakSelf = self;
@@ -668,7 +676,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                                     
                                     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
                                     
-                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                                     
                                     currentItemFound = true;
                                     found = true;
@@ -700,7 +708,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                                     
                                     TGMusicPlayerItemPosition itemPosition = [TGMusicPlayer itemPosition:item inArray:_currentPlaylist.items];
                                     
-                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:item player:_player.audioPlayer position:itemPosition paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                                     
                                     currentItemFound = true;
                                     break;
@@ -900,6 +908,29 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
     }];
 }
 
+- (void)controlSetRate:(CGFloat)rate
+{
+    _rate = rate;
+    
+    [_queue dispatch:^
+    {
+        [_player setRate:rate];
+        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration rate:rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+    }];
+}
+
+- (void)controlToggleRate
+{
+    CGFloat targetRate = 1.0f;
+    
+    if (_rate < 1.75f)
+        targetRate = 1.8f;
+    else
+        targetRate = 1.0f;
+    
+    [self controlSetRate:targetRate];
+}
+
 - (void)_dispatch:(dispatch_block_t)block {
     [_queue dispatch:^{
         if (block) {
@@ -931,7 +962,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
         if (orderType == TGMusicPlayerOrderTypeShuffle && ![_currentPlaylist hasShuffle])
             [self _setPlaylist:[_currentPlaylist playlistWithShuffledItems] initialItemKey:nil forceRestart:false];
         
-        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:orderType repeatType:_currentStatus.repeatType]];
+        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:orderType repeatType:_currentStatus.repeatType]];
     }];
 }
 
@@ -954,7 +985,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
         
         [[NSUserDefaults standardUserDefaults] setObject:@(repeatType) forKey:@"musicPlayerRepeatType_v1"];
          
-        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:repeatType]];
+        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:_currentStatus.paused offset:_currentStatus.offset duration:_currentStatus.duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:repeatType]];
     }];
 }
 
@@ -1066,7 +1097,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                 offset = 0.0f;
         }
         
-        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:false offset:offset duration:duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+        [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:false offset:offset duration:duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
     }
 }
 
@@ -1088,7 +1119,7 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                     index++;
                     if (TGObjectCompare(item.key, _currentStatus.item.key))
                     {
-                        NSInteger lastIndex = item.isVoice ? (NSInteger)_currentPlaylist.items.count - 1 : 0;
+                        NSInteger lastIndex = item.isVoice || _currentStatus.orderType == TGMusicPlayerOrderTypeOldestFirst ? (NSInteger)_currentPlaylist.items.count - 1 : 0;
                         if (index == lastIndex)
                         {
                             if (_currentPlaylist.voice) {
@@ -1117,14 +1148,15 @@ static TGMusicPlayerDownloadingStatus TGMusicPlayerDownloadingStatusMake(bool do
                                     if (isnan(duration) || duration < FLT_EPSILON)
                                         duration = 0.0f;
                                     
-                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:0.0f duration:duration albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
+                                    [self setCurrentStatus:[[TGMusicPlayerStatus alloc] initWithItem:_currentStatus.item player:_player.audioPlayer position:_currentStatus.position paused:true offset:0.0f duration:duration rate:_currentStatus.rate albumArt:_currentStatus.albumArt albumArtSync:_currentStatus.albumArtSync downloadedStatus:_currentStatus.downloadedStatus isVoice:_currentStatus.isVoice orderType:_currentStatus.orderType repeatType:_currentStatus.repeatType]];
                                 }
                                 else
                                 {
                                     bool force = !_currentPlaylist.voice && _currentPlaylist.items.count == 1;
-                                    [self playMediaFromItem:_currentPlaylist.voice ? _currentPlaylist.items.firstObject : _currentPlaylist.items.lastObject force:force];
+                                    [self playMediaFromItem:_currentPlaylist.voice || _currentStatus.orderType == TGMusicPlayerOrderTypeOldestFirst ? _currentPlaylist.items.firstObject : _currentPlaylist.items.lastObject force:force];
                                 }
                             }
+                            _rate = 1.0f;
                         }
                         else
                             [self controlAdvance:true];

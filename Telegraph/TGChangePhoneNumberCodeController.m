@@ -9,7 +9,7 @@
 #import <LegacyComponents/TGTimerTarget.h>
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 
 #import <LegacyComponents/ActionStage.h>
 #import "TGSignInRequestBuilder.h"
@@ -182,8 +182,7 @@
                 
                 if (errorText != nil)
                 {
-                    TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:errorText delegate:nil cancelButtonTitle:TGLocalized(@"Common.OK") otherButtonTitles:nil];
-                    [alertView show];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 }
             }
         });

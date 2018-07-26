@@ -39,7 +39,7 @@
     int stateDate = [[TGAppDelegateInstance loadLoginState][@"date"] intValue];
     [TGAppDelegateInstance saveLoginStateWithDate:stateDate phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false firstName:nil lastName:nil photo:nil resetAccountState:nil];
     
-    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
+    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil termsOfService:nil];
 }
 
 - (void)loadView {
@@ -69,7 +69,7 @@
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progressWindow show:true];
                 
-                [[[[TGAccountSignals deleteAccount] deliverOn:[SQueue mainQueue]] onDispose:^ {
+                [[[[TGAccountSignals deleteAccount:@"Forgot password"] deliverOn:[SQueue mainQueue]] onDispose:^ {
                     [progressWindow dismiss:true];
                 }] startWithNext:nil error:^(id error) {
                     __strong TGLoginResetAccountProtectedController *strongSelf = weakSelf;
@@ -93,7 +93,12 @@
 }
 
 - (void)_completedDeletion {
-    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil];
+    [TGAppDelegateInstance presentLoginController:true animated:true phoneNumber:_phoneNumber phoneCode:nil phoneCodeHash:nil codeSentToTelegram:false codeSentViaPhone:false profileFirstName:nil profileLastName:nil resetAccountState:nil termsOfService:nil];
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    return UIStatusBarStyleDefault;
 }
 
 @end
