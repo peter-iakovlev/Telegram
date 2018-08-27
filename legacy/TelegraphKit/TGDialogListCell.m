@@ -1324,6 +1324,8 @@ static NSArray *editingButtonTypes(bool muted, bool pinnable, bool pinned, bool 
                             
                             NSArray *components = [actionAttachment.actionData[@"values"] componentsSeparatedByString:@","];
                             NSString *values = @"";
+                            bool hasIdentity = false;
+                            bool hasAddress = false;
                             for (NSString *component in components)
                             {
                                 NSString *value = nil;
@@ -1331,17 +1333,34 @@ static NSArray *editingButtonTypes(bool muted, bool pinnable, bool pinned, bool 
                                 {
                                     value = TGLocalized(@"Notification.PassportValuePersonalDetails");
                                 }
-                                else if ([component isEqualToString:@"passport"] || [component isEqualToString:@"identity_card"] || [component isEqualToString:@"driver_license"])
+                                else if ([component isEqualToString:@"passport"] || [component isEqualToString:@"identity_card"] || [component isEqualToString:@"driver_license"] || [component isEqualToString:@"internal_passport"])
                                 {
-                                    value = TGLocalized(@"Notification.PassportValueProofOfIdentity");
+                                    if (!hasIdentity)
+                                    {
+                                        value = TGLocalized(@"Notification.PassportValueProofOfIdentity");
+                                        hasIdentity = true;
+                                    }
+                                    else
+                                    {
+                                        continue;
+                                    }
+                                    
                                 }
                                 else if ([component isEqualToString:@"address"])
                                 {
                                     value = TGLocalized(@"Notification.PassportValueAddress");
                                 }
-                                else if ([component isEqualToString:@"utility_bill"] || [component isEqualToString:@"bank_statement"] || [component isEqualToString:@"rental_agreement"])
+                                else if ([component isEqualToString:@"utility_bill"] || [component isEqualToString:@"bank_statement"] || [component isEqualToString:@"rental_agreement"] || [component isEqualToString:@"passport_registration"] || [component isEqualToString:@"temporary_registration"])
                                 {
-                                    value = TGLocalized(@"Notification.PassportValueProofOfAddress");
+                                    if (!hasAddress)
+                                    {
+                                        value = TGLocalized(@"Notification.PassportValueProofOfAddress");
+                                        hasAddress = true;
+                                    }
+                                    else
+                                    {
+                                        continue;
+                                    }
                                 }
                                 else if ([component isEqualToString:@"phone"])
                                 {
@@ -1353,12 +1372,15 @@ static NSArray *editingButtonTypes(bool muted, bool pinnable, bool pinned, bool 
                                 }
                                 
                                 if (values.length == 0)
-                                    values = value;
+                                    values = value ?: @"";
                                 else
                                     values = [values stringByAppendingString:[NSString stringWithFormat:@", %@", value]];
                             }
                             
-                            _messageText = [[NSString alloc] initWithFormat:formatString, authorName, values];
+                            if (values.length > 0)
+                                _messageText = [[NSString alloc] initWithFormat:formatString, authorName, values];
+                            else
+                                _messageText = @"";
                             _messageTextColor = actionTextColor;
                         }
                             break;

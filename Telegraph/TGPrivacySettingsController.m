@@ -9,6 +9,7 @@
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
 #import "TGDatabase.h"
+#import "TGTelegramNetworking.h"
 
 #import "TGVariantCollectionItem.h"
 #import "TGDisclosureActionCollectionItem.h"
@@ -152,27 +153,27 @@
             passcodeTitle = TGLocalized(@"PrivacySettings.PasscodeAndTouchId");
         
         TGCollectionMenuSection *securitySection = [[TGCollectionMenuSection alloc] initWithItems:@[
-                                                                                                    [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.SecurityTitle")],
-                                                                                                    [[TGDisclosureActionCollectionItem alloc] initWithTitle:passcodeTitle action:@selector(passcodePressed)],
-                                                                                                    [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.TwoStepAuth") action:@selector(passwordPressed)],
-                                                                                                    [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.AuthSessions") action:@selector(authSessionsPressed)]
-                                                                                                    ]];
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.SecurityTitle")],
+            [[TGDisclosureActionCollectionItem alloc] initWithTitle:passcodeTitle action:@selector(passcodePressed)],
+            [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.TwoStepAuth") action:@selector(passwordPressed)],
+            [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.AuthSessions") action:@selector(authSessionsPressed)]
+        ]];
         [self.menuSections addSection:securitySection];
         
         _accountExpirationItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.DeleteAccountIfAwayFor") action:@selector(deleteAccountExpirationPressed)];
         _accountExpirationItem.deselectAutomatically = true;
         TGCollectionMenuSection *deleteAccountSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-                                                                                                         [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.DeleteAccountTitle")],
-                                                                                                         _accountExpirationItem,
-                                                                                                         [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacySettings.DeleteAccountHelp")]
-                                                                                                         ]];
+            [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.DeleteAccountTitle")],
+            _accountExpirationItem,
+            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacySettings.DeleteAccountHelp")]
+        ]];
         [self.menuSections addSection:deleteAccountSection];
         
         TGDisclosureActionCollectionItem *dataItem = [[TGDisclosureActionCollectionItem alloc] initWithTitle:TGLocalized(@"PrivacySettings.DataSettings") action:@selector(dataSettingsPressed)];
         TGCollectionMenuSection *dataSection = [[TGCollectionMenuSection alloc] initWithItems:@[
-                                                                                                dataItem,
-                                                                                                [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacySettings.DataSettingsHelp")]
-                                                                                                ]];
+            dataItem,
+            [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"PrivacySettings.DataSettingsHelp")]
+        ]];
         [self.menuSections addSection:dataSection];
         
         TGAccountSettings *accountSettings = [TGAccountSettingsActor accountSettingsFotCurrentStateId];
@@ -185,9 +186,9 @@
         __block NSUInteger count = 0;
         [TGDatabaseInstance() dispatchOnDatabaseThread:^{
             [TGDatabaseInstance() loadBlockedList:^(NSArray *blockedList)
-             {
-                 count = blockedList.count;
-             }];
+            {
+                count = blockedList.count;
+            }];
         } synchronous:true];
         _blockedUsersItem.variant = count == 0 ? @"" : [TGStringUtils stringForUserCount:count];
         
@@ -241,18 +242,18 @@
 {
     __weak TGPrivacySettingsController *weakSelf = self;
     [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeLastSeen privacySettings:_accountSettings.notificationSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
-                                                   {
-                                                       __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                       if (strongSelf != nil)
-                                                       {
-                                                           strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                                                           [strongSelf->_progressWindow show:true];
-                                                           
-                                                           TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:strongSelf->_accountSettings.callSettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
-                                                           [strongSelf setAccountSettings:accountSettings];
-                                                           [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"notifications": privacySettings}]} flags:0 watcher:strongSelf];
-                                                       }
-                                                   }] animated:true];
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [strongSelf->_progressWindow show:true];
+            
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:privacySettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:strongSelf->_accountSettings.callSettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
+            [strongSelf setAccountSettings:accountSettings];
+            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"notifications": privacySettings}]} flags:0 watcher:strongSelf];
+        }
+    }] animated:true];
 }
 
 - (void)blockedUsersPressed
@@ -263,35 +264,35 @@
 - (void)groupsAndChannelsPressed {
     __weak TGPrivacySettingsController *weakSelf = self;
     [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeGroupsAndChannels privacySettings:_accountSettings.groupsAndChannelsSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
-                                                   {
-                                                       __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                       if (strongSelf != nil)
-                                                       {
-                                                           strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                                                           [strongSelf->_progressWindow show:true];
-                                                           
-                                                           TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:privacySettings callSettings:_accountSettings.callSettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
-                                                           [strongSelf setAccountSettings:accountSettings];
-                                                           [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"groupsAndChannels": privacySettings}]} flags:0 watcher:strongSelf];
-                                                       }
-                                                   }] animated:true];
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [strongSelf->_progressWindow show:true];
+            
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:privacySettings callSettings:_accountSettings.callSettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
+            [strongSelf setAccountSettings:accountSettings];
+            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"groupsAndChannels": privacySettings}]} flags:0 watcher:strongSelf];
+        }
+    }] animated:true];
 }
 
 - (void)callsPressed {
     __weak TGPrivacySettingsController *weakSelf = self;
     [self.navigationController pushViewController:[[TGPrivacyLastSeenController alloc] initWithMode:TGPrivacySettingsModeCalls privacySettings:_accountSettings.callSettings privacySettingsChanged:^(TGNotificationPrivacyAccountSetting *privacySettings)
-                                                   {
-                                                       __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                       if (strongSelf != nil)
-                                                       {
-                                                           strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                                                           [strongSelf->_progressWindow show:true];
-                                                           
-                                                           TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:privacySettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
-                                                           [strongSelf setAccountSettings:accountSettings];
-                                                           [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"calls": privacySettings}]} flags:0 watcher:strongSelf];
-                                                       }
-                                                   }] animated:true];
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+            [strongSelf->_progressWindow show:true];
+            
+            TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:privacySettings accountTTLSetting:strongSelf->_accountSettings.accountTTLSetting];
+            [strongSelf setAccountSettings:accountSettings];
+            [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"calls": privacySettings}]} flags:0 watcher:strongSelf];
+        }
+    }] animated:true];
 }
 
 
@@ -317,28 +318,28 @@
     
     __weak TGPrivacySettingsController *weakSelf = self;
     TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:nil actions:actions actionBlock:^(__unused id target, NSString *action)
-                                        {
-                                            __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                            if (strongSelf != nil)
-                                            {
-                                                if (![action isEqualToString:@"cancel"])
-                                                {
-                                                    int value = [action intValue] * 60 * 60 * 24;
-                                                    TGAccountTTLSetting *accountTTLSetting = [[TGAccountTTLSetting alloc] initWithAccountTTL:value == 0 ? nil : @(value)];
-                                                    
-                                                    TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:strongSelf->_accountSettings.callSettings accountTTLSetting:accountTTLSetting];
-                                                    
-                                                    if (![strongSelf->_accountSettings.accountTTLSetting isEqual:accountTTLSetting])
-                                                    {
-                                                        strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                                                        [strongSelf->_progressWindow show:true];
-                                                        
-                                                        [strongSelf setAccountSettings:accountSettings];
-                                                        [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"accountTTL": accountTTLSetting}]} flags:0 watcher:strongSelf];
-                                                    }
-                                                }
-                                            }
-                                        } target:self];
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            if (![action isEqualToString:@"cancel"])
+            {
+                int value = [action intValue] * 60 * 60 * 24;
+                TGAccountTTLSetting *accountTTLSetting = [[TGAccountTTLSetting alloc] initWithAccountTTL:value == 0 ? nil : @(value)];
+                
+                TGAccountSettings *accountSettings = [[TGAccountSettings alloc] initWithNotificationSettings:strongSelf->_accountSettings.notificationSettings groupsAndChannelsSettings:strongSelf->_accountSettings.groupsAndChannelsSettings callSettings:strongSelf->_accountSettings.callSettings accountTTLSetting:accountTTLSetting];
+    
+                if (![strongSelf->_accountSettings.accountTTLSetting isEqual:accountTTLSetting])
+                {
+                    strongSelf->_progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                    [strongSelf->_progressWindow show:true];
+    
+                    [strongSelf setAccountSettings:accountSettings];
+                    [ActionStageInstance() requestActor:@"/updateAccountSettings" options:@{@"settingList": @[@{@"accountTTL": accountTTLSetting}]} flags:0 watcher:strongSelf];
+                }
+            }
+        }
+    } target:self];
     
     if (TGAppDelegateInstance.rootController.currentSizeClass == UIUserInterfaceSizeClassCompact) {
         [actionSheet showInView:self.view];
@@ -362,62 +363,62 @@
         _twoStepConfigDisposable = [[SMetaDisposable alloc] init];
     __weak TGPrivacySettingsController *weakSelf = self;
     [_twoStepConfigDisposable setDisposable:[[[[TGTwoStepConfigSignal twoStepConfig] deliverOn:[SQueue mainQueue]] onDispose:^
-                                              {
-                                                  TGDispatchOnMainThread(^
-                                                                         {
-                                                                             [progressWindow dismiss:true];
-                                                                         });
-                                              }] startWithNext:^(TGTwoStepConfig *next)
-                                             {
-                                                 __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                 if (strongSelf != nil)
-                                                 {
-                                                     if (next.currentSalt.length != 0)
-                                                     {
-                                                         [strongSelf displayPasswordEntryControllerWithConfig:next replaceController:false];
-                                                     }
-                                                     else if (next.unconfirmedEmailPattern.length != 0)
-                                                     {
-                                                         TGPasswordConfirmationController *confirmationController = [[TGPasswordConfirmationController alloc] initWithEmail:next.unconfirmedEmailPattern];
-                                                         confirmationController.completion = ^
-                                                         {
-                                                             __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                             if (strongSelf != nil)
-                                                             {
-                                                                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
-                                                                 [progressWindow show:true];
-                                                                 
-                                                                 [strongSelf->_twoStepConfigDisposable setDisposable:[[[[TGTwoStepConfigSignal twoStepConfig] deliverOn:[SQueue mainQueue]] onDispose:^
-                                                                                                                       {
-                                                                                                                           TGDispatchOnMainThread(^
-                                                                                                                                                  {
-                                                                                                                                                      [progressWindow dismiss:true];
-                                                                                                                                                  });
-                                                                                                                       }] startWithNext:^(TGTwoStepConfig *next)
-                                                                                                                      {
-                                                                                                                          __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                                                                                          if (strongSelf != nil)
-                                                                                                                              [strongSelf displayPasswordEntryControllerWithConfig:next replaceController:true];
-                                                                                                                      }]];
-                                                             }
-                                                         };
-                                                         confirmationController.changeEmail = ^
-                                                         {
-                                                         };
-                                                         confirmationController.removePassword = ^
-                                                         {
-                                                             __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                             if (strongSelf != nil)
-                                                                 [strongSelf removePasswordWhileWaitingForActivationWithConfig:next];
-                                                         };
-                                                         [strongSelf.navigationController pushViewController:confirmationController animated:true];
-                                                     }
-                                                     else
-                                                     {
-                                                         [strongSelf.navigationController pushViewController:[[TGPasswordSettingsController alloc] initWithConfig:next currentPassword:nil] animated:true];
-                                                     }
-                                                 }
-                                             }]];
+    {
+        TGDispatchOnMainThread(^
+        {
+            [progressWindow dismiss:true];
+        });
+    }] startWithNext:^(TGTwoStepConfig *next)
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            if (next.hasPassword)
+            {
+                [strongSelf displayPasswordEntryControllerWithConfig:next replaceController:false];
+            }
+            else if (next.unconfirmedEmailPattern.length != 0)
+            {
+                TGPasswordConfirmationController *confirmationController = [[TGPasswordConfirmationController alloc] initWithEmail:next.unconfirmedEmailPattern];
+                confirmationController.completion = ^
+                {
+                    __strong TGPrivacySettingsController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                    {
+                        TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+                        [progressWindow show:true];
+                        
+                        [strongSelf->_twoStepConfigDisposable setDisposable:[[[[TGTwoStepConfigSignal twoStepConfig] deliverOn:[SQueue mainQueue]] onDispose:^
+                        {
+                            TGDispatchOnMainThread(^
+                            {
+                                [progressWindow dismiss:true];
+                            });
+                        }] startWithNext:^(TGTwoStepConfig *next)
+                        {
+                            __strong TGPrivacySettingsController *strongSelf = weakSelf;
+                            if (strongSelf != nil)
+                                [strongSelf displayPasswordEntryControllerWithConfig:next replaceController:true];
+                        }]];
+                    }
+                };
+                confirmationController.changeEmail = ^
+                {
+                };
+                confirmationController.removePassword = ^
+                {
+                    __strong TGPrivacySettingsController *strongSelf = weakSelf;
+                    if (strongSelf != nil)
+                        [strongSelf removePasswordWhileWaitingForActivationWithConfig:next];
+                };
+                [strongSelf.navigationController pushViewController:confirmationController animated:true];
+            }
+            else
+            {
+                [strongSelf.navigationController pushViewController:[[TGPasswordSettingsController alloc] initWithConfig:next currentPassword:nil] animated:true];
+            }
+        }
+    }]];
 }
 
 - (void)displayPasswordEntryControllerWithConfig:(TGTwoStepConfig *)config replaceController:(bool)replaceController
@@ -433,21 +434,21 @@
             [progressWindow show:true];
             
             [_twoStepConfigDisposable setDisposable:[[[[TGTwoStepConfigSignal twoStepConfig] deliverOn:[SQueue mainQueue]] onDispose:^
-                                                      {
-                                                          TGDispatchOnMainThread(^
-                                                                                 {
-                                                                                     [progressWindow dismiss:true];
-                                                                                 });
-                                                      }] startWithNext:^(TGTwoStepConfig *next)
-                                                     {
-                                                         __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                         if (strongSelf != nil)
-                                                         {
-                                                             NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
-                                                             [viewControllers replaceObjectAtIndex:viewControllers.count - 1 withObject:[[TGPasswordSettingsController alloc] initWithConfig:next currentPassword:password]];
-                                                             [strongSelf.navigationController setViewControllers:viewControllers animated:true];
-                                                         }
-                                                     }]];
+            {
+                TGDispatchOnMainThread(^
+                {
+                    [progressWindow dismiss:true];
+                });
+            }] startWithNext:^(TGTwoStepConfig *next)
+            {
+                __strong TGPrivacySettingsController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    NSMutableArray *viewControllers = [[NSMutableArray alloc] initWithArray:strongSelf.navigationController.viewControllers];
+                    [viewControllers replaceObjectAtIndex:viewControllers.count - 1 withObject:[[TGPasswordSettingsController alloc] initWithConfig:next currentPassword:password]];
+                    [strongSelf.navigationController setViewControllers:viewControllers animated:true];
+                }
+            }]];
         }
     };
     
@@ -468,24 +469,26 @@
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:true];
     
-    [_twoStepConfigDisposable setDisposable:[[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil currentSecret:nil nextSalt:config.nextSalt nextPassword:@"" nextHint:nil email:nil secretRandom:nil nextSecureSalt:nil] deliverOn:[SQueue mainQueue]] onDispose:^
-                                              {
-                                                  TGDispatchOnMainThread(^
-                                                                         {
-                                                                             [progressWindow dismiss:true];
-                                                                         });
-                                              }] startWithNext:nil error:^(id error)
-                                             {
-                                                 NSString *errorText = TGLocalized(@"Login.UnknownError");
-                                                 if ([error hasPrefix:@"FLOOD_WAIT"])
-                                                     errorText = TGLocalized(@"TwoStepAuth.FloodError");
-                                                 [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
-                                             } completed:^
-                                             {
-                                                 __strong TGPrivacySettingsController *strongSelf = weakSelf;
-                                                 if (strongSelf != nil)
-                                                     [strongSelf.navigationController popToViewController:strongSelf animated:true];
-                                             }]];
+    [_twoStepConfigDisposable setDisposable:[[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nil currentPassword:nil currentSecret:nil nextAlgo:config.nextAlgo nextPassword:@"" nextHint:nil email:nil nextSecureAlgo:nil secureRandom:nil srpId:0 srpB:nil] deliverOn:[SQueue mainQueue]] onDispose:^
+    {
+        TGDispatchOnMainThread(^
+        {
+            [progressWindow dismiss:true];
+        });
+    }] startWithNext:nil error:^(id error)
+    {
+        NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+        
+        NSString *displayText = TGLocalized(@"Login.UnknownError");
+        if ([errorText hasPrefix:@"FLOOD_WAIT"])
+            displayText = TGLocalized(@"TwoStepAuth.FloodError");
+        [TGCustomAlertView presentAlertWithTitle:nil message:displayText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+    } completed:^
+    {
+        __strong TGPrivacySettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf.navigationController popToViewController:strongSelf animated:true];
+    }]];
 }
 
 - (void)authSessionsPressed
@@ -502,13 +505,13 @@
 {
     __weak TGPrivacySettingsController *weakSelf = self;
     [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsConfirmation") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"Common.OK") completionBlock:^(bool okButtonPressed)
-     {
-         if (okButtonPressed)
-         {
-             TGPrivacySettingsController *strongSelf = weakSelf;
-             [strongSelf _commitTerminateSessions];
-         }
-     }];
+    {
+        if (okButtonPressed)
+        {
+            TGPrivacySettingsController *strongSelf = weakSelf;
+            [strongSelf _commitTerminateSessions];
+        }
+    }];
 }
 
 - (void)_commitTerminateSessions
@@ -559,9 +562,9 @@
     {
         NSArray *array = ((SGraphObjectNode *)resource).object;
         TGDispatchOnMainThread(^
-                               {
-                                   _blockedUsersItem.variant = array.count == 0 ? @"" : [TGStringUtils stringForUserCount:array.count];
-                               });
+        {
+            _blockedUsersItem.variant = array.count == 0 ? @"" : [TGStringUtils stringForUserCount:array.count];
+        });
     }
 }
 
@@ -570,61 +573,61 @@
     if ([path isEqualToString:@"/accountSettings"])
     {
         TGDispatchOnMainThread(^
-                               {
-                                   if (status == ASStatusSuccess)
-                                   {
-                                       [self setAccountSettings:result];
-                                   }
-                                   
-                                   [UIView animateWithDuration:0.3 animations:^
-                                    {
-                                        _activityIndicator.alpha = 0.0f;
-                                        self.collectionView.alpha = 1.0f;
-                                    } completion:^(__unused BOOL finished) {
-                                        [_activityIndicator removeFromSuperview];
-                                        _activityIndicator = nil;
-                                    }];
-                               });
+        {
+            if (status == ASStatusSuccess)
+            {
+                [self setAccountSettings:result];
+            }
+            
+            [UIView animateWithDuration:0.3 animations:^
+            {
+                _activityIndicator.alpha = 0.0f;
+                self.collectionView.alpha = 1.0f;
+            } completion:^(__unused BOOL finished) {
+                [_activityIndicator removeFromSuperview];
+                _activityIndicator = nil;
+            }];
+        });
     }
     else if ([path isEqualToString:@"/updateAccountSettings"])
     {
         TGDispatchOnMainThread(^
-                               {
-                                   [_progressWindow dismiss:true];
-                                   _progressWindow = nil;
-                                   
-                                   if (status == ASStatusSuccess)
-                                   {
-                                       
-                                   }
-                                   else
-                                   {
-                                       TGAccountSettings *accountSettings = [TGAccountSettingsActor accountSettingsFotCurrentStateId];
-                                       if (accountSettings == nil)
-                                           accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
-                                       [self setAccountSettings:accountSettings];
-                                       
-                                       [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
-                                   }
-                               });
+        {
+            [_progressWindow dismiss:true];
+            _progressWindow = nil;
+            
+            if (status == ASStatusSuccess)
+            {
+                
+            }
+            else
+            {
+                TGAccountSettings *accountSettings = [TGAccountSettingsActor accountSettingsFotCurrentStateId];
+                if (accountSettings == nil)
+                    accountSettings = [[TGAccountSettings alloc] initWithDefaultValues];
+                [self setAccountSettings:accountSettings];
+                
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"Login.UnknownError") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+            }
+        });
     }
     else if ([path isEqualToString:@"/tg/service/revokesessions"])
     {
         TGDispatchOnMainThread(^
-                               {
-                                   if (status == ASStatusSuccess)
-                                   {
-                                       [_progressWindow dismissWithSuccess];
-                                       _progressWindow = nil;
-                                   }
-                                   else
-                                   {
-                                       [_progressWindow dismiss:true];
-                                       _progressWindow = nil;
-                                       
-                                       [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
-                                   }
-                               });
+        {
+            if (status == ASStatusSuccess)
+            {
+                [_progressWindow dismissWithSuccess];
+                _progressWindow = nil;
+            }
+            else
+            {
+                [_progressWindow dismiss:true];
+                _progressWindow = nil;
+                
+                [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"ChatSettings.ClearOtherSessionsFailed") cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+            }
+        });
     }
 }
 

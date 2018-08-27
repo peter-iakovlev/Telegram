@@ -6,6 +6,7 @@
 @class TGMemoryImageCache;
 @class TGModernCache;
 @class TLInputWebFileLocation;
+@class TGMediaOriginInfo;
 
 typedef enum {
     TGSharedMediaImageDataQualityLow,
@@ -33,9 +34,9 @@ typedef enum {
 
 @interface TGSharedMediaSignals : NSObject
 
-+ (TLInputFileLocation *)inputFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId;
++ (TLInputFileLocation *)inputFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId originInfo:(TGMediaOriginInfo *)originInfo;
 + (TLInputWebFileLocation *)inputWebFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId;
-+ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag;
++ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId originInfo:(TGMediaOriginInfo *)originInfo identifier:(int64_t)identifier reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag;
 + (SSignal *)memoizedDataSignalForRemoteWebLocation:(TLInputWebFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag;
 + (SSignal *)memoizedDataSignalForHttpUrl:(NSString *)httpUrl;
 
@@ -47,7 +48,7 @@ typedef enum {
                            threadPool:(SThreadPool *)threadPool
                           memoryCache:(TGMemoryImageCache *)memoryCache;
 
-+ (SSignal *)squareThumbnail:(NSString *)cachedSizeLowPath cachedSizePath:(NSString *)cachedSizePath ofSize:(CGSize)size renderSize:(CGSize)renderSize pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fullSizeImageSignalGenerator:(SSignal *(^)())fullSizeImageSignalGenerator lowQualityThumbnailSignalGenerator:(SSignal *(^)())lowQualityThumbnailSignalGenerator localCachedImageSignalGenerator:(SSignal *(^)(CGSize, CGSize, bool))localCachedImageSignalGenerator lowQualityImagePath:(NSString *)lowQualityImagePath lowQualityImageUrl:(NSString *)lowQualityImageUrl highQualityImageUrl:(NSString *)highQualityImageUrl highQualityImageIdentifier:(NSString *)highQualityImageIdentifier threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache placeholder:(SSignal *)placeholder blurLowQuality:(bool)blurLowQuality;
++ (SSignal *)squareThumbnail:(NSString *)cachedSizeLowPath cachedSizePath:(NSString *)cachedSizePath ofSize:(CGSize)size renderSize:(CGSize)renderSize pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fullSizeImageSignalGenerator:(SSignal *(^)())fullSizeImageSignalGenerator lowQualityThumbnailSignalGenerator:(SSignal *(^)())lowQualityThumbnailSignalGenerator localCachedImageSignalGenerator:(SSignal *(^)(CGSize, CGSize, bool))localCachedImageSignalGenerator lowQualityImagePath:(NSString *)lowQualityImagePath lowQualityImageUrl:(NSString *)lowQualityImageUrl highQualityImageUrl:(NSString *)highQualityImageUrl highQualityImageIdentifier:(NSString *)highQualityImageIdentifier threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache placeholder:(SSignal *)placeholder blurLowQuality:(bool)blurLowQuality originInfo:(TGMediaOriginInfo *)originInfo;
 
 + (SSignal *)cachedRemoteThumbnailWithKey:(NSString *)key size:(CGSize)size pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock fetchData:(SSignal *)fetchData originalImage:(SSignal *)originalImage threadPool:(SThreadPool *)threadPool memoryCache:(TGMemoryImageCache *)memoryCache diskCache:(TGModernCache *)diskCache;
 

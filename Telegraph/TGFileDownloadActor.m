@@ -20,6 +20,8 @@
 
 #import "TGCdnFileData.h"
 
+#import "TGDownloadMessagesSignal.h"
+
 @interface TGFileDownloadActor () <TGRawHttpActor>
 {
     NSData *_encryptionKey;
@@ -191,18 +193,35 @@
     int fileId = 0;
     int64_t secret = 0;
     int datacenterId = 0;
+    NSString *fileReferenceStr = nil;
     
-    if (extractFileUrlComponents(url, &datacenterId, &volumeId, &fileId, &secret) && datacenterId != 0)
+    if (extractFileUrlComponentsWithFileRef(url, &datacenterId, &volumeId, &fileId, &secret, &fileReferenceStr) && datacenterId != 0)
     {
         [ActionStageInstance() nodeRetrieveProgress:self.path progress:0.001f];
-
+        
+        TGMediaOriginInfo *originInfo = options[@"originInfo"];
+        if (originInfo == nil && fileReferenceStr != nil)
+        {
+            NSString *decoded = (__bridge_transfer NSString *)CFURLCreateStringByReplacingPercentEscapesUsingEncoding(NULL, (CFStringRef)fileReferenceStr, CFSTR(""), kCFStringEncodingUTF8);
+            fileReferenceStr = decoded;
+            
+            if ([fileReferenceStr hasPrefix:@"o"]) {
+                NSString *originStr = [fileReferenceStr substringFromIndex:1];
+                originInfo = [TGMediaOriginInfo mediaOriginInfoWithStringRepresentation:originStr];
+            } else {
+                NSData *fileReference = [NSData dataWithHexString:fileReferenceStr];
+                NSString *key = [NSString stringWithFormat:@"%lld_%d", volumeId, fileId];
+                originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:fileReference fileReferences:@{key: fileReference}];
+            }
+        }
+        
         TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)[options[@"mediaTypeTag"] intValue];
         __weak TGFileDownloadActor *weakSelf = self;
         _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:datacenterId type:mediaTypeTag completion:^(TGNetworkWorkerGuard *worker)
         {
             __strong TGFileDownloadActor *strongSelf = weakSelf;
             if (strongSelf != nil) {
-                [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:nil datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+                [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:nil datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret originInfo:originInfo retrying:false];
             }
         }];
     }
@@ -212,7 +231,7 @@
     }
 }
     
-- (void)proceedWithWorker:(TGNetworkWorkerGuard *)worker type:(TGNetworkMediaTypeTag)mediaTypeTag fileData:(TGCdnFileData *)fileData datacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId fileId:(int32_t)fileId secret:(int64_t)secret {
+- (void)proceedWithWorker:(TGNetworkWorkerGuard *)worker type:(TGNetworkMediaTypeTag)mediaTypeTag fileData:(TGCdnFileData *)fileData datacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId fileId:(int32_t)fileId secret:(int64_t)secret originInfo:(TGMediaOriginInfo *)originInfo retrying:(bool)retrying {
     self.worker = worker;
     
     id requestData = nil;
@@ -229,6 +248,7 @@
         location.volume_id = volumeId;
         location.local_id = fileId;
         location.secret = secret;
+        location.file_reference = [originInfo fileReferenceForVolumeId:volumeId localId:fileId] ?: [NSData data];
         
         getFile.location = location;
         getFile.limit = 1 * 1024 * 1024;
@@ -278,7 +298,22 @@
                 }
             }
             else {
-                [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                NSString *errorString = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                if (!retrying && originInfo != nil && errorCode == 400 && [errorString hasPrefix:@"FILE_REFERENCE_"])
+                {
+                    [[TGDownloadMessagesSignal updatedOriginInfo:originInfo identifier:0] startWithNext:^(TGMediaOriginInfo *next)
+                    {
+                        [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:nil datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret originInfo:next retrying:true];
+                    } error:^(__unused id error)
+                    {
+                        [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                    } completed:nil];
+                }
+                else
+                {
+                    [strongSelf fileDownloadFailed:volumeId fileId:fileId secret:secret];
+                }
             }
         }];
     }];
@@ -313,7 +348,7 @@
     _workerToken = [[TGTelegramNetworking instance] requestDownloadWorkerForDatacenterId:cdnId type:mediaTypeTag isCdn:true completion:^(TGNetworkWorkerGuard *worker) {
         __strong TGFileDownloadActor *strongSelf = weakSelf;
         if (strongSelf != nil) {
-            [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:fileData datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret];
+            [strongSelf proceedWithWorker:worker type:mediaTypeTag fileData:fileData datacenterId:datacenterId volumeId:volumeId fileId:fileId secret:secret originInfo:nil retrying:false];
         }
     }];
 }

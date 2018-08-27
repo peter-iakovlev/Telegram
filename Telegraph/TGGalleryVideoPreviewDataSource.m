@@ -92,33 +92,38 @@
             
             if (args[@"legacy-thumbnail-cache-url"] != nil && args[@"id"] != nil && args[@"messageId"] != nil && args[@"conversationId"] && args[@"legacy-thumbnail-cache-url"] != nil)
             {
-                [ActionStageInstance() requestActor:path options:@{
-                   @"isVideo": @true,
-                   @"mediaId": args[@"id"],
-                   @"messageId": args[@"messageId"],
-                   @"conversationId": args[@"conversationId"],
-                   @"uri": args[@"legacy-thumbnail-cache-url"],
-                   @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
-                   @"completion": ^(bool success)
+                NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithDictionary:@{
+                    @"isVideo": @true,
+                    @"mediaId": args[@"id"],
+                    @"messageId": args[@"messageId"],
+                    @"conversationId": args[@"conversationId"],
+                    @"uri": args[@"legacy-thumbnail-cache-url"],
+                    @"legacy-thumbnail-cache-url": args[@"legacy-thumbnail-cache-url"],
+                    @"completion": ^(bool success)
                     {
                         if (success)
                         {
                             dispatch_async([TGCache diskCacheQueue], ^
-                            {
-                                TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
-                                if (completion)
-                                    completion(result);
-                            });
+                                           {
+                                               TGDataResource *result = [TGGalleryVideoPreviewDataSource _performLoad:uri isCancelled:nil];
+                                               if (completion)
+                                                   completion(result);
+                                           });
                         }
                         else if (completion)
                             completion(nil);
                     },
-                   @"progress": ^(float value)
+                    @"progress": ^(float value)
                     {
                         if (progress)
                             progress(value);
                     }
-                } watcher:self];
+                }];
+                
+                if (args[@"origin_info"] != nil)
+                    options[@"originInfo"] = args[@"origin_info"];
+                
+                [ActionStageInstance() requestActor:path options:options watcher:self];
             }
         }
     }];

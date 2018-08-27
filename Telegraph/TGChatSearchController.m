@@ -224,6 +224,8 @@ extern NSString *authorNameYou;
         
         if (user.photoUrlSmall != nil)
             [dict setObject:user.photoUrlSmall forKey:@"avatarUrl"];
+        if (user.photoFileReferenceSmall != nil)
+            [dict setObject:user.photoFileReferenceSmall forKey:@"avatarFileReference"];
         [dict setObject:[NSNumber numberWithBool:false] forKey:@"isChat"];
         
         NSString *authorAvatarUrl = nil;
@@ -267,7 +269,7 @@ extern NSString *authorNameYou;
         [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
         if (conversation.chatPhotoSmall.length != 0)
-            [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
+            [dict setObject:conversation.chatPhotoFullSmall forKey:@"avatarUrl"];
         
         [dict setObject:[NSNumber numberWithBool:true] forKey:@"isChat"];
         

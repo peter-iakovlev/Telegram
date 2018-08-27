@@ -136,9 +136,12 @@
         }
         else
         {
+            TGMediaOriginInfo *originInfo = documentAttachment.originInfo;
+            
             TLInputFileLocation$inputDocumentFileLocation *inputDocumentLocation = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
             inputDocumentLocation.n_id = documentAttachment.documentId;
             inputDocumentLocation.access_hash = documentAttachment.accessHash;
+            inputDocumentLocation.file_reference = [originInfo fileReference] ?: [NSData data];
             inputFileLocation = inputDocumentLocation;
             
             datacenterId = documentAttachment.datacenterId;
@@ -153,15 +156,22 @@
                     break;
                 }
             }
-            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(document:%" PRId64 ":%d:%@)", documentAttachment.documentId, documentAttachment.datacenterId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:@{
-                @"fileLocation": inputFileLocation,
-                @"encryptedSize": @(encryptedSize),
-                @"decryptedSize": @(decryptedSize),
-                @"storeFilePath": _storeFilePath,
-                @"datacenterId": @(datacenterId),
-                @"encryptionArgs": encryptionArgs,
-                @"mediaTypeTag": @(mediaTypeTag)
-            } watcher:self];
+            
+            NSMutableDictionary *multiPartOptions = [[NSMutableDictionary alloc] initWithDictionary:@{
+                                                                                                      @"identifier": @(_documentAttachment.documentId),
+                                                                                                      @"fileLocation": inputFileLocation,
+                                                                                                      @"encryptedSize": @(encryptedSize),
+                                                                                                      @"decryptedSize": @(decryptedSize),
+                                                                                                      @"storeFilePath": _storeFilePath,
+                                                                                                      @"datacenterId": @(datacenterId),
+                                                                                                      @"encryptionArgs": encryptionArgs,
+                                                                                                      @"mediaTypeTag": @(mediaTypeTag)
+                                                                                                      }];
+            
+            if (documentAttachment.originInfo != nil)
+                multiPartOptions[@"originInfo"] = documentAttachment.originInfo;
+            
+            [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(document:%" PRId64 ":%d:%@)", documentAttachment.documentId, documentAttachment.datacenterId, documentAttachment.documentUri.length != 0 ? documentAttachment.documentUri : @""] options:multiPartOptions watcher:self];
         }
         else
             [ActionStageInstance() actionFailed:self.path reason:-1];

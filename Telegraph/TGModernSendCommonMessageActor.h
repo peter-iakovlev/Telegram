@@ -22,6 +22,6 @@
 
 - (void)conversationSendMessageRequestSuccess:(id)result;
 - (void)conversationSendMessageQuickAck;
-- (void)conversationSendMessageRequestFailed:(NSString *)errorText;
+- (void)conversationSendMessageRequestFailed:(NSString *)errorText errorCode:(int32_t)errorCode;
 
 @end

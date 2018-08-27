@@ -50,3 +50,21 @@
 @property (nonatomic, retain) NSArray *file_hash;
 
 @end
+
+@interface TLSecureValueError$secureValueError : TLSecureValueError
+
+@property (nonatomic, retain) NSData *n_hash;
+
+@end
+
+@interface TLSecureValueError$secureValueErrorTranslationFile : TLSecureValueError
+
+@property (nonatomic, retain) NSData *file_hash;
+
+@end
+
+@interface TLSecureValueError$secureValueErrorTranslationFiles : TLSecureValueError
+
+@property (nonatomic, retain) NSArray *file_hash;
+
+@end

@@ -999,7 +999,7 @@
     
     [self _setTitle:[self titleForConversation:_conversation] andStatus:_isGroup ? TGLocalized(@"Group.Status") : TGLocalized(@"Channel.Status") accentColored:false allowAnimatioon:false toggleMode:[self currentToggleMode]];
     [self _setAvatarConversationId:_conversationId title:_conversation.chatTitle icon:nil];
-    [self _setAvatarUrl:_conversation.chatPhotoSmall];
+    [self _setAvatarUrl:_conversation.chatPhotoFullSmall];
     
     if (_initialUserActivities.count != 0) {
         [self _setTypingStatus:[self stringForUserActivities:_initialUserActivities] activity:[self activityTypeForActivities:_initialUserActivities]];
@@ -1711,7 +1711,7 @@
             [self _setTitle:[self titleForConversation:conversation] andStatus:_isGroup ? TGLocalized(@"Group.Status") : TGLocalized(@"Channel.Status") accentColored:false allowAnimatioon:false toggleMode:[self currentToggleMode]];
             [self updateStatus];
             [self _setAvatarConversationId:_conversationId title:conversation.chatTitle icon:nil];
-            [self _setAvatarUrl:conversation.chatPhotoSmall];
+            [self _setAvatarUrl:conversation.chatPhotoFullSmall];
         });
     } else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/importantMessages", _conversationId]]) {
         [TGModernConversationCompanion dispatchOnMessageQueue:^{
@@ -2767,11 +2767,11 @@
 
 - (TGModernGalleryController *)galleryControllerForAvatar
 {
-    if (_conversation.chatPhotoSmall.length == 0)
+    if (_conversation.chatPhotoFullSmall.length == 0)
         return nil;
     
     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
-    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversationId accessHash:_accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversationId accessHash:_accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoFullSmall legacyUrl:_conversation.chatPhotoFullBig imageSize:CGSizeMake(640.0f, 640.0f)];
     
     return modernGallery;
 }

@@ -59,21 +59,18 @@
         UIColor *backgroundColor = [UIColor whiteColor];
         UIColor *bottomColor = UIColorRGBA(0xfafafa, 0.98f);
         UIColor *separatorColor = UIColorRGB(0xc5c7d0);
-        UIColor *cellSeparatorColor = UIColorRGB(0xdbdbdb);
         
         if (self.style == TGModernConversationAssociatedInputPanelDarkStyle)
         {
             backgroundColor = UIColorRGB(0x171717);
             bottomColor = backgroundColor;
             separatorColor = UIColorRGB(0x292929);
-            cellSeparatorColor = separatorColor;
         }
         else if (self.style == TGModernConversationAssociatedInputPanelDarkBlurredStyle)
         {
             backgroundColor = [UIColor clearColor];
             bottomColor = [UIColor clearColor];
             separatorColor = UIColorRGBA(0xb2b2b2, 0.7f);
-            cellSeparatorColor = separatorColor;
             
             CGFloat backgroundAlpha = 0.8f;
             if (iosMajorVersion() >= 8)

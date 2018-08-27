@@ -1,5 +1,7 @@
 #import "MultipartFetch.h"
 
+#import <LegacyComponents/TGMediaOriginInfo.h>
+
 #import "TL/TLMetaScheme.h"
 #import "TGTelegramNetworking.h"
 #import "MediaBoxContexts.h"
@@ -10,7 +12,7 @@
 
 #import <MTProtoKit/MtProtoKit.h>
 
-#import "MediaBoxContexts.h"
+#import "TGDownloadMessagesSignal.h"
 
 @interface MultipartFetchRequestData : NSObject
     
@@ -75,9 +77,11 @@
     SVariable *_requestData;
     bool _switchedToCdn;
     bool _reuploadedToCdn;
+    bool _updatedFileReference;
     
     SMetaDisposable *_reuploadToCdnDisposable;
     SMetaDisposable *_partHashesDisposable;
+    SMetaDisposable *_fileReferenceDisposable;
     
     NSDictionary *_cdnFilePartHashes;
 }
@@ -113,6 +117,7 @@
         
         _reuploadToCdnDisposable = [[SMetaDisposable alloc] init];
         _partHashesDisposable = [[SMetaDisposable alloc] init];
+        _fileReferenceDisposable = [[SMetaDisposable alloc] init];
         
         _requestData = [[SVariable alloc] init];
         [_requestData set:[[SSignal combineSignals:@[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:[resource datacenterId] type:_mediaTypeTag], [SSignal single:[resource apiInputLocation]]]] map:^id(NSArray *values) {
@@ -135,6 +140,7 @@
         }
         [_reuploadToCdnDisposable dispose];
         [_partHashesDisposable dispose];
+        [_fileReferenceDisposable dispose];
     }];
 }
 
@@ -253,7 +259,7 @@
             return [SSignal never];
         }
         
-        return [[[[TGTelegramNetworking instance] requestSignal:requestRpc worker:requestData.worker] deliverOn:queue] mapToSignal:^SSignal *(id next) {
+        return [[[[[TGTelegramNetworking instance] requestSignal:requestRpc worker:requestData.worker] deliverOn:queue] mapToSignal:^SSignal *(id next) {
             __strong MultipartFetchManager *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 if ([next isKindOfClass:[TLupload_File$upload_file class]]) {
@@ -283,8 +289,53 @@
             } else {
                 return [SSignal complete];
             }
+        }] catch:^SSignal *(id error) {
+            int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+            NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+            
+            if ([errorText hasPrefix:@"FILE_REFERENCE_"] && errorCode == 400 && [requestData.data isKindOfClass:[TLInputFileLocation class]]) {
+                __strong MultipartFetchManager *strongSelf = weakSelf;
+                if (strongSelf != nil) {
+                    [strongSelf updateFileReferenceWithFileLocation:(TLInputFileLocation *)requestData.data originInfo:strongSelf->_resource.originInfo];
+                }
+                return [SSignal never];
+            } else {
+                return [SSignal fail:error];
+            }
         }];
     }] take:1];
+}
+
+- (void)updateFileReferenceWithFileLocation:(TLInputFileLocation *)location originInfo:(TGMediaOriginInfo *)originInfo {
+    if (_updatedFileReference) {
+        return;
+    }
+    
+    _updatedFileReference = true;
+    
+    __weak MultipartFetchManager *weakSelf = self;
+    [_fileReferenceDisposable setDisposable:[[[TGDownloadMessagesSignal updatedOriginInfo:originInfo identifier:_resource.identifier] deliverOn:_queue] startWithNext:^(TGMediaOriginInfo *next)
+    {
+        __strong MultipartFetchManager *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            strongSelf->_updatedFileReference = false;
+            
+            TLInputFileLocation *updatedLocation = nil;
+            if ([location isKindOfClass:[TLInputFileLocation$inputDocumentFileLocation class]]) {
+                TLInputFileLocation$inputDocumentFileLocation *documentFileLocation = (TLInputFileLocation$inputDocumentFileLocation *)location;
+                documentFileLocation.file_reference = [next fileReference];
+                updatedLocation = documentFileLocation;
+            } else if ([location isKindOfClass:[TLInputFileLocation$inputFileLocation class]]) {
+                TLInputFileLocation$inputFileLocation *fileLocation = (TLInputFileLocation$inputFileLocation *)location;
+                fileLocation.file_reference = [next fileReferenceForVolumeId:fileLocation.volume_id localId:fileLocation.local_id];
+                updatedLocation = fileLocation;
+            }
+            
+            [strongSelf->_requestData set:[[SSignal combineSignals:@[[[TGTelegramNetworking instance] downloadWorkerForDatacenterId:[strongSelf->_resource datacenterId] type:strongSelf->_mediaTypeTag isCdn:false], [SSignal single:updatedLocation]]] map:^id(NSArray *values) {
+                return [[MultipartFetchRequestData alloc] initWithWorker:values[0] data:values[1]];
+            }]];
+        }
+    } error:nil completed:nil]];
 }
 
 - (void)switchToCdnWithFileData:(TGCdnFileData *)fileData partHashes:(NSDictionary *)partHashes {

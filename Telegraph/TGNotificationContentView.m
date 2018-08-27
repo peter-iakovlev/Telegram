@@ -158,12 +158,12 @@
 
     if (user.photoUrlSmall != nil)
     {
-        [_avatarView loadImage:user.photoUrlSmall filter:@"circle:44x44" placeholder:placeholder];
+        [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:44x44" placeholder:placeholder];
     }
     else if (TGPeerIdIsChannel(message.cid))
     {
         if (conversation.chatPhotoSmall != nil)
-            [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:44x44" placeholder:placeholder];
+            [_avatarView loadImage:conversation.chatPhotoFullSmall filter:@"circle:44x44" placeholder:placeholder];
         else
             [_avatarView loadGroupPlaceholderWithSize:CGSizeMake(44.0f, 44.0f) conversationId:message.cid title:conversation.chatTitle placeholder:placeholder];
     }

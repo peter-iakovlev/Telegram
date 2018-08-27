@@ -4,6 +4,7 @@
 
 @class TGUser;
 @class TGImageMediaAttachment;
+@class TGMediaOriginInfo;
 
 @interface TGGenericPeerMediaGalleryImageItem : TGModernGalleryMessageImageItem <TGGenericPeerGalleryItem>
 
@@ -18,7 +19,7 @@
 @property (nonatomic, strong) NSArray *groupItems;
 @property (nonatomic, strong) NSString *author;
 
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash orLocalId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId legacyImageInfo:(TGImageInfo *)legacyImageInfo embeddedStickerDocuments:(NSArray *)embeddedStickerDocuments hasStickers:(bool)hasStickers;
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash orLocalId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId legacyImageInfo:(TGImageInfo *)legacyImageInfo embeddedStickerDocuments:(NSArray *)embeddedStickerDocuments hasStickers:(bool)hasStickers originInfo:(TGMediaOriginInfo *)originInfo;
 - (instancetype)initWithMedia:(TGImageMediaAttachment *)media localId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId;
 
 - (NSString *)filePath;

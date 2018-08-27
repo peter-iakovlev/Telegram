@@ -74,7 +74,7 @@
             
             CFArrayRef peopleArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&people, 1, NULL);
             
-            NSData *vCardData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople(peopleArray));
+            NSData *vCardData = (__bridge_transfer NSData *)(ABPersonCreateVCardRepresentationWithPeople(peopleArray));
             vcardString = [[NSString alloc] initWithData:vCardData encoding:NSUTF8StringEncoding];
             
             CFRelease(peopleArray);
@@ -91,6 +91,7 @@
     if (user.uid > 0) {
         contactUser.uid = user.uid;
         contactUser.photoUrlSmall = user.photoUrlSmall;
+        contactUser.photoFileReferenceSmall = user.photoFileReferenceSmall;
     }
     
     __weak TGForwardContactPickerController *weakSelf = self;

@@ -18,7 +18,10 @@
 @property (nonatomic) bool showBroadcastsMenu;
 @property (nonatomic) bool showSecretInForwardMode;
 @property (nonatomic) bool showGroupsOnly;
+@property (nonatomic) bool showPrivateOnly;
+@property (nonatomic) bool showGroupsAndChannelsOnly;
 @property (nonatomic) bool botStartMode;
+@property (nonatomic, strong) NSSet *excludedIds;
 
 @property (nonatomic) int unreadCount;
 

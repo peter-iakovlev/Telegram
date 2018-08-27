@@ -15,7 +15,7 @@
 
 - (int)impliedResponseSignature
 {
-    return (int)0xf8ebfc3f;
+    return (int)0x9cd4eaf9;
 }
 
 - (int)layerVersion
@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xbc8d11bb;
+    return (int32_t)0x9cd4eaf9;
 }
 
 - (int32_t)TLconstructorName
@@ -65,7 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCaccount_getPasswordSettings$account_getPasswordSettings *object = [[TLRPCaccount_getPasswordSettings$account_getPasswordSettings alloc] init];
-    object.current_password_hash = metaObject->getBytes((int32_t)0x92cb9b0f);
+    object.password = metaObject->getObject((int32_t)0x5aa034f2);
     return object;
 }
 
@@ -73,9 +73,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeBytes;
-        value.nativeObject = self.current_password_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x92cb9b0f, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.password;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5aa034f2, value));
     }
 }
 

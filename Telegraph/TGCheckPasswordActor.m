@@ -4,6 +4,9 @@
 #import "TGTelegramNetworking.h"
 #import "TL/TLMetaScheme.h"
 
+#import "TGTwoStepConfig.h"
+#import "TGTwoStepUtils.h"
+
 #import "TGUser+Telegraph.h"
 #import "TGUserDataRequestBuilder.h"
 
@@ -15,6 +18,7 @@
 @interface TGCheckPasswordActor ()
 {
     NSString *_plaintextPassword;
+    TGTwoStepConfig *_twoStepConfig;
 }
 
 @end
@@ -34,6 +38,7 @@
 - (void)execute:(NSDictionary *)options
 {
     _plaintextPassword = options[@"password"];
+    _twoStepConfig = options[@"twoStepConfig"];
     
     MTRequest *request = [[MTRequest alloc] init];
     request.dependsOnPasswordEntry = false;
@@ -56,25 +61,13 @@
 
 - (void)passwordRequestSuccess:(TLaccount_Password *)password
 {
-    if ([password isKindOfClass:[TLaccount_Password$account_noPassword class]])
+    if (password.flags & (1 << 2))
     {
-        [ActionStageInstance() actionCompleted:self.path result:nil];
-    }
-    else
-    {
-        TLaccount_Password$account_password *concretePassword = (TLaccount_Password$account_password *)password;
-        
         MTRequest *request = [[MTRequest alloc] init];
         request.dependsOnPasswordEntry = false;
         TLRPCauth_checkPassword$auth_checkPassword *checkPassword = [[TLRPCauth_checkPassword$auth_checkPassword alloc] init];
+        checkPassword.password = [TGTwoStepUtils srpPasswordWithPassword:_plaintextPassword algo:_twoStepConfig.currentAlgo srpId:_twoStepConfig.srpId srpB:_twoStepConfig.srpB];
         
-        NSMutableData *data = [[NSMutableData alloc] init];
-        [data appendData:concretePassword.current_salt];
-        [data appendData:[_plaintextPassword dataUsingEncoding:NSUTF8StringEncoding]];
-        [data appendData:concretePassword.current_salt];
-        NSData *currentPasswordHash = MTSha256(data);
-        
-        checkPassword.password_hash = currentPasswordHash;
         request.body = checkPassword;
         
         __weak TGCheckPasswordActor *weakSelf = self;
@@ -94,6 +87,10 @@
         
         self.cancelToken = request.internalId;
         [[TGTelegramNetworking instance] addRequest:request];
+    }
+    else
+    {
+        [ActionStageInstance() actionCompleted:self.path result:nil];
     }
 }
 

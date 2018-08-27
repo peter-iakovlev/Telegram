@@ -10,6 +10,7 @@
 #import <LegacyComponents/TGObserverProxy.h>
 #import <LegacyComponents/TGTimerTarget.h>
 
+#import "TGDatabase.h"
 #import "TGDownloadManager.h"
 #import "TGPreparedLocalDocumentMessage.h"
 
@@ -294,7 +295,16 @@
         __weak TGEmbedInternalPlayerView *weakSelf = self;
         
         NSInteger datacenterId = 0;
+        
+        int32_t webFileDatacenterId = 0;
+        NSData *data = [TGDatabaseInstance() customProperty:@"webFileDatacenterId"];
+        if (data.length == 4)
+            [data getBytes:&webFileDatacenterId length:4];
+        
         TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:_url datacenterId:&datacenterId];
+        if (datacenterId == -1)
+            datacenterId = webFileDatacenterId;
+        
         [_downloadDisposable setDisposable:[[[TGSharedMediaSignals memoizedDataSignalForRemoteWebLocation:webLocation datacenterId:datacenterId reportProgress:true mediaTypeTag:TGNetworkMediaTypeTagVideo] deliverOn:[SQueue mainQueue]] startWithNext:^(id next)
         {
             __strong TGEmbedInternalPlayerView *strongSelf = weakSelf;

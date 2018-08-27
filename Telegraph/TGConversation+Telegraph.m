@@ -94,6 +94,12 @@
                 self.chatPhotoSmall = extractFileUrl(concretePhoto.photo_small);
                 self.chatPhotoMedium = nil;
                 self.chatPhotoBig = extractFileUrl(concretePhoto.photo_big);
+                
+                if ([concretePhoto.photo_small isKindOfClass:[TLFileLocation$fileLocation class]])
+                    self.chatPhotoFileReferenceSmall = ((TLFileLocation$fileLocation *)concretePhoto.photo_small).file_reference;
+                
+                if ([concretePhoto.photo_big isKindOfClass:[TLFileLocation$fileLocation class]])
+                    self.chatPhotoFileReferenceBig = ((TLFileLocation$fileLocation *)concretePhoto.photo_big).file_reference;
             }
             
             self.chatParticipantCount = concreteChat.participants_count;
@@ -127,6 +133,12 @@
                 self.chatPhotoSmall = extractFileUrl(concretePhoto.photo_small);
                 self.chatPhotoMedium = nil;
                 self.chatPhotoBig = extractFileUrl(concretePhoto.photo_big);
+                
+                if ([concretePhoto.photo_small isKindOfClass:[TLFileLocation$fileLocation class]])
+                    self.chatPhotoFileReferenceSmall = ((TLFileLocation$fileLocation *)concretePhoto.photo_small).file_reference;
+                
+                if ([concretePhoto.photo_big isKindOfClass:[TLFileLocation$fileLocation class]])
+                    self.chatPhotoFileReferenceBig = ((TLFileLocation$fileLocation *)concretePhoto.photo_big).file_reference;
             }
             self.chatCreationDate = channel.date;
             self.chatVersion = channel.version;

@@ -8,6 +8,9 @@
 
 #import "TGPeerIdAdapter.h"
 
+#import "TGImageInfo.h"
+#import "TGMediaOriginInfo.h"
+
 @implementation TGEncryptedConversationData
 
 - (BOOL)isEqualToEncryptedData:(TGEncryptedConversationData *)other
@@ -875,7 +878,7 @@
     
     int32_t magic = 0x7acde441;
     [data appendBytes:&magic length:4];
-    int32_t version = 8;
+    int32_t version = 9;
     [data appendBytes:&version length:4];
     
     for (int i = 0; i < 3; i++)
@@ -917,6 +920,20 @@
     [data appendBytes:&_minMessageDate length:4];
     
     [data appendBytes:&_messageFlags length:8];
+    
+    {
+        int length = (int)_chatPhotoFileReferenceSmall.length;
+        [data appendBytes:&length length:4];
+        if (_chatPhotoFileReferenceSmall != nil)
+            [data appendData:_chatPhotoFileReferenceSmall];
+    }
+    
+    {
+        int length = (int)_chatPhotoFileReferenceBig.length;
+        [data appendBytes:&length length:4];
+        if (_chatPhotoFileReferenceBig != nil)
+            [data appendData:_chatPhotoFileReferenceBig];
+    }
     
     return data;
 }
@@ -1011,6 +1028,27 @@
                     if (version >= 8) {
                         [data getBytes:&_messageFlags range:NSMakeRange(ptr, 8)];
                         ptr += 8;
+                    }
+                    
+                    if (version >= 9) {
+                        int length = 0;
+                        [data getBytes:&length range:NSMakeRange(ptr, 4)];
+                        ptr += 4;
+                        
+                        uint8_t *valueBytes = malloc(length);
+                        [data getBytes:valueBytes range:NSMakeRange(ptr, length)];
+                        ptr += length;
+                        
+                        _chatPhotoFileReferenceSmall = [NSData dataWithBytesNoCopy:valueBytes length:length];
+                        
+                        [data getBytes:&length range:NSMakeRange(ptr, 4)];
+                        ptr += 4;
+                        
+                        valueBytes = malloc(length);
+                        [data getBytes:valueBytes range:NSMakeRange(ptr, length)];
+                        ptr += length;
+                        
+                        _chatPhotoFileReferenceBig = [NSData dataWithBytesNoCopy:valueBytes length:length];
                     }
                 }
             }
@@ -1335,8 +1373,18 @@
     if (finalAvatarUrl.length == 0)
         return finalAvatarUrl;
     
-    if (self.chatPhotoFileReferenceSmall != nil)
-        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_%@", [self.chatPhotoFileReferenceSmall stringByEncodingInHex]];
+    int64_t volumeId = 0;
+    int32_t localId = 0;
+    if (extractFileUrlComponents(self.chatPhotoSmall, NULL, &volumeId, &localId, NULL))
+    {
+        NSString *key = [NSString stringWithFormat:@"%lld_%d", volumeId, localId];
+        NSDictionary *fileReferences = nil;
+        if (self.chatPhotoFileReferenceSmall != nil) {
+            fileReferences = @{ key: self.chatPhotoFileReferenceSmall };
+        }
+        TGMediaOriginInfo *originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:self.chatPhotoFileReferenceSmall fileReferences:fileReferences peerId:_conversationId];
+        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_o%@", [originInfo stringRepresentation]];
+    }
     
     return finalAvatarUrl;
 }
@@ -1347,8 +1395,18 @@
     if (finalAvatarUrl.length == 0)
         return finalAvatarUrl;
     
-    if (self.chatPhotoFileReferenceBig != nil)
-        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_%@", [self.chatPhotoFileReferenceBig stringByEncodingInHex]];
+    int64_t volumeId = 0;
+    int32_t localId = 0;
+    if (extractFileUrlComponents(self.chatPhotoBig, NULL, &volumeId, &localId, NULL))
+    {
+        NSString *key = [NSString stringWithFormat:@"%lld_%d", volumeId, localId];
+        NSDictionary *fileReferences = nil;
+        if (self.chatPhotoFileReferenceBig != nil) {
+            fileReferences = @{ key: self.chatPhotoFileReferenceBig };
+        }
+        TGMediaOriginInfo *originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:self.chatPhotoFileReferenceBig fileReferences:fileReferences peerId:_conversationId];
+        finalAvatarUrl = [finalAvatarUrl stringByAppendingFormat:@"_o%@", [originInfo stringRepresentation]];
+    }
     
     return finalAvatarUrl;
 }

@@ -1,6 +1,10 @@
 #import "TLaccount_PasswordInputSettings_manual.h"
 
-#import <LegacyComponents/LegacyComponents.h>
+#import "TL/TLMetaScheme.h"
+#import "TLMetaClassStore.h"
+
+//account.passwordInputSettings#c23727c9 flags:# new_algo:flags.0?PasswordKdfAlgo new_password_hash:flags.0?bytes hint:flags.0?string email:flags.1?string new_secure_settings:flags.2?SecureSecretSettings = account.PasswordInputSettings;
+
 
 @implementation TLaccount_PasswordInputSettings_manual
 
@@ -11,7 +15,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x21ffa60d;
+    return (int32_t)0xc23727c9;
 }
 
 - (void)TLserialize:(NSOutputStream *)os
@@ -20,8 +24,8 @@
     
     if (_flags & (1 << 0))
     {
-        [os writeBytes:_n_newSalt];
-        [os writeBytes:_n_newPasswordHash];
+        TLMetaClassStore::serializeObject(os, _n_new_algo, true);
+        [os writeBytes:_n_new_password_hash];
         [os writeString:_hint];
     }
     
@@ -32,9 +36,7 @@
     
     if (_flags & (1 << 2))
     {
-        [os writeBytes:_n_new_secure_salt];
-        [os writeBytes:_n_new_secure_secret];
-        [os writeInt64:_n_new_secure_secret_id];
+        TLMetaClassStore::serializeObject(os, _n_new_secure_settings, true);
     }
 }
 

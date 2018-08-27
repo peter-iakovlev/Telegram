@@ -694,8 +694,12 @@
 - (void)notificationsPressed
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
+    
+    bool defaultEnabled = [_defaultNotificationSettings[@"muteUntil"] intValue] <= [[TGTelegramNetworking instance] approximateRemoteTime];
+    NSString *defaultTitle = defaultEnabled ? TGLocalized(@"UserInfo.NotificationsDefaultEnabled") : TGLocalized(@"UserInfo.NotificationsDefaultDisabled");
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:defaultTitle action:@"default"]];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsEnable") action:@"enable"]];
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsDefault") action:@"default"]];
     
     NSArray *muteIntervals = @[
                                @(1 * 60 * 60),
@@ -720,9 +724,7 @@
           else if ([action isEqualToString:@"disable"])
               [controller _commitEnableNotifications:@false orMuteFor:0];
           else if (![action isEqualToString:@"cancel"])
-          {
               [controller _commitEnableNotifications:false orMuteFor:[action intValue]];
-          }
       } target:self] showInView:self.view];
 }
 
@@ -732,7 +734,7 @@
     if (muteFor == 0)
     {
         if (enable)
-            muteUntil = enable.boolValue ? @0: @(INT32_MAX);
+            muteUntil = enable.boolValue ? @0: @(INT_MAX);
     }
     else
     {
@@ -1050,7 +1052,7 @@
         if (previewMode)
             modernGallery.showInterface = false;
         
-        modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_conversation.accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+        modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_conversation.accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoFullSmall legacyUrl:_conversation.chatPhotoFullBig imageSize:CGSizeMake(640.0f, 640.0f)];
         
         __weak TGChannelInfoController *weakSelf = self;
         __weak TGModernGalleryController *weakGallery = modernGallery;
@@ -1274,6 +1276,8 @@
                                        updatedConversation.chatPhotoSmall = resultConversation.chatPhotoSmall;
                                        updatedConversation.chatPhotoMedium = resultConversation.chatPhotoMedium;
                                        updatedConversation.chatPhotoBig = resultConversation.chatPhotoBig;
+                                       updatedConversation.chatPhotoFileReferenceSmall = resultConversation.chatPhotoFileReferenceSmall;
+                                       updatedConversation.chatPhotoFileReferenceBig = resultConversation.chatPhotoFileReferenceBig;
                                        _conversation = updatedConversation;
                                        
                                        [_groupInfoItem copyUpdatingAvatarToCacheWithUri:_conversation.chatPhotoSmall];
@@ -1577,7 +1581,7 @@
 {
     if (url.length == 0)
         return;
-
+    
     if ([url hasPrefix:@"tel:"])
     {
         TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:url.length < 70 ? url : [[url substringToIndex:70] stringByAppendingString:@"..."] actions:@

@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x72f0eaae;
+    return (int32_t)0x1abfb575;
 }
 
 - (int32_t)TLconstructorName
@@ -77,6 +77,7 @@
     TLInputDocument$inputDocument *object = [[TLInputDocument$inputDocument alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    object.file_reference = metaObject->getBytes((int32_t)0x8bad663c);
     return object;
 }
 
@@ -93,6 +94,12 @@
         value.type = TLConstructedValueTypePrimitiveInt64;
         value.primitive.int64Value = self.access_hash;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.file_reference;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8bad663c, value));
     }
 }
 

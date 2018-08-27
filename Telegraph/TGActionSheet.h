@@ -3,7 +3,8 @@
 typedef enum {
     TGActionSheetActionTypeGeneric = 0,
     TGActionSheetActionTypeCancel = 1,
-    TGActionSheetActionTypeDestructive = 2
+    TGActionSheetActionTypeDestructive = 2,
+    TGActionSheetActionTypeLined = 3
 } TGActionSheetActionType;
 
 @interface TGActionSheetAction : NSObject

@@ -131,8 +131,14 @@
                     location.volume_id = volumeId;
                     location.local_id = localId;
                     location.secret = secret;
+                    location.file_reference = user.photoFileReferenceSmall;
                     
-                    return [[[[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] take:1] map:^id(NSData *data) {
+                    NSString *key = [NSString stringWithFormat:@"%lld_%d", volumeId, localId];
+                    TGMediaOriginInfo *origin = nil;
+                    if (user.photoFileReferenceSmall != nil)
+                        origin = [TGMediaOriginInfo mediaOriginInfoWithFileReference:user.photoFileReferenceSmall fileReferences:@{key: user.photoFileReferenceSmall}];
+                    
+                    return [[[[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId originInfo:origin identifier:0 size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] take:1] map:^id(NSData *data) {
                         [data writeToFile:path atomically:true];
                         return user;
                     }] catch:^SSignal *(__unused id error) {

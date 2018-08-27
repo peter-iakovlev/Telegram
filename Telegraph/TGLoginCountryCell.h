@@ -14,6 +14,7 @@
 
 - (void)setPresentation:(TGPresentation *)presentation;
 - (void)setTitle:(NSString *)title;
+- (void)setSubtitle:(NSString *)subtitle;
 - (void)setCode:(NSString *)code;
 - (void)setUseIndex:(bool)useIndex;
 

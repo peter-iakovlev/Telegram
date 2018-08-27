@@ -107,11 +107,11 @@
         
         __weak TGPrivateDataSettingsController *weakSelf = self;
         [_recentPeersDisposables add:[[[TGRecentPeersSignals recentPeers] deliverOn:[SQueue mainQueue]] startWithNext:^(TGRemoteRecentPeerCategories *next)
-                                      {
-                                          __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
-                                          if (strongSelf != nil)
-                                              strongSelf->_topPeersItem.isOn = !next.disabled;
-                                      }]];
+        {
+            __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                strongSelf->_topPeersItem.isOn = !next.disabled;
+        }]];
         
         if (self.menuSections.sections.count != 0) {
             UIEdgeInsets topSectionInsets = ((TGCollectionMenuSection *)self.menuSections.sections[0]).insets;
@@ -215,15 +215,15 @@
     NSMutableSet *checkedTypes = [[NSMutableSet alloc] initWithArray:@[@(0), @(1)]];
     
     TGShareSheetButtonItemView *clearButtonItem = [[TGShareSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Cache.ClearNone") pressed:^
-                                                   {
-                                                       __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
-                                                       if (strongSelf != nil) {
-                                                           [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
-                                                           strongSelf->_attachmentSheetWindow = nil;
-                                                           
-                                                           [strongSelf clearPaymentsDataWithShipping:[checkedTypes containsObject:@1] payment:[checkedTypes containsObject:@0]];
-                                                       }
-                                                   }];
+    {
+        __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf->_attachmentSheetWindow dismissAnimated:true completion:nil];
+            strongSelf->_attachmentSheetWindow = nil;
+            
+            [strongSelf clearPaymentsDataWithShipping:[checkedTypes containsObject:@1] payment:[checkedTypes containsObject:@0]];
+        }
+    }];
     
     void (^updateCheckedTypes)() = ^{
         [clearButtonItem setEnabled:checkedTypes.count != 0];
@@ -305,9 +305,9 @@
     [progressWindow show:true];
     
     [[[[TGTelegramNetworking instance] requestSignal:[[TLRPCcontacts_resetSaved$contacts_resetSaved alloc] init]] deliverOn:[SQueue mainQueue]] startWithNext:nil completed:^
-     {
-         [progressWindow dismissWithSuccess];
-     }];
+    {
+        [progressWindow dismissWithSuccess];
+    }];
 }
 
 - (void)deleteDraftsPressed
@@ -328,26 +328,26 @@
     
     __weak TGMenuSheetController *weakController = controller;
     TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Delete") type:TGMenuSheetButtonTypeDestructive action:^
-                                             {
-                                                 __strong TGMenuSheetController *strongController = weakController;
-                                                 if (strongController == nil)
-                                                     return;
-                                                 
-                                                 [strongController dismissAnimated:true manual:true];
-                                                 
-                                                 __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
-                                                 if (strongSelf != nil)
-                                                     [strongSelf performDeleteDrafts];
-                                             }];
-    
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+        
+        __strong TGPrivateDataSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf performDeleteDrafts];
+    }];
+
     TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-                                             {
-                                                 __strong TGMenuSheetController *strongController = weakController;
-                                                 if (strongController == nil)
-                                                     return;
-                                                 
-                                                 [strongController dismissAnimated:true manual:true];
-                                             }];
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+    }];
     
     [controller setItemViews:@[  deleteItem, cancelItem ]];
     

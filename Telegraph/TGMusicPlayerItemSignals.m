@@ -248,7 +248,7 @@ static int64_t TGMusicPlayerItemAvailabilityPack(TGMusicPlayerItemAvailability v
     if ([item.media isKindOfClass:[TGDocumentMediaAttachment class]]) {
         TGDocumentMediaAttachment *document = item.media;
         
-        if ([(NSNumber *)item.key intValue] != 0) {
+        if ([(NSNumber *)item.key intValue] != 0) {            
             NSString *path = nil;
             if (document.documentId != 0)
                 path = [TGPreparedLocalDocumentMessage localDocumentDirectoryForDocumentId:document.documentId version:document.version];
@@ -525,7 +525,7 @@ NSString *TGURLEncodedStringFromString(NSString *string)
     if (unescapedString)
         string = unescapedString;
 
-    return (__bridge NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)string, NULL, (__bridge CFStringRef)kAFLegalCharactersToBeEscaped, CFStringConvertNSStringEncodingToEncoding(encoding));
+    return (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)string, NULL, (__bridge CFStringRef)kAFLegalCharactersToBeEscaped, CFStringConvertNSStringEncodingToEncoding(encoding));
 }
 
 + (SSignal *)_webAlbumArtForPerformer:(NSString *)performer song:(NSString *)song thumbnail:(bool)thumbnail

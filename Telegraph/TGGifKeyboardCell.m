@@ -160,6 +160,10 @@
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"file-thumbnail://?"];
         if (_document.documentId != 0) {
             [previewUri appendFormat:@"id=%" PRId64 "", _document.documentId];
+            
+            TGMediaOriginInfo *originInfo = _document.originInfo ?: [TGMediaOriginInfo mediaOriginInfoForDocumentAttachment:_document];
+            if (originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [originInfo stringRepresentation]];
         }
         
         [previewUri appendFormat:@"&file-name=%@", [_document.fileName stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
@@ -218,10 +222,10 @@
                                         return nil;
                                     }];
                                     return [dataSignal mapToSignal:^SSignal *(NSData *data) {
-                                        return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                                        return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSDictionary *dict) {
                                             return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
                                                 NSError *error = nil;
-                                                [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                                [[NSFileManager defaultManager] moveItemAtPath:dict[@"path"] toPath:videoPath error:&error];
                                                 if (error != nil) {
                                                     [subsctiber putError:nil];
                                                 } else {

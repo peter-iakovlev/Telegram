@@ -79,12 +79,12 @@
         return;
     }
     
-    SSignal *smallSignal = [[TGMediaSignals avatarPathWithReference:[[TGImageFileReference alloc] initWithUrl:state.peer.photoUrlSmall]] map:^UIImage *(NSString *path)
+    SSignal *smallSignal = [[TGMediaSignals avatarPathWithReference:[[TGImageFileReference alloc] initWithUrl:state.peer.photoFullUrlSmall]] map:^UIImage *(NSString *path)
     {
         return [[UIImage imageWithContentsOfFile:path] applyBlurWithRadius:4.0f tintColor:nil saturationDeltaFactor:1.0f maskImage:nil];
     }];
     
-    SSignal *bigSignal = [[TGMediaSignals avatarPathWithReference:[[TGImageFileReference alloc] initWithUrl:state.peer.photoUrlBig]] map:^UIImage *(NSString *path)
+    SSignal *bigSignal = [[TGMediaSignals avatarPathWithReference:[[TGImageFileReference alloc] initWithUrl:state.peer.photoFullUrlBig]] map:^UIImage *(NSString *path)
     {
         return [UIImage imageWithContentsOfFile:path];
     }];

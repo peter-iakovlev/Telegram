@@ -9,8 +9,10 @@
 #import "TL/TLMetaScheme.h"
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 #import "TGStickersSignals.h"
+#import "TGDownloadMessagesSignal.h"
 
 typedef enum {
     TGStickerFaveActionFave,
@@ -169,6 +171,43 @@ static OSSpinLock idsLock = OS_SPINLOCK_INIT;
     }] startOn:[self queue]];
 }
 
++ (SSignal *)remoteFavedStickers {
+    return [self _remoteFavedStickers:0];
+}
+
++ (SSignal *)_remoteFavedStickers:(int32_t)hash {
+    TLRPCmessages_getFavedStickers$messages_getFavedStickers *getFavedStickers = [[TLRPCmessages_getFavedStickers$messages_getFavedStickers alloc] init];
+    getFavedStickers.n_hash = hash;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getFavedStickers] mapToSignal:^SSignal *(id result) {
+        if ([result isKindOfClass:[TLmessages_FavedStickers$messages_favedStickers class]]) {
+            TLmessages_FavedStickers$messages_favedStickers *favedStickers = result;
+            
+            NSMutableArray *array = [[NSMutableArray alloc] init];
+            for (id desc in [favedStickers.stickers reverseObjectEnumerator]) {
+                TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
+                if (document.documentId != 0) {
+                    document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocumentFavoriteSticker:desc];
+                    [array addObject:document];
+                }
+            }
+            
+            int32_t localHash = [self hashForDocumentsReverse:array];
+            if (localHash != favedStickers.n_hash) {
+                TGLog(@"(TGFavoriteStickersSignal hash mismatch)");
+            }
+            
+            [self _storeFavedStickers:array];
+            
+            [[self _favedStickers] set:[SSignal single:array]];
+            
+            return [SSignal single:array];
+        } else {
+            return [SSignal single:nil];
+        }
+    }];
+}
+
 + (SSignal *)_syncFavedStickers {
     return [[SSignal defer:^SSignal *{
         NSArray *actions = [[NSArray alloc] initWithArray:[self _stickerActions]];
@@ -177,17 +216,34 @@ static OSSpinLock idsLock = OS_SPINLOCK_INIT;
         SSignal *actionsSignal = [SSignal complete];
         
         for (TGStickerFaveAction *action in actions) {
+            SSignal *(^faveStickerSignal)(TGMediaOriginInfo *) = ^SSignal *(TGMediaOriginInfo *originInfo)
+            {
+                TLRPCmessages_faveSticker$messages_faveSticker *faveSticker = [[TLRPCmessages_faveSticker$messages_faveSticker alloc] init];
+                TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+                inputDocument.n_id = action.document.documentId;
+                inputDocument.access_hash = action.document.accessHash;
+                inputDocument.file_reference = [originInfo fileReference];
+                faveSticker.n_id = inputDocument;
+                if (action.action == TGStickerFaveActionUnfave)
+                    faveSticker.unfave = true;
+                return [[TGTelegramNetworking instance] requestSignal:faveSticker];
+            };
             
-            TLRPCmessages_faveSticker$messages_faveSticker *faveSticker = [[TLRPCmessages_faveSticker$messages_faveSticker alloc] init];
             
-            TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
-            inputDocument.n_id = action.document.documentId;
-            inputDocument.access_hash = action.document.accessHash;
-            faveSticker.n_id = inputDocument;
-            if (action.action == TGStickerFaveActionUnfave)
-                faveSticker.unfave = true;
-
-            actionsSignal = [actionsSignal then:[[[[TGTelegramNetworking instance] requestSignal:faveSticker] mapToSignal:^SSignal *(__unused id next) {
+            SSignal *faveActionSignal = [faveStickerSignal(action.document.originInfo) catch:^SSignal *(id error) {
+                int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                
+                if ([errorText hasPrefix:@"FILE_REFERENCE_"] && errorCode == 400 && action.document.originInfo != nil) {
+                    return [[TGDownloadMessagesSignal updatedOriginInfo:action.document.originInfo identifier:action.document.documentId] mapToSignal:^SSignal *(TGMediaOriginInfo *updatedOriginInfo) {
+                        return faveStickerSignal(updatedOriginInfo);
+                    }];
+                } else {
+                    return [SSignal fail:error];
+                }
+            }];
+            
+            actionsSignal = [actionsSignal then:[[faveActionSignal mapToSignal:^SSignal *(__unused id next) {
                 return [SSignal complete];
             }] catch:^SSignal *(__unused id error) {
                 return [SSignal complete];
@@ -195,34 +251,8 @@ static OSSpinLock idsLock = OS_SPINLOCK_INIT;
         }
         
         return [[actionsSignal then:[[self _loadFavedStickers] mapToSignal:^SSignal *(NSArray *array) {
-            TLRPCmessages_getFavedStickers$messages_getFavedStickers *getFavedStickers = [[TLRPCmessages_getFavedStickers$messages_getFavedStickers alloc] init];
-            getFavedStickers.n_hash = [self hashForDocumentsReverse:array];
-            
-            return [[[TGTelegramNetworking instance] requestSignal:getFavedStickers] mapToSignal:^SSignal *(id result) {
-                if ([result isKindOfClass:[TLmessages_FavedStickers$messages_favedStickers class]]) {
-                    TLmessages_FavedStickers$messages_favedStickers *favedStickers = result;
-                    
-                    NSMutableArray *array = [[NSMutableArray alloc] init];
-                    for (id desc in [favedStickers.stickers reverseObjectEnumerator]) {
-                        TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
-                        if (document.documentId != 0) {
-                            [array addObject:document];
-                        }
-                    }
-                    
-                    int32_t localHash = [self hashForDocumentsReverse:array];
-                    if (localHash != favedStickers.n_hash) {
-                        TGLog(@"(TGFavoriteStickersSignal hash mismatch)");
-                    }
-                    
-                    [self _storeFavedStickers:array];
-                    
-                    [[self _favedStickers] set:[SSignal single:array]];
-                    
-                    return [SSignal complete];
-                } else {
-                    return [SSignal complete];
-                }
+            return [[self _remoteFavedStickers:[self hashForDocumentsReverse:array]] mapToSignal:^SSignal *(__unused id value) {
+                return [SSignal complete];
             }];
         }]] then:[[SSignal defer:^SSignal *{
             if ([self _stickerActions].count == 0) {

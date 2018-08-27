@@ -804,7 +804,7 @@ const NSUInteger TGNotificationExpandedTimeout = 60;
         for (TGCachedConversationMember *member in data.generalMembers)
             [chatParticipantsUids addObject:@(member.uid)];
         return chatParticipantsUids;
-    }] : [[[TGConversationSignals conversationWithPeerId:conversationId] filter:^bool(TGConversation *conversation)
+    }] : [[[TGConversationSignals conversationWithPeerId:conversationId full:true] filter:^bool(TGConversation *conversation)
     {
         return (conversation.chatParticipants != nil);
     }] map:^NSArray *(TGConversation *conversation)

@@ -15,7 +15,7 @@
     if (self != nil) {
         _peerId = conversation.conversationId;
         _title = conversation.chatTitle;
-        _avatarUrl = conversation.chatPhotoSmall;
+        _avatarUrl = conversation.chatPhotoFullSmall;
         
         NSString *hashString = [[NSString alloc] initWithFormat:@"%lld:%@:%@", _peerId, _title, _avatarUrl];
         _hash = (NSUInteger)murMurHash32(hashString);
@@ -28,7 +28,7 @@
     if (self != nil) {
         _peerId = user.uid;
         _title = user.displayName;
-        _avatarUrl = user.photoUrlSmall;
+        _avatarUrl = user.photoFullUrlSmall;
         
         NSString *hashString = [[NSString alloc] initWithFormat:@"%lld:%@:%@", _peerId, _title, _avatarUrl];
         _hash = (NSUInteger)murMurHash32(hashString);

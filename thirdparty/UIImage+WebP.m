@@ -147,6 +147,7 @@ static int32_t compressedMagic = 0x456ba41;
     CGImageRef bitmapImage = CGBitmapContextCreateImage(targetContext);
     UIImage *image = [[UIImage alloc] initWithCGImage:bitmapImage scale:1.0f orientation:UIImageOrientationUp];
     CGImageRelease(bitmapImage);
+    CGColorSpaceRelease(colorSpace);
     
     CGContextRelease(targetContext);
     //TG_TIMESTAMP_MEASURE(gzip)

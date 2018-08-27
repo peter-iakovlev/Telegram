@@ -120,7 +120,7 @@
             NSString *values = @"";
             for (TLSecureValueType *type in ((TLMessageAction$messageActionSecureValuesSent *)actionDesc).types)
             {
-                NSString *stringType = nil;
+                NSString *stringType = @"";
                 if ([type isKindOfClass:[TLSecureValueType$secureValueTypePersonalDetails class]])
                     stringType = @"personal_details";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypePassport class]])
@@ -129,6 +129,8 @@
                     stringType = @"driver_license";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeIdentityCard class]])
                     stringType = @"identity_card";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeInternalPassport class]])
+                    stringType = @"internal_passport";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeAddress class]])
                     stringType = @"address";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeUtilityBill class]])
@@ -137,6 +139,10 @@
                     stringType = @"bank_statement";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeRentalAgreement class]])
                     stringType = @"rental_agreement";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypePassportRegistration class]])
+                    stringType = @"passport_registration";
+                else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeTemporaryRegistration class]])
+                    stringType = @"temporary_registration";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypePhone class]])
                     stringType = @"phone";
                 else if ([type isKindOfClass:[TLSecureValueType$secureValueTypeEmail class]])

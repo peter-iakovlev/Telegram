@@ -22,7 +22,7 @@
     return [[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/conversation", _conversationId];
 }
 
-- (instancetype)initWithConversationId:(int64_t)conversationId conversationUpdated:(void (^)(TGConversation *))conversationUpdated
+- (instancetype)initWithConversationId:(int64_t)conversationId full:(bool)full conversationUpdated:(void (^)(TGConversation *))conversationUpdated
 {
     self = [super init];
     if (self != nil)
@@ -33,7 +33,10 @@
         _actionHandle = [[ASHandle alloc] initWithDelegate:self];
         [ActionStageInstance() watchForPath:[self watchPath] watcher:self];
         
-        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversationExtended/(%lld)", conversationId] options:@{@"conversationId": @(conversationId)} watcher:TGTelegraphInstance];
+        if (full)
+        {
+            [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/conversationExtended/(%lld)", conversationId] options:@{@"conversationId": @(conversationId)} watcher:TGTelegraphInstance];
+        }
     }
     return self;
 }
@@ -58,11 +61,11 @@
 
 @implementation TGConversationSignals
 
-+ (SSignal *)conversationWithPeerId:(int64_t)peerId
++ (SSignal *)conversationWithPeerId:(int64_t)peerId full:(bool)full
 {
     SSignal *updatesSignal = [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
-        TGConversationUpdatesHelper *helper = [[TGConversationUpdatesHelper alloc] initWithConversationId:peerId conversationUpdated:^(TGConversation *conversation)
+        TGConversationUpdatesHelper *helper = [[TGConversationUpdatesHelper alloc] initWithConversationId:peerId full:full conversationUpdated:^(TGConversation *conversation)
         {
             [subscriber putNext:conversation];
         }];
@@ -75,8 +78,12 @@
     return [[[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subscriber)
     {
         TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:peerId];
-        [subscriber putNext:conversation];
-        [subscriber putCompletion];
+        if (conversation == nil) {
+            [subscriber putError:nil];
+        } else {
+            [subscriber putNext:conversation];
+            [subscriber putCompletion];
+        }
         return nil;
     }] then:updatesSignal];
 }

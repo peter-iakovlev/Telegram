@@ -78,6 +78,8 @@
 #import "TLPeerNotifySettings$peerNotifySettings.h"
 #import "TLhelp_DeepLinkInfo$help_deepLinkInfo.h"
 #import "TLhelp_AppUpdate$help_appUpdate.h"
+#import "TLaccount_Password$account_password.h"
+#import "TLaccount_PasswordSettings$account_passwordSettings.h"
 
 #import "TLDocumentAttributeSticker.h"
 
@@ -570,13 +572,15 @@ void TLMetaClassStore::mergeScheme(TLScheme *scheme)
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xe09e1fb8, [[TLhelp_ProxyData$proxyDataEmpty alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x2bf7ee23, [[TLhelp_ProxyData$proxyDataPromo alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x780a0310, [[TLhelp_TermsOfService$help_termsOfService alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xb4b4b699, [[TLSecureValue$secureValue alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xc0da30f0, [[TLInputSecureValue$inputSecureValue alloc] init]));
-        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xcb976d53, [[TLaccount_AuthorizationForm$account_authorizationForm alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x187fa0ca, [[TLSecureValue$secureValue alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xdb21d0a7, [[TLInputSecureValue$inputSecureValue alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xad2e1cd8, [[TLaccount_AuthorizationForm$account_authorizationForm alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xaf509d20, [[TLPeerNotifySettings$peerNotifySettings alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x6a4ee832, [[TLhelp_DeepLinkInfo$help_deepLinkInfo alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x1b0c841a, [[TLDraftMessage$draftMessageEmpty alloc] init]));
         manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x1da7158f, [[TLhelp_AppUpdate$help_appUpdate alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0xad2641f8, [[TLaccount_Password$account_password alloc] init]));
+        manualObjectParsers.insert(std::pair<int32_t, id<TLObject> >(0x9a5c33e5, [[TLaccount_PasswordSettings$account_passwordSettings alloc] init]));
 
         {
             TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];

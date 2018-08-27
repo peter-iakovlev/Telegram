@@ -9,8 +9,6 @@
 
 #import "TGAppDelegate.h"
 
-#import "TGAlertView.h"
-
 #define TGUseModernAudio true
 
 #import "TGOpusAudioRecorder.h"

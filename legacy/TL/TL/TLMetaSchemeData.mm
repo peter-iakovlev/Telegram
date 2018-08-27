@@ -231,7 +231,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLInputPhoto$inputPhoto
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0xfb95c6c4;
+        constructor.n_id = (int32_t)0x3bb3b94a;
         constructor.predicate = @"inputPhoto";
         constructor.type = @"InputPhoto";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -245,6 +245,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"access_hash";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -645,7 +651,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLInputFileLocation$inputFileLocation
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x14637196;
+        constructor.n_id = (int32_t)0xdfdaabe1;
         constructor.predicate = @"inputFileLocation";
         constructor.type = @"InputFileLocation";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -665,6 +671,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"secret";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -695,7 +707,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLInputFileLocation$inputDocumentFileLocation
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x430f0724;
+        constructor.n_id = (int32_t)0x196683d9;
         constructor.predicate = @"inputDocumentFileLocation";
         constructor.type = @"InputFileLocation";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -713,8 +725,8 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"version";
-            arg.type = @"int";
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -841,7 +853,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLPhoto$photo
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x9288dd29;
+        constructor.n_id = (int32_t)0x9c477dd8;
         constructor.predicate = @"photo";
         constructor.type = @"Photo";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -861,6 +873,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"access_hash";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         {
@@ -3075,7 +3093,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLFileLocation$fileLocation
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x53d69076;
+        constructor.n_id = (int32_t)0x91d11eb;
         constructor.predicate = @"fileLocation";
         constructor.type = @"FileLocation";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -3101,6 +3119,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"secret";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -3837,7 +3861,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLDocument$document
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x87232bc7;
+        constructor.n_id = (int32_t)0x59534e4c;
         constructor.predicate = @"document";
         constructor.type = @"Document";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -3851,6 +3875,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"access_hash";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         {
@@ -3880,12 +3910,6 @@ TLScheme *TLgetMetaScheme()
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"dc_id";
-            arg.type = @"int";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"version";
             arg.type = @"int";
             [fields addObject:arg];
         }
@@ -6239,6 +6263,90 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
+        //TLSecureValueError$secureValueError
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x869d758f;
+        constructor.predicate = @"secureValueError";
+        constructor.type = @"SecureValueError";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"type";
+            arg.type = @"SecureValueType";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"hash";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"text";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecureValueError$secureValueErrorTranslationFile
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa1144770;
+        constructor.predicate = @"secureValueErrorTranslationFile";
+        constructor.type = @"SecureValueError";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"type";
+            arg.type = @"SecureValueType";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_hash";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"text";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecureValueError$secureValueErrorTranslationFiles
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x34636dd8;
+        constructor.predicate = @"secureValueErrorTranslationFiles";
+        constructor.type = @"SecureValueError";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"type";
+            arg.type = @"SecureValueType";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_hash";
+            arg.type = @"Vector<bytes>";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"text";
+            arg.type = @"string";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
         //TLLangPackDifference$langPackDifference
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0xf385c1f6;
@@ -8331,7 +8439,7 @@ TLScheme *TLgetMetaScheme()
     {
         //TLInputDocument$inputDocument
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
-        constructor.n_id = (int32_t)0x18798952;
+        constructor.n_id = (int32_t)0x1abfb575;
         constructor.predicate = @"inputDocument";
         constructor.type = @"InputDocument";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
@@ -8345,6 +8453,12 @@ TLScheme *TLgetMetaScheme()
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"access_hash";
             arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"file_reference";
+            arg.type = @"bytes";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -8875,12 +8989,18 @@ TLScheme *TLgetMetaScheme()
         [TLmetaSchemeTypes addObject:constructor];
     }
     {
-        //TLaccount_PasswordSettings$account_passwordSettings
+        //TLaccount_PasswordSettings$account_passwordSettingsMeta
         TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
         constructor.n_id = (int32_t)0x7bd9c3f1;
-        constructor.predicate = @"account.passwordSettings";
+        constructor.predicate = @"account.passwordSettingsMeta";
         constructor.type = @"account.PasswordSettings";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
             arg.name = @"email";
@@ -8889,20 +9009,8 @@ TLScheme *TLgetMetaScheme()
         }
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"secure_salt";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"secure_secret";
-            arg.type = @"bytes";
-            [fields addObject:arg];
-        }
-        {
-            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"secure_secret_id";
-            arg.type = @"long";
+            arg.name = @"secure_settings";
+            arg.type = @"SecureSecretSettings";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -15618,6 +15726,229 @@ TLScheme *TLgetMetaScheme()
         constructor.params = fields;
         [TLmetaSchemeTypes addObject:constructor];
     }
+    
+    {
+        //TLPasswordKdfAlgo$passwordKdfAlgoUnknown
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xd45ab096;
+        constructor.predicate = @"passwordKdfAlgoUnknown";
+        constructor.type = @"PasswordKdfAlgo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLPasswordKdfAlgo$passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x3a912d4a;
+        constructor.predicate = @"passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow";
+        constructor.type = @"PasswordKdfAlgo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"salt1";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"salt2";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"g";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"p";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecurePasswordKdfAlgo$securePasswordKdfAlgoUnknown
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x4a8537;
+        constructor.predicate = @"securePasswordKdfAlgoUnknown";
+        constructor.type = @"SecurePasswordKdfAlgo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecurePasswordKdfAlgo$securePasswordKdfAlgoPBKDF2HMACSHA512iter100000
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xbbf2dda0;
+        constructor.predicate = @"securePasswordKdfAlgoPBKDF2HMACSHA512iter100000";
+        constructor.type = @"SecurePasswordKdfAlgo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"salt";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecurePasswordKdfAlgo$securePasswordKdfAlgoSHA512
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x86471d92;
+        constructor.predicate = @"securePasswordKdfAlgoSHA512";
+        constructor.type = @"SecurePasswordKdfAlgo";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"salt";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecureSecretSettings$secureSecretSettings
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x1527bcac;
+        constructor.predicate = @"secureSecretSettings";
+        constructor.type = @"SecureSecretSettings";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"secure_algo";
+            arg.type = @"SecurePasswordKdfAlgo";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"secure_secret";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"secure_secret_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInputCheckPasswordSRP$inputCheckPasswordSRP
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xd27ff082;
+        constructor.predicate = @"inputCheckPasswordSRP";
+        constructor.type = @"InputCheckPasswordSRP";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"srp_id";
+            arg.type = @"long";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"A";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"M1";
+            arg.type = @"bytes";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLInputCheckPasswordSRP$inputCheckPasswordEmpty
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x9880f658;
+        constructor.predicate = @"inputCheckPasswordEmpty";
+        constructor.type = @"InputCheckPasswordSRP";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecureRequiredType$secureRequiredType
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x829d99da;
+        constructor.predicate = @"secureRequiredType";
+        constructor.type = @"SecureRequiredType";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"flags";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"type";
+            arg.type = @"SecureValueType";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLSecureRequiredType$secureRequiredTypeOneOf
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0x27477b4;
+        constructor.predicate = @"secureRequiredTypeOneOf";
+        constructor.type = @"SecureRequiredType";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"types";
+            arg.type = @"Vector<SecureRequiredType>";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLhelp_PassportConfig$help_passportConfigNotModified
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xbfb9f457;
+        constructor.predicate = @"help.passportConfigNotModified";
+        constructor.type = @"help.PassportConfig";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
+    {
+        //TLhelp_PassportConfig$help_passportConfig
+        TLSchemeType$schemeType *constructor = [[TLSchemeType$schemeType alloc] init];
+        constructor.n_id = (int32_t)0xa098d6af;
+        constructor.predicate = @"help.passportConfig";
+        constructor.type = @"help.PassportConfig";
+        NSMutableArray *fields = [[NSMutableArray alloc] init];
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"hash";
+            arg.type = @"int";
+            [fields addObject:arg];
+        }
+        {
+            TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
+            arg.name = @"countries_langs";
+            arg.type = @"DataJSON";
+            [fields addObject:arg];
+        }
+        constructor.params = fields;
+        [TLmetaSchemeTypes addObject:constructor];
+    }
     {
         //TLRPCreq_pq$req_pq
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
@@ -17833,14 +18164,14 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCaccount_getPasswordSettings$account_getPasswordSettings
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xbc8d11bb;
+        constructor.n_id = (int32_t)0x9cd4eaf9;
         constructor.method = @"account.getPasswordSettings";
         constructor.type = @"account.PasswordSettings";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"current_password_hash";
-            arg.type = @"bytes";
+            arg.name = @"password";
+            arg.type = @"InputCheckPasswordSRP";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -17849,14 +18180,14 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCaccount_updatePasswordSettings$account_updatePasswordSettings
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xfa7c4b86;
+        constructor.n_id = (int32_t)0xa59b102f;
         constructor.method = @"account.updatePasswordSettings";
         constructor.type = @"Bool";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"current_password_hash";
-            arg.type = @"bytes";
+            arg.name = @"password";
+            arg.type = @"InputCheckPasswordSRP";
             [fields addObject:arg];
         }
         {
@@ -17871,14 +18202,14 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCauth_checkPassword$auth_checkPassword
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0xa63011e;
+        constructor.n_id = (int32_t)0xd18b4d16;
         constructor.method = @"auth.checkPassword";
         constructor.type = @"auth.Authorization";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"password_hash";
-            arg.type = @"bytes";
+            arg.name = @"password";
+            arg.type = @"InputCheckPasswordSRP";
             [fields addObject:arg];
         }
         constructor.params = fields;
@@ -19923,14 +20254,14 @@ TLScheme *TLgetMetaScheme()
     {
         //TLRPCaccount_getTmpPassword$account_getTmpPassword
         TLSchemeMethod$schemeMethod *constructor = [[TLSchemeMethod$schemeMethod alloc] init];
-        constructor.n_id = (int32_t)0x4a82327e;
+        constructor.n_id = (int32_t)0x449e0b51;
         constructor.method = @"account.getTmpPassword";
         constructor.type = @"account.TmpPassword";
         NSMutableArray *fields = [[NSMutableArray alloc] init];
         {
             TLSchemeParam$schemeParam *arg = [[TLSchemeParam$schemeParam alloc] init];
-            arg.name = @"password_hash";
-            arg.type = @"bytes";
+            arg.name = @"password";
+            arg.type = @"InputCheckPasswordSRP";
             [fields addObject:arg];
         }
         {

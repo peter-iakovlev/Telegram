@@ -37,42 +37,78 @@
 
 @interface TGPassportDocumentController ()
 {
+    NSArray *_fileTypes;
+    
     bool _uploading;
     SDisposableSet *_uploadDisposables;
     SMetaDisposable *_deleteDisposable;
     
-    TGButtonCollectionItem *_uploadItem;
-    TGCommentCollectionItem *_fileErrorsItem;
+    NSMutableDictionary *_fileErrorItems;
 }
 
-@property (nonatomic, strong) NSMutableArray *uploads;
+@property (nonatomic, strong) NSMutableDictionary *uploads;
 
 @end
 
 @implementation TGPassportDocumentController
 
-- (instancetype)initWithSettings:(SVariable *)settings files:(NSArray *)files inhibitFiles:(bool)inhibitFiles errors:(TGPassportErrors *)errors existing:(bool)existing
+- (instancetype)initWithSettings:(SVariable *)settings files:(NSDictionary *)files fileTypes:(NSArray *)fileTypes errors:(TGPassportErrors *)errors existing:(bool)existing
 {
     self = [super init];
     if (self != nil)
     {
+        _fileTypes = fileTypes;
         _settings = settings;
-        _files = files ?: [[NSArray alloc] init];
-        _uploads = [[NSMutableArray alloc] init];
-        _errors = [errors copy];
-                
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        
-        if (!inhibitFiles)
+        _files = files;
+        if (_files == nil)
         {
-            [items addObject:[[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.Scans")]];
+            NSMutableDictionary *files = [[NSMutableDictionary alloc] init];
+            for (NSNumber *type in fileTypes)
+            {
+                files[type] = @[];
+            }
+            _files = files;
+        }
+        _uploads = [[NSMutableDictionary alloc] init];
+        for (NSNumber *type in fileTypes)
+        {
+            _uploads[type] = [[NSMutableArray alloc] init];
+        }
+        _errors = [errors copy];
+        
+        _fileSections = [[NSMutableDictionary alloc] init];
+        _fileErrorItems = [[NSMutableDictionary alloc] init];
+        
+        for (NSNumber *type in fileTypes)
+        {
+            NSString *title = nil;
+            NSString *comment = nil;
+            switch (type.integerValue)
+            {
+                case TGPassportDocumentFileTypeGeneric:
+                    title = TGLocalized(@"Passport.Scans");
+                    comment = TGLocalized(@"Passport.Identity.ScansHelp");
+                    break;
+                case TGPassportDocumentFileTypeTranslation:
+                    title = TGLocalized(@"Passport.Identity.Translations");
+                    comment = TGLocalized(@"Passport.Identity.TranslationsHelp");
+                    break;
+            }
             
-            _uploadItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.Scans.UploadNew") action:@selector(uploadPressed)];
-            _uploadItem.deselectAutomatically = true;
-            [items addObject:_uploadItem];
+            NSMutableArray *items = [[NSMutableArray alloc] init];
+            [items addObject:[[TGHeaderCollectionItem alloc] initWithTitle:title]];
             
-            _scansSection = [[TGCollectionMenuSection alloc] initWithItems:items];
-            [self.menuSections addSection:_scansSection];
+            TGButtonCollectionItem *uploadItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.Scans.Upload") action:@selector(uploadPressed:)];
+            uploadItem.tag = type.integerValue;
+            uploadItem.deselectAutomatically = true;
+            [items addObject:uploadItem];
+            
+            [items addObject:[[TGCommentCollectionItem alloc] initWithText:comment]];
+            
+            TGCollectionMenuSection *section = [[TGCollectionMenuSection alloc] initWithItems:items];
+            [self.menuSections addSection:section];
+            
+            _fileSections[type] = section;
         }
         
         if (existing)
@@ -93,6 +129,14 @@
 {
     [_deleteDisposable dispose];
     [_uploadDisposables dispose];
+}
+
+- (void)setChanged:(bool)changed
+{
+    _changed = changed;
+    
+    if (changed && iosMajorVersion() >= 7)
+        self.navigationController.interactivePopGestureRecognizer.enabled = false;
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -133,44 +177,56 @@
     [super viewWillDisappear:animated];
     
     ((TGNavigationController *)self.navigationController).shouldPopController = nil;
+    if (iosMajorVersion() >= 7)
+        self.navigationController.interactivePopGestureRecognizer.enabled = true;
 }
 
 - (void)updateFileErrors
 {
-    NSString *errorsString = [self.errors errorForTypeFiles:self.type].text;
-    if (errorsString.length > 0 && _fileErrorsItem == nil)
+    [_fileSections enumerateKeysAndObjectsUsingBlock:^(NSNumber *nFileType, TGCollectionMenuSection *section, __unused BOOL *stop)
     {
-        _fileErrorsItem = [[TGCommentCollectionItem alloc] initWithText:errorsString];
-        _fileErrorsItem.sizeInset = -10.0f;
-        _fileErrorsItem.textColor = self.presentation.pallete.collectionMenuDestructiveColor;
-        [_scansSection insertItem:_fileErrorsItem atIndex:1];
-    }
-    else
-    {
-        bool changed = ![_fileErrorsItem.text isEqualToString:errorsString];
-        _fileErrorsItem.text = errorsString;
-        _fileErrorsItem.hidden = errorsString.length == 0;
-        
-        if (changed)
+        TGPassportDocumentFileType fileType = (TGPassportDocumentFileType)nFileType.integerValue;
+        NSString *errorsString = fileType == TGPassportDocumentFileTypeGeneric ? [self.errors errorForTypeFiles:self.type].text : [self.errors errorForTypeTranslation:self.type].text;
+        if (errorsString.length > 0 && _fileErrorItems[nFileType] == nil)
         {
-            [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
-            {
-                [self.collectionView.collectionViewLayout invalidateLayout];
-            } completion:nil];
+            TGCommentCollectionItem *fileErrorsItem = [[TGCommentCollectionItem alloc] initWithText:errorsString];
+            fileErrorsItem.sizeInset = -10.0f;
+            fileErrorsItem.textColor = self.presentation.pallete.collectionMenuDestructiveColor;
+            [section insertItem:fileErrorsItem atIndex:1];
+            
+            _fileErrorItems[nFileType] = fileErrorsItem;
         }
-    }
+        else
+        {
+            TGCommentCollectionItem *fileErrorsItem = _fileErrorItems[nFileType];
+            
+            bool changed = ![fileErrorsItem.text isEqualToString:errorsString];
+            fileErrorsItem.text = errorsString;
+            fileErrorsItem.hidden = errorsString.length == 0;
+            if (changed)
+            {
+                [UIView animateWithDuration:0.3 delay:0.0 options:7 << 16 animations:^
+                {
+                    [self.collectionView.collectionViewLayout invalidateLayout];
+                } completion:nil];
+            }
+        }
+    }];
 }
 
-- (void)uploadPressed
+- (void)uploadPressed:(TGButtonCollectionItem *)item
 {
     [self.view endEditing:true];
+    
+    NSNumber *nFileType = @(item.tag);
+    NSUInteger currentCount = [(NSArray *)_files[nFileType] count] + [(NSArray *)_uploads[nFileType] count];
     
     __weak TGPassportDocumentController *weakSelf = self;
     [TGPassportAttachMenu presentWithContext:[TGLegacyComponentsContext shared] parentController:self menuController:nil title:nil intent:TGPassportAttachIntentMultiple uploadAction:^(SSignal *resultSignal, void (^dismissPicker)(void))
     {
         dismissPicker();
         
-        [[[resultSignal mapToSignal:^SSignal *(id value)
+        [[[[resultSignal mapToSignal:^SSignal *(id value)
         {
             if ([value isKindOfClass:[NSDictionary class]])
             {
@@ -194,15 +250,23 @@
                 }];
             }
             return [SSignal complete];
-        }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *next)
+        }] reduceLeft:[[NSMutableArray alloc] init] with:^NSMutableArray *(NSMutableArray *array, NSDictionary *next)
         {
-            TGPassportFileUpload *upload = [[TGPassportFileUpload alloc] initWithImage:next[@"image"] thumbnailImage:next[@"thumbnail"] date:(int32_t)[[NSDate date] timeIntervalSince1970]];
-            [self enqueueFileUpload:upload];
+            if (currentCount + array.count < 20)
+                [array addObject:next];
+            return array;
+        }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *next)
+        {
+            for (id desc in next)
+            {
+                TGPassportFileUpload *upload = [[TGPassportFileUpload alloc] initWithImage:desc[@"image"] thumbnailImage:desc[@"thumbnail"] date:(int32_t)[[NSDate date] timeIntervalSince1970]];
+                [self enqueueFileUpload:upload type:(TGPassportDocumentFileType)item.tag];
+            }
         }];
     } sourceView:self.view sourceRect:^CGRect{
         __strong TGPassportDocumentController *strongSelf = weakSelf;
         if (strongSelf != nil)
-            return [strongSelf->_uploadItem.view convertRect:strongSelf->_uploadItem.view.bounds toView:strongSelf.view];
+            return [item.view convertRect:item.view.bounds toView:strongSelf.view];
         return CGRectZero;
     } barButtonItem:nil];
 }
@@ -308,15 +372,26 @@
 
 #pragma mark -
 
-- (void)enqueueFileUpload:(TGPassportFileUpload *)fileUpload
+- (void)enqueueFileUpload:(TGPassportFileUpload *)fileUpload type:(TGPassportDocumentFileType)type
 {
-    _changed = true;
-    [_uploads addObject:fileUpload];
+    [self setChanged:true];
     
-    [_errors correctFilesErrorForType:self.type];
+    NSArray *files = _files[@(type)];
+    NSMutableArray *uploads = _uploads[@(type)];
+    if (uploads == nil)
+    {
+        uploads = [[NSMutableArray alloc] init];
+        _uploads[@(type)] = uploads;
+    }
+    [uploads addObject:fileUpload];
+    
+    if (type == TGPassportDocumentFileTypeGeneric)
+        [_errors correctFilesErrorForType:self.type];
+    else if (type == TGPassportDocumentFileTypeTranslation)
+        [_errors correctTranslationErrorForType:self.type];
     [self updateFileErrors];
     
-    NSInteger topIndex = [self scansTopIndex];
+    NSInteger topIndex = [self filesTopIndex:type];
     
     SVariable *uploadProgress = [[SVariable alloc] init];
     SMetaDisposable *uploadDisposable = [[SMetaDisposable alloc] init];
@@ -325,7 +400,7 @@
     fileUpload.disposable = uploadDisposable;
     
     __weak TGPassportDocumentController *weakSelf = self;
-    TGPassportFileCollectionItem *item = [[TGPassportFileCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"Passport.Scans.ScanIndex"), [NSString stringWithFormat:@"%d", (int)_files.count + (int)_uploads.count]] action:^(TGPassportFileCollectionItem *fileItem)
+    TGPassportFileCollectionItem *item = [[TGPassportFileCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"Passport.Scans.ScanIndex"), [NSString stringWithFormat:@"%d", (int)files.count + (int)uploads.count]] action:^(TGPassportFileCollectionItem *fileItem)
     {
         __strong TGPassportDocumentController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -345,7 +420,7 @@
     [item setImageSignal:secureUploadThumbnailTransform(fileUpload.thumbnailImage)];
     
     [self.menuSections beginRecordingChanges];
-    [self.menuSections insertItem:item toSection:[self.menuSections.sections indexOfObject:_scansSection] atIndex:topIndex + _files.count + _uploads.count - 1];
+    [self.menuSections insertItem:item toSection:[self.menuSections.sections indexOfObject:_fileSections[@(type)]] atIndex:topIndex + files.count + uploads.count - 1];
     [self.menuSections commitRecordedChanges:self.collectionView];
     
     [self beginNextUpload];
@@ -356,7 +431,17 @@
 
 - (void)beginNextUpload
 {
-    TGPassportFileUpload *fileUpload = _uploads.firstObject;
+    TGPassportFileUpload *fileUpload = nil;
+    NSMutableArray *currentUploads = nil;
+    NSNumber *currentType;
+    for (NSNumber *type in _fileTypes)
+    {
+        currentUploads = _uploads[type];
+        currentType = type;
+        fileUpload = currentUploads.firstObject;
+        if (fileUpload != nil)
+            break;
+    }
     if (_uploading || fileUpload == nil)
         return;
     
@@ -382,19 +467,23 @@
         {
             TGPassportFile *file = (TGPassportFile *)next;
             
-            NSArray *updatedFiles = [strongSelf->_files arrayByAddingObject:file];
-            updatedFiles = [updatedFiles sortedArrayUsingComparator:^NSComparisonResult(TGPassportFile *file1, TGPassportFile *file2)
+            NSArray *newFiles = [strongSelf->_files[currentType] arrayByAddingObject:file];
+            newFiles = [newFiles sortedArrayUsingComparator:^NSComparisonResult(TGPassportFile *file1, TGPassportFile *file2)
             {
                 return file1.date < file2.date ? NSOrderedAscending : NSOrderedDescending;
             }];
-            strongSelf->_files = updatedFiles;
-            [strongSelf->_uploads removeObject:fileUpload];
             
-            for (TGPassportFileCollectionItem *item in [strongSelf scansSection].items)
+            NSMutableDictionary *updatedFiles = [strongSelf->_files mutableCopy];
+            updatedFiles[currentType] = newFiles;
+            strongSelf->_files = updatedFiles;
+            
+            [currentUploads removeObject:fileUpload];
+            
+            TGCollectionMenuSection *section = strongSelf->_fileSections[currentType];
+            for (TGPassportFileCollectionItem *item in section.items)
             {
                 if ([item isKindOfClass:[TGPassportFileCollectionItem class]] && [item.file isEqual:fileUpload])
                 {
-                  
                     item.file = file;
                     item.progressSignal = [SSignal single:nil];
                     item.subtitle = [TGDateUtils stringForPreciseDate:file.date];
@@ -428,112 +517,143 @@
     
 }
 
+- (bool)hasActiveUploads
+{
+    for (NSArray *uploads in _uploads.allValues)
+    {
+        if (uploads.count > 0)
+            return true;
+    }
+    return false;
+}
+
 - (void)updateFiles
 {
-    if (_scansSection == nil)
-        return;
-    
-    NSInteger topIndex = [self scansTopIndex];
-    NSUInteger count = 2 + topIndex;
-    while (_scansSection.items.count != count)
+    [_fileSections enumerateKeysAndObjectsUsingBlock:^(NSNumber *nFileType, TGCollectionMenuSection *section, __unused BOOL *stop)
     {
-        [_scansSection deleteItemAtIndex:topIndex];
-    }
-    
-    __weak TGPassportDocumentController *weakSelf = self;
-    NSInteger i = 0;
-    for (TGPassportFile *file in _files)
-    {
-        TGPassportFileCollectionItem *item = [[TGPassportFileCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"Passport.Scans.ScanIndex"), [NSString stringWithFormat:@"%d", (int)i + 1]] action:^(TGPassportFileCollectionItem *fileItem)
+        NSInteger topIndex = [self filesTopIndex:(TGPassportDocumentFileType)nFileType.integerValue];
+        NSUInteger count = 2 + topIndex;
+        while (section.items.count != count)
         {
-            __strong TGPassportDocumentController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf viewFile:fileItem.file];
-        } removeRequested:^(TGPassportFileCollectionItem *fileItem)
-        {
-            __strong TGPassportDocumentController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                [strongSelf deleteFile:fileItem.file];
-        }];
-        item.file = file;
-        item.deselectAutomatically = true;
-        item.imageViewHidden = [file isEqual:_hiddenFile];
-        [item setImageSignal:secureMediaTransform(TGTelegraphInstance.mediaBox, file, true)];
-        item.progressSignal = [[TGTelegraphInstance.mediaBox resourceStatus:secureResource(file, false)] map:^id(MediaResourceStatus *status)
-        {
-            switch (status.status)
-            {
-                case MediaResourceStatusRemote:
-                    return @0.0;
-                case MediaResourceStatusFetching:
-                    return @(status.progress);
-                default:
-                    return nil;
-            }
-        }];
+            [section deleteItemAtIndex:topIndex];
+        }
         
-        TGPassportError *error = [_errors errorForType:self.type fileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
-        if (error.text.length > 0)
+        __weak TGPassportDocumentController *weakSelf = self;
+        NSInteger i = 0;
+        for (TGPassportFile *file in _files[nFileType])
         {
-            item.subtitle = error.text;
-            item.isRequired = true;
+            TGPassportFileCollectionItem *item = [[TGPassportFileCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"Passport.Scans.ScanIndex"), [NSString stringWithFormat:@"%d", (int)i + 1]] action:^(TGPassportFileCollectionItem *fileItem)
+            {
+                __strong TGPassportDocumentController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf viewFile:fileItem.file];
+            } removeRequested:^(TGPassportFileCollectionItem *fileItem)
+            {
+                __strong TGPassportDocumentController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                    [strongSelf deleteFile:fileItem.file];
+            }];
+            item.file = file;
+            item.deselectAutomatically = true;
+            item.imageViewHidden = [file isEqual:_hiddenFile];
+            [item setImageSignal:secureMediaTransform(TGTelegraphInstance.mediaBox, file, true)];
+            item.progressSignal = [[TGTelegraphInstance.mediaBox resourceStatus:secureResource(file, false)] map:^id(MediaResourceStatus *status)
+            {
+                switch (status.status)
+                {
+                    case MediaResourceStatusRemote:
+                        return @0.0;
+                    case MediaResourceStatusFetching:
+                        return @(status.progress);
+                    default:
+                        return nil;
+                }
+            }];
+            
+            TGPassportError *error = nil;
+            if (nFileType.integerValue == TGPassportDocumentFileTypeGeneric)
+                error = [_errors errorForType:self.type fileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
+            else if (nFileType.integerValue == TGPassportDocumentFileTypeTranslation)
+                error = [_errors errorForType:self.type translationFileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
+            if (error.text.length > 0)
+            {
+                item.subtitle = error.text;
+                item.isRequired = true;
+            }
+            else
+            {
+                item.subtitle = [TGDateUtils stringForPreciseDate:file.date];
+                item.isRequired = false;
+            }
+            [section insertItem:item atIndex:topIndex + i];
+            i++;
         }
-        else
-        {
-            item.subtitle = [TGDateUtils stringForPreciseDate:file.date];
-            item.isRequired = false;
-        }
-        [_scansSection insertItem:item atIndex:topIndex + i];
-        i++;
-    }
-    
-    [self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:[self.menuSections.sections indexOfObject:_scansSection]]];
-    
-    [self updateUploadItem];
-    [self checkInputValues];
+        
+        [self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:[self.menuSections.sections indexOfObject:section]]];
+        
+        [self updateUploadItem];
+        [self checkInputValues];
+    }];
 }
 
 - (void)updateUploadItem
 {
-    NSUInteger count = _files.count + _uploads.count;
-    _uploadItem.title = count > 0 ? TGLocalized(@"Passport.Scans.UploadNew") : TGLocalized(@"Passport.Scans.Upload");
-    _uploadItem.enabled = count < 20;
+    [_fileSections enumerateKeysAndObjectsUsingBlock:^(NSNumber *nFileType, TGCollectionMenuSection *section, __unused BOOL *stop)
+    {
+        NSUInteger count = [(NSArray *)_files[nFileType] count] + [(NSArray *)_uploads[nFileType] count];
+        for (TGButtonCollectionItem *item in section.items)
+        {
+            if (![item isKindOfClass:[TGButtonCollectionItem class]])
+                continue;
+            
+            item.title = count > 0 ? TGLocalized(@"Passport.Scans.UploadNew") : TGLocalized(@"Passport.Scans.Upload");
+            item.enabled = count < 20;
+        }
+    }];
 }
 
 #pragma mark -
 
-- (TGCollectionMenuSection *)scansSection
+- (NSUInteger)filesTopIndex:(TGPassportDocumentFileType)type
 {
-    NSUInteger section = [self.menuSections.sections indexOfObject:_scansSection];
-    if (section == NSNotFound)
-        return nil;
-    
-    return self.menuSections.sections[section];
-}
-
-- (NSUInteger)scansTopIndex
-{
-    return _fileErrorsItem != nil ? 2 : 1;
+    return _fileErrorItems[@(type)] ? 2 : 1;
 }
 
 - (void)deleteFile:(TGPassportFile *)file
 {
-    _changed = true;
+    [self setChanged:true];
+    
     if ([file isKindOfClass:[TGPassportFile class]])
     {
-        NSMutableArray *updatedFiles = [_files mutableCopy];
-        NSUInteger index = [updatedFiles indexOfObject:file];
-        if (index == NSNotFound)
-            return;
-        
-        [_errors correctFileErrorForType:self.type fileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
-        
-        [updatedFiles removeObjectAtIndex:index];
-        _files = updatedFiles;
+        for (NSNumber *type in _fileTypes)
+        {
+            NSArray *files = _files[type];
+            NSUInteger index = [files indexOfObject:file];
+            
+            if (index != NSNotFound)
+            {
+                NSMutableArray *newFiles = [_files[type] mutableCopy];
+                if (type.integerValue == TGPassportDocumentFileTypeGeneric)
+                    [_errors correctFileErrorForType:self.type fileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
+                else if (type.integerValue == TGPassportDocumentFileTypeTranslation)
+                    [_errors correctTranslationErrorForType:self.type fileHash:[TGStringUtils stringByEncodingInBase64:file.fileHash]];
+
+                [newFiles removeObjectAtIndex:index];
+
+                NSMutableDictionary *updatedFiles = [_files mutableCopy];
+                updatedFiles[type] = newFiles;
+                _files = updatedFiles;
+                
+                break;
+            }
+        }
     }
     else if ([file isKindOfClass:[TGPassportFileUpload class]])
     {
-        [_uploads removeObject:file];
+        for (NSMutableArray *uploads in _uploads.allValues)
+        {
+            [uploads removeObject:file];
+        }
     }
     
     dispatch_async(dispatch_get_main_queue(), ^
@@ -543,50 +663,65 @@
     
     [self checkInputValues];
     
-    if (_scansSection != nil)
+    [_fileSections enumerateKeysAndObjectsUsingBlock:^(NSNumber *nFileType, TGCollectionMenuSection *section, __unused BOOL *stop)
     {
         NSUInteger itemIndex = 0;
-        for (TGPassportFileCollectionItem *item in [self scansSection].items)
+        for (TGPassportFileCollectionItem *item in section.items)
         {
             if ([item isKindOfClass:[TGPassportFileCollectionItem class]] && [item.file isEqual:file])
             {
                 [self.menuSections beginRecordingChanges];
-                [self.menuSections deleteItemFromSection:[self.menuSections.sections indexOfObject:_scansSection] atIndex:itemIndex];
+                [self.menuSections deleteItemFromSection:[self.menuSections.sections indexOfObject:section] atIndex:itemIndex];
                 [self.menuSections commitRecordedChanges:self.collectionView];
                 break;
             }
             itemIndex++;
         }
-
-        NSUInteger topIndex = [self scansTopIndex];
-        for (NSUInteger i = topIndex; i < _scansSection.items.count - topIndex; i++)
+        
+        NSUInteger topIndex = [self filesTopIndex:(TGPassportDocumentFileType)nFileType.integerValue];
+        for (NSUInteger i = topIndex; i < section.items.count; i++)
         {
+            TGPassportFileCollectionItem *collectionItem = section.items[i];
+            if (![collectionItem isKindOfClass:[TGPassportFileCollectionItem class]])
+                continue;
+            
             NSInteger index = i - topIndex;
-            TGPassportFileCollectionItem *collectionItem = _scansSection.items[i];
             collectionItem.title = [NSString stringWithFormat:TGLocalized(@"Passport.Scans.ScanIndex"), [NSString stringWithFormat:@"%d", (int)index + 1]];
         }
-    }
+    }];
 }
 
 - (NSArray *)allFiles
 {
-    NSArray *allFiles = [_files arrayByAddingObjectsFromArray:_uploads];
-    allFiles = [allFiles sortedArrayUsingComparator:^NSComparisonResult(TGPassportFile *file1, TGPassportFile *file2)
+    NSArray *genericFiles = _files[@(TGPassportDocumentFileTypeGeneric)] ?: @[];
+    genericFiles = [genericFiles arrayByAddingObjectsFromArray:_uploads[@(TGPassportDocumentFileTypeGeneric)]];
+    genericFiles = [genericFiles sortedArrayUsingComparator:^NSComparisonResult(TGPassportFile *file1, TGPassportFile *file2)
     {
         return file1.date < file2.date ? NSOrderedAscending : NSOrderedDescending;
     }];
-    return allFiles;
+    
+    NSArray *translationFiles = _files[@(TGPassportDocumentFileTypeTranslation)] ?: @[];
+    translationFiles = [translationFiles arrayByAddingObjectsFromArray:_uploads[@(TGPassportDocumentFileTypeTranslation)]];
+    translationFiles = [translationFiles sortedArrayUsingComparator:^NSComparisonResult(TGPassportFile *file1, TGPassportFile *file2)
+    {
+        return file1.date < file2.date ? NSOrderedAscending : NSOrderedDescending;
+    }];
+    
+    return [genericFiles arrayByAddingObjectsFromArray:translationFiles];
 }
 
 - (CGSize)thumbnailSizeForFile:(id)file
 {
-    for (TGPassportFileCollectionItem *fileItem in _scansSection.items)
+    for (TGCollectionMenuSection *section in _fileSections.allValues)
     {
-        if (![fileItem isKindOfClass:[TGPassportFileCollectionItem class]])
-            continue;
-        
-        if ([fileItem.file isEqual:file])
-            return fileItem.imageSize;
+        for (TGPassportFileCollectionItem *fileItem in section.items)
+        {
+            if (![fileItem isKindOfClass:[TGPassportFileCollectionItem class]])
+                continue;
+            
+            if ([fileItem.file isEqual:file])
+                return fileItem.imageSize;
+        }
     }
     return CGSizeZero;
 }
@@ -681,34 +816,45 @@
 
 - (TGPassportFileCollectionItem *)itemForFile:(TGPassportFile *)passportFile
 {
-    NSUInteger index = NSNotFound;
-    NSUInteger i = 0;
-    for (TGPassportFile *file in _files)
+    for (NSNumber *type in _fileTypes)
     {
-        if ([file isEqual:passportFile])
+        NSUInteger index = NSNotFound;
+        NSUInteger i = 0;
+        for (TGPassportFile *file in _files[type])
         {
-            index = i;
-            break;
+            if ([file isEqual:passportFile])
+            {
+                index = i;
+                break;
+            }
+            i++;
         }
-        i++;
+        
+        if (index != NSNotFound)
+        {
+            NSInteger topIndex = [self filesTopIndex:(TGPassportDocumentFileType)type.integerValue];
+            TGCollectionMenuSection *section = _fileSections[type];
+            if (section == nil)
+                return nil;
+            
+            TGPassportFileCollectionItem *item = [section.items objectAtIndex:topIndex + index];
+            return item;
+        }
     }
-    
-    if (index == NSNotFound)
-        return nil;
-    
-    NSInteger topIndex = [self scansTopIndex];
-    TGPassportFileCollectionItem *item = [_scansSection.items objectAtIndex:topIndex + index];
-    return item;
+    return nil;
 }
 
 - (void)updateHiddenFile:(TGPassportFile *)hiddenFile
 {
     _hiddenFile = hiddenFile;
     
-    for (TGPassportFileCollectionItem *item in _scansSection.items)
+    for (TGCollectionMenuSection *section in _fileSections.allValues)
     {
-        if ([item isKindOfClass:[TGPassportFileCollectionItem class]])
-            item.imageViewHidden = [item.file isEqual:hiddenFile];
+        for (TGPassportFileCollectionItem *item in section.items)
+        {
+            if ([item isKindOfClass:[TGPassportFileCollectionItem class]])
+                item.imageViewHidden = [item.file isEqual:hiddenFile];
+        }
     }
 }
 
@@ -725,6 +871,28 @@
 - (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
 {
     return UIInterfaceOrientationPortrait;
+}
+
+- (void)presentUpdateAppAlert
+{
+    __weak TGPassportDocumentController *weakSelf = self;
+    NSString *errorText = TGLocalized(@"Passport.UpdateRequiredError");
+    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.NotNow") okButtonTitle:TGLocalized(@"Application.Update") completionBlock:^(__unused bool okButtonPressed)
+    {
+        __strong TGPassportDocumentController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf.navigationController popViewControllerAnimated:true];
+        
+        if (okButtonPressed)
+        {
+            NSNumber *appStoreId = @686449807;
+#ifdef TELEGRAM_APPSTORE_ID
+            appStoreId = TELEGRAM_APPSTORE_ID;
+#endif
+            NSURL *appStoreURL = [NSURL URLWithString:[NSString stringWithFormat:@"itms-apps://itunes.apple.com/app/id%@", appStoreId]];
+            [[UIApplication sharedApplication] openURL:appStoreURL];
+        }
+    }];
 }
 
 @end

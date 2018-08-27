@@ -715,10 +715,6 @@ static void signalBarsCallback(tgvoip::VoIPController *controller, int bars)
 
 - (void)presentCallNotification:(int64_t)peerId
 {
-    UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
-    if ([UIApplication sharedApplication] == nil)
-        applicationState = UIApplicationStateBackground;
-
     if ([self _isInBackground])
     {
         UILocalNotification *notification = [[UILocalNotification alloc] init];

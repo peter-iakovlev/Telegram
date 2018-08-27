@@ -62,22 +62,17 @@
     _view.presentation = presentation;
     _view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _view.secureEntry = false;
+    __weak TGPasswordHintController *weakSelf = self;
+    _view.returnPressed = ^(__unused NSString *password)
+    {
+        __strong TGPasswordHintController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            [strongSelf nextPressed];
+        }
+    };
     [self.view addSubview:_view];
     
     [_view setTitle:TGLocalized(@"TwoStepAuth.SetupHint")];
-    
-    NSMutableString *maskText = [[NSMutableString alloc] init];
-    if (_password.length > 2)
-    {
-        [maskText appendString:[_password substringToIndex:1]];
-        for (NSUInteger i = 2; i < _password.length; i++)
-        {
-            [maskText appendString:@"*"];
-        }
-        [maskText appendString:[_password substringWithRange:NSMakeRange(_password.length - 1, 1)]];
-    }
-    
-    [_view setText:maskText];
     
     if (![self _updateControllerInset:false])
         [self controllerInsetUpdated:UIEdgeInsetsZero];

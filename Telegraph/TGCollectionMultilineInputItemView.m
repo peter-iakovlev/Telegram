@@ -135,7 +135,7 @@
             if (length > _maxLength)
             {
                 NSUInteger difference = length - _maxLength;
-                newText = [textView.text stringByReplacingCharactersInRange:range withString:[newReplacementText substringToIndex:length - difference]];
+                newText = [newText stringByReplacingCharactersInRange:range withString:[newReplacementText substringToIndex:length - difference]];
             }
             
             _textView.text = newText;

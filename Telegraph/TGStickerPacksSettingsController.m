@@ -13,7 +13,6 @@
 #import "TGMaskStickersSignals.h"
 
 #import <LegacyComponents/TGProgressWindow.h>
-#import "TGAlertView.h"
 #import "TGCustomActionSheet.h"
 
 #import "TGStickerPackPreviewWindow.h"

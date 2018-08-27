@@ -16,9 +16,11 @@
 #import "TGTwoStepVerifyPasswordSignal.h"
 #import "TGTwoStepSetPaswordSignal.h"
 #import "TGTwoStepRecoverySignals.h"
+#import "TGTwoStepUtils.h"
 
 #import "TGPassportICloud.h"
 #import "TGPassportFile.h"
+#import "TGPassportLanguageMap.h"
 
 #import "TGHeaderCollectionItem.h"
 #import "TGPassportFieldCollectionItem.h"
@@ -43,6 +45,15 @@
 #import "TGPasswordSetupController.h"
 #import "TGPasswordHintController.h"
 
+@interface TGPassportDocumentOption : NSObject
+
+@property (nonatomic, readonly) NSString *title;
+@property (nonatomic, readonly) void (^action)(TGMenuSheetController *);
+
++ (instancetype)optionWithTitle:(NSString *)title action:(void (^)(TGMenuSheetController *))action;
+ 
+@end
+
 @interface TGPassportRequestController ()
 {
     TGPassportFormRequest *_request;
@@ -51,10 +62,13 @@
     SVariable *_twoStepConfig;
     SVariable *_passwordVariable;
     SVariable *_formVariable;
+    SVariable *_failedVariable;
     
     SVariable *_viewAppeared;
     
     SVariable *_passwordSettingsVariable;
+    SVariable *_langMapVariable;
+    TGPassportLanguageMap *_languageMap;
     
     TGPassportForm *_form;
     TGPassportPasswordRequest *_passwordRequest;
@@ -62,6 +76,7 @@
     SMetaDisposable *_disposable;
     SMetaDisposable *_saveDisposable;
     SMetaDisposable *_requestRecoveryDisposable;
+    SMetaDisposable *_langDisposable;
     
     UIActivityIndicatorView *_activityIndicator;
     UIButton *_authorizeButton;
@@ -74,10 +89,6 @@
     TGPassportSetupPasswordView *_setupPasswordView;
     
     TGCollectionMenuSection *_mainSection;
-    TGPassportFieldCollectionItem *_identityItem;
-    TGPassportFieldCollectionItem *_addressItem;
-    TGPassportFieldCollectionItem *_phoneItem;
-    TGPassportFieldCollectionItem *_emailItem;
     TGCommentCollectionItem *_privacyItem;
     
     TGCollectionMenuSection *_passwordSection;
@@ -85,8 +96,6 @@
     
     TGCollectionMenuSection *_deleteSection;
     TGButtonCollectionItem *_deleteItem;
-    
-    __weak TGMenuSheetController *_menuController;
 }
 @end
 
@@ -101,6 +110,7 @@
         
         _disposable = [[SMetaDisposable alloc] init];
         _saveDisposable = [[SMetaDisposable alloc] init];
+        _langDisposable = [[SMetaDisposable alloc] init];
         
         _twoStepConfig = [[SVariable alloc] init];
         [_twoStepConfig set:[TGTwoStepConfigSignal twoStepConfig]];
@@ -108,6 +118,19 @@
         _formVariable = [[SVariable alloc] init];
         _passwordSettingsVariable = [[SVariable alloc] init];
         _passwordVariable = [[SVariable alloc] init];
+        _failedVariable = [[SVariable alloc] init];
+        [_failedVariable set:[SSignal single:@false]];
+        
+        _langMapVariable = [[SVariable alloc] init];
+        [_langMapVariable set:[TGPassportSignals languageMap]];
+        
+        __weak TGPassportRequestController *weakSelf = self;
+        [_langDisposable setDisposable:[[_langMapVariable.signal deliverOn:[SQueue mainQueue]] startWithNext:^(TGPassportLanguageMap *next)
+        {
+            __strong TGPassportRequestController *strongSelf = weakSelf;
+            if (strongSelf != nil)
+                strongSelf->_languageMap = next;
+        }]];
         
         _viewAppeared = [[SVariable alloc] init];
         if (formRequest != nil)
@@ -125,14 +148,6 @@
         }
         else
         {
-//            _passwordItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.ChangePassword") action:@selector(changePasswordPressed)];
-//            _passwordItem.deselectAutomatically = true;
-//            _passwordItem.alignment = NSTextAlignmentCenter;
-//            _passwordItem.titleColor = self.presentation.pallete.collectionMenuAccentColor;
-//            
-//            _passwordSection = [[TGCollectionMenuSection alloc] initWithItems:@[]];
-//            [self.menuSections addSection:_passwordSection];
-            
             _deleteItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.DeletePassport") action:@selector(deletePressed)];
             _deleteItem.deselectAutomatically = true;
             _deleteItem.alignment = NSTextAlignmentCenter;
@@ -165,7 +180,10 @@
     [_disposable dispose];
     [_saveDisposable dispose];
     [_requestRecoveryDisposable dispose];
+    [_langDisposable dispose];
 }
+
+#pragma mark - View
 
 - (void)loadView
 {
@@ -282,6 +300,16 @@
         [self controllerInsetUpdated:UIEdgeInsetsZero];
 }
 
+- (void)setPresentation:(TGPresentation *)presentation
+{
+    [super setPresentation:presentation];
+    
+    _barButton.image = presentation.images.callsInfoIcon;
+    [_headerView setPresentation:presentation];
+    [_passwordView setPresentation:presentation];
+    [_setupPasswordView setPresentation:presentation];
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -308,17 +336,36 @@
         [_passwordView focus];
 }
 
-- (void)setupForMock
-{
-    TGPassportDecryptedForm *form = [[TGPassportDecryptedForm alloc] initWithForm:nil values:nil];
-    [self setForm:form passwordRequest:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateAuthorized settings:nil hasRecovery:false passwordHint:nil error:nil]];
+- (void)pushViewController:(TGViewController *)viewController animated:(bool)animated {
+    for (TGViewController *viewController in self.navigationController.childViewControllers) {
+        if ([viewController isKindOfClass:[TGMenuSheetController class]]) {
+            TGMenuSheetController *menuController = (TGMenuSheetController *)viewController;
+            [menuController dismissAnimated:false];
+            break;
+        }
+    }
+    
+    [self.navigationController pushViewController:viewController animated:animated];
 }
+
+#pragma mark - Data Setup
 
 - (void)setupForRequest
 {
-    if (_request.payload.length == 0) {
-        [self failWithError:@"PAYLOAD_EMPTY"];
-        return;
+    bool requiresNonce = [_request.scope hasPrefix:@"{"] && [_request.scope hasSuffix:@"}"];
+    if (requiresNonce)
+    {
+        if (_request.nonce.length == 0) {
+            [self failWithError:@"NONCE_EMPTY"];
+            return;
+        }
+    }
+    else
+    {
+        if (_request.payload.length == 0) {
+            [self failWithError:@"PAYLOAD_EMPTY"];
+            return;
+        }
     }
     
     SSignal *displaySignal = [SSignal combineSignals:@[ _passwordSettingsVariable.signal, [_formVariable.signal mapToSignal:^SSignal *(id value) {
@@ -327,8 +374,8 @@
         else
             return [SSignal single:value];
     }]]];
-    [_passwordSettingsVariable set:[[self _passwordSignal] ignoreRepeated]];
-    [_formVariable set:[self _formRequestSignal]];
+    [_passwordSettingsVariable set:[[self passwordSignal] ignoreRepeated]];
+    [_formVariable set:[self formRequestSignal]];
 
     __weak TGPassportRequestController *weakSelf = self;
     [_disposable setDisposable:[[[displaySignal map:^id(NSArray *values) {
@@ -353,6 +400,47 @@
         
         [strongSelf setForm:form passwordRequest:passwordRequest];
     } error:^(NSString *error)
+    {
+        if (![error isKindOfClass:[NSString class]])
+            error = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+        
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf failWithError:error];
+    } completed:nil]];
+}
+
+- (void)setupForEditing
+{
+    SSignal *displaySignal = [_passwordSettingsVariable.signal mapToSignal:^SSignal *(TGPassportPasswordRequest *request)
+    {
+        if (request.state == TGPassportPasswordRequestStateAuthorized)
+        {
+            return [[TGPassportSignals allSecureValuesWithSecret:request.settings.secret] mapToSignal:^SSignal *(TGPassportDecryptedForm *form)
+            {
+                return [SSignal single:@{ @"password": request, @"form": form }];
+            }];
+        }
+        else
+        {
+            return [SSignal single:@{ @"password": request }];
+        }
+    }];
+    
+    [_passwordSettingsVariable set:[[self passwordSignal] ignoreRepeated]];
+    
+    __weak TGPassportRequestController *weakSelf = self;
+    [_disposable setDisposable:[[displaySignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *values)
+    {
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+        
+        TGPassportPasswordRequest *passwordRequest = values[@"password"];
+        TGPassportForm *form = values[@"form"];
+        
+        [strongSelf setForm:form passwordRequest:passwordRequest];
+    } error:^(id error)
     {
         if (![error isKindOfClass:[NSString class]])
             error = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
@@ -395,7 +483,8 @@
       @"PUBLIC_KEY_REQUIRED",
       @"PUBLIC_KEY_INVALID",
       @"SCOPE_EMPTY",
-      @"PAYLOAD_EMPTY"
+      @"PAYLOAD_EMPTY",
+      @"NONCE_EMPTY"
     ];
     
     __weak TGPassportRequestController *weakSelf = self;
@@ -405,60 +494,57 @@
      {
          __strong TGPassportRequestController *strongSelf = weakSelf;
          if (strongSelf != nil)
+         {
              [strongSelf dismissViewControllerAnimated:true completion:nil];
          
-         if (shouldReturnError && strongSelf->_request.callbackUrl.length > 0)
-         {
-             NSString *url = nil;
-             if ([strongSelf->_request.callbackUrl hasPrefix:@"tgbot"]) {
-                 url = [NSString stringWithFormat:@"tgbot%d://passport/error?error=%@", _request.botId, error];
-             } else {
-                 url = [TGPassportRequestController urlString:_request.callbackUrl byAppendingQueryString:[NSString stringWithFormat:@"tg_passport=error&error=%@", error]];
+             if (shouldReturnError && strongSelf->_request.callbackUrl.length > 0)
+             {
+                 NSString *url = nil;
+                 if ([strongSelf->_request.callbackUrl hasPrefix:@"tgbot"]) {
+                     url = [NSString stringWithFormat:@"tgbot%d://passport/error?error=%@", _request.botId, error];
+                 } else {
+                     url = [TGPassportRequestController urlString:_request.callbackUrl byAppendingQueryString:[NSString stringWithFormat:@"tg_passport=error&error=%@", error]];
+                 }
+                 [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:url]];
              }
-             [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:url]];
          }
      }];
 }
 
-- (void)setupForEditing
+- (TGPassportDecryptedForm *)decryptedForm
 {
-    SSignal *displaySignal = [_passwordSettingsVariable.signal mapToSignal:^SSignal *(TGPassportPasswordRequest *request)
-    {
-        if (request.state == TGPassportPasswordRequestStateAuthorized)
-        {
-            return [[TGPassportSignals allSecureValuesWithSecret:request.settings.secret] mapToSignal:^SSignal *(TGPassportDecryptedForm *form)
-            {
-                return [SSignal single:@{ @"password": request, @"form": form }];
-            }];
-        }
-        else
-        {
-            return [SSignal single:@{ @"password": request }];
-        }
-    }];
+    if (![_form isKindOfClass:[TGPassportDecryptedForm class]])
+        return nil;
     
-    [_passwordSettingsVariable set:[[self _passwordSignal] ignoreRepeated]];
-    
-    __weak TGPassportRequestController *weakSelf = self;
-    [_disposable setDisposable:[[displaySignal deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *values)
-    {
-        __strong TGPassportRequestController *strongSelf = weakSelf;
-        if (strongSelf == nil)
-            return;
-        
-        TGPassportPasswordRequest *passwordRequest = values[@"password"];
-        TGPassportForm *form = values[@"form"];
-        
-        [strongSelf setForm:form passwordRequest:passwordRequest];
-    }]];
+    return (TGPassportDecryptedForm *)_form;
 }
 
-- (SSignal *)_passwordSignal
++ (NSString *)urlString:(NSString *)urlString byAppendingQueryString:(NSString *)queryString
+{
+    if (queryString.length == 0)
+        return urlString;
+    
+    return [NSString stringWithFormat:@"%@%@%@", urlString, [urlString rangeOfString:@"?"].length > 0 ? @"&" : @"?", queryString];
+}
+
+#pragma mark - Setup Signals
+
+- (SSignal *)passwordSignal
 {
     TGPassportFormRequest *request = _request;
-    return [[_twoStepConfig.signal ignoreRepeated] mapToSignal:^SSignal *(TGTwoStepConfig *twoStepConfig)
+    SVariable *twoStepConfigVar = _twoStepConfig;
+    SVariable *passwordVar = _passwordVariable;
+    SVariable *failedVar = _failedVariable;
+    return [[[twoStepConfigVar.signal ignoreRepeated] mapToSignal:^SSignal *(TGTwoStepConfig *twoStepConfig) {
+        return [[failedVar.signal take:1] map:^id(NSNumber *failed) {
+            return @[twoStepConfig, failed];
+        }];
+    }] mapToSignal:^SSignal *(NSArray *next)
     {
-        if (twoStepConfig.currentSalt.length == 0)
+        TGTwoStepConfig *twoStepConfig = next.firstObject;
+        bool failed = [next.lastObject boolValue];
+        
+        if (!twoStepConfig.hasPassword)
         {
             return [SSignal single:[TGPassportPasswordRequest requestWithState:twoStepConfig.unconfirmedEmailPattern.length > 0 ? TGPassportPasswordRequestStateWaitingEmail : TGPassportPasswordRequestStateNoPassword settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:nil error:nil]];
         }
@@ -479,18 +565,23 @@
             }
         
             if (passwordHash.length > 0 && secretPasswordHash.length > 0)
-                settingsSignal = [TGTwoStepVerifyPasswordSignal passwordHashSettings:passwordHash secretPasswordHash:secretPasswordHash];
+                settingsSignal = [TGTwoStepVerifyPasswordSignal passwordHashSettings:passwordHash secretPasswordHash:secretPasswordHash config:twoStepConfig];
             
             SSignal *statusSignal = settingsSignal != nil ? [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateLoggingInProgress settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]] : [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateWaitingForEntry settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
-            SSignal *proceedSignal = settingsSignal != nil ? [SSignal single:nil] : _passwordVariable.signal;
+            
+            SSignal *proceedSignal = settingsSignal != nil ? [SSignal single:nil] : passwordVar.signal;
+            if (failed)
+            {
+                [failedVar set:[SSignal single:@false]];
+                statusSignal = [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateAccessDenied settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
+                proceedSignal = passwordVar.signal;
+            }
             
             return [statusSignal then:[proceedSignal mapToSignal:^SSignal *(NSString *password)
             {
                 NSData *passwordHash = nil;
                 if (settingsSignal == nil)
-                {
                     settingsSignal = [TGTwoStepVerifyPasswordSignal passwordSettings:password config:twoStepConfig outPasswordHash:&passwordHash];
-                }
                 
                 SSignal *initial = [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateLoggingInProgress settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
                 
@@ -499,12 +590,8 @@
                     TGDispatchOnMainThread(^
                     {
                         if (passwordHash != nil)
-                        {                            
-                            NSMutableData *passwordHashData = [[NSMutableData alloc] init];
-                            [passwordHashData appendData:next.secureSalt];
-                            [passwordHashData appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-                            [passwordHashData appendData:next.secureSalt];
-                            NSData *secretPasswordHash = [TGTwoStepConfigSignal TGSha512:passwordHashData];
+                        {
+                            NSData *secretPasswordHash = [TGTwoStepUtils securePasswordHashWithPassword:password secureAlgo:next.secureAlgo];
                             [TGPassportSignals storePasswordHash:passwordHash secretPasswordHash:secretPasswordHash];
                         }
                     });
@@ -513,21 +600,21 @@
                     int64_t calculatedHash =  [TGPassportSignals secureSecretId:settings.secret];
                     if (settings.secret.length == 0)
                     {
-                        NSData *secret = [TGPassportSignals secretWithSecretRandom:twoStepConfig.secretRandom];
-                        return [[TGTwoStepSetPaswordSignal setSecureSecret:secret nextSecureSalt:twoStepConfig.nextSecureSalt currentSalt:twoStepConfig.currentSalt currentPassword:settings.password recoveryEmail:settings.email] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
+                        NSData *secret = [TGPassportSignals secretWithSecretRandom:twoStepConfig.secureRandom];
+                        return [[TGTwoStepSetPaswordSignal setSecureSecret:secret nextSecureAlgo:twoStepConfig.nextSecureAlgo currentPassword:settings.password currentAlgo:twoStepConfig.currentAlgo recoveryEmail:settings.email srpId:twoStepConfig.srpId srpB:twoStepConfig.srpB] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
                         {
                             return [[TGTwoStepVerifyPasswordSignal passwordSettings:password config:newTwoStepConfig] mapToSignal:^SSignal *(TGPasswordSettings *newSettings)
                             {
-                                return [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateAuthorized settings:newSettings hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
+                                return [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateAuthorized settings:newSettings hasRecovery:newTwoStepConfig.hasRecovery passwordHint:newTwoStepConfig.currentHint error:nil]];
                             }];
                         }];
                     }
                     else if (calculatedHash != settings.secretHash)
                     {
-                        return [[TGTwoStepSetPaswordSignal setSecureSecret:nil nextSecureSalt:twoStepConfig.nextSecureSalt currentSalt:twoStepConfig.currentSalt currentPassword:settings.password recoveryEmail:settings.email] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
+                        return [[TGTwoStepSetPaswordSignal setSecureSecret:nil nextSecureAlgo:twoStepConfig.nextSecureAlgo currentPassword:settings.password currentAlgo:twoStepConfig.currentAlgo recoveryEmail:settings.email srpId:twoStepConfig.srpId srpB:twoStepConfig.srpB] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
                         {
-                            NSData *secret = [TGPassportSignals secretWithSecretRandom:newTwoStepConfig.secretRandom];
-                            return [[TGTwoStepSetPaswordSignal setSecureSecret:secret nextSecureSalt:newTwoStepConfig.nextSecureSalt currentSalt:newTwoStepConfig.currentSalt currentPassword:settings.password recoveryEmail:settings.email] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
+                            NSData *secret = [TGPassportSignals secretWithSecretRandom:newTwoStepConfig.secureRandom];
+                            return [[TGTwoStepSetPaswordSignal setSecureSecret:secret nextSecureAlgo:newTwoStepConfig.nextSecureAlgo currentPassword:settings.password currentAlgo:newTwoStepConfig.currentAlgo recoveryEmail:settings.email srpId:newTwoStepConfig.srpId srpB:newTwoStepConfig.srpB] mapToSignal:^SSignal *(TGTwoStepConfig *newTwoStepConfig)
                             {
                                 return [[TGTwoStepVerifyPasswordSignal passwordSettings:password config:newTwoStepConfig] mapToSignal:^SSignal *(TGPasswordSettings *newSettings)
                                 {
@@ -545,10 +632,25 @@
                     if (![error isKindOfClass:[NSString class]])
                         error = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
                     
-                    if (automaticLogin && [error rangeOfString:@"PASSWORD_HASH_INVALID"].location != NSNotFound)
+                    if ([error rangeOfString:@"PASSWORD_HASH_INVALID"].location != NSNotFound || [error rangeOfString:@"SRP_PASSWORD_CHANGED"].location != NSNotFound)
                     {
                         [TGPassportSignals clearStoredPasswordHashes];
-                        return [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateWaitingForEntry settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
+                        [passwordVar set:[SSignal never]];
+                        [twoStepConfigVar set:[TGTwoStepConfigSignal twoStepConfig]];
+                        if (automaticLogin)
+                        {
+                            return [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateWaitingForEntry settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:nil]];
+                        }
+                        else
+                        {
+                            [failedVar set:[SSignal single:@true]];
+                            return [SSignal single:[TGPassportPasswordRequest requestWithState:TGPassportPasswordRequestStateAccessDenied settings:nil hasRecovery:twoStepConfig.hasRecovery passwordHint:twoStepConfig.currentHint error:error]];
+                        }
+                    }
+                    else if ([error rangeOfString:@"SRP_ID_INVALID"].location != NSNotFound)
+                    {
+                        [twoStepConfigVar set:[TGTwoStepConfigSignal twoStepConfig]];
+                        return [SSignal complete];
                     }
                     else
                     {
@@ -561,21 +663,11 @@
     }];
 }
 
-- (SSignal *)_formRequestSignal
+- (SSignal *)formRequestSignal
 {
     return [[TGPassportSignals authorizationFormForBotId:_request.botId scope:_request.scope publicKey:_request.publicKey] catch:^SSignal *(id error) {
         return [SSignal single:error];
     }];
-}
-
-- (void)setPresentation:(TGPresentation *)presentation
-{
-    [super setPresentation:presentation];
-    
-    _barButton.image = presentation.images.callsInfoIcon;
-    [_headerView setPresentation:presentation];
-    [_passwordView setPresentation:presentation];
-    [_setupPasswordView setPresentation:presentation];
 }
 
 - (void)setForm:(TGPassportForm *)form passwordRequest:(TGPassportPasswordRequest *)passwordRequest
@@ -589,6 +681,8 @@
 
 - (void)reloadItems
 {
+    bool editing = _request == nil;
+    
     while (_mainSection.items.count > 0)
     {
         [_mainSection deleteItemAtIndex:0];
@@ -629,7 +723,7 @@
                 _passwordView.hidden = true;
                 _headerView.avatarHidden = true;
                 _setupPasswordView.hidden = _passwordRequest.state == TGPassportPasswordRequestStateWaitingEmail;
-                _setupPasswordView.request = _request != nil;
+                _setupPasswordView.request = !editing;
                 
                 fadeIn = true;
                 
@@ -657,8 +751,8 @@
                         [strongSelf->_passwordView focus];
                 }];
                 
-                _headerView.logoHidden = _request != nil || (int)TGScreenSize().height == 480;
-                _headerView.avatarHidden = _request == nil || (int)TGScreenSize().height == 480;
+                _headerView.logoHidden = !editing || (int)TGScreenSize().height == 480;
+                _headerView.avatarHidden = editing || (int)TGScreenSize().height == 480;
                 _setupPasswordView.hidden = true;
                 
                 fadeIn = true;
@@ -732,20 +826,11 @@
                     [self layoutHeader:self.view.frame.size];
                 } completion:nil];
 
-                TGHeaderCollectionItem *headerItem = [[TGHeaderCollectionItem alloc] initWithTitle:_request != nil ? TGLocalized(@"Passport.RequestedInformation") : TGLocalized(@"Passport.PassportInformation")];
+                TGHeaderCollectionItem *headerItem = [[TGHeaderCollectionItem alloc] initWithTitle:!editing ? TGLocalized(@"Passport.RequestedInformation") : TGLocalized(@"Passport.PassportInformation")];
                 [_mainSection addItem:headerItem];
                 
-                bool hasValues = false;
-                
-                NSDictionary *identityData = self.identityData;
-                if (identityData != nil || _request == nil)
+                void (^setupIdentityItem)(bool, TGPassportRequiredType *, NSArray *, TGPassportDecryptedValue *, TGPassportDecryptedValue *, bool, bool) = ^(bool oneOf, TGPassportRequiredType *type, NSArray *acceptedTypes, TGPassportDecryptedValue *detailsValue, TGPassportDecryptedValue *documentValue, bool includesDetails, bool exclusive)
                 {
-                    TGPassportType type = (TGPassportType)[identityData[@"type"] integerValue];
-                    NSArray *acceptedTypes = identityData[@"acceptedTypes"];
-                    TGPassportDecryptedValue *detailsValue = identityData[@"info"];
-                    TGPassportDecryptedValue *documentValue = identityData[@"value"];
-                    bool selfieRequired = [identityData[@"selfie"] boolValue];
-                    
                     NSMutableArray *errors = [[NSMutableArray alloc] init];
                     for (TGPassportError *error in [_errors errorsForType:detailsValue.type])
                     {
@@ -759,142 +844,169 @@
                     NSString *title = TGLocalized(@"Passport.FieldIdentity");
                     NSString *uploadSubtitle = TGLocalized(@"Passport.FieldIdentityUploadHelp");
                     bool singleType = false;
-                    if (_request != nil && acceptedTypes.count == 1)
+                    if (!editing && !oneOf)
                     {
                         singleType = true;
-                        switch (type)
+                        title = [TGPassportRequestController titleForType:type.type];
+                        uploadSubtitle = [TGPassportRequestController uploadSubtitleForType:type.type];
+                    }
+                    else if (oneOf)
+                    {
+                        if (acceptedTypes.count == 2)
                         {
-                            case TGPassportTypePersonalDetails:
-                                title = TGLocalized(@"Passport.Identity.TypePersonalDetails");
-                                break;
-                            
-                            case TGPassportTypePassport:
-                                title = TGLocalized(@"Passport.Identity.TypePassport");
-                                uploadSubtitle = TGLocalized(@"Passport.Identity.TypePassportUploadScan");
-                                break;
-                                
-                            case TGPassportTypeIdentityCard:
-                                title = TGLocalized(@"Passport.Identity.TypeIdentityCard");
-                                uploadSubtitle = TGLocalized(@"Passport.Identity.TypeIdentityCardUploadScan");
-                                break;
-                                
-                            case TGPassportTypeDriversLicense:
-                                title = TGLocalized(@"Passport.Identity.TypeDriversLicense");
-                                uploadSubtitle = TGLocalized(@"Passport.Identity.TypeDriversLicenseUploadScan");
-                                break;
-                                
-                            case TGPassportTypeInternalPassport:
-                                title = TGLocalized(@"Passport.Identity.TypeInternalPassport");
-                                uploadSubtitle = TGLocalized(@"Passport.Identity.TypeInternalPassportUploadScan");
-                                break;
-                                
-                            default:
-                                break;
+                            title = [NSString stringWithFormat:TGLocalized(@"Passport.FieldOneOf.Or"), [TGPassportRequestController titleForType:[(TGPassportRequiredType *)acceptedTypes[0] type]], [TGPassportRequestController titleForType:[(TGPassportRequiredType *)acceptedTypes[1] type]]];
                         }
+                        if (!exclusive)
+                            uploadSubtitle = [TGPassportRequestController uploadSubtitleWithFormat:TGLocalized(@"Passport.Identity.UploadOneOfScan") types:acceptedTypes];
                     }
                     
-                    if ([(NSDictionary *)identityData[@"allValues"] count] > 0)
-                        hasValues = true;
-                    
-                    _identityItem = [[TGPassportFieldCollectionItem alloc] initWithTitle:title action:@selector(identityPressed)];
-                    
-                    bool checked = _request != nil;
-                    if (_request == nil)
+                    bool selfieRequired = false;
+                    bool translationRequired = false;
+                    if (type.type != TGPassportTypeUndefined)
                     {
-                        NSArray *existingTypes = [identityData[@"allValues"] allKeys];
-                        NSMutableArray *components = [[NSMutableArray alloc] init];
-                        for (NSNumber *type in existingTypes)
-                        {
-                            NSString *typeName = [TGPassportIdentityController documentDisplayNameForType:(TGPassportType)type.integerValue];
-                            if (typeName.length > 0)
-                                [components addObject:typeName];
-                        }
-                        
-                        if (components.count > 0)
-                            _identityItem.subtitle = [components componentsJoinedByString:@", "];
-                        else
-                            _identityItem.subtitle = uploadSubtitle;
+                        TGPassportRequiredType *requiredType = [self requiredTypeForType:type.type];
+                        selfieRequired = requiredType.selfieRequired;
+                        translationRequired = requiredType.translationRequired;
                     }
                     else
                     {
-                        if (type == TGPassportTypePersonalDetails)
+                        TGPassportRequiredType *requiredType = [self requiredTypeForType:((TGPassportRequiredType *)acceptedTypes.firstObject).type];
+                        selfieRequired = requiredType.selfieRequired;
+                        translationRequired = requiredType.translationRequired;
+                    }
+                    bool nativeNames = false;
+                    if (type.type == TGPassportTypePersonalDetails || includesDetails)
+                    {
+                        TGPassportRequiredType *requiredType = [self requiredTypeForType:TGPassportTypePersonalDetails];
+                        nativeNames = requiredType.includeNativeNames;
+                    }
+                    
+                    TGPassportFieldCollectionItem *item = [[TGPassportFieldCollectionItem alloc] initWithTitle:title action:@selector(identityPressed:)];
+                    item.type = type;
+                    item.acceptedTypes = acceptedTypes;
+                    
+                    bool checked = !editing;
+                    if (editing)
+                    {
+                        NSArray *types = [TGPassportSignals identityTypes];
+                        NSMutableArray *components = [[NSMutableArray alloc] init];
+                        for (TGPassportDecryptedValue *value in self.decryptedForm.values)
                         {
-                            if (detailsValue == nil)
+                            if ([types containsObject:@(value.type)])
                             {
-                                _identityItem.subtitle = TGLocalized(@"Passport.FieldIdentityDetailsHelp");
+                                NSString *typeName = [TGPassportIdentityController documentDisplayNameForType:value.type];
+                                [components addObject:typeName];
+                            }
+                        }
+                        
+                        if (components.count > 0)
+                            item.subtitle = [components componentsJoinedByString:@", "];
+                        else
+                            item.subtitle = uploadSubtitle;
+                    }
+                    else
+                    {
+                        TGPassportPersonalDetailsData *detailsData = (TGPassportPersonalDetailsData *)detailsValue.data;
+                        TGPassportDocumentData *documentData = (TGPassportDocumentData *)documentValue.data;
+                        if (type.type == TGPassportTypePersonalDetails)
+                        {
+                            if (!detailsData.isCompleted)
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldIdentityDetailsHelp");
                                 checked = false;
                             }
                             else
                             {
-                                TGPassportPersonalDetailsData *detailsData = (TGPassportPersonalDetailsData *)detailsValue.data;
-                                NSMutableArray *components = [[NSMutableArray alloc] init];
-                                NSMutableArray *nameComponents = [[NSMutableArray alloc] init];
-                                if (detailsData.firstName.length > 0)
-                                    [nameComponents addObject:detailsData.firstName];
-                                if (detailsData.lastName.length > 0)
-                                    [nameComponents addObject:detailsData.lastName];
-                                [components addObject:[nameComponents componentsJoinedByString:@" "]];
-                                
-                                _identityItem.subtitle = [components componentsJoinedByString:@", "];
+                                if (nativeNames && !detailsData.hasNativeName && [self requiresNativeNameForCountry:detailsData.residenceCountryCode])
+                                {
+                                    item.subtitle = TGLocalized(@"Passport.FieldIdentityDetailsHelp");
+                                    checked = false;
+                                }
+                                else
+                                {
+                                    NSMutableArray *components = [[NSMutableArray alloc] init];
+                                    NSMutableArray *nameComponents = [[NSMutableArray alloc] init];
+                                    if (nativeNames && detailsData.firstNameNative.length > 0)
+                                    {
+                                        if (detailsData.firstNameNative.length > 0)
+                                            [nameComponents addObject:detailsData.firstNameNative];
+                                        if (detailsData.lastNameNative.length > 0)
+                                            [nameComponents addObject:detailsData.lastNameNative];
+                                    }
+                                    else
+                                    {
+                                        if (detailsData.firstName.length > 0)
+                                            [nameComponents addObject:detailsData.firstName];
+                                        if (detailsData.lastName.length > 0)
+                                            [nameComponents addObject:detailsData.lastName];
+                                    }
+                                    [components addObject:[nameComponents componentsJoinedByString:@" "]];
+                                    
+                                    NSString *birthdate = [NSDateFormatter localizedStringFromDate:[[TGPassportIdentityController dateFormatter] dateFromString:detailsData.birthDate] dateStyle:NSDateFormatterShortStyle timeStyle:NSDateFormatterNoStyle];
+                                    if (birthdate != nil)
+                                        [components addObject:birthdate];
+                                    
+                                    item.subtitle = [components componentsJoinedByString:@", "];
+                                }
                             }
                         }
                         else
                         {
-                            if (documentValue == nil)
+                            if (documentValue == nil || !documentData.isCompleted)
                             {
-                                _identityItem.subtitle = uploadSubtitle;
+                                item.subtitle = uploadSubtitle;
+                                checked = false;
+                            }
+                            else if (translationRequired && documentValue.translation.count == 0)
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldIdentityTranslationHelp");
                                 checked = false;
                             }
                             else if (selfieRequired && documentValue.selfie == nil)
                             {
-                                _identityItem.subtitle = TGLocalized(@"Passport.FieldIdentitySelfieHelp");
+                                item.subtitle = TGLocalized(@"Passport.FieldIdentitySelfieHelp");
+                                checked = false;
+                            }
+                            else if (includesDetails && (!detailsData.isCompleted || (nativeNames && detailsData != nil && !detailsData.hasNativeName && [self requiresNativeNameForCountry:detailsData.residenceCountryCode])))
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldIdentityDetailsHelp");
                                 checked = false;
                             }
                             else
                             {
-                                TGPassportPersonalDetailsData *detailsData = (TGPassportPersonalDetailsData *)detailsValue.data;
-                                TGPassportDocumentData *documentData = (TGPassportDocumentData *)documentValue.data;
-                                
                                 NSMutableArray *components = [[NSMutableArray alloc] init];
-                                
                                 if (!singleType)
-                                    [components addObject:[TGPassportIdentityController documentDisplayNameForType:type]];
+                                    [components addObject:[TGPassportIdentityController documentDisplayNameForType:documentValue.type]];
                                 
                                 NSMutableArray *nameComponents = [[NSMutableArray alloc] init];
-                                
                                 if (detailsData.firstName.length > 0)
                                     [nameComponents addObject:detailsData.firstName];
                                 if (detailsData.lastName.length > 0)
                                     [nameComponents addObject:detailsData.lastName];
                                 
-                                [components addObject:[nameComponents componentsJoinedByString:@" "]];
+                                if (nameComponents.count > 0)
+                                    [components addObject:[nameComponents componentsJoinedByString:@" "]];
                                 
                                 if (documentData.documentNumber.length > 0)
                                     [components addObject:documentData.documentNumber];
                                 
-                                _identityItem.subtitle = [components componentsJoinedByString:@", "];
+                                item.subtitle = [components componentsJoinedByString:@", "];
                             }
                         }
                     }
                     
                     if (errors.count > 0)
                         checked = false;
-                    _identityItem.errors = errors;
-                    _identityItem.isChecked = checked;
-                    _identityItem.isRequired = errors.count > 0;
+                    item.errors = errors;
+                    item.isChecked = checked;
+                    item.isRequired = errors.count > 0;
                     
-                    _identityItem.deselectAutomatically = true;
-                    [_mainSection addItem:_identityItem];
-                }
-
-                NSDictionary *addressData = self.addressData;
-                if (addressData != nil || _request == nil)
+                    item.deselectAutomatically = true;
+                    [_mainSection addItem:item];
+                };
+                
+                void (^setupAddressItem)(bool, TGPassportRequiredType *, NSArray *, TGPassportDecryptedValue *, TGPassportDecryptedValue *, bool, bool) = ^(bool oneOf, TGPassportRequiredType *type, NSArray *acceptedTypes, TGPassportDecryptedValue *addressValue, TGPassportDecryptedValue *documentValue, bool includesAddress, bool exclusive)
                 {
-                    TGPassportType type = (TGPassportType)[addressData[@"type"] integerValue];
-                    NSArray *acceptedTypes = identityData[@"acceptedTypes"];
-                    TGPassportDecryptedValue *addressValue = addressData[@"info"];
-                    TGPassportDecryptedValue *documentValue = addressData[@"value"];
-                    
                     NSMutableArray *errors = [[NSMutableArray alloc] init];
                     for (TGPassportError *error in [_errors errorsForType:addressValue.type])
                     {
@@ -906,186 +1018,324 @@
                     }
                     
                     NSString *title = TGLocalized(@"Passport.FieldAddress");
-                    //NSString *uploadSubtitle = TGLocalized(@"Passport.FieldAddressUploadHelp");
+                    NSString *uploadSubtitle = TGLocalized(@"Passport.FieldAddressUploadHelp");
                     bool singleType = false;
-                    if (_request != nil && acceptedTypes.count == 1)
+                    if (!editing && !oneOf)
                     {
                         singleType = true;
-                        switch (type)
+                        title = [TGPassportRequestController titleForType:type.type];
+                        uploadSubtitle = [TGPassportRequestController uploadSubtitleForType:type.type];
+                    }
+                    else if (oneOf)
+                    {
+                        if (acceptedTypes.count == 2)
                         {
-                            case TGPassportTypeAddress:
-                                title = TGLocalized(@"Passport.Address.TypeResidentialAddress");
-                                break;
-                                
-                            case TGPassportTypeUtilityBill:
-                                title = TGLocalized(@"Passport.Address.TypeUtilityBill");
-                                break;
-                                
-                            case TGPassportTypeBankStatement:
-                                title = TGLocalized(@"Passport.Address.TypeBankStatement");
-                                break;
-                                
-                            case TGPassportTypeRentalAgreement:
-                                title = TGLocalized(@"Passport.Address.TypeRentalAgreement");
-                                break;
-                                
-                            case TGPassportTypePassportRegistration:
-                                title = TGLocalized(@"Passport.Address.TypePassportRegistration");
-                                break;
-                                
-                            case TGPassportTypeTemporaryRegistration:
-                                title = TGLocalized(@"Passport.Address.TypeTemporaryRegistration");
-                                break;
-                                
-                            default:
-                                break;
+                            title = [NSString stringWithFormat:TGLocalized(@"Passport.FieldOneOf.Or"), [TGPassportRequestController titleForType:[(TGPassportRequiredType *)acceptedTypes[0] type]], [TGPassportRequestController titleForType:[(TGPassportRequiredType *)acceptedTypes[1] type]]];
                         }
+                        if (!exclusive)
+                            uploadSubtitle = [TGPassportRequestController uploadSubtitleWithFormat:TGLocalized(@"Passport.Address.UploadOneOfScan") types:acceptedTypes];
                     }
                     
-                    if ([(NSDictionary *)addressData[@"allValues"] count] > 0)
-                        hasValues = true;
-                    
-                    _addressItem = [[TGPassportFieldCollectionItem alloc] initWithTitle:title action:@selector(addressPressed)];
-                    
-                    bool checked = _request != nil;
-                    if (_request == nil)
+                    bool translationRequired = false;
+                    if (type.type != TGPassportTypeUndefined)
                     {
-                        NSArray *existingTypes = [addressData[@"allValues"] allKeys];
-                        NSMutableArray *components = [[NSMutableArray alloc] init];
-                        for (NSNumber *type in existingTypes)
-                        {
-                            NSString *typeName = [TGPassportAddressController documentDisplayNameForType:(TGPassportType)type.integerValue];
-                            if (typeName.length > 0)
-                                [components addObject:typeName];
-                        }
-                        
-                        if (components.count > 0)
-                            _addressItem.subtitle = [components componentsJoinedByString:@", "];
-                        else
-                            _addressItem.subtitle = TGLocalized(@"Passport.FieldAddressUploadHelp");
+                        TGPassportRequiredType *requiredType = [self requiredTypeForType:type.type];
+                        translationRequired = requiredType.translationRequired;
                     }
                     else
                     {
-                        if (type == TGPassportTypeAddress && addressValue == nil)
+                        TGPassportRequiredType *requiredType = [self requiredTypeForType:((TGPassportRequiredType *)acceptedTypes.firstObject).type];
+                        translationRequired = requiredType.translationRequired;
+                    }
+                    TGPassportFieldCollectionItem *item = [[TGPassportFieldCollectionItem alloc] initWithTitle:title action:@selector(addressPressed:)];
+                    item.type = type;
+                    item.acceptedTypes = acceptedTypes;
+                    
+                    bool checked = !editing;
+                    if (editing)
+                    {
+                        NSArray *types = [TGPassportSignals addressTypes];
+                        NSMutableArray *components = [[NSMutableArray alloc] init];
+                        for (TGPassportDecryptedValue *value in self.decryptedForm.values)
                         {
-                            _addressItem.subtitle = TGLocalized(@"Passport.FieldAddressHelp");
-                            checked = false;
+                            if ([types containsObject:@(value.type)])
+                            {
+                                NSString *typeName = [TGPassportAddressController documentDisplayNameForType:value.type];
+                                [components addObject:typeName];
+                            }
                         }
-                        else if (type != TGPassportTypeAddress && documentValue == nil)
+                        
+                        if (components.count > 0)
+                            item.subtitle = [components componentsJoinedByString:@", "];
+                        else
+                            item.subtitle = uploadSubtitle;
+                    }
+                    else
+                    {
+                        TGPassportAddressData *addressData = (TGPassportAddressData *)addressValue.data;
+                        if (type.type == TGPassportTypeAddress)
                         {
-                            _addressItem.subtitle = TGLocalized(@"Passport.FieldAddressUploadHelp");
-                            checked = false;
+                            if (!addressData.isCompleted)
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldAddressHelp");
+                                checked = false;
+                            }
+                            else
+                            {
+                                NSMutableArray *components = [[NSMutableArray alloc] init];
+                                if (!singleType)
+                                    [components addObject:[TGPassportAddressController documentDisplayNameForType:documentValue.type]];
+                                if (addressData.street1.length > 0)
+                                    [components addObject:addressData.street1];
+                                if (addressData.street2.length > 0)
+                                    [components addObject:addressData.street2];
+                                if (addressData.city.length > 0)
+                                    [components addObject:addressData.city];
+                                if (addressData.state.length > 0)
+                                    [components addObject:addressData.state];
+                                if (addressData.postcode.length > 0)
+                                    [components addObject:addressData.postcode];
+                                if (addressData.countryCode.length > 0)
+                                {
+                                    NSString *countryName = [TGLoginCountriesController localizedCountryNameByCountryId:addressData.countryCode code:NULL];
+                                    if (countryName.length > 0)
+                                        [components addObject:countryName];
+                                }
+                                
+                                item.subtitle = [components componentsJoinedByString:@", "];
+                            }
                         }
                         else
                         {
-                            TGPassportAddressData *addressData = (TGPassportAddressData *)addressValue.data;
-                            
-                            NSMutableArray *components = [[NSMutableArray alloc] init];
-                            
-                            if (!singleType)
-                                [components addObject:[TGPassportAddressController documentDisplayNameForType:type]];
-                            if (addressData.street1.length > 0)
-                                [components addObject:addressData.street1];
-                            if (addressData.street2.length > 0)
-                                [components addObject:addressData.street2];
-                            if (addressData.city.length > 0)
-                                [components addObject:addressData.city];
-                            if (addressData.state.length > 0)
-                                [components addObject:addressData.state];
-                            if (addressData.postcode.length > 0)
-                                [components addObject:addressData.postcode];
-                            if (addressData.countryCode.length > 0)
+                            if (documentValue == nil)
                             {
-                                NSString *countryName = [TGLoginCountriesController countryNameByCountryId:addressData.countryCode code:NULL];
-                                if (countryName.length > 0)
-                                    [components addObject:countryName];
+                                item.subtitle = uploadSubtitle;
+                                checked = false;
                             }
-     
-                            _addressItem.subtitle = [components componentsJoinedByString:@", "];
+                            else if (translationRequired && documentValue.translation.count == 0)
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldAddressTranslationHelp");
+                                checked = false;
+                            }
+                            else if (includesAddress && !addressData.isCompleted)
+                            {
+                                item.subtitle = TGLocalized(@"Passport.FieldAddressHelp");
+                                checked = false;
+                            }
+                            else
+                            {
+                                if (includesAddress)
+                                {
+                                    NSMutableArray *components = [[NSMutableArray alloc] init];
+                                    if (!singleType)
+                                        [components addObject:[TGPassportAddressController documentDisplayNameForType:documentValue.type]];
+                                    if (addressData.street1.length > 0)
+                                        [components addObject:addressData.street1];
+                                    if (addressData.street2.length > 0)
+                                        [components addObject:addressData.street2];
+                                    if (addressData.city.length > 0)
+                                        [components addObject:addressData.city];
+                                    if (addressData.state.length > 0)
+                                        [components addObject:addressData.state];
+                                    if (addressData.postcode.length > 0)
+                                        [components addObject:addressData.postcode];
+                                    if (addressData.countryCode.length > 0)
+                                    {
+                                        NSString *countryName = [TGLoginCountriesController localizedCountryNameByCountryId:addressData.countryCode code:NULL];
+                                        if (countryName.length > 0)
+                                            [components addObject:countryName];
+                                    }
+                                    
+                                    item.subtitle = [components componentsJoinedByString:@", "];
+                                }
+                                else if (documentValue.files.count > 0)
+                                {
+                                    item.subtitle = [effectiveLocalization() getPluralized:@"Passport.Scans" count:(int32_t)documentValue.files.count];
+                                }
+                            }
                         }
                     }
                     
                     if (errors.count > 0)
                         checked = false;
-                    _addressItem.errors = errors;
-                    _addressItem.isChecked = checked;
-                    _addressItem.isRequired = errors.count > 0;
+                    item.errors = errors;
+                    item.isChecked = checked;
+                    item.isRequired = errors.count > 0;
                     
-                    _addressItem.deselectAutomatically = true;
-                    [_mainSection addItem:_addressItem];
-                }
-
-                NSDictionary *phoneData = self.phoneData;
-                if (phoneData != nil || _request == nil)
-                {
-                    TGPassportDecryptedValue *phoneValue = phoneData[@"value"];
-                    
-                    if (phoneValue != nil)
-                        hasValues = true;
-                    
-                    _phoneItem = [[TGPassportFieldCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.FieldPhone") action:@selector(phonePressed)];
-                    if (phoneValue != nil)
-                    {
-                        TGPassportPhoneData *phoneData = (TGPassportPhoneData *)phoneValue.plainData;
-                        _phoneItem.subtitle = [TGPhoneUtils formatPhone:phoneData.phone forceInternational:true];
-                        _phoneItem.isChecked = _request != nil;
-                    }
-                    else
-                    {
-                        _phoneItem.subtitle = TGLocalized(@"Passport.FieldPhoneHelp");
-                    }
-                    _phoneItem.deselectAutomatically = true;
-                    [_mainSection addItem:_phoneItem];
-                }
-
-                NSDictionary *emailData = self.emailData;
-                if (emailData != nil || _request == nil)
-                {
-                    TGPassportDecryptedValue *emailValue = emailData[@"value"];
-                    
-                    if (emailValue != nil)
-                        hasValues = true;
-                    
-                    _emailItem = [[TGPassportFieldCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.FieldEmail") action:@selector(emailPressed)];
-                    if (emailValue != nil)
-                    {
-                        TGPassportEmailData *emailData = (TGPassportEmailData *)emailValue.plainData;
-                        _emailItem.subtitle = emailData.email;
-                        _emailItem.isChecked = _request != nil;
-                    }
-                    else
-                    {
-                        _emailItem.subtitle = TGLocalized(@"Passport.FieldEmailHelp");
-                    }
-                    _emailItem.deselectAutomatically = true;
-                    [_mainSection addItem:_emailItem];
-                }
-                
-                NSString *formatText = _form.privacyPolicyUrl.length > 0 ? TGLocalized(@"Passport.PrivacyPolicy") : TGLocalized(@"Passport.AcceptHelp");
-                NSString *text = [NSString stringWithFormat:formatText, user.displayName, user.userName];
-                
-                __weak TGPassportRequestController *weakSelf = self;
-                _privacyItem = [[TGCommentCollectionItem alloc] initWithText:text];
-                _privacyItem.action = ^
-                {
-                    __strong TGPassportRequestController *strongSelf = weakSelf;
-                    if (strongSelf == nil)
-                        return;
-                    
-                    if (strongSelf->_form.privacyPolicyUrl.length > 0)
-                        [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:strongSelf->_form.privacyPolicyUrl]];
+                    item.deselectAutomatically = true;
+                    [_mainSection addItem:item];
                 };
-                if (_request != nil)
-                    [_mainSection addItem:_privacyItem];
                 
-                if (_deleteSection != nil)
+                void (^setupPhoneItem)(TGPassportRequiredType *, TGPassportDecryptedValue *) = ^(TGPassportRequiredType *type, TGPassportDecryptedValue *value)
                 {
-                    //[_passwordSection addItem:_passwordItem];
+                    TGPassportFieldCollectionItem *item = [[TGPassportFieldCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.FieldPhone") action:@selector(phonePressed:)];
+                    item.type = type;
                     
-                    if (hasValues)
-                        [_deleteSection addItem:_deleteItem];
+                    if (value != nil)
+                    {
+                        TGPassportPhoneData *phoneData = (TGPassportPhoneData *)value.plainData;
+                        item.subtitle = [TGPhoneUtils formatPhone:phoneData.phone forceInternational:true];
+                        item.isChecked = !editing;
+                    }
                     else
-                        [_deleteSection deleteItem:_deleteItem];
+                    {
+                        item.subtitle = TGLocalized(@"Passport.FieldPhoneHelp");
+                    }
+                    item.deselectAutomatically = true;
+                    [_mainSection addItem:item];
+                };
+                
+                void (^setupEmailItem)(TGPassportRequiredType *, TGPassportDecryptedValue *) = ^(TGPassportRequiredType *type, TGPassportDecryptedValue *value)
+                {
+                    TGPassportFieldCollectionItem *item = [[TGPassportFieldCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.FieldEmail") action:@selector(emailPressed:)];
+                    item.type = type;
+                    
+                    if (value != nil)
+                    {
+                        TGPassportEmailData *emailData = (TGPassportEmailData *)value.plainData;
+                        item.subtitle = emailData.email;
+                        item.isChecked = !editing;
+                    }
+                    else
+                    {
+                        item.subtitle = TGLocalized(@"Passport.FieldEmailHelp");
+                    }
+                    item.deselectAutomatically = true;
+                    [_mainSection addItem:item];
+                };
+                
+                if (editing)
+                {
+                    setupIdentityItem(true, nil, [TGPassportRequiredType requiredIdentityTypes], nil, nil, false, true);
+                    setupAddressItem(true, nil, [TGPassportRequiredType requiredAddressTypes], nil, nil, false, true);
+                    setupPhoneItem([TGPassportRequiredType requiredTypeForType:TGPassportTypePhone], [self.decryptedForm valueForType:TGPassportTypePhone]);
+                    setupEmailItem([TGPassportRequiredType requiredTypeForType:TGPassportTypeEmail], [self.decryptedForm valueForType:TGPassportTypeEmail]);
+                    
+                    if (_deleteSection != nil)
+                    {
+                        if (self.decryptedForm.hasValues)
+                            [_deleteSection addItem:_deleteItem];
+                        else
+                            [_deleteSection deleteItem:_deleteItem];
+                    }
+                }
+                else
+                {
+                    TGPassportRequiredType *requiredPersonalDetails = nil;
+                    NSInteger requiredIdentityTypes = 0;
+                    TGPassportRequiredType *requiredAddress = false;
+                    NSInteger requiredAddressTypes = 0;
+                    
+                    for (NSObject<TGPassportRequiredType> *type in self.decryptedForm.requiredTypes)
+                    {
+                        if ([type isKindOfClass:[TGPassportRequiredType class]])
+                        {
+                            TGPassportRequiredType *requiredType = (TGPassportRequiredType *)type;
+                            if (requiredType.type == TGPassportTypePersonalDetails)
+                                requiredPersonalDetails = requiredType;
+                            else if (requiredType.type == TGPassportTypeAddress)
+                                requiredAddress = requiredType;
+                            else if ([TGPassportSignals isIdentityType:requiredType.type])
+                                requiredIdentityTypes++;
+                            else if ([TGPassportSignals isAddressType:requiredType.type])
+                                requiredAddressTypes++;
+                        }
+                        else if ([type isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+                        {
+                            bool isAddress = false;
+                            NSArray *types = ((TGPassportRequiredOneOfTypes *)type).types;
+                            for (TGPassportRequiredType *type in types)
+                            {
+                                if ([TGPassportSignals isAddressType:type.type])
+                                    isAddress = true;
+                            }
+                            
+                            if (!isAddress)
+                                requiredIdentityTypes++;
+                            else
+                                requiredAddressTypes++;
+                        }
+                    }
+                    
+                    TGPassportDecryptedValue *personalDetails = requiredPersonalDetails ? [self.decryptedForm valueForType:TGPassportTypePersonalDetails] : nil;
+                    TGPassportDecryptedValue *addressDetalis = requiredAddress ? [self.decryptedForm valueForType:TGPassportTypeAddress] : nil;
+                    
+                    for (NSObject<TGPassportRequiredType> *type in self.decryptedForm.requiredTypes)
+                    {
+                        if ([type isKindOfClass:[TGPassportRequiredType class]])
+                        {
+                            TGPassportRequiredType *requiredType = (TGPassportRequiredType *)type;
+                            if (requiredType.type == TGPassportTypePhone)
+                            {
+                                setupPhoneItem(requiredType, [self.decryptedForm valueForType:requiredType.type]);
+                            }
+                            else if (requiredType.type == TGPassportTypeEmail)
+                            {
+                                setupEmailItem(requiredType, [self.decryptedForm valueForType:requiredType.type]);
+                            }
+                            else if ([TGPassportSignals isIdentityType:requiredType.type])
+                            {
+                                TGPassportDecryptedValue *detailsValue = requiredType.type == TGPassportTypePersonalDetails || requiredIdentityTypes == 1 ? personalDetails : nil;
+                                TGPassportDecryptedValue *documentValue = requiredType.type != TGPassportTypePersonalDetails ? [self.decryptedForm valueForType:requiredType.type] : nil;
+                                if (requiredType.type != TGPassportTypePersonalDetails || requiredIdentityTypes > 1 || requiredIdentityTypes == 0)
+                                    setupIdentityItem(false, requiredType, nil, detailsValue, documentValue, requiredPersonalDetails != nil && requiredIdentityTypes == 1, requiredIdentityTypes == 1);
+                            }
+                            else if ([TGPassportSignals isAddressType:requiredType.type])
+                            {
+                                TGPassportDecryptedValue *detailsValue = requiredType.type == TGPassportTypeAddress || requiredAddressTypes == 1 ? addressDetalis : nil;
+                                TGPassportDecryptedValue *documentValue = requiredType.type != TGPassportTypeAddress ? [self.decryptedForm valueForType:requiredType.type] : nil;
+                                if (requiredType.type != TGPassportTypeAddress || requiredAddressTypes > 1 || requiredAddressTypes == 0)
+                                    setupAddressItem(false, requiredType, nil, detailsValue, documentValue, requiredAddress != nil && requiredAddressTypes == 1, requiredAddressTypes == 1);
+                            }
+                        }
+                        else if ([type isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+                        {
+                            NSArray *types = ((TGPassportRequiredOneOfTypes *)type).types;
+                            bool isAddress = false;
+                            TGPassportDecryptedValue *documentValue = nil;
+                            bool complete = false;
+                            for (TGPassportRequiredType *type in types)
+                            {
+                                if ([TGPassportSignals isAddressType:type.type])
+                                    isAddress = true;
+                                
+                                if (documentValue == nil || !complete)
+                                {
+                                    TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type.type];
+                                    if (value != nil)
+                                    {
+                                        NSInteger bestScore = type.translationRequired + type.selfieRequired * 2;
+                                        NSInteger valueScore = (type.translationRequired ? value.translation.count > 0 : 0) + (type.selfieRequired && value.selfie != nil ? 2 : 0);
+                                        if (documentValue == nil || bestScore == valueScore)
+                                            documentValue = value;
+                                        
+                                        complete = valueScore == bestScore;
+                                    }
+                                }
+                            }
+                            
+                            if (!isAddress)
+                                setupIdentityItem(true, nil, types, personalDetails, documentValue, requiredPersonalDetails != nil && requiredIdentityTypes == 1, requiredIdentityTypes == 1);
+                            else
+                                setupAddressItem(true, nil, types, addressDetalis, documentValue, requiredAddress != nil && requiredAddressTypes == 1, requiredAddressTypes == 1);
+                        }
+                    }
+                    
+                    NSString *formatText = _form.privacyPolicyUrl.length > 0 ? TGLocalized(@"Passport.PrivacyPolicy") : TGLocalized(@"Passport.AcceptHelp");
+                    NSString *text = [NSString stringWithFormat:formatText, user.displayName, user.userName];
+                    
+                    __weak TGPassportRequestController *weakSelf = self;
+                    _privacyItem = [[TGCommentCollectionItem alloc] initWithText:text];
+                    _privacyItem.action = ^
+                    {
+                        __strong TGPassportRequestController *strongSelf = weakSelf;
+                        if (strongSelf == nil)
+                            return;
+                        
+                        if (strongSelf->_form.privacyPolicyUrl.length > 0)
+                            [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:strongSelf->_form.privacyPolicyUrl]];
+                    };
+                    [_mainSection addItem:_privacyItem];
                 }
 
                 [UIView animateWithDuration:0.3 delay:0.0f options:7 << 16 animations:^{
@@ -1127,191 +1377,32 @@
     }
 }
 
-#pragma mark -
-
-- (TGPassportDecryptedForm *)decryptedForm
+- (TGPassportRequiredType *)requiredTypeForType:(TGPassportType)passportType
 {
-    if (![_form isKindOfClass:[TGPassportDecryptedForm class]])
-        return nil;
-    
-    return (TGPassportDecryptedForm *)_form;
-}
-
-- (NSDictionary *)identityData
-{
-    NSArray *scope = self.decryptedForm.requiredTypes;
-    NSArray *identityTypes = @[ @(TGPassportTypePersonalDetails), @(TGPassportTypePassport), @(TGPassportTypeDriversLicense), @(TGPassportTypeIdentityCard), @(TGPassportTypeInternalPassport) ];
-    bool selfieRequired = self.decryptedForm.selfieRequired;
-    
-    NSMutableDictionary *result = nil;
-    NSMutableDictionary *allValues = nil;
-    NSMutableArray *acceptedTypes = [[NSMutableArray alloc] init];
-    for (NSNumber *identityType in identityTypes)
+    for (NSObject<TGPassportRequiredType> *type in self.decryptedForm.requiredTypes)
     {
-        if ([scope indexOfObject:identityType] != NSNotFound)
+        if ([type isKindOfClass:[TGPassportRequiredType class]])
         {
-            TGPassportType type = (TGPassportType)identityType.integerValue;
-            
-            if (result == nil)
+            TGPassportRequiredType *requiredType = (TGPassportRequiredType *)type;
+            if (requiredType.type == passportType)
+                return requiredType;
+        }
+        else if ([type isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+        {
+            NSArray *types = ((TGPassportRequiredOneOfTypes *)type).types;
+            for (TGPassportRequiredType *requiredType in types)
             {
-                result = [[NSMutableDictionary alloc] init];
-                result[@"acceptedTypes"] = acceptedTypes;
-            }
-            
-            if (_request == nil)
-            {
-                if (allValues == nil)
-                {
-                    allValues = [[NSMutableDictionary alloc] init];
-                    result[@"allValues"] = allValues;
-                }
-                
-                TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type];
-                if (value != nil)
-                    allValues[@(type)] = value;
-            }
-            
-            if (type != TGPassportTypePersonalDetails)
-                [acceptedTypes addObject:identityType];
-            
-            if (result[@"info"] == nil)
-            {
-                TGPassportDecryptedValue *details = [self.decryptedForm valueForType:TGPassportTypePersonalDetails];
-                if (details != nil)
-                    result[@"info"] = details;
-            }
-            
-            if (result[@"value"] == nil && type != TGPassportTypePersonalDetails)
-            {
-                if (selfieRequired)
-                    result[@"selfie"] = @true;
-                
-                if (result[@"value"] == nil)
-                    result[@"type"] = identityType;
-                
-                TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type];
-                if (value != nil)
-                    result[@"value"] = value;
+                if (requiredType.type == passportType)
+                    return requiredType;
             }
         }
     }
-    
-    if ((acceptedTypes.count == 0 || _request == nil) && [scope indexOfObject:@(TGPassportTypePersonalDetails)] != NSNotFound) {
-        if (_request == nil)
-            [acceptedTypes insertObject:@(TGPassportTypePersonalDetails) atIndex:0];
-        else
-            [acceptedTypes addObject:@(TGPassportTypePersonalDetails)];
-        result[@"type"] = @(TGPassportTypePersonalDetails);
-    }
-    
-    return result;
-}
-
-- (NSDictionary *)addressData
-{
-    NSArray *scope = self.decryptedForm.requiredTypes;
-    NSArray *addressTypes = @[ @(TGPassportTypeAddress), @(TGPassportTypeUtilityBill), @(TGPassportTypeBankStatement), @(TGPassportTypeRentalAgreement), @(TGPassportTypePassportRegistration), @(TGPassportTypeTemporaryRegistration) ];
-    
-    NSMutableDictionary *result = nil;
-    NSMutableDictionary *allValues = nil;
-    NSMutableArray *acceptedTypes = [[NSMutableArray alloc] init];
-    for (NSNumber *addressType in addressTypes)
-    {
-        if ([scope indexOfObject:addressType] != NSNotFound)
-        {
-            TGPassportType type = (TGPassportType)addressType.integerValue;
-            
-            if (result == nil)
-            {
-                result = [[NSMutableDictionary alloc] init];
-                result[@"acceptedTypes"] = acceptedTypes;
-            }
-            
-            if (_request == nil)
-            {
-                if (allValues == nil)
-                {
-                    allValues = [[NSMutableDictionary alloc] init];
-                    result[@"allValues"] = allValues;
-                }
-                
-                TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type];
-                if (value != nil)
-                    allValues[@(type)] = value;
-            }
-            
-            if (type != TGPassportTypeAddress)
-                [acceptedTypes addObject:addressType];
-            
-            if (result[@"info"] == nil)
-            {
-                TGPassportDecryptedValue *details = [self.decryptedForm valueForType:TGPassportTypeAddress];
-                if (details != nil)
-                    result[@"info"] = details;
-            }
-            
-            if (result[@"value"] == nil && type != TGPassportTypeAddress)
-            {
-                if (result[@"value"] == nil)
-                    result[@"type"] = addressType;
-                
-                TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type];
-                if (value != nil)
-                    result[@"value"] = value;
-            }
-        }
-    }
-    
-    if ((acceptedTypes.count == 0 || _request == nil) && [scope indexOfObject:@(TGPassportTypeAddress)] != NSNotFound) {
-        if (_request == nil)
-            [acceptedTypes insertObject:@(TGPassportTypeAddress) atIndex:0];
-        else
-            [acceptedTypes addObject:@(TGPassportTypeAddress)];
-        result[@"type"] = @(TGPassportTypeAddress);
-    }
-    
-    return result;
-}
-
-- (NSDictionary *)phoneData
-{
-    NSArray *scope = self.decryptedForm.requiredTypes;
-    NSNumber *phoneType = @(TGPassportTypePhone);
-    
-    if ([scope indexOfObject:phoneType] != NSNotFound)
-    {
-        NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-        TGPassportDecryptedValue *value = [self.decryptedForm valueForType:TGPassportTypePhone];
-        if (value != nil)
-            result[@"value"] = value;
-        
-        return result;
-    }
-    
     return nil;
 }
 
-- (NSDictionary *)emailData
-{
-    NSArray *scope = self.decryptedForm.requiredTypes;
-    NSNumber *emailType = @(TGPassportTypeEmail);
-    
-    if ([scope indexOfObject:emailType] != NSNotFound)
-    {
-        NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-        TGPassportDecryptedValue *value = [self.decryptedForm valueForType:TGPassportTypeEmail];
-        if (value != nil)
-            result[@"value"] = value;
-        
-        return result;
-    }
-    
-    return nil;
-}
+#pragma mark - Value Update
 
-#pragma mark -
-
-- (void)updatePersonalDetails:(TGPassportDecryptedValue *)personalDetails type:(TGPassportType)type document:(TGPassportDecryptedValue *)document errors:(TGPassportErrors *)errors
+- (void)updateDocumentValue:(TGPassportDecryptedValue *)details detailsType:(TGPassportType)detailsType document:(TGPassportDecryptedValue *)document type:(TGPassportType)type errors:(TGPassportErrors *)errors
 {
     TGPassportDecryptedForm *form = [self decryptedForm];
     if (form == nil)
@@ -1320,12 +1411,12 @@
     NSMutableArray *values = [[NSMutableArray alloc] init];
     NSMutableArray *removeTypes = [[NSMutableArray alloc] init];
     
-    if (personalDetails != nil)
-        [values addObject:personalDetails];
+    if (details != nil)
+        [values addObject:details];
     
     if (document != nil)
         [values addObject:document];
-    else if (type != TGPassportTypePersonalDetails || personalDetails == nil)
+    else if (type != detailsType || details == nil)
         [removeTypes addObject:@(type)];
     
     if (errors != nil)
@@ -1336,7 +1427,7 @@
     [self reloadItems];
 }
 
-- (void)updateAddress:(TGPassportDecryptedValue *)address type:(TGPassportType)type document:(TGPassportDecryptedValue *)document errors:(TGPassportErrors *)errors
+- (void)updateSimpleValue:(TGPassportDecryptedValue *)value type:(TGPassportType)type
 {
     TGPassportDecryptedForm *form = [self decryptedForm];
     if (form == nil)
@@ -1345,54 +1436,10 @@
     NSMutableArray *values = [[NSMutableArray alloc] init];
     NSMutableArray *removeTypes = [[NSMutableArray alloc] init];
     
-    if (address != nil)
-        [values addObject:address];
-    
-    if (document != nil)
-        [values addObject:document];
-    else if (type != TGPassportTypeAddress || address == nil)
+    if (value != nil)
+        [values addObject:value];
+    else
         [removeTypes addObject:@(type)];
-    
-    if (errors != nil)
-        _errors = errors;
-    
-    form = [form updateWithValues:values removeValueTypes:removeTypes];
-    _form = form;
-    [self reloadItems];
-}
-
-- (void)updatePhone:(TGPassportDecryptedValue *)phone
-{
-    TGPassportDecryptedForm *form = [self decryptedForm];
-    if (form == nil)
-        return;
-    
-    NSMutableArray *values = [[NSMutableArray alloc] init];
-    NSMutableArray *removeTypes = [[NSMutableArray alloc] init];
-    
-    if (phone != nil)
-        [values addObject:phone];
-    else
-        [removeTypes addObject:@(TGPassportTypePhone)];
-    
-    form = [form updateWithValues:values removeValueTypes:removeTypes];
-    _form = form;
-    [self reloadItems];
-}
-
-- (void)updateEmail:(TGPassportDecryptedValue *)email
-{
-    TGPassportDecryptedForm *form = [self decryptedForm];
-    if (form == nil)
-        return;
-    
-    NSMutableArray *values = [[NSMutableArray alloc] init];
-    NSMutableArray *removeTypes = [[NSMutableArray alloc] init];
-    
-    if (email != nil)
-        [values addObject:email];
-    else
-        [removeTypes addObject:@(TGPassportTypeEmail)];
     
     form = [form updateWithValues:values removeValueTypes:removeTypes];
     _form = form;
@@ -1401,543 +1448,168 @@
 
 #pragma mark -
 
-- (void)pushViewController:(TGViewController *)viewController animated:(bool)animated {
-    for (TGViewController *viewController in self.navigationController.childViewControllers) {
-        if ([viewController isKindOfClass:[TGMenuSheetController class]]) {
-            TGMenuSheetController *menuController = (TGMenuSheetController *)viewController;
-            [menuController dismissAnimated:false];
-            break;
-        }
-    }
-    
-    [self.navigationController pushViewController:viewController animated:animated];
-}
-
-- (void)identityPressed
+- (void)documentFieldPressed:(TGPassportFieldCollectionItem *)item allTypes:(NSArray *)allTypes detailsType:(TGPassportType)detailsType action:(void (^)(TGPassportType, TGPassportDecryptedValue *, TGPassportDecryptedValue *, bool, TGMenuSheetController *))action
 {
-    NSDictionary *identityData = self.identityData;
-    if (identityData == nil)
-        return;
-    
-    NSArray *acceptedTypes = identityData[@"acceptedTypes"];
-    
     if (_request == nil)
     {
-        NSDictionary *values = identityData[@"allValues"];
-        bool selfieRequired = true;
-        
-        __weak TGPassportRequestController *weakSelf = self;
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-        _menuController = controller;
-        controller.dismissesByOutsideTap = true;
-        controller.hasSwipeGesture = true;
-        controller.narrowInLandscape = true;
-        controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-        controller.sourceRect = ^CGRect
+        NSMutableArray *options = [[NSMutableArray alloc] init];
+        for (NSNumber *nType in allTypes)
         {
-            __strong TGPassportRequestController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_identityItem.view convertRect:strongSelf->_identityItem.view.bounds toView:strongSelf.view];
-            return CGRectZero;
-        };
-        
-        __weak TGMenuSheetController *weakController = controller;
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        {
-            TGPassportDecryptedValue *detailsValue = values[@(TGPassportTypePersonalDetails)];
-            NSString *title = detailsValue ? TGLocalized(@"Passport.Identity.EditPersonalDetails") : TGLocalized(@"Passport.Identity.AddPersonalDetails");
+            TGPassportType type = (TGPassportType)nType.integerValue;
+            TGPassportDecryptedValue *detailsValue = type == detailsType ? [self.decryptedForm valueForType:type] : nil;
+            TGPassportDecryptedValue *documentValue = type != detailsType ? [self.decryptedForm valueForType:type] : nil;
+            bool hasValue = type == detailsType ? (detailsValue != nil) : (documentValue != nil);
+            NSString *title = [TGPassportRequestController settingsTitleForType:type exists:hasValue];
+            bool documentOnly = type != detailsType;
             
-            TGMenuSheetButtonItemView *personalItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
+            TGPassportDocumentOption *option = [TGPassportDocumentOption optionWithTitle:title action:^(TGMenuSheetController *controller)
             {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf identityDocumentTypePressed:TGPassportTypePersonalDetails detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:strongController];
+                action(type, detailsValue, documentValue, documentOnly, controller);
             }];
-            [items addObject:personalItem];
+            [options addObject:option];
         }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypePassport)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Identity.EditPassport") : TGLocalized(@"Passport.Identity.AddPassport");
-            
-            TGMenuSheetButtonItemView *passportItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf identityDocumentTypePressed:TGPassportTypePassport detailsValue:nil documentValue:documentValue selfieRequired:selfieRequired menuController:strongController];
-            }];
-            [items addObject:passportItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeIdentityCard)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Identity.EditIdentityCard") : TGLocalized(@"Passport.Identity.AddIdentityCard");
-            
-            TGMenuSheetButtonItemView *identityCardItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf identityDocumentTypePressed:TGPassportTypeIdentityCard detailsValue:nil documentValue:documentValue selfieRequired:selfieRequired menuController:strongController];
-            }];
-            [items addObject:identityCardItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeDriversLicense)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Identity.EditDriversLicense") : TGLocalized(@"Passport.Identity.AddDriversLicense");
-            
-            TGMenuSheetButtonItemView *driversLicenseItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf identityDocumentTypePressed:TGPassportTypeDriversLicense detailsValue:nil documentValue:documentValue selfieRequired:selfieRequired menuController:strongController];
-            }];
-            [items addObject:driversLicenseItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeInternalPassport)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Identity.EditInternalPassport") : TGLocalized(@"Passport.Identity.AddInternalPassport");
-            
-            TGMenuSheetButtonItemView *driversLicenseItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf identityDocumentTypePressed:TGPassportTypeInternalPassport detailsValue:nil documentValue:documentValue selfieRequired:selfieRequired menuController:strongController];
-            }];
-            [items addObject:driversLicenseItem];
-        }
-        
-        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
-            [strongController dismissAnimated:true manual:true];
-        }];
-        [items addObject:cancelItem];
-        
-        [controller setItemViews:items];
-        
-        [controller presentInViewController:self sourceView:self.view animated:true];
+        [self presentDocumentOptionsMenu:options item:item];
     }
     else
     {
-        TGPassportType type = (TGPassportType)[identityData[@"type"] integerValue];
-        TGPassportDecryptedValue *detailsValue = identityData[@"info"];
-        TGPassportDecryptedValue *documentValue = identityData[@"value"];
-        bool selfieRequired = [identityData[@"selfie"] boolValue];
+        TGPassportDecryptedValue *detailsValue = nil;
+        TGPassportDecryptedValue *documentValue = nil;
         
-        if (documentValue == nil && type != TGPassportTypePersonalDetails)
+        TGPassportRequiredType *requiredDetails = nil;
+        NSInteger requiredTypes = 0;
+        
+        for (NSObject<TGPassportRequiredType> *type in self.decryptedForm.requiredTypes)
         {
-            if (acceptedTypes.count == 1)
+            if ([type isKindOfClass:[TGPassportRequiredType class]])
             {
-                [self identityDocumentTypePressed:type detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:nil];
+                TGPassportRequiredType *requiredType = (TGPassportRequiredType *)type;
+                if (requiredType.type == detailsType)
+                    requiredDetails = requiredType;
+                else if ([allTypes containsObject:@(requiredType.type)])
+                    requiredTypes++;
+            }
+            else if ([type isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+            {
+                NSArray *types = ((TGPassportRequiredOneOfTypes *)type).types;
+                for (TGPassportRequiredType *type in types)
+                {
+                    if ([allTypes containsObject:@(type.type)])
+                    {
+                        requiredTypes++;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (item.type == TGPassportTypeUndefined)
+        {
+            bool complete = false;
+            for (TGPassportRequiredType *type in item.acceptedTypes)
+            {
+                if (documentValue == nil || !complete)
+                {
+                    TGPassportDecryptedValue *value = [self.decryptedForm valueForType:type.type];
+                    if (value != nil)
+                    {
+                        NSInteger bestScore = type.translationRequired + type.selfieRequired * 2;
+                        NSInteger valueScore = (type.translationRequired ? value.translation.count > 0 : 0) + (type.selfieRequired && value.selfie != nil ? 2 : 0);
+                        if (documentValue == nil || bestScore == valueScore)
+                            documentValue = value;
+                        
+                        complete = valueScore == bestScore;
+                    }
+                }
+            }
+            if (requiredDetails != nil)
+                detailsValue = [self.decryptedForm valueForType:detailsType];
+        }
+        else
+        {
+            TGPassportDecryptedValue *value = [self.decryptedForm valueForType:item.type.type];
+            if (item.type.type == detailsType)
+                detailsValue = value;
+            else
+                documentValue = value;
+            
+            if (detailsValue == nil && requiredDetails != nil && requiredTypes == 1)
+                detailsValue = [self.decryptedForm valueForType:detailsType];
+        }
+        
+        TGPassportType type = item.type.type;
+        bool documentOnly = type != detailsType && (requiredDetails == nil || requiredTypes > 1);
+        
+        if (documentValue == nil && type != detailsType)
+        {
+            if (item.acceptedTypes.count < 2)
+            {
+                TGPassportType finalType = type;
+                if (finalType == TGPassportTypeUndefined)
+                    finalType = ((TGPassportRequiredType *)item.acceptedTypes.firstObject).type;
+                action(finalType, detailsValue, nil, documentOnly, nil);
             }
             else
             {
-                __weak TGPassportRequestController *weakSelf = self;
-                TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-                _menuController = controller;
-                controller.dismissesByOutsideTap = true;
-                controller.hasSwipeGesture = true;
-                controller.narrowInLandscape = true;
-                controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-                controller.sourceRect = ^CGRect
-                {
-                    __strong TGPassportRequestController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                        return [strongSelf->_identityItem.view convertRect:strongSelf->_identityItem.view.bounds toView:strongSelf.view];
-                    return CGRectZero;
-                };
+                NSMutableArray *options = [[NSMutableArray alloc] init];
                 
-                __weak TGMenuSheetController *weakController = controller;
-                NSMutableArray *items = [[NSMutableArray alloc] init];
-            
-                if ([acceptedTypes containsObject:@(TGPassportTypePassport)])
+                for (TGPassportRequiredType *type in item.acceptedTypes)
                 {
-                    TGMenuSheetButtonItemView *passportItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Identity.TypePassport") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf identityDocumentTypePressed:TGPassportTypePassport detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:strongController];
-                    }];
-                    [items addObject:passportItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeIdentityCard)])
-                {
-                    TGMenuSheetButtonItemView *identityCardItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Identity.TypeIdentityCard") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf identityDocumentTypePressed:TGPassportTypeIdentityCard detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:strongController];
-                    }];
-                    [items addObject:identityCardItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeDriversLicense)])
-                {
-                    TGMenuSheetButtonItemView *driversLicenseItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Identity.TypeDriversLicense") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf identityDocumentTypePressed:TGPassportTypeDriversLicense detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:strongController];
-                    }];
-                    [items addObject:driversLicenseItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeInternalPassport)])
-                {
-                    TGMenuSheetButtonItemView *driversLicenseItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Identity.TypeInternalPassport") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf identityDocumentTypePressed:TGPassportTypeInternalPassport detailsValue:detailsValue documentValue:nil selfieRequired:selfieRequired menuController:strongController];
-                    }];
-                    [items addObject:driversLicenseItem];
-                }
-                
-                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-                {
-                    __strong TGMenuSheetController *strongController = weakController;
-                    if (strongController == nil)
-                        return;
+                    NSString *title = [TGPassportRequestController titleForType:type.type];
                     
-                    [strongController dismissAnimated:true manual:true];
-                }];
-                [items addObject:cancelItem];
+                    TGPassportDocumentOption *option = [TGPassportDocumentOption optionWithTitle:title action:^(TGMenuSheetController *controller)
+                    {
+                        action(type.type, detailsValue, documentValue, documentOnly, controller);
+                    }];
+                    [options addObject:option];
+                }
                 
-                [controller setItemViews:items];
-                
-                [controller presentInViewController:self sourceView:self.view animated:true];
+                [self presentDocumentOptionsMenu:options item:item];
             }
         }
         else
         {
-            [self identityDocumentTypePressed:type detailsValue:detailsValue documentValue:documentValue selfieRequired:selfieRequired menuController:nil];
+            TGPassportType finalType = type;
+            if (finalType != detailsType)
+                finalType = documentValue.type;
+            action(finalType, detailsValue, documentValue, documentOnly, nil);
         }
     }
 }
 
-- (void)addressPressed
+- (void)identityPressed:(TGPassportFieldCollectionItem *)item
 {
-    NSDictionary *addressData = self.addressData;
-    if (addressData == nil)
-        return;
-    
-    NSArray *acceptedTypes = addressData[@"acceptedTypes"];
-    
-    if (_request == nil)
+    __weak TGPassportRequestController *weakSelf = self;
+    [self documentFieldPressed:item allTypes:[TGPassportSignals identityTypes] detailsType:TGPassportTypePersonalDetails action:^(TGPassportType type, TGPassportDecryptedValue *detailsValue, TGPassportDecryptedValue *documentValue, bool documentOnly, TGMenuSheetController *menuController)
     {
-        NSDictionary *values = addressData[@"allValues"];
-        
-        __weak TGPassportRequestController *weakSelf = self;
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-        _menuController = controller;
-        controller.dismissesByOutsideTap = true;
-        controller.hasSwipeGesture = true;
-        controller.narrowInLandscape = true;
-        controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-        controller.sourceRect = ^CGRect
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf != nil)
         {
-            __strong TGPassportRequestController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_addressItem.view convertRect:strongSelf->_addressItem.view.bounds toView:strongSelf.view];
-            return CGRectZero;
-        };
-        
-        __weak TGMenuSheetController *weakController = controller;
-        NSMutableArray *items = [[NSMutableArray alloc] init];
-        {
-            TGPassportDecryptedValue *addressValue = values[@(TGPassportTypeAddress)];
-            NSString *title = addressValue ? TGLocalized(@"Passport.Address.EditResidentialAddress") : TGLocalized(@"Passport.Address.AddResidentialAddress");
-            
-            TGMenuSheetButtonItemView *addressItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
+            NSMutableArray *filteredAcceptedTypes = [[NSMutableArray alloc] init];
+            for (TGPassportRequiredType *acceptedType in item.acceptedTypes)
             {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypeAddress addressValue:addressValue documentValue:nil menuController:strongController];
-            }];
-            [items addObject:addressItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeUtilityBill)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Address.EditUtilityBill") : TGLocalized(@"Passport.Address.AddUtilityBill");
-            
-            TGMenuSheetButtonItemView *billItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypeUtilityBill addressValue:nil documentValue:documentValue menuController:strongController];
-            }];
-            [items addObject:billItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeBankStatement)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Address.EditBankStatement") : TGLocalized(@"Passport.Address.AddBankStatement");
-            
-            TGMenuSheetButtonItemView *statementItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypeBankStatement addressValue:nil documentValue:documentValue menuController:strongController];
-            }];
-            [items addObject:statementItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeRentalAgreement)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Address.EditRentalAgreement") : TGLocalized(@"Passport.Address.AddRentalAgreement");
-            
-            TGMenuSheetButtonItemView *rentalItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypeRentalAgreement addressValue:nil documentValue:documentValue menuController:strongController];
-            }];
-            [items addObject:rentalItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypePassportRegistration)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Address.EditPassportRegistration") : TGLocalized(@"Passport.Address.AddPassportRegistration");
-            
-            TGMenuSheetButtonItemView *registrationItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypePassportRegistration addressValue:nil documentValue:documentValue menuController:strongController];
-            }];
-            [items addObject:registrationItem];
-        }
-        
-        {
-            TGPassportDecryptedValue *documentValue = values[@(TGPassportTypeTemporaryRegistration)];
-            NSString *title = documentValue ? TGLocalized(@"Passport.Address.EditTemporaryRegistration") : TGLocalized(@"Passport.Address.AddTemporaryRegistration");
-            
-            TGMenuSheetButtonItemView *tempRegistrationItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:title type:TGMenuSheetButtonTypeDefault action:^
-            {
-                __strong TGMenuSheetController *strongController = weakController;
-                if (strongController == nil)
-                    return;
-                
-                __strong TGPassportRequestController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                    [strongSelf addressDocumentTypePressed:TGPassportTypeTemporaryRegistration addressValue:nil documentValue:documentValue menuController:strongController];
-            }];
-            [items addObject:tempRegistrationItem];
-        }
-        
-        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
-            [strongController dismissAnimated:true manual:true];
-        }];
-        [items addObject:cancelItem];
-        
-        [controller setItemViews:items];
-        
-        [controller presentInViewController:self sourceView:self.view animated:true];
-    }
-    else
-    {
-        TGPassportType type = (TGPassportType)[addressData[@"type"] integerValue];
-        TGPassportDecryptedValue *addressValue = addressData[@"info"];
-        TGPassportDecryptedValue *documentValue = addressData[@"value"];
-        
-        if (documentValue == nil && type != TGPassportTypeAddress)
-        {
-            if (acceptedTypes.count == 1)
-            {
-                [self addressDocumentTypePressed:type addressValue:addressValue documentValue:nil menuController:nil];
+                if ([strongSelf.decryptedForm valueForType:acceptedType.type].data == nil)
+                    [filteredAcceptedTypes addObject:acceptedType];
             }
-            else
-            {
-                __weak TGPassportRequestController *weakSelf = self;
-                TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-                _menuController = controller;
-                controller.dismissesByOutsideTap = true;
-                controller.hasSwipeGesture = true;
-                controller.narrowInLandscape = true;
-                controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-                controller.sourceRect = ^CGRect
-                {
-                    __strong TGPassportRequestController *strongSelf = weakSelf;
-                    if (strongSelf != nil)
-                        return [strongSelf->_addressItem.view convertRect:strongSelf->_addressItem.view.bounds toView:strongSelf.view];
-                    return CGRectZero;
-                };
-                
-                __weak TGMenuSheetController *weakController = controller;
-                NSMutableArray *items = [[NSMutableArray alloc] init];
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeUtilityBill)])
-                {
-                    TGMenuSheetButtonItemView *billItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Address.TypeUtilityBill") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf addressDocumentTypePressed:TGPassportTypeUtilityBill addressValue:addressValue documentValue:nil menuController:strongController];
-                    }];
-                    [items addObject:billItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeBankStatement)])
-                {
-                    TGMenuSheetButtonItemView *statementItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Address.TypeBankStatement") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf addressDocumentTypePressed:TGPassportTypeBankStatement addressValue:addressValue documentValue:nil menuController:strongController];
-                    }];
-                    [items addObject:statementItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeRentalAgreement)])
-                {
-                    TGMenuSheetButtonItemView *rentalItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Address.TypeRentalAgreement") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf addressDocumentTypePressed:TGPassportTypeRentalAgreement addressValue:addressValue documentValue:nil menuController:strongController];
-                    }];
-                    [items addObject:rentalItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypePassportRegistration)])
-                {
-                    TGMenuSheetButtonItemView *rentalItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Address.TypePassportRegistration") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf addressDocumentTypePressed:TGPassportTypePassportRegistration addressValue:addressValue documentValue:nil menuController:strongController];
-                    }];
-                    [items addObject:rentalItem];
-                }
-                
-                if ([acceptedTypes containsObject:@(TGPassportTypeTemporaryRegistration)])
-                {
-                    TGMenuSheetButtonItemView *rentalItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Address.TypeTemporaryRegistration") type:TGMenuSheetButtonTypeDefault action:^
-                    {
-                        __strong TGMenuSheetController *strongController = weakController;
-                        if (strongController == nil)
-                            return;
-                        
-                        __strong TGPassportRequestController *strongSelf = weakSelf;
-                        if (strongSelf != nil)
-                            [strongSelf addressDocumentTypePressed:TGPassportTypeTemporaryRegistration addressValue:addressValue documentValue:nil menuController:strongController];
-                    }];
-                    [items addObject:rentalItem];
-                }
-                
-                TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-                {
-                    __strong TGMenuSheetController *strongController = weakController;
-                    if (strongController == nil)
-                        return;
-                    
-                    [strongController dismissAnimated:true manual:true];
-                }];
-                [items addObject:cancelItem];
-                
-                [controller setItemViews:items];
-                
-                [controller presentInViewController:self sourceView:self.view animated:true];
-            }
+            [strongSelf identityDocumentTypePressed:type acceptedTypes:filteredAcceptedTypes item:item detailsValue:detailsValue documentValue:documentValue documentOnly:documentOnly menuController:menuController];
         }
-        else
-        {
-            [self addressDocumentTypePressed:type addressValue:addressValue documentValue:documentValue menuController:nil];
-        }
-    }
+    }];
 }
 
-- (void)phonePressed
+- (void)addressPressed:(TGPassportFieldCollectionItem *)item
 {
-    NSDictionary *phoneData = self.phoneData;
-    if (phoneData == nil)
-        return;
-    
-    TGPassportDecryptedValue *phoneValue = phoneData[@"value"];
+    __weak TGPassportRequestController *weakSelf = self;
+    [self documentFieldPressed:item allTypes:[TGPassportSignals addressTypes] detailsType:TGPassportTypeAddress action:^(TGPassportType type, TGPassportDecryptedValue *detailsValue, TGPassportDecryptedValue *documentValue, bool documentOnly, TGMenuSheetController *menuController)
+    {
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf addressDocumentTypePressed:type item:item addressValue:detailsValue documentValue:documentValue documentOnly:documentOnly menuController:menuController];
+    }];
+}
+
+- (void)phonePressed:(TGPassportFieldCollectionItem *)item
+{
+    TGPassportType type = item.type.type;
+    TGPassportDecryptedValue *phoneValue = [self.decryptedForm valueForType:type];
     
     __weak TGPassportRequestController *weakSelf = self;
     if (phoneValue == nil)
@@ -1947,65 +1619,28 @@
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                [strongSelf updatePhone:phone];
+                [strongSelf updateSimpleValue:phone type:type];
         };
         [self pushViewController:controller animated:true];
     }
     else
     {
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-        _menuController = controller;
-        controller.dismissesByOutsideTap = true;
-        controller.hasSwipeGesture = true;
-        controller.narrowInLandscape = true;
-        controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-        controller.sourceRect = ^CGRect
+        [self presentDeleteMenu:nil buttonTitle:TGLocalized(@"Passport.Phone.Delete") item:item action:^
         {
-            __strong TGPassportRequestController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_phoneItem.view convertRect:strongSelf->_phoneItem.view.bounds toView:strongSelf.view];
-            return CGRectZero;
-        };
-        
-        __weak TGMenuSheetController *weakController = controller;
-        TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Phone.Delete") type:TGMenuSheetButtonTypeDestructive action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
-                [strongSelf->_saveDisposable setDisposable:[[TGPassportSignals deleteSecureValueTypes:@[@(TGPassportTypePhone)]] startWithNext:nil]];
-                [strongSelf updatePhone:nil];
+                [strongSelf->_saveDisposable setDisposable:[[TGPassportSignals deleteSecureValueTypes:@[@(type)]] startWithNext:nil]];
+                [strongSelf updateSimpleValue:nil type:type];
             }
-            
-             [strongController dismissAnimated:true manual:true];
         }];
-        
-        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
-            [strongController dismissAnimated:true manual:true];
-        }];
-        
-        [controller setItemViews:@[ deleteItem, cancelItem ]];
-        
-        [controller presentInViewController:self sourceView:self.view animated:true];
     }
 }
 
-- (void)emailPressed
+- (void)emailPressed:(TGPassportFieldCollectionItem *)item
 {
-    NSDictionary *emailData = self.emailData;
-    if (emailData == nil)
-        return;
-    
-    TGPassportDecryptedValue *emailValue = emailData[@"value"];
+    TGPassportType type = item.type.type;
+    TGPassportDecryptedValue *emailValue = [self.decryptedForm valueForType:type];
     
     __weak TGPassportRequestController *weakSelf = self;
     if (emailValue == nil)
@@ -2020,7 +1655,7 @@
                 {
                     __strong TGPassportRequestController *strongSelf = weakSelf;
                     if (strongSelf != nil)
-                        [strongSelf updateEmail:email];
+                        [strongSelf updateSimpleValue:email type:type];
                 };
                 [strongSelf pushViewController:controller animated:true];
             }
@@ -2028,54 +1663,38 @@
     }
     else
     {
-        TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-        _menuController = controller;
-        controller.dismissesByOutsideTap = true;
-        controller.hasSwipeGesture = true;
-        controller.narrowInLandscape = true;
-        controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
-        controller.sourceRect = ^CGRect
+        [self presentDeleteMenu:nil buttonTitle:TGLocalized(@"Passport.Email.Delete") item:item action:^
         {
-            __strong TGPassportRequestController *strongSelf = weakSelf;
-            if (strongSelf != nil)
-                return [strongSelf->_emailItem.view convertRect:strongSelf->_emailItem.view.bounds toView:strongSelf.view];
-            return CGRectZero;
-        };
-        
-        __weak TGMenuSheetController *weakController = controller;
-        TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Passport.Email.Delete") type:TGMenuSheetButtonTypeDestructive action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
             {
-                [strongSelf->_saveDisposable setDisposable:[[TGPassportSignals deleteSecureValueTypes:@[@(TGPassportTypeEmail)]] startWithNext:nil]];
-                [strongSelf updateEmail:nil];
+                [strongSelf->_saveDisposable setDisposable:[[TGPassportSignals deleteSecureValueTypes:@[@(type)]] startWithNext:nil]];
+                [strongSelf updateSimpleValue:nil type:type];
             }
-            
-            [strongController dismissAnimated:true manual:true];
         }];
-        
-        TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
-        {
-            __strong TGMenuSheetController *strongController = weakController;
-            if (strongController == nil)
-                return;
-            
-            [strongController dismissAnimated:true manual:true];
-        }];
-        
-        [controller setItemViews:@[ deleteItem, cancelItem ]];
-        
-        [controller presentInViewController:self sourceView:self.view animated:true];
     }
 }
 
-- (void)identityDocumentTypePressed:(TGPassportType)type detailsValue:(TGPassportDecryptedValue *)detailsValue documentValue:(TGPassportDecryptedValue *)documentValue selfieRequired:(bool)selfieRequired menuController:(TGMenuSheetController *)menuController
+- (void)identityDocumentTypePressed:(TGPassportType)type acceptedTypes:(NSArray *)acceptedTypes item:(TGCollectionItem *)item detailsValue:(TGPassportDecryptedValue *)detailsValue documentValue:(TGPassportDecryptedValue *)documentValue documentOnly:(bool)documentOnly menuController:(TGMenuSheetController *)menuController
 {
+    bool selfieRequired = false;
+    bool translationRequired = false;
+    bool nativeNames = false;
+    
+    TGPassportRequiredType *requiredType = [self requiredTypeForType:type];
+    if (requiredType != nil)
+    {
+        selfieRequired = requiredType.selfieRequired;
+        translationRequired = requiredType.translationRequired;
+        if (requiredType.type == TGPassportTypePersonalDetails)
+            nativeNames = requiredType.includeNativeNames;
+    }
+    if (!documentOnly && type != TGPassportTypePersonalDetails)
+    {
+        TGPassportRequiredType *requiredType = [self requiredTypeForType:TGPassportTypePersonalDetails];
+        nativeNames = requiredType.includeNativeNames;
+    }
+    
     if (type == TGPassportTypePersonalDetails || documentValue != nil)
     {
         [menuController dismissAnimated:true];
@@ -2085,20 +1704,26 @@
             detailsData = (TGPassportPersonalDetailsData *)detailsValue.data;
         
         __weak TGPassportRequestController *weakSelf = self;
-        TGPassportIdentityController *controller = [[TGPassportIdentityController alloc] initWithType:type details:detailsValue document:documentValue documentOnly:(type != TGPassportTypePersonalDetails && _request == nil) selfie:selfieRequired settings:_passwordSettingsVariable errors:_errors];
+        TGPassportIdentityController *controller = [[TGPassportIdentityController alloc] initWithType:type details:detailsValue document:documentValue documentOnly:documentOnly selfie:selfieRequired translation:translationRequired nativeNames:nativeNames editing:_request == nil settings:_passwordSettingsVariable errors:_errors];
+        [controller setLanguagesSignal:_langMapVariable.signal];
         if (_request != nil && selfieRequired && documentValue != nil && documentValue.selfie == nil)
             [controller setScrollToSelfie];
+        else if (_request != nil && translationRequired && documentValue != nil && documentValue.translation.count == 0)
+            [controller setScrollToTranslation];
+        else if (_request != nil && nativeNames && detailsData != nil && !detailsData.hasNativeName && [self requiresNativeNameForCountry:detailsData.residenceCountryCode])
+            [controller setScrollToNativeNames];
+        controller.acceptedTypes = acceptedTypes;
         controller.completionBlock = ^(TGPassportDecryptedValue *details, TGPassportDecryptedValue *document, TGPassportErrors *errors)
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                [strongSelf updatePersonalDetails:details type:type document:document errors:errors];
+                [strongSelf updateDocumentValue:details detailsType:TGPassportTypePersonalDetails document:document type:type errors:errors];
         };
         controller.removalBlock = ^(TGPassportType type)
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                [strongSelf updatePersonalDetails:nil type:type document:nil errors:nil];
+                [strongSelf updateDocumentValue:nil detailsType:TGPassportTypePersonalDetails document:nil type:type errors:nil];
         };
         [self pushViewController:controller animated:true];
     }
@@ -2109,7 +1734,7 @@
         [self presentImageUploadWithMenuController:menuController intent:intent sourceRect:^CGRect {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                return [strongSelf->_identityItem.view convertRect:strongSelf->_identityItem.view.bounds toView:strongSelf.view];
+                return [item.view convertRect:item.view.bounds toView:strongSelf.view];
             return CGRectZero;
         } completion:^(NSArray *uploads)
         {
@@ -2117,37 +1742,47 @@
             if (strongSelf == nil)
                 return;
             
-            TGPassportIdentityController *controller = [[TGPassportIdentityController alloc] initWithType:type details:detailsValue documentOnly:_request == nil selfie:selfieRequired upload:uploads.firstObject settings:strongSelf->_passwordSettingsVariable errors:strongSelf->_errors];
+            TGPassportIdentityController *controller = [[TGPassportIdentityController alloc] initWithType:type details:detailsValue documentOnly:documentOnly selfie:selfieRequired translation:translationRequired nativeNames:nativeNames editing:strongSelf->_request == nil upload:uploads.firstObject settings:strongSelf->_passwordSettingsVariable errors:strongSelf->_errors];
+            [controller setLanguagesSignal:strongSelf->_langMapVariable.signal];
+            controller.acceptedTypes = acceptedTypes;
             controller.completionBlock = ^(TGPassportDecryptedValue *details, TGPassportDecryptedValue *document, __unused TGPassportErrors *errors)
             {
                 __strong TGPassportRequestController *strongSelf = weakSelf;
                 if (strongSelf != nil)
-                    [strongSelf updatePersonalDetails:details type:type document:document errors:errors];
+                    [strongSelf updateDocumentValue:details detailsType:TGPassportTypePersonalDetails document:document type:type errors:errors];
             };
             [strongSelf pushViewController:controller animated:false];
         }];
     }
 }
 
-- (void)addressDocumentTypePressed:(TGPassportType)type addressValue:(TGPassportDecryptedValue *)addressValue documentValue:(TGPassportDecryptedValue *)documentValue menuController:(TGMenuSheetController *)menuController
+- (void)addressDocumentTypePressed:(TGPassportType)type item:(TGCollectionItem *)item addressValue:(TGPassportDecryptedValue *)addressValue documentValue:(TGPassportDecryptedValue *)documentValue documentOnly:(bool)documentOnly menuController:(TGMenuSheetController *)menuController
 {
+    bool translationRequired = false;
+    
+    TGPassportRequiredType *requiredType = [self requiredTypeForType:type];
+    if (requiredType != nil)
+        translationRequired = requiredType.translationRequired;
+    
     if (type == TGPassportTypeAddress || documentValue != nil)
     {
         [menuController dismissAnimated:true];
         
         __weak TGPassportRequestController *weakSelf = self;
-        TGPassportAddressController *controller = [[TGPassportAddressController alloc] initWithType:type address:addressValue document:documentValue documentOnly:(type != TGPassportTypeAddress && _request == nil) settings:_passwordSettingsVariable errors:_errors];
+        TGPassportAddressController *controller = [[TGPassportAddressController alloc] initWithType:type address:addressValue document:documentValue documentOnly:documentOnly translation:translationRequired editing:_request == nil settings:_passwordSettingsVariable errors:_errors];
+        if (_request != nil && translationRequired && documentValue != nil && documentValue.translation.count == 0)
+            [controller setScrollToTranslation];
         controller.completionBlock = ^(TGPassportDecryptedValue *address, TGPassportDecryptedValue *document, TGPassportErrors *errors)
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                [strongSelf updateAddress:address type:type document:document errors:errors];
+                [strongSelf updateDocumentValue:address detailsType:TGPassportTypeAddress document:document type:type errors:errors];
         };
         controller.removalBlock = ^(TGPassportType type)
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                [strongSelf updateAddress:nil type:type document:nil errors:nil];
+                [strongSelf updateDocumentValue:nil detailsType:TGPassportTypeAddress document:nil type:type errors:nil];
         };
         [self pushViewController:controller animated:true];
     }
@@ -2157,7 +1792,7 @@
         [self presentImageUploadWithMenuController:menuController intent:TGPassportAttachIntentMultiple sourceRect:^CGRect {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             if (strongSelf != nil)
-                return [strongSelf->_addressItem.view convertRect:strongSelf->_addressItem.view.bounds toView:strongSelf.view];
+                return [item.view convertRect:item.view.bounds toView:strongSelf.view];
             return CGRectZero;
         } completion:^(NSArray *uploads)
         {
@@ -2165,12 +1800,12 @@
             if (strongSelf == nil)
                 return;
             
-            TGPassportAddressController *controller = [[TGPassportAddressController alloc] initWithType:type address:addressValue documentOnly:_request == nil uploads:uploads settings:strongSelf->_passwordSettingsVariable errors:strongSelf->_errors];
+            TGPassportAddressController *controller = [[TGPassportAddressController alloc] initWithType:type address:addressValue documentOnly:documentOnly translation:translationRequired editing:strongSelf->_request == nil uploads:uploads settings:strongSelf->_passwordSettingsVariable errors:strongSelf->_errors];
             controller.completionBlock = ^(TGPassportDecryptedValue *address, TGPassportDecryptedValue *document, TGPassportErrors *errors)
             {
                 __strong TGPassportRequestController *strongSelf = weakSelf;
                 if (strongSelf != nil)
-                    [strongSelf updateAddress:address type:type document:document errors:errors];
+                    [strongSelf updateDocumentValue:address detailsType:TGPassportTypeAddress document:document type:type errors:errors];
             };
             [strongSelf pushViewController:controller animated:false];
         }];
@@ -2179,7 +1814,7 @@
 
 - (void)presentImageUploadWithMenuController:(TGMenuSheetController *)menuController intent:(TGPassportAttachIntent)intent sourceRect:(CGRect (^)(void))sourceRect completion:(void (^)(NSArray *))completion
 {
-    _menuController = [TGPassportAttachMenu presentWithContext:[TGLegacyComponentsContext shared] parentController:self menuController:menuController title:nil intent:intent uploadAction:^(SSignal *resultSignal, void (^dismissPicker)(void))
+    [TGPassportAttachMenu presentWithContext:[TGLegacyComponentsContext shared] parentController:self menuController:menuController title:nil intent:intent uploadAction:^(SSignal *resultSignal, void (^dismissPicker)(void))
     {
         [[[[resultSignal mapToSignal:^SSignal *(id value)
         {
@@ -2207,7 +1842,8 @@
             return [SSignal complete];
         }] reduceLeft:[[NSMutableArray alloc] init] with:^NSMutableArray *(NSMutableArray *array, NSDictionary *next)
         {
-            [array addObject:next];
+            if (array.count < 20)
+                [array addObject:next];
             return array;
         }] deliverOn:[SQueue mainQueue]] startWithNext:^(NSArray *next)
         {
@@ -2227,92 +1863,35 @@
 - (void)authorizeButtonPressed
 {
     bool failed = false;
-    
-    NSDictionary *identityData = self.identityData;
-    if (identityData != nil)
+    for (TGPassportFieldCollectionItem *item in _mainSection.items)
     {
-        NSArray *acceptedTypes = identityData[@"acceptedTypes"];
-        if (identityData[@"info"] == nil || (identityData[@"value"] == nil && ![acceptedTypes containsObject:@(TGPassportTypePersonalDetails)]))
+        if (![item isKindOfClass:[TGPassportFieldCollectionItem class]])
+            continue;
+        
+        if (!item.isChecked)
         {
             failed = true;
-            _identityItem.isRequired = true;
+            item.isRequired = true;
         }
-        else
-        {
-            if (identityData != nil || _request == nil)
-            {
-                TGPassportDecryptedValue *detailsValue = identityData[@"info"];
-                TGPassportDecryptedValue *documentValue = identityData[@"value"];
-                
-                NSMutableArray *errors = [[NSMutableArray alloc] init];
-                for (TGPassportError *error in [_errors errorsForType:detailsValue.type])
-                {
-                    [errors addObject:error.text];
-                }
-                for (TGPassportError *error in [_errors errorsForType:documentValue.type])
-                {
-                    [errors addObject:error.text];
-                }
-                
-                if (errors.count > 0)
-                    failed = true;
-            }
-        }
-    }
-    
-    NSDictionary *addressData = self.addressData;
-    if (addressData != nil)
-    {
-        NSArray *acceptedTypes = addressData[@"acceptedTypes"];
-        if (addressData[@"info"] == nil || (addressData[@"value"] == nil && ![acceptedTypes containsObject:@(TGPassportTypeAddress)]))
-        {
-            failed = true;
-            _addressItem.isRequired = true;
-        }
-        else
-        {
-            if (identityData != nil || _request == nil)
-            {
-                TGPassportDecryptedValue *addressValue = addressData[@"info"];
-                TGPassportDecryptedValue *documentValue = addressData[@"value"];
-    
-                NSMutableArray *errors = [[NSMutableArray alloc] init];
-                for (TGPassportError *error in [_errors errorsForType:addressValue.type])
-                {
-                    [errors addObject:error.text];
-                }
-                for (TGPassportError *error in [_errors errorsForType:documentValue.type])
-                {
-                    [errors addObject:error.text];
-                }
-                
-                if (errors.count > 0)
-                    failed = true;
-            }
-        }
-    }
-    
-    NSDictionary *phoneData = self.phoneData;
-    if (phoneData != nil && phoneData[@"value"] == nil)
-    {
-        failed = true;
-        _phoneItem.isRequired = true;
-    }
-    
-    NSDictionary *emailData = self.emailData;
-    if (emailData != nil && emailData[@"value"] == nil)
-    {
-        failed = true;
-        _emailItem.isRequired = true;
     }
     
     if (!failed)
     {
         __weak TGPassportRequestController *weakSelf = self;
-        [_saveDisposable setDisposable:[[[TGPassportSignals acceptAuthorizationForBotId:_request.botId scope:_request.scope publicKey:_request.publicKey finalForm:[self decryptedForm] payload:_request.payload] deliverOn:[SQueue mainQueue]] startWithNext:^(__unused id next)
+        [_saveDisposable setDisposable:[[[TGPassportSignals acceptAuthorizationForBotId:_request.botId scope:_request.scope publicKey:_request.publicKey finalForm:[self decryptedForm] payload:_request.payload nonce:_request.nonce] deliverOn:[SQueue mainQueue]] startWithNext:nil error:^(id error)
         {
+            __strong TGPassportRequestController *strongSelf = weakSelf;
             
-        } completed:^
+            NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+            if ([errorText isEqualToString:@"PASSWORD_REQUIRED"])
+            {
+                [strongSelf.navigationController.presentingViewController dismissViewControllerAnimated:true completion:nil];
+            }
+            
+            NSString *displayText = TGLocalized(@"Login.UnknownError");
+            [TGCustomAlertView presentAlertWithTitle:displayText message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+        }
+        completed:^
         {
             __strong TGPassportRequestController *strongSelf = weakSelf;
             [strongSelf.presentingViewController dismissViewControllerAnimated:true completion:nil];
@@ -2320,11 +1899,10 @@
             if (strongSelf->_request.callbackUrl.length > 0)
             {
                 NSString *url = nil;
-                if ([strongSelf->_request.callbackUrl hasPrefix:@"tgbot"]) {
+                if ([strongSelf->_request.callbackUrl hasPrefix:@"tgbot"])
                     url = [NSString stringWithFormat:@"tgbot%d://passport/success", strongSelf->_request.botId];
-                } else {
+                else
                     url = [TGPassportRequestController urlString:strongSelf->_request.callbackUrl byAppendingQueryString:@"tg_passport=success"];
-                }
                 [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:url]];
             }
         }]];
@@ -2336,11 +1914,10 @@
     if (_request != nil && _request.callbackUrl.length > 0)
     {
         NSString *url = nil;
-        if ([_request.callbackUrl hasPrefix:@"tgbot"]) {
+        if ([_request.callbackUrl hasPrefix:@"tgbot"])
             url = [NSString stringWithFormat:@"tgbot%d://passport/cancel", _request.botId];
-        } else {
+        else
             url = [TGPassportRequestController urlString:_request.callbackUrl byAppendingQueryString:@"tg_passport=cancel"];
-        }
         [(TGApplication *)[TGApplication sharedApplication] nativeOpenURL:[NSURL URLWithString:url]];
     }
     [self.presentingViewController dismissViewControllerAnimated:false completion:nil];
@@ -2354,27 +1931,16 @@
     [TGCustomAlertView presentAlertWithTitle:TGLocalized(@"Passport.InfoTitle") attributedMessage:string cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:TGLocalized(@"Passport.InfoLearnMore") completionBlock:^(bool okButtonPressed)
     {
         if (okButtonPressed)
-        {
-            [TGAppDelegateInstance handleOpenInstantView:TGLocalized(@"Settings.FAQ_URL") disableActions:false];
-        }
+            [TGAppDelegateInstance handleOpenInstantView:TGLocalized(@"Passport.InfoFAQ_URL") disableActions:false];
     } disableKeyboardWorkaround:false];
 }
 
-+ (NSString *)urlString:(NSString *)urlString byAppendingQueryString:(NSString *)queryString {
-    if (queryString.length == 0)
-        return urlString;
+#pragma mark - Menus
 
-    return [NSString stringWithFormat:@"%@%@%@", urlString,
-            [urlString rangeOfString:@"?"].length > 0 ? @"&" : @"?", queryString];
-}
-
-#pragma mark -
-
-- (void)deletePressed
+- (void)presentDocumentOptionsMenu:(NSArray<TGPassportDocumentOption *> *)options item:(TGCollectionItem *)item
 {
     __weak TGPassportRequestController *weakSelf = self;
     TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
-    _menuController = controller;
     controller.dismissesByOutsideTap = true;
     controller.hasSwipeGesture = true;
     controller.narrowInLandscape = true;
@@ -2383,25 +1949,26 @@
     {
         __strong TGPassportRequestController *strongSelf = weakSelf;
         if (strongSelf != nil)
-            return [strongSelf->_deleteItem.view convertRect:strongSelf->_deleteItem.view.bounds toView:strongSelf.view];
+            return [item.view convertRect:item.view.bounds toView:strongSelf.view];
         return CGRectZero;
     };
     
-    TGMenuSheetTitleItemView *titleItem = [[TGMenuSheetTitleItemView alloc] initWithTitle:nil subtitle:TGLocalized(@"Passport.DeletePassportConfirmation") solidSubtitle:true];
-    
     __weak TGMenuSheetController *weakController = controller;
-    TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Delete") type:TGMenuSheetButtonTypeDestructive action:^
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    
+    for (TGPassportDocumentOption *option in options)
     {
-        __strong TGMenuSheetController *strongController = weakController;
-        if (strongController == nil)
-            return;
-        
-        [strongController dismissAnimated:true manual:true];
-        
-        __strong TGPassportRequestController *strongSelf = weakSelf;
-        if (strongSelf != nil)
-            [strongSelf performDelete];
-    }];
+        TGMenuSheetButtonItemView *optionItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:option.title type:TGMenuSheetButtonTypeDefault action:^
+        {
+            __strong TGMenuSheetController *strongController = weakController;
+            if (strongController == nil)
+                return;
+            
+            if (option.action != nil)
+                option.action(strongController);
+        }];
+        [items addObject:optionItem];
+    }
     
     TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
     {
@@ -2411,10 +1978,73 @@
         
         [strongController dismissAnimated:true manual:true];
     }];
+    [items addObject:cancelItem];
     
-    [controller setItemViews:@[ titleItem, deleteItem, cancelItem ]];
+    [controller setItemViews:items];
     
     [controller presentInViewController:self sourceView:self.view animated:true];
+}
+
+- (void)presentDeleteMenu:(NSString *)text buttonTitle:(NSString *)buttonTitle item:(TGCollectionItem *)item action:(void (^)(void))action
+{
+    __weak TGPassportRequestController *weakSelf = self;
+    TGMenuSheetController *controller = [[TGMenuSheetController alloc] initWithContext:[TGLegacyComponentsContext shared] dark:false];
+    controller.dismissesByOutsideTap = true;
+    controller.hasSwipeGesture = true;
+    controller.narrowInLandscape = true;
+    controller.permittedArrowDirections = UIPopoverArrowDirectionAny;
+    controller.sourceRect = ^CGRect
+    {
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            return [item.view convertRect:item.view.bounds toView:strongSelf.view];
+        return CGRectZero;
+    };
+    
+    NSMutableArray *items = [[NSMutableArray alloc] init];
+    if (text.length > 0)
+        [items addObject:[[TGMenuSheetTitleItemView alloc] initWithTitle:nil subtitle:text solidSubtitle:true]];
+    
+    __weak TGMenuSheetController *weakController = controller;
+    TGMenuSheetButtonItemView *deleteItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:buttonTitle type:TGMenuSheetButtonTypeDestructive action:^
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+        
+        if (action != nil)
+            action();
+    }];
+    [items addObject:deleteItem];
+    
+    TGMenuSheetButtonItemView *cancelItem = [[TGMenuSheetButtonItemView alloc] initWithTitle:TGLocalized(@"Common.Cancel") type:TGMenuSheetButtonTypeCancel action:^
+    {
+        __strong TGMenuSheetController *strongController = weakController;
+        if (strongController == nil)
+            return;
+        
+        [strongController dismissAnimated:true manual:true];
+    }];
+    [items addObject:cancelItem];
+    
+    [controller setItemViews:items];
+    
+    [controller presentInViewController:self sourceView:self.view animated:true];
+}
+
+#pragma mark - Passport Delete
+
+- (void)deletePressed
+{
+    __weak TGPassportRequestController *weakSelf = self;
+    [self presentDeleteMenu:TGLocalized(@"Passport.DeletePassportConfirmation") buttonTitle:TGLocalized(@"Common.Delete") item:_deleteItem action:^
+    {
+        __strong TGPassportRequestController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+            [strongSelf performDelete];
+    }];
 }
 
 - (void)performDelete
@@ -2440,7 +2070,7 @@
     }]];
 }
 
-#pragma mark -
+#pragma mark - Two Step
 
 - (void)setupTwoStepAuth:(bool)__unused waiting
 {
@@ -2551,18 +2181,15 @@
                     NSString *errorText = TGLocalized(@"Login.UnknownError");
                     if ([error hasPrefix:@"FLOOD_WAIT"])
                         errorText = TGLocalized(@"TwoStepAuth.FloodError");
-                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:^(__unused bool okButtonPressed)
-                    {
-                        //__strong TGPassportRequestController *strongSelf = weakSelf;
-                        //if (strongSelf != nil)
-                        //    [strongSelf->_passwordItem becomeFirstResponder];
-                    }];
+                    [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
                 } completed:nil]];
             }
         } disableKeyboardWorkaround:false];
         
     }
 }
+
+#pragma mark - Layout
 
 - (void)controllerInsetUpdated:(UIEdgeInsets)previousInset {
     [super controllerInsetUpdated:previousInset];
@@ -2665,6 +2292,207 @@
     return UIInterfaceOrientationPortrait;
 }
 
+#pragma mark - Helpers
+
++ (NSString *)titleForType:(TGPassportType)type
+{
+    switch (type)
+    {
+        case TGPassportTypePersonalDetails:
+            return TGLocalized(@"Passport.Identity.TypePersonalDetails");
+            
+        case TGPassportTypePassport:
+            return TGLocalized(@"Passport.Identity.TypePassport");
+            
+        case TGPassportTypeIdentityCard:
+            return TGLocalized(@"Passport.Identity.TypeIdentityCard");
+            
+        case TGPassportTypeDriversLicense:
+            return TGLocalized(@"Passport.Identity.TypeDriversLicense");
+            
+        case TGPassportTypeInternalPassport:
+            return TGLocalized(@"Passport.Identity.TypeInternalPassport");
+            
+        case TGPassportTypeAddress:
+            return TGLocalized(@"Passport.Address.TypeResidentialAddress");
+            
+        case TGPassportTypeUtilityBill:
+            return TGLocalized(@"Passport.Address.TypeUtilityBill");
+            
+        case TGPassportTypeBankStatement:
+            return TGLocalized(@"Passport.Address.TypeBankStatement");
+            
+        case TGPassportTypeRentalAgreement:
+            return TGLocalized(@"Passport.Address.TypeRentalAgreement");
+            
+        case TGPassportTypePassportRegistration:
+            return TGLocalized(@"Passport.Address.TypePassportRegistration");
+            
+        case TGPassportTypeTemporaryRegistration:
+            return TGLocalized(@"Passport.Address.TypeTemporaryRegistration");
+            
+        default:
+            return nil;
+    }
+}
+
++ (NSString *)uploadSubtitleForType:(TGPassportType)type
+{
+    switch (type)
+    {
+        case TGPassportTypePassport:
+            return TGLocalized(@"Passport.Identity.TypePassportUploadScan");
+            
+        case TGPassportTypeIdentityCard:
+            return TGLocalized(@"Passport.Identity.TypeIdentityCardUploadScan");
+            
+        case TGPassportTypeDriversLicense:
+            return TGLocalized(@"Passport.Identity.TypeDriversLicenseUploadScan");
+            
+        case TGPassportTypeInternalPassport:
+            return TGLocalized(@"Passport.Identity.TypeInternalPassportUploadScan");
+            
+        case TGPassportTypeUtilityBill:
+            return TGLocalized(@"Passport.Address.TypeUtilityBillUploadScan");
+            
+        case TGPassportTypeBankStatement:
+            return TGLocalized(@"Passport.Address.TypeBankStatementUploadScan");
+            
+        case TGPassportTypeRentalAgreement:
+            return TGLocalized(@"Passport.Address.TypeRentalAgreementUploadScan");
+    
+        case TGPassportTypePassportRegistration:
+            return TGLocalized(@"Passport.Address.TypePassportRegistrationUploadScan");
+        
+        case TGPassportTypeTemporaryRegistration:
+            return TGLocalized(@"Passport.Address.TypeTemporaryRegistrationUploadScan");
+            
+        default:
+            return nil;
+    }
+}
+
++ (NSString *)settingsTitleForType:(TGPassportType)type exists:(bool)exists
+{
+    NSString *title = nil;
+    switch (type)
+    {
+        case TGPassportTypePersonalDetails:
+            title = exists ? TGLocalized(@"Passport.Identity.EditPersonalDetails") : TGLocalized(@"Passport.Identity.AddPersonalDetails");
+            break;
+            
+        case TGPassportTypePassport:
+            title = exists ? TGLocalized(@"Passport.Identity.EditPassport") : TGLocalized(@"Passport.Identity.AddPassport");
+            break;
+            
+        case TGPassportTypeIdentityCard:
+            title = exists ? TGLocalized(@"Passport.Identity.EditIdentityCard") : TGLocalized(@"Passport.Identity.AddIdentityCard");
+            break;
+            
+        case TGPassportTypeDriversLicense:
+            title = exists ? TGLocalized(@"Passport.Identity.EditDriversLicense") : TGLocalized(@"Passport.Identity.AddDriversLicense");
+            break;
+            
+        case TGPassportTypeInternalPassport:
+            title = exists ? TGLocalized(@"Passport.Identity.EditInternalPassport") : TGLocalized(@"Passport.Identity.AddInternalPassport");
+            break;
+            
+        case TGPassportTypeAddress:
+            title = exists ? TGLocalized(@"Passport.Address.EditResidentialAddress") : TGLocalized(@"Passport.Address.AddResidentialAddress");
+            break;
+            
+        case TGPassportTypeUtilityBill:
+            title = exists ? TGLocalized(@"Passport.Address.EditUtilityBill") : TGLocalized(@"Passport.Address.AddUtilityBill");
+            break;
+            
+        case TGPassportTypeBankStatement:
+            title = exists ? TGLocalized(@"Passport.Address.EditBankStatement") : TGLocalized(@"Passport.Address.AddBankStatement");
+            break;
+            
+        case TGPassportTypeRentalAgreement:
+            title = exists ? TGLocalized(@"Passport.Address.EditRentalAgreement") : TGLocalized(@"Passport.Address.AddRentalAgreement");
+            break;
+            
+        case TGPassportTypePassportRegistration:
+            title = exists ? TGLocalized(@"Passport.Address.EditPassportRegistration") : TGLocalized(@"Passport.Address.AddPassportRegistration");
+            break;
+            
+        case TGPassportTypeTemporaryRegistration:
+            title = exists ? TGLocalized(@"Passport.Address.EditTemporaryRegistration") : TGLocalized(@"Passport.Address.AddTemporaryRegistration");
+            break;
+            
+        default:
+            break;
+    }
+    return title;
+}
+
++ (NSString *)uploadSubtitleWithFormat:(NSString *)format types:(NSArray *)types
+{
+    NSString *(^stringForType)(TGPassportRequiredType *) = ^NSString *(TGPassportRequiredType *type)
+    {
+        switch (type.type)
+        {
+            case TGPassportTypePassport:
+                return TGLocalized(@"Passport.Identity.OneOfTypePassport");
+                
+            case TGPassportTypeIdentityCard:
+                return TGLocalized(@"Passport.Identity.OneOfTypeIdentityCard");
+                
+            case TGPassportTypeDriversLicense:
+                return TGLocalized(@"Passport.Identity.OneOfTypeDriversLicense");
+                
+            case TGPassportTypeInternalPassport:
+                return TGLocalized(@"Passport.Identity.OneOfTypeInternalPassport");
+                
+            case TGPassportTypeUtilityBill:
+                return TGLocalized(@"Passport.Address.OneOfTypeUtilityBill");
+                
+            case TGPassportTypeBankStatement:
+                return TGLocalized(@"Passport.Address.OneOfTypeBankStatement");
+                
+            case TGPassportTypeRentalAgreement:
+                return TGLocalized(@"Passport.Address.OneOfTypeRentalAgreement");
+                
+            case TGPassportTypePassportRegistration:
+                return TGLocalized(@"Passport.Address.OneOfTypePassportRegistration");
+                
+            case TGPassportTypeTemporaryRegistration:
+                return TGLocalized(@"Passport.Address.OneOfTypeTemporaryRegistration");
+                
+            default:
+                return nil;
+        }
+    };
+    
+    NSMutableString *string = [[NSMutableString alloc] init];
+    [types enumerateObjectsUsingBlock:^(TGPassportRequiredType *type, NSUInteger index, __unused BOOL *stop)
+    {
+        NSString *typeString = stringForType(type);
+        if (typeString == nil)
+            return;
+        
+        [string appendString:typeString];
+        
+        if (index < types.count - 1)
+        {
+            NSString *delimeter = (index < types.count - 2) ? TGLocalized(@"Passport.FieldOneOf.Delimeter") : TGLocalized(@"Passport.FieldOneOf.FinalDelimeter");
+            [string appendString:delimeter];
+        }
+    }];
+
+    return [NSString stringWithFormat:format, string];
+}
+
+- (bool)requiresNativeNameForCountry:(NSString *)country
+{
+    if (country.length == 0)
+        return false;
+    
+    NSString *lang = _languageMap.map[[country uppercaseString]];
+    return ![lang isEqualToString:@"en"];
+}
+
 @end
 
 
@@ -2684,6 +2512,18 @@
 - (BOOL)isEqual:(id)object
 {
     return [object isKindOfClass:[TGPassportPasswordRequest class]]  && ((TGPassportPasswordRequest *)object)->_state == _state && TGObjectCompare(((TGPassportPasswordRequest *)object)->_settings, _settings) && ((TGPassportPasswordRequest *)object)->_hasRecovery == _hasRecovery && TGObjectCompare(((TGPassportPasswordRequest *)object)->_passwordHint, _passwordHint) && TGObjectCompare(((TGPassportPasswordRequest *)object)->_error, _error);
+}
+
+@end
+
+@implementation TGPassportDocumentOption
+
++ (instancetype)optionWithTitle:(NSString *)title action:(void (^)(TGMenuSheetController *))action
+{
+    TGPassportDocumentOption *option = [[TGPassportDocumentOption alloc] init];
+    option->_title = title;
+    option->_action = [action copy];
+    return option;
 }
 
 @end

@@ -32,13 +32,19 @@ NSString *const TGPassportFormDataHashKey = @"data_hash";
 NSString *const TGPassportFormFrontSideKey = @"front_side";
 NSString *const TGPassportFormReverseSideKey = @"reverse_side";
 NSString *const TGPassportFormSelfieKey = @"selfie";
+NSString *const TGPassportFormTranslationKey = @"translation";
 NSString *const TGPassportFormFilesKey = @"files";
 NSString *const TGPassportFormFileHashKey = @"file_hash";
 NSString *const TGPassportFormSecretKey = @"secret";
 NSString *const TGPassportFormPayloadKey = @"payload";
+NSString *const TGPassportFormNonceKey = @"nonce";
 
 NSString *const TGPassportIdentityFirstNameKey = @"first_name";
+NSString *const TGPassportIdentityFirstNameNativeKey = @"first_name_native";
+NSString *const TGPassportIdentityMiddleNameKey = @"middle_name";
+NSString *const TGPassportIdentityMiddleNameNativeKey = @"middle_name_native";
 NSString *const TGPassportIdentityLastNameKey = @"last_name";
+NSString *const TGPassportIdentityLastNameNativeKey = @"last_name_native";
 NSString *const TGPassportIdentityDateOfBirthKey = @"birth_date";
 NSString *const TGPassportIdentityGenderKey = @"gender";
 NSString *const TGPassportIdentityGenderMaleValue = @"male";
@@ -66,8 +72,7 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
         {
             _tl = form;
             _privacyPolicyUrl = form.privacy_policy_url;
-            _requiredTypes = [TGPassportSignals typesForSecureValueTypes:form.required_types];
-            _selfieRequired = form.flags & (1 << 1);
+            _requiredTypes = [TGPassportSignals requiredTypesForSecureRequiredTypes:form.required_types];
             
             NSMutableSet *existingFiles = [[NSMutableSet alloc] init];
             for (TLSecureValue$secureValue *value in ((TLaccount_AuthorizationForm$account_authorizationForm *)form).values)
@@ -78,6 +83,11 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
                     [existingFiles addObject:[TGStringUtils stringByEncodingInBase64:((TLSecureFile$secureFile *)value.reverse_side).file_hash]];
                 if ([value.selfie isKindOfClass:[TLSecureFile$secureFile class]])
                     [existingFiles addObject:[TGStringUtils stringByEncodingInBase64:((TLSecureFile$secureFile *)value.selfie).file_hash]];
+                for (TLSecureFile$secureFile *file in value.translation)
+                {
+                    if ([file isKindOfClass:[TLSecureFile$secureFile class]])
+                        [existingFiles addObject:[TGStringUtils stringByEncodingInBase64:file.file_hash]];
+                }
                 for (TLSecureFile$secureFile *file in value.files)
                 {
                     if ([file isKindOfClass:[TLSecureFile$secureFile class]])
@@ -115,6 +125,11 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     return nil;
 }
 
+- (bool)hasValues
+{
+    return _values.count > 0;
+}
+
 - (instancetype)updateWithValues:(NSArray<TGPassportDecryptedValue *> *)values removeValueTypes:(NSArray *)removeValueTypes
 {
     NSMutableArray *updateValueTypes = [[NSMutableArray alloc] init];
@@ -137,13 +152,100 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     return [[TGPassportDecryptedForm alloc] initWithForm:self values:newValues];
 }
 
-- (NSData *)credentialsDataWithPayload:(NSString *)payload
+- (bool)selfieRequiredForValue:(TGPassportDecryptedValue *)value
+{
+    for (NSObject<TGPassportRequiredType> *requiredType in self.requiredTypes)
+    {
+        if ([requiredType isKindOfClass:[TGPassportRequiredType class]])
+        {
+            if (((TGPassportRequiredType *)requiredType).type == value.type)
+                return ((TGPassportRequiredType *)requiredType).selfieRequired;
+        }
+        else if ([requiredType isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+        {
+            for (TGPassportRequiredType *subtype in ((TGPassportRequiredOneOfTypes *)requiredType).types)
+            {
+                if (subtype.type == value.type)
+                    return subtype.selfieRequired;
+            }
+        }
+    }
+    return false;
+}
+
+- (bool)translationRequiredForValue:(TGPassportDecryptedValue *)value
+{
+    for (NSObject<TGPassportRequiredType> *requiredType in self.requiredTypes)
+    {
+        if ([requiredType isKindOfClass:[TGPassportRequiredType class]])
+        {
+            if (((TGPassportRequiredType *)requiredType).type == value.type)
+                return ((TGPassportRequiredType *)requiredType).translationRequired;
+        }
+        else if ([requiredType isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+        {
+            for (TGPassportRequiredType *subtype in ((TGPassportRequiredOneOfTypes *)requiredType).types)
+            {
+                if (subtype.type == value.type)
+                    return subtype.translationRequired;
+            }
+        }
+    }
+    return false;
+}
+
+- (NSArray *)fulfilledValues
+{
+    NSMutableArray *requestedValues = [[NSMutableArray alloc] init];
+    for (NSObject<TGPassportRequiredType> *requiredType in self.requiredTypes)
+    {
+        if ([requiredType isKindOfClass:[TGPassportRequiredType class]])
+        {
+            for (TGPassportDecryptedValue *value in self.values)
+            {
+                if (((TGPassportRequiredType *)requiredType).type == value.type)
+                {
+                    [requestedValues addObject:value];
+                    break;
+                }
+            }
+        }
+        else if ([requiredType isKindOfClass:[TGPassportRequiredOneOfTypes class]])
+        {
+            TGPassportDecryptedValue *documentValue = nil;
+            bool complete = false;
+            
+            for (TGPassportRequiredType *subtype in ((TGPassportRequiredOneOfTypes *)requiredType).types)
+            {
+                if (documentValue == nil || !complete)
+                {
+                    TGPassportDecryptedValue *value = [self valueForType:subtype.type];
+                    if (value != nil)
+                    {
+                        NSInteger bestScore = subtype.translationRequired + subtype.selfieRequired * 2;
+                        NSInteger valueScore = (subtype.translationRequired ? value.translation.count > 0 : 0) + (subtype.selfieRequired && value.selfie != nil ? 2 : 0);
+                        if (documentValue == nil || bestScore == valueScore)
+                            documentValue = value;
+                        
+                        complete = valueScore == bestScore;
+                    }
+                }
+            }
+            
+            [requestedValues addObject:documentValue];
+        }
+    }
+    return requestedValues;
+}
+
+- (NSData *)credentialsDataWithPayload:(NSString *)payload nonce:(NSString *)nonce
 {
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     
     NSMutableDictionary *secureData = [[NSMutableDictionary alloc] init];
     dictionary[TGPassportFormSecureDataKey] = secureData;
-    for (TGPassportDecryptedValue *value in self.values)
+    
+    for (TGPassportDecryptedValue *value in self.fulfilledValues)
     {
         if (value.plainData != nil)
             continue;
@@ -164,9 +266,23 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
             valueDict[TGPassportFormReverseSideKey] = @{TGPassportFormFileHashKey: [TGStringUtils stringByEncodingInBase64:value.reverseSide.fileHash], TGPassportFormSecretKey: [TGStringUtils stringByEncodingInBase64:value.reverseSide.fileSecret]};
         }
         
-        if (self.selfieRequired && value.selfie != nil)
+        if (value.selfie != nil && [self selfieRequiredForValue:value])
         {
             valueDict[TGPassportFormSelfieKey] = @{TGPassportFormFileHashKey: [TGStringUtils stringByEncodingInBase64:value.selfie.fileHash], TGPassportFormSecretKey: [TGStringUtils stringByEncodingInBase64:value.selfie.fileSecret]};
+        }
+        
+        if (value.translation.count > 0 && [self translationRequiredForValue:value])
+        {
+            NSMutableArray *translation = [[NSMutableArray alloc] init];
+            for (TGPassportFile *file in value.translation)
+            {
+                if (file.fileHash != nil && file.fileSecret != nil)
+                {
+                    [translation addObject:@{TGPassportFormFileHashKey: [TGStringUtils stringByEncodingInBase64:file.fileHash], TGPassportFormSecretKey: [TGStringUtils stringByEncodingInBase64:file.fileSecret]}];
+                }
+            }
+            if (translation.count > 0)
+                valueDict[TGPassportFormTranslationKey] = translation;
         }
         
         NSMutableArray *files = [[NSMutableArray alloc] init];
@@ -188,6 +304,9 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     if (payload.length > 0)
         dictionary[TGPassportFormPayloadKey] = payload;
     
+    if (nonce.length > 0)
+        dictionary[TGPassportFormNonceKey] = nonce;
+    
     NSError *error;
     NSData *data = [NSJSONSerialization dataWithJSONObject:dictionary options:kNilOptions error:&error];
     return data;
@@ -197,7 +316,7 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
 
 @implementation TGPassportDecryptedValue
 
-- (instancetype)initWithType:(TGPassportType)type data:(TGPassportSecureData *)data frontSide:(TGPassportFile *)frontSide reverseSide:(TGPassportFile *)reverseSide selfie:(TGPassportFile *)selfie files:(NSArray *)files plainData:(TGPassportPlainData *)plainData
+- (instancetype)initWithType:(TGPassportType)type data:(TGPassportSecureData *)data frontSide:(TGPassportFile *)frontSide reverseSide:(TGPassportFile *)reverseSide selfie:(TGPassportFile *)selfie translation:(NSArray *)translation files:(NSArray *)files plainData:(TGPassportPlainData *)plainData
 {
     self = [super init];
     if (self != nil)
@@ -207,6 +326,7 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
         _frontSide = frontSide;
         _reverseSide = reverseSide;
         _selfie = selfie;
+        _translation = translation;
         _files = files;
         _plainData = plainData;
     }
@@ -376,27 +496,48 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     return nil;
 }
 
+- (bool)isCompleted
+{
+    return false;
+}
+
++ (NSDictionary *)extractUnknownFields:(NSDictionary *)json knownFields:(NSArray *)knownFields
+{
+    NSMutableDictionary *unknownFields = [[NSMutableDictionary alloc] init];
+    [json enumerateKeysAndObjectsUsingBlock:^(id key, id obj, __unused BOOL *stop)
+    {
+        if (![knownFields containsObject:key])
+            unknownFields[key] = obj;
+    }];
+    return unknownFields;
+}
+
 @end
 
 
 @implementation TGPassportPersonalDetailsData
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode secret:(NSData *)secret
+- (instancetype)initWithFirstName:(NSString *)firstName middleName:(NSString *)middleName lastName:(NSString *)lastName firstNameNative:(NSString *)firstNameNative middleNameNative:(NSString *)middleNameNative lastNameNative:(NSString *)lastNameNative birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret
 {
-    return [self initWithFirstName:firstName lastName:lastName birthDate:birthDate gender:gender countryCode:countryCode residenceCountryCode:residenceCountryCode paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
+    return [self initWithFirstName:firstName middleName:middleName lastName:lastName firstNameNative:firstNameNative middleNameNative:middleNameNative lastNameNative:lastNameNative birthDate:birthDate gender:gender countryCode:countryCode residenceCountryCode:residenceCountryCode unknownFields:unknownFields paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
 }
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
+- (instancetype)initWithFirstName:(NSString *)firstName middleName:(NSString *)middleName lastName:(NSString *)lastName firstNameNative:(NSString *)firstNameNative middleNameNative:(NSString *)middleNameNative lastNameNative:(NSString *)lastNameNative birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode unknownFields:(NSDictionary *)unknownFields paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
 {
     self = [super init];
     if (self != nil)
     {
         _firstName = firstName;
+        _middleName = middleName;
         _lastName = lastName;
+        _firstNameNative = firstNameNative;
+        _middleNameNative = middleNameNative;
+        _lastNameNative = lastNameNative;
         _birthDate = birthDate;
         _gender = gender;
         _countryCode = countryCode;
         _residenceCountryCode = residenceCountryCode;
+        _unknownFields = unknownFields;
         
         [self setupPaddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:secret];
     }
@@ -405,7 +546,22 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
 
 - (instancetype)initWithJSON:(NSDictionary *)json paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret
 {
-    return [self initWithFirstName:json[TGPassportIdentityFirstNameKey] lastName:json[TGPassportIdentityLastNameKey] birthDate:json[TGPassportIdentityDateOfBirthKey] gender:[TGPassportPersonalDetailsData genderForStringValue:json[TGPassportIdentityGenderKey]] countryCode:json[TGPassportIdentityCountryCodeKey] residenceCountryCode:json[TGPassportIdentityResidenceCountryCodeKey] paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
+    NSArray *knownFields = @
+    [
+     TGPassportIdentityFirstNameKey,
+     TGPassportIdentityMiddleNameKey,
+     TGPassportIdentityLastNameKey,
+     TGPassportIdentityFirstNameNativeKey,
+     TGPassportIdentityMiddleNameNativeKey,
+     TGPassportIdentityLastNameNativeKey,
+     TGPassportIdentityDateOfBirthKey,
+     TGPassportIdentityGenderKey,
+     TGPassportIdentityCountryCodeKey,
+     TGPassportIdentityResidenceCountryCodeKey
+    ];
+    NSDictionary *unknownFields = [TGPassportSecureData extractUnknownFields:json knownFields:knownFields];
+    
+    return [self initWithFirstName:json[TGPassportIdentityFirstNameKey] middleName:json[TGPassportIdentityMiddleNameKey] lastName:json[TGPassportIdentityLastNameKey] firstNameNative:json[TGPassportIdentityFirstNameNativeKey] middleNameNative:json[TGPassportIdentityMiddleNameNativeKey] lastNameNative:json[TGPassportIdentityLastNameNativeKey] birthDate:json[TGPassportIdentityDateOfBirthKey] gender:[TGPassportPersonalDetailsData genderForStringValue:json[TGPassportIdentityGenderKey]] countryCode:json[TGPassportIdentityCountryCodeKey] residenceCountryCode:json[TGPassportIdentityResidenceCountryCodeKey] unknownFields:unknownFields paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
 }
 
 - (NSDictionary *)jsonValue
@@ -413,8 +569,16 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     if (_firstName != nil)
         dictionary[TGPassportIdentityFirstNameKey] = _firstName;
+    if (_middleName != nil)
+        dictionary[TGPassportIdentityMiddleNameKey] = _middleName;
     if (_lastName != nil)
         dictionary[TGPassportIdentityLastNameKey] = _lastName;
+    if (_firstNameNative != nil)
+        dictionary[TGPassportIdentityFirstNameNativeKey] = _firstNameNative;
+    if (_middleNameNative != nil)
+        dictionary[TGPassportIdentityMiddleNameNativeKey] = _middleNameNative;
+    if (_lastNameNative != nil)
+        dictionary[TGPassportIdentityLastNameNativeKey] = _lastNameNative;
     if (_birthDate != nil)
         dictionary[TGPassportIdentityDateOfBirthKey] = _birthDate;
     if (_gender != TGPassportGenderUndefined)
@@ -424,6 +588,21 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     if (_residenceCountryCode != nil)
         dictionary[TGPassportIdentityResidenceCountryCodeKey] = [_residenceCountryCode uppercaseString];
     return dictionary;
+}
+
+- (bool)hasNativeName
+{
+    return _firstNameNative.length > 0 && _lastNameNative.length > 0;
+}
+
+- (bool)isCompleted
+{
+    bool hasName = _firstName.length > 0 && _lastName.length > 0;
+    bool hasBirthdate = _birthDate.length > 0;
+    bool hasGender = _gender != TGPassportGenderUndefined;
+    bool hasCountry = _countryCode.length > 0;
+    bool hasResidence = _residenceCountryCode.length > 0;
+    return hasName && hasBirthdate && hasGender && hasCountry && hasResidence;
 }
 
 + (NSString *)stringValueForGender:(TGPassportGender)gender
@@ -454,18 +633,19 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
 
 @implementation TGPassportDocumentData
 
-- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate secret:(NSData *)secret
+- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret
 {
-    return [self initWithDocumentNumber:documentNumber expiryDate:expiryDate paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
+    return [self initWithDocumentNumber:documentNumber expiryDate:expiryDate unknownFields:unknownFields paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
 }
 
-- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
+- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate unknownFields:(NSDictionary *)unknownFields paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
 {
     self = [super init];
     if (self != nil)
     {
         _documentNumber = documentNumber;
         _expiryDate = expiryDate;
+        _unknownFields = unknownFields;
         
         [self setupPaddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:secret];
     }
@@ -474,7 +654,13 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
 
 - (instancetype)initWithJSON:(NSDictionary *)json paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret
 {
-    return [self initWithDocumentNumber:json[TGPassportIdentityDocumentNumberKey] expiryDate:json[TGPassportIdentityExpiryDateKey] paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
+    NSArray *knownFields = @
+    [
+     TGPassportIdentityDocumentNumberKey,
+     TGPassportIdentityExpiryDateKey
+    ];
+    NSDictionary *unknownFields = [TGPassportSecureData extractUnknownFields:json knownFields:knownFields];
+    return [self initWithDocumentNumber:json[TGPassportIdentityDocumentNumberKey] expiryDate:json[TGPassportIdentityExpiryDateKey] unknownFields:unknownFields paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
 }
 
 - (NSDictionary *)jsonValue
@@ -487,17 +673,22 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     return dictionary;
 }
 
+- (bool)isCompleted
+{
+    return _documentNumber.length > 0;
+}
+
 @end
 
 
 @implementation TGPassportAddressData
 
-- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode secret:(NSData *)secret
+- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret
 {
-    return [self initWithStreet1:street1 street2:street2 postcode:postcode city:city state:state countryCode:countryCode paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
+    return [self initWithStreet1:street1 street2:street2 postcode:postcode city:city state:state countryCode:countryCode unknownFields:unknownFields paddedData:nil dataSecret:nil encryptedDataSecret:nil secret:secret];
 }
 
-- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
+- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode unknownFields:(NSDictionary *)unknownFields paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret secret:(NSData *)secret
 {
     self = [super init];
     if (self != nil)
@@ -508,6 +699,7 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
         _city = city;
         _state = state;
         _countryCode = countryCode;
+        _unknownFields = unknownFields;
         
         [self setupPaddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:secret];
     }
@@ -516,7 +708,17 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
 
 - (instancetype)initWithJSON:(NSDictionary *)json paddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret
 {
-    return [self initWithStreet1:json[TGPassportAddressStreetLine1Key] street2:json[TGPassportAddressStreetLine2Key] postcode:json[TGPassportAddressPostcodeKey] city:json[TGPassportAddressCityKey] state:json[TGPassportAddressStateKey] countryCode:json[TGPassportAddressCountryCodeKey] paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
+    NSArray *knownFields = @
+    [
+     TGPassportAddressStreetLine1Key,
+     TGPassportAddressStreetLine2Key,
+     TGPassportAddressPostcodeKey,
+     TGPassportAddressCityKey,
+     TGPassportAddressStateKey,
+     TGPassportAddressCountryCodeKey
+    ];
+    NSDictionary *unknownFields = [TGPassportSecureData extractUnknownFields:json knownFields:knownFields];
+    return [self initWithStreet1:json[TGPassportAddressStreetLine1Key] street2:json[TGPassportAddressStreetLine2Key] postcode:json[TGPassportAddressPostcodeKey] city:json[TGPassportAddressCityKey] state:json[TGPassportAddressStateKey] countryCode:json[TGPassportAddressCountryCodeKey] unknownFields:unknownFields paddedData:paddedData dataSecret:dataSecret encryptedDataSecret:encryptedDataSecret secret:nil];
 }
 
 - (NSDictionary *)jsonValue
@@ -535,6 +737,15 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     if (_countryCode != nil)
         dictionary[TGPassportAddressCountryCodeKey] = [_countryCode uppercaseString];
     return dictionary;
+}
+
+- (bool)isCompleted
+{
+    bool hasStreet = _street1.length > 0;
+    bool hasPostcode = _postcode.length > 0;
+    bool hasCity = _city.length > 0;
+    bool hasCountry = _countryCode.length > 0;
+    return hasStreet && hasPostcode && hasCity && hasCountry;
 }
 
 @end
@@ -568,6 +779,63 @@ NSString *const TGPassportAddressPostcodeKey = @"post_code";
     if (self != nil)
     {
         _email = email;
+    }
+    return self;
+}
+
+@end
+
+
+@implementation TGPassportRequiredType
+
+- (instancetype)initWithType:(TGPassportType)type includeNativeNames:(bool)includeNativeNames selfieRequired:(bool)selfieRequired translationRequired:(bool)translationRequired
+{
+    self = [super init];
+    if (self != nil)
+    {
+        _type = type;
+        _includeNativeNames = includeNativeNames;
+        _selfieRequired = selfieRequired;
+        _translationRequired = translationRequired;
+    }
+    return self;
+}
+
++ (instancetype)requiredTypeForType:(TGPassportType)type
+{
+    return [[TGPassportRequiredType alloc] initWithType:type includeNativeNames:false selfieRequired:false translationRequired:false];
+}
+
++ (NSArray *)requiredIdentityTypes
+{
+    NSMutableArray *types = [[NSMutableArray alloc] init];
+    for (NSNumber *type in [TGPassportSignals identityTypes])
+    {
+        [types addObject:[TGPassportRequiredType requiredTypeForType:(TGPassportType)type.integerValue]];
+    }
+    return types;
+}
+
++ (NSArray *)requiredAddressTypes
+{
+    NSMutableArray *types = [[NSMutableArray alloc] init];
+    for (NSNumber *type in [TGPassportSignals addressTypes])
+    {
+        [types addObject:[TGPassportRequiredType requiredTypeForType:(TGPassportType)type.integerValue]];
+    }
+    return types;
+}
+
+@end
+
+@implementation TGPassportRequiredOneOfTypes
+
+- (instancetype)initWithTypes:(NSArray *)types
+{
+    self = [self init];
+    if (self != nil)
+    {
+        _types = types;
     }
     return self;
 }

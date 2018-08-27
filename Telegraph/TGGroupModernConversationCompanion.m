@@ -380,7 +380,7 @@ typedef enum {
     
     [self _setTitle:_conversation.chatTitle];
     [self _setAvatarConversationId:_conversationId title:_conversation.chatTitle icon:nil];
-    [self _setAvatarUrl:_conversation.chatPhotoSmall];
+    [self _setAvatarUrl:_conversation.chatPhotoFullSmall];
     
     int onlineCount = 0;
     if (_conversation.chatParticipants != nil)
@@ -795,7 +795,7 @@ typedef enum {
         
         [self _setTitle:_conversation.chatTitle];
         [self _setAvatarConversationId:_conversationId title:_conversation.chatTitle icon:nil];
-        [self _setAvatarUrl:_conversation.chatPhotoSmall];
+        [self _setAvatarUrl:_conversation.chatPhotoFullSmall];
         int onlineCount = 0;
         if (_conversation.chatParticipants != nil)
         {
@@ -1014,11 +1014,11 @@ typedef enum {
 
 - (TGModernGalleryController *)galleryControllerForAvatar
 {
-    if (_conversation.chatPhotoSmall.length == 0)
+    if (_conversation.chatPhotoFullSmall.length == 0)
         return nil;
     
     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
-    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversationId accessHash:0 messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversationId accessHash:0 messageId:0 legacyThumbnailUrl:_conversation.chatPhotoFullSmall legacyUrl:_conversation.chatPhotoFullBig imageSize:CGSizeMake(640.0f, 640.0f)];
     
     return modernGallery;
 }

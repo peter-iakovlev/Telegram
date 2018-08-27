@@ -767,7 +767,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     
     [self _setTitle:[self stringForTitle:user isContact:_isContact]];
     [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
-    [self _setAvatarUrl:user.photoUrlSmall];
+    [self _setAvatarUrl:user.photoFullUrlSmall];
     bool accentColored = false;
     NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
     [self _setStatus:statusString accentColored:accentColored allowAnimation:false toggleMode:TGModernConversationControllerTitleToggleNone];
@@ -1217,7 +1217,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
                 NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
                 [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:true toggleMode:TGModernConversationControllerTitleToggleNone];
                 [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
-                [self _setAvatarUrl:user.photoUrlSmall];
+                [self _setAvatarUrl:user.photoFullUrlSmall];
                 
                 break;
             }
@@ -1231,7 +1231,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
         NSString *statusString = [self statusStringForUser:user accentColored:&accentColored];
         [self _setTitle:[self stringForTitle:user isContact:[TGDatabaseInstance() uidIsRemoteContact:_uid]] andStatus:statusString accentColored:accentColored allowAnimatioon:false toggleMode:TGModernConversationControllerTitleToggleNone];
         [self _setAvatarConversationId:_uid firstName:user.firstName lastName:user.lastName];
-        [self _setAvatarUrl:user.photoUrlSmall];
+        [self _setAvatarUrl:user.photoFullUrlSmall];
     }
     else if ([path isEqualToString:[[NSString alloc] initWithFormat:@"/tg/conversation/(%lld)/typing", _conversationId]])
     {
@@ -1522,7 +1522,7 @@ static NSMutableDictionary *dismissedContactLinkPanelsByUserId()
     
     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
     
-    modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+    modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoFullUrlSmall currentAvatarLegacyImageUri:user.photoFullUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
     
     return modernGallery;
 }

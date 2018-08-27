@@ -66,7 +66,19 @@
         @"imageInfo": imageInfo
     };
     
-    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:@{@"userProperties": userProperties, @"contentHints": @(TGRemoteImageContentHintLargeFile)} flags:0 watcher:self];
+    NSMutableDictionary *downloadOptions = [[NSMutableDictionary alloc] initWithDictionary:@{@"userProperties": userProperties, @"contentHints": @(TGRemoteImageContentHintLargeFile)}];
+    if (options[@"originInfo"] != nil)
+    {
+        TGMediaOriginInfo *originInfo = [TGMediaOriginInfo mediaOriginInfoWithStringRepresentation:options[@"originInfo"]];
+        downloadOptions[@"originInfo"] = originInfo;
+    }
+    else
+    {
+        TGMediaOriginInfo *originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:conversationId mid:messageId];
+        downloadOptions[@"originInfo"] = originInfo;
+    }
+    
+    [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", uri] options:downloadOptions flags:0 watcher:self];
 }
 
 - (void)watcherJoined:(ASHandle *)watcherHandle options:(NSDictionary *)options waitingInActorQueue:(bool)waitingInActorQueue

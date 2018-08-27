@@ -126,7 +126,8 @@
         }
         
         if (TGPeerIdIsChannel(_conversationId)) {
-            [TGDatabaseInstance() updateChannels:@[chatConversation]];
+            if (chatConversation != nil)
+                [TGDatabaseInstance() updateChannels:@[chatConversation]];
         } else {
             [TGDatabaseInstance() transactionAddMessages:message == nil ? nil : @[message] updateConversationDatas:chats notifyAdded:true];
         }

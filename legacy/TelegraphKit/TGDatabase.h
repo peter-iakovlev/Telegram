@@ -65,6 +65,8 @@
 @class TGSynchronizePinnedConversationsAction;
 @class TGSynchronizeFeededChannelsAction;
 
+@class TGPassportLanguageMap;
+
 #define DEBUG_DATABASE_INVOKATIONS
 
 typedef struct {
@@ -345,6 +347,9 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 - (int)loadPeerMinMediaMid:(int64_t)peerId;
 - (void)loadPeerNotificationSettings:(int64_t)peerId soundId:(NSNumber **)soundId muteUntil:(NSNumber **)muteUntil previewText:(NSNumber **)previewText messagesMuted:(NSNumber **)messagesMuted notFound:(bool *)notFound;
 - (BOOL)isPeerMuted:(int64_t)peerId;
+- (BOOL)isPeerMuted:(int64_t)peerId forceUpdate:(bool)forceUpdate;
+
+- (void)loadPeerNotificationExceptions:(void (^)(NSArray *privateExceptions, NSArray *groupExceptions))completion;
 
 #ifdef __cplusplus
 - (std::set<int>)filterPeerPhotoNotificationsEnabled:(std::vector<int> const &)uidList;
@@ -389,6 +394,7 @@ typedef void (^TGDatabaseCleanupEverythingBlock)();
 
 - (TGMediaAttachment *)loadServerAssetData:(NSString *)key;
 - (void)storeServerAssetData:(NSString *)key attachment:(TGMediaAttachment *)attachment;
+- (void)removeServerAssetData:(NSString *)key;
 - (void)clearServerAssetData;
 
 - (int64_t)peerIdForEncryptedConversationId:(int64_t)encryptedConversationId;
@@ -632,10 +638,10 @@ readMessageContentsInteractive:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> 
 
 - (TGDatabaseMessageDraft *)_peerDraft:(int64_t)peerId;
 - (void)updatePeerDraftInteractive:(int64_t)peerId draft:(TGDatabaseMessageDraft *)draft;
+- (SSignal *)clearAllDrafts;
 
 - (SSignal *)verifySynchronizedDraft:(int64_t)peerId draft:(TGDatabaseMessageDraft *)draft;
 - (SSignal *)synchronizePeerMessageDraftPeers;
-- (SSignal *)clearAllDrafts;
 
 - (TGSynchronizePinnedConversationsAction *)currentSynchronizePinnedConversationsAction;
 - (void)_setCurrentSynchronizePinnedConversationsAction:(TGSynchronizePinnedConversationsAction *)action;
@@ -695,6 +701,9 @@ readMessageContentsInteractive:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> 
 - (void)storeUnpinnedLiveLocation:(int32_t)messageId forPeerId:(int64_t)peerId;
 
 - (void)scheduleFeededChannelsLoad;
+
+- (SSignal *)passportLanguageMapSignal;
+- (void)storePassportLanguageMap:(TGPassportLanguageMap *)map;
 
 - (void)resetStartupTime:(NSTimeInterval)value;
 

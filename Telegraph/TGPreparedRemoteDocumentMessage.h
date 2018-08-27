@@ -10,6 +10,7 @@
 
 @class TGDocumentMediaAttachment;
 @class TGImageInfo;
+@class TGMediaOriginInfo;
 
 @interface TGPreparedRemoteDocumentMessage : TGPreparedMessage
 
@@ -22,8 +23,9 @@
 @property (nonatomic) int size;
 @property (nonatomic, strong) TGImageInfo *thumbnailInfo;
 @property (nonatomic, strong) NSArray *attributes;
+@property (nonatomic, strong) TGMediaOriginInfo *originInfo;
 
-- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;;
+- (instancetype)initWithDocumentMedia:(TGDocumentMediaAttachment *)documentMedia replyMessage:(TGMessage *)replyMessage botContextResult:(TGBotContextResultAttachment *)botContextResult replyMarkup:(TGReplyMarkupAttachment *)replyMarkup;
 
 - (TGDocumentMediaAttachment *)document;
 

@@ -185,8 +185,8 @@
             NSInteger valueCount = (values == NULL) ? 0 : ABMultiValueGetCount(values);
             
             for (CFIndex i = 0; i < valueCount; i++) {
-                NSString *label = (__bridge NSString *)(ABMultiValueCopyLabelAtIndex(values, i));
-                id value = (__bridge id)(ABMultiValueCopyValueAtIndex(values, i));
+                NSString *label = (__bridge_transfer NSString *)(ABMultiValueCopyLabelAtIndex(values, i));
+                id value = (__bridge_transfer id)(ABMultiValueCopyValueAtIndex(values, i));
 
                 TGVCardValueArrayItem *item = [[TGVCardValueArrayItem alloc] initWithLabel:label value:value];
                 if (item != nil) {
@@ -395,7 +395,7 @@
     };
     
     CFArrayRef peopleArray = CFArrayCreate(kCFAllocatorDefault, (const void **)&people, 1, NULL);
-    NSData *vCardData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople(peopleArray));
+    NSData *vCardData = (__bridge_transfer NSData *)(ABPersonCreateVCardRepresentationWithPeople(peopleArray));
     NSString *vcard = [[NSString alloc] initWithData:vCardData encoding:NSUTF8StringEncoding];
     vcard = [vcard stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"];
     CFRelease(peopleArray);

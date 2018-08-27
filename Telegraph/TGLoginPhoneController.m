@@ -784,14 +784,15 @@
     if (countryName != nil)
     {
         NSString *countryId = [TGLoginCountriesController countryIdByCode:countryCode];
+        NSString *localizedCountryName = [TGLoginCountriesController localizedCountryNameByCountryId:countryId];
         _countryId = countryId;
         if (countryId != nil) {
             NSString *flag = [self emojiFlagForISOCountryCode:[countryId uppercaseString]];
             if (flag.length != 0) {
-                countryName = [flag stringByAppendingFormat:@" %@", countryName];
+                localizedCountryName = [flag stringByAppendingFormat:@" %@", localizedCountryName];
             }
         }
-        [_countryButton setTitle:countryName forState:UIControlStateNormal];
+        [_countryButton setTitle:localizedCountryName forState:UIControlStateNormal];
     }
     else
     {

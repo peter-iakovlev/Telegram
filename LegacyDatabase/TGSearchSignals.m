@@ -148,22 +148,22 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
     if (query.length < 5)
         return [SSignal single:@{@"chats": @[], @"users": @[]}];
     
-    return [[context function:[Api82 contacts_searchWithQ:query limit:@(100)]] map:^id(Api82_contacts_Found *result)
+    return [[context function:[Api86 contacts_searchWithQ:query limit:@(100)]] map:^id(Api86_contacts_Found *result)
     {
         NSMutableArray *chatModels = [[NSMutableArray alloc] init];
         NSMutableArray *userModels = [[NSMutableArray alloc] init];
         
-        for (Api82_User *user in result.users)
+        for (Api86_User *user in result.users)
         {
             TGUserModel *userModel = [TGChatListSignal userModelWithApiUser:user];
             if (userModel != nil)
                 [userModels addObject:userModel];
         }
         
-        for (Api82_Peer *peerFound in result.myResults)
+        for (Api86_Peer *peerFound in result.myResults)
         {
-            if ([peerFound isKindOfClass:[Api82_Peer_peerUser class]]) {
-                int32_t userId = [((Api82_Peer_peerUser *)peerFound).userId intValue];
+            if ([peerFound isKindOfClass:[Api86_Peer_peerUser class]]) {
+                int32_t userId = [((Api86_Peer_peerUser *)peerFound).userId intValue];
                 
                 for (TGUserModel *userModel in userModels)
                 {
@@ -176,10 +176,10 @@ static void enumerateStringParts(NSString *string, void (^block)(NSString *, boo
             }
         }
         
-        for (Api82_Peer *peerFound in result.results)
+        for (Api86_Peer *peerFound in result.results)
         {
-            if ([peerFound isKindOfClass:[Api82_Peer_peerUser class]]) {
-                int32_t userId = [((Api82_Peer_peerUser *)peerFound).userId intValue];
+            if ([peerFound isKindOfClass:[Api86_Peer_peerUser class]]) {
+                int32_t userId = [((Api86_Peer_peerUser *)peerFound).userId intValue];
                 
                 for (TGUserModel *userModel in userModels)
                 {

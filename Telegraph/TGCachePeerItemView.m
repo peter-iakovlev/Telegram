@@ -72,14 +72,14 @@
             TGUser *user = conversation.additionalProperties[@"user"];
             
             if (user.photoUrlSmall.length != 0) {
-                [_avatarView loadImage:user.photoUrlSmall filter:@"circle:40x40" placeholder:placeholder];
+                [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:40x40" placeholder:placeholder];
             } else {
                 [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
             }
             _titleLabel.text = user.displayName;
         } else {
             if (conversation.chatPhotoSmall.length != 0) {
-                [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:40x40" placeholder:placeholder];
+                [_avatarView loadImage:conversation.chatPhotoFullSmall filter:@"circle:40x40" placeholder:placeholder];
             } else {
                 [_avatarView loadGroupPlaceholderWithSize:size conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
             }
@@ -92,7 +92,7 @@
         if ( peerId == TGTelegraphInstance.clientUserId) {
             [_avatarView loadSavedMessagesWithSize:CGSizeMake(40.0f, 40.0f) placeholder:placeholder];
         } else if (user.photoUrlSmall.length != 0) {
-            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:40x40" placeholder:placeholder];
+            [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:40x40" placeholder:placeholder];
         } else {
             [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
         }

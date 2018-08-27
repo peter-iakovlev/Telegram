@@ -121,7 +121,7 @@ NSString *const TGShareCollectionCellIdentifier = @"TGShareCollectionCell";
             TGUser *user = conversation.additionalProperties[@"user"];
             
             if (user.photoUrlSmall.length != 0)
-                [_avatarView loadImage:user.photoUrlSmall filter:@"circle:60x60" placeholder:placeholder];
+                [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:60x60" placeholder:placeholder];
             else
                 [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
             
@@ -132,8 +132,8 @@ NSString *const TGShareCollectionCellIdentifier = @"TGShareCollectionCell";
         }
         else
         {
-            if (conversation.chatPhotoSmall.length != 0)
-                [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:60x60" placeholder:placeholder];
+            if (conversation.chatPhotoFullSmall.length != 0)
+                [_avatarView loadImage:conversation.chatPhotoFullSmall filter:@"circle:60x60" placeholder:placeholder];
             else
                 [_avatarView loadGroupPlaceholderWithSize:size conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
             title = conversation.chatTitle;
@@ -145,7 +145,7 @@ NSString *const TGShareCollectionCellIdentifier = @"TGShareCollectionCell";
         
         peerId = user.uid;
         if (user.photoUrlSmall.length != 0)
-            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:60x60" placeholder:placeholder];
+            [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:60x60" placeholder:placeholder];
         else
             [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
         

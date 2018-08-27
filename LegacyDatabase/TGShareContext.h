@@ -6,7 +6,7 @@
 #import <SSignalKit/SSignalKit.h>
 
 #import <SSignalKit/SSignalKit.h>
-#import <LegacyDatabase/ApiLayer82.h>
+#import <LegacyDatabase/ApiLayer86.h>
 
 #import <LegacyDatabase/TGModernCache.h>
 #import <LegacyDatabase/TGMemoryImageCache.h>
@@ -34,8 +34,8 @@
 
 - (instancetype)initWithContainerUrl:(NSURL *)containerUrl mtContext:(MTContext *)mtContext mtProto:(MTProto *)mtProto mtRequestService:(MTRequestMessageService *)mtRequestService clientUserId:(int32_t)clientUserId legacyDatabase:(TGLegacyDatabase *)legacyDatabase;
 
-- (SSignal *)function:(Api82_FunctionContext *)functionContext;
-- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api82_FunctionContext *)functionContext;
+- (SSignal *)function:(Api86_FunctionContext *)functionContext;
+- (SSignal *)datacenter:(NSInteger)datacenterId function:(Api86_FunctionContext *)functionContext;
 
 - (SSignal *)connectionContextForDatacenter:(NSInteger)datacenterId;
 

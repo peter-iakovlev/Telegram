@@ -144,7 +144,7 @@
         [self.menuSections deleteSection:0];
     }
     
-    if (_twoStepConfig.currentSalt != nil)
+    if (_twoStepConfig.hasPassword)
     {
         [self.menuSections addSection:_withPasswordSection];
         
@@ -190,7 +190,7 @@
                             TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                             [progressWindow show:true];
                             
-                            [strongSelf->_setPasswordDisposable setDisposable:[[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil currentSecret:nil nextSalt:strongSelf->_twoStepConfig.nextSalt nextPassword:password nextHint:hint email:email secretRandom:strongSelf->_twoStepConfig.secretRandom nextSecureSalt:strongSelf->_twoStepConfig.nextSecureSalt] deliverOn:[SQueue mainQueue]] onDispose:^
+                            [strongSelf->_setPasswordDisposable setDisposable:[[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nil currentPassword:nil currentSecret:nil nextAlgo:strongSelf->_twoStepConfig.nextAlgo nextPassword:password nextHint:hint email:email nextSecureAlgo:strongSelf->_twoStepConfig.nextSecureAlgo secureRandom:strongSelf->_twoStepConfig.secureRandom srpId:strongSelf->_twoStepConfig.srpId srpB:strongSelf->_twoStepConfig.srpB] deliverOn:[SQueue mainQueue]] onDispose:^
                             {
                                 TGDispatchOnMainThread(^
                                 {
@@ -282,13 +282,13 @@
     
 }
 
-+ (void)removePasswordWhileWaitingForActivation:(UINavigationController *)navigationController twoStepConfig:(TGTwoStepConfig *)twoStepConfig
++ (void)removePasswordWhileWaitingForActivation:(UINavigationController *)navigationController twoStepConfig:(TGTwoStepConfig *)__unused twoStepConfig
 {
     TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     [progressWindow show:true];
     
     __weak UINavigationController *weakNavigationController = navigationController;
-    [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil currentSecret:nil nextSalt:twoStepConfig.nextSalt nextPassword:nil nextHint:nil email:nil secretRandom:nil nextSecureSalt:nil] deliverOn:[SQueue mainQueue]] onDispose:^
+    [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nil currentPassword:nil currentSecret:nil nextAlgo:nil nextPassword:nil nextHint:nil email:nil nextSecureAlgo:nil secureRandom:nil srpId:0 srpB:nil] deliverOn:[SQueue mainQueue]] onDispose:^
     {
         TGDispatchOnMainThread(^
         {
@@ -332,7 +332,9 @@
                         
                         SSignal *signal = [[TGTwoStepVerifyPasswordSignal passwordSettings:strongSelf->_currentPassword config:strongSelf->_twoStepConfig] mapToSignal:^SSignal *(TGPasswordSettings *settings)
                         {
-                            return [TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:strongSelf->_twoStepConfig.currentSalt currentPassword:settings.password currentSecret:settings.secret nextSalt:strongSelf->_twoStepConfig.nextSalt nextPassword:password nextHint:hint email:nil secretRandom:strongSelf->_twoStepConfig.secretRandom nextSecureSalt:strongSelf->_twoStepConfig.nextSecureSalt];
+                            return [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *nextConfig) {
+                                return [TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nextConfig.currentAlgo currentPassword:settings.password currentSecret:settings.secret nextAlgo:nextConfig.nextAlgo nextPassword:password nextHint:hint email:nil nextSecureAlgo:nextConfig.nextSecureAlgo secureRandom:nextConfig.secureRandom srpId:nextConfig.srpId srpB:nextConfig.srpB];
+                            }];
                         }];
                         
                         
@@ -371,7 +373,9 @@
                                 
                                 SSignal *signal = [[TGTwoStepVerifyPasswordSignal passwordSettings:strongSelf->_currentPassword config:strongSelf->_twoStepConfig] mapToSignal:^SSignal *(TGPasswordSettings *settings)
                                 {
-                                    return [TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:strongSelf->_twoStepConfig.currentSalt currentPassword:settings.password currentSecret:settings.secret nextSalt:strongSelf->_twoStepConfig.nextSalt nextPassword:password nextHint:hint email:email secretRandom:strongSelf->_twoStepConfig.secretRandom nextSecureSalt:strongSelf->_twoStepConfig.nextSecureSalt];
+                                    return [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *nextConfig) {
+                                        return [TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nextConfig.currentAlgo currentPassword:settings.password currentSecret:settings.secret nextAlgo:nextConfig.nextAlgo nextPassword:password nextHint:hint email:email  nextSecureAlgo:nextConfig.nextSecureAlgo secureRandom:nextConfig.secureRandom srpId:nextConfig.srpId srpB:nextConfig.srpB];
+                                    }];
                                 }];
                                 
                                 [strongSelf->_setPasswordDisposable setDisposable:[[[signal deliverOn:[SQueue mainQueue]] onDispose:^
@@ -432,7 +436,11 @@
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progressWindow show:true];
                 
-                [strongSelf->_setPasswordDisposable setDisposable:[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:strongSelf->_twoStepConfig.currentSalt currentPassword:strongSelf->_currentPassword currentSecret:nil nextSalt:nil nextPassword:@"" nextHint:nil email:nil secretRandom:nil nextSecureSalt:nil] deliverOn:[SQueue mainQueue]] startWithNext:^(TGTwoStepConfig *config)
+                SSignal *signal = [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *nextConfig) {
+                    return [TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nextConfig.currentAlgo currentPassword:strongSelf->_currentPassword currentSecret:nil nextAlgo:nil nextPassword:@"" nextHint:nil email:nil nextSecureAlgo:nil secureRandom:nil srpId:nextConfig.srpId srpB:nextConfig.srpB];
+                }];
+                
+                [strongSelf->_setPasswordDisposable setDisposable:[[signal deliverOn:[SQueue mainQueue]] startWithNext:^(TGTwoStepConfig *config)
                 {
                     __strong TGPasswordSettingsController *strongSelf = weakSelf;
                     if (strongSelf != nil)
@@ -472,7 +480,12 @@
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
                 [progressWindow show:true];
                 
-                [strongSelf->_setPasswordDisposable setDisposable:[[[[TGTwoStepSetPaswordSignal setRecoveryEmail:strongSelf->_twoStepConfig.currentSalt currentPassword:strongSelf->_currentPassword recoveryEmail:email] deliverOn:[SQueue mainQueue]] onDispose:^
+                SSignal *signal = [[TGTwoStepConfigSignal twoStepConfig] mapToSignal:^SSignal *(TGTwoStepConfig *nextConfig)
+                {
+                    return [TGTwoStepSetPaswordSignal setRecoveryEmail:email currentPassword:strongSelf->_currentPassword algo:nextConfig.currentAlgo srpId:nextConfig.srpId srpB:nextConfig.srpB];
+                }];
+                
+                [strongSelf->_setPasswordDisposable setDisposable:[[[signal deliverOn:[SQueue mainQueue]] onDispose:^
                 {
                     [progressWindow dismiss:true];
                 }] startWithNext:^(TGTwoStepConfig *config)

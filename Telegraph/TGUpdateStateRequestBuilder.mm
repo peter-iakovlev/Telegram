@@ -312,7 +312,7 @@ static bool _initialUpdatesScheduled = false;
     return [[[TGTelegramNetworking instance] requestSignal:getWebPagePreview] mapToSignal:^SSignal *(TLMessageMedia *media)
     {
         TGWebPageMediaAttachment *webPage = nil;
-        for (id attachment in [TGMessage parseTelegraphMedia:media mediaLifetime:nil])
+        for (id attachment in [TGMessage parseTelegraphMedia:media mediaLifetime:nil cid:0 mid:0])
         {
             if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]])
             {
@@ -533,7 +533,7 @@ static bool _initialUpdatesScheduled = false;
             bool skipUpdate = initial;
 #ifdef DEBUG
             previousVersion = @"4.8.3";
-            skipUpdate = false;
+            skipUpdate = true;
 #elif defined(INTERNAL_RELEASE)
             skipUpdate = true;
 #endif
@@ -598,7 +598,7 @@ static bool _initialUpdatesScheduled = false;
                                     }
                                     
                                     if (updateServiceNotification.media != nil) {
-                                        NSArray *medias = [TGMessage parseTelegraphMedia:updateServiceNotification.media mediaLifetime:nil];
+                                        NSArray *medias = [TGMessage parseTelegraphMedia:updateServiceNotification.media mediaLifetime:nil cid:uid mid:message.mid];
                                         if (medias.count != 0) {
                                             [mediaAttachments addObjectsFromArray:medias];
                                         }

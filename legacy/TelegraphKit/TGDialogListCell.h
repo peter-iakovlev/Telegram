@@ -49,6 +49,7 @@
 @property (nonatomic) bool unreadMark;
 
 @property (nonatomic, strong) NSString *avatarUrl;
+@property (nonatomic, strong) NSData *avatarFileReference;
 @property (nonatomic) bool isOnline;
 
 @property (nonatomic) bool isMuted;

@@ -139,10 +139,19 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
         if (video.videoId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (video.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [video.originInfo stringRepresentation]];
+        }
         else
+        {
             [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
-        
+        }
         [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)roundSize.width, (int)roundSize.height, (int)renderSize.width, (int)renderSize.height];
         
         [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];
@@ -495,10 +504,17 @@
             
             NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
             if (video.videoId != 0)
+            {
                 [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
-            else
+                [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+                [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+                
+                if (video.originInfo != nil)
+                    [previewUri appendFormat:@"&origin_info=%@", [video.originInfo stringRepresentation]];
+            }
+            else{
                 [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
-            
+            }
             [previewUri appendFormat:@"&width=%d&height=%d&renderWidth=%d&renderHeight=%d", (int)roundSize.width, (int)roundSize.height, (int)renderSize.width, (int)renderSize.height];
             
             [previewUri appendFormat:@"&legacy-video-file-path=%@", legacyVideoFilePath];

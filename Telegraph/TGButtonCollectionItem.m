@@ -36,7 +36,10 @@
     {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [actionTarget performSelector:_action];
+        if ([NSStringFromSelector(_action) rangeOfString:@":"].location != NSNotFound)
+            [actionTarget performSelector:_action withObject:self];
+        else
+            [actionTarget performSelector:_action];
 #pragma clang diagnostic pop
     }
 }

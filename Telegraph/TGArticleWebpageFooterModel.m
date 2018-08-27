@@ -399,6 +399,10 @@ static UIImage *durationGameBackgroundImage()
                         [strongSelf->_imageViewModel reload];
                     }
                 };
+                
+                if (webPage.document.originInfo == nil)
+                    webPage.document.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:webPage.url];
+                
                 [_imageViewModel setSignalGenerator:^SSignal *{
                     return [TGSharedFileSignals squareFileThumbnail:webPage.document ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f]];
                 } identifier:key];
@@ -412,6 +416,10 @@ static UIImage *durationGameBackgroundImage()
                             [strongSelf->_imageViewModel reload];
                         }
                     };
+                    
+                    if (webPage.photo.originInfo == nil)
+                        webPage.photo.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:webPage.url];
+                    
                     [_imageViewModel setSignalGenerator:^SSignal *
                     {
                         return [TGSharedPhotoSignals sharedPhotoImage:webPage.photo size:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f] cacheKey:key];
@@ -430,6 +438,10 @@ static UIImage *durationGameBackgroundImage()
                             [strongSelf->_imageViewModel reload];
                         }
                     };
+                    
+                    if (webPage.photo.originInfo == nil)
+                        webPage.photo.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:webPage.url];
+                    
                     [_imageViewModel setSignalGenerator:^SSignal *
                     {
                         return [TGSharedPhotoSignals squarePhotoThumbnail:webPage.photo ofSize:imageSize threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] pixelProcessingBlock:[TGSharedMediaSignals pixelProcessingBlockForRoundCornersOfRadius:3.0f] downloadLargeImage:isInstantGallery || isGame || isInvoice placeholder:nil];
@@ -1042,10 +1054,10 @@ static UIImage *durationGameBackgroundImage()
                                     return nil;
                                 }];
                                 return [dataSignal mapToSignal:^SSignal *(NSData *data) {
-                                    return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                                    return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSDictionary *dict) {
                                         return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
                                             NSError *error = nil;
-                                            [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                            [[NSFileManager defaultManager] moveItemAtPath:dict[@"path"] toPath:videoPath error:&error];
                                             if (error != nil) {
                                                 [subsctiber putError:nil];
                                             } else {

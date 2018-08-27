@@ -86,7 +86,7 @@ static CGFloat scrubberInternalInset = 4.0f;
         
         _scrubberForegroundImage = [[UIImageView alloc] initWithImage:trackImage];
         
-        _scrubberForegroundContainer = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f,5.0f)];
+        _scrubberForegroundContainer = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, 0.0f, 5.0f)];
         _scrubberForegroundContainer.clipsToBounds = true;
         [self addSubview:_scrubberForegroundContainer];
         

@@ -61,7 +61,7 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, bool ani
     contactCell.itemId = user.uid;
     contactCell.user = user;
     
-    contactCell.avatarUrl = user.photoUrlSmall;
+    contactCell.avatarUrl = user.photoFullUrlSmall;
     
     if (user.firstName.length == 0)
     {

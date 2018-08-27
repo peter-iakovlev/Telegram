@@ -2,6 +2,7 @@
 
 #import <LegacyComponents/LegacyComponents.h>
 
+#import "TGDatabase.h"
 #import "TGImageInfo+Telegraph.h"
 #import <libkern/OSAtomic.h>
 #import "TL/TLMetaScheme.h"
@@ -79,7 +80,7 @@
     return self;
 }
 
-+ (TLInputFileLocation *)inputFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId
++ (TLInputFileLocation *)inputFileLocationForImageUrl:(NSString *)imageUrl datacenterId:(NSInteger *)outDatacenterId originInfo:(TGMediaOriginInfo *)originInfo
 {
     int32_t datacenterId = 0;
     int64_t volumeId = 0;
@@ -91,6 +92,7 @@
         location.volume_id = volumeId;
         location.local_id = localId;
         location.secret = secret;
+        location.file_reference = [originInfo fileReferenceForVolumeId:volumeId localId:localId];
         
         if (outDatacenterId != NULL)
             *outDatacenterId = datacenterId;
@@ -137,7 +139,7 @@
     return nil;
 }
 
-- (SSignal *)_memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
+- (SSignal *)_memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId originInfo:(TGMediaOriginInfo *)originInfo identifier:(int64_t)identifier reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
     NSString *key = [self keyForLocation:location];
     if (key == nil)
@@ -145,7 +147,7 @@
     
     return [_signalManager multicastedSignalForKey:key producer:^SSignal *
     {
-        return [TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
+        return [TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId originInfo:originInfo identifier:identifier size:0 reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
     }];
 }
 
@@ -173,9 +175,9 @@
     }];
 }
 
-+ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
++ (SSignal *)memoizedDataSignalForRemoteLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId originInfo:(TGMediaOriginInfo *)originInfo identifier:(int64_t)identifier reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
-    return [[self instance] _memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
+    return [[self instance] _memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:identifier reportProgress:reportProgress mediaTypeTag:mediaTypeTag];
 }
 
 + (SSignal *)memoizedDataSignalForRemoteWebLocation:(TLInputWebFileLocation *)location datacenterId:(NSInteger)datacenterId reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag {
@@ -243,19 +245,20 @@
 }
 
 + (SSignal *)squareThumbnail:(NSString *)cachedSizeLowPath
-            cachedSizePath:(NSString *)cachedSizePath ofSize:(CGSize)size renderSize:(CGSize)renderSize
-            pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock
-            fullSizeImageSignalGenerator:(SSignal *(^)())fullSizeImageSignalGenerator
-            lowQualityThumbnailSignalGenerator:(SSignal *(^)())lowQualityThumbnailSignalGenerator
-            localCachedImageSignalGenerator:(SSignal *(^)(CGSize, CGSize, bool))localCachedImageSignalGenerator
-            lowQualityImagePath:(NSString *)lowQualityImagePath
-            lowQualityImageUrl:(NSString *)lowQualityImageUrl
-            highQualityImageUrl:(NSString *)highQualityImageUrl
-            highQualityImageIdentifier:(NSString *)__unused highQualityImageIdentifier
-            threadPool:(SThreadPool *)threadPool
-            memoryCache:(TGMemoryImageCache *)memoryCache
-            placeholder:(SSignal *)__unused placeholder
-            blurLowQuality:(bool)blurLowQuality
+              cachedSizePath:(NSString *)cachedSizePath ofSize:(CGSize)size renderSize:(CGSize)renderSize
+        pixelProcessingBlock:(void (^)(void *, int, int, int))pixelProcessingBlock
+fullSizeImageSignalGenerator:(SSignal *(^)())fullSizeImageSignalGenerator
+lowQualityThumbnailSignalGenerator:(SSignal *(^)())lowQualityThumbnailSignalGenerator
+localCachedImageSignalGenerator:(SSignal *(^)(CGSize, CGSize, bool))localCachedImageSignalGenerator
+         lowQualityImagePath:(NSString *)lowQualityImagePath
+          lowQualityImageUrl:(NSString *)lowQualityImageUrl
+         highQualityImageUrl:(NSString *)highQualityImageUrl
+  highQualityImageIdentifier:(NSString *)__unused highQualityImageIdentifier
+                  threadPool:(SThreadPool *)threadPool
+                 memoryCache:(TGMemoryImageCache *)memoryCache
+                 placeholder:(SSignal *)__unused placeholder
+              blurLowQuality:(bool)blurLowQuality
+                  originInfo:(TGMediaOriginInfo *)originInfo
 {
     __block bool lowQuality = false;
     __block bool alreadyBlurred = false;
@@ -273,11 +276,11 @@
             if (highQualityImageUrl != nil)
             {
                 NSInteger datacenterId = 0;
-                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId originInfo:originInfo];
                 
                 if (location != nil)
                 {
-                    return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+                    return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                     {
                         lowQuality = false;
                         cacheResult = true;
@@ -340,7 +343,15 @@
         {
             NSInteger datacenterId = 0;
             
+            int32_t webFileDatacenterId = 0;
+            NSData *data = [TGDatabaseInstance() customProperty:@"webFileDatacenterId"];
+            if (data.length == 4)
+                [data getBytes:&webFileDatacenterId length:4];
+            
             TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+            if (datacenterId == -1)
+                datacenterId = webFileDatacenterId;
+            
             if (webLocation != nil) {
                 nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteWebLocation:webLocation datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                 {
@@ -355,11 +366,11 @@
                         return [SSignal single:image];
                 }]];
             } else {
-                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId originInfo:originInfo];
                 
                 if (location != nil)
                 {
-                    nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+                    nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                     {
                         lowQuality = false;
                         //[data writeToFile:lowQualityImagePath atomically:true];
@@ -395,7 +406,15 @@
         {
             NSInteger datacenterId = 0;
             
+            int32_t webFileDatacenterId = 0;
+            NSData *data = [TGDatabaseInstance() customProperty:@"webFileDatacenterId"];
+            if (data.length == 4)
+                [data getBytes:&webFileDatacenterId length:4];
+            
             TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+            if (datacenterId == -1)
+                datacenterId = webFileDatacenterId;
+            
             if (webLocation != nil) {
                 nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteWebLocation:webLocation datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                 {
@@ -410,11 +429,11 @@
                         return [SSignal single:image];
                 }]];
             } else {
-                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+                TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId originInfo:originInfo];
                 
                 if (location != nil)
                 {
-                    nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+                    nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                     {
                         lowQuality = false;
                         //[data writeToFile:lowQualityImagePath atomically:true];
@@ -433,13 +452,21 @@
     }] catch:^SSignal *(__unused id error)
     {
         NSInteger datacenterId = 0;
-        TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:lowQualityImageUrl datacenterId:&datacenterId];
+        TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:lowQualityImageUrl datacenterId:&datacenterId originInfo:originInfo];
         if (location == nil) {
             if (highQualityImageUrl != nil)
             {
                 NSInteger datacenterId = 0;
                 
+                int32_t webFileDatacenterId = 0;
+                NSData *data = [TGDatabaseInstance() customProperty:@"webFileDatacenterId"];
+                if (data.length == 4)
+                    [data getBytes:&webFileDatacenterId length:4];
+                
                 TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+                if (datacenterId == -1)
+                    datacenterId = webFileDatacenterId;
+                
                 if (webLocation != nil) {
                     return [[TGSharedMediaSignals memoizedDataSignalForRemoteWebLocation:webLocation datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                     {
@@ -459,7 +486,7 @@
         }
         else
         {
-            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
             {
                 NSString *directoryPath = [lowQualityImagePath substringToIndex:lowQualityImagePath.length - ((NSString *)[lowQualityImagePath pathComponents].lastObject).length];
                 [[NSFileManager defaultManager] createDirectoryAtPath:directoryPath withIntermediateDirectories:true attributes:nil error:NULL];
@@ -477,11 +504,11 @@
                 if (highQualityImageUrl != nil)
                 {
                     NSInteger datacenterId = 0;
-                    TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId];
+                    TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:highQualityImageUrl datacenterId:&datacenterId originInfo:originInfo];
                     
                     if (location != nil)
                     {
-                        nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+                        nextSignal = [nextSignal then:[[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:originInfo identifier:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
                         {
                             lowQuality = false;
                             //[data writeToFile:lowQualityImagePath atomically:true];

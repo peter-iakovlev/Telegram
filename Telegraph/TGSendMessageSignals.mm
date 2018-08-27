@@ -83,7 +83,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
                             break;
                         }
                     }
-                    [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media mediaLifetime:nil]];
+                    [attachments addObjectsFromArray:[TGMessage parseTelegraphMedia:sentMessage.media mediaLifetime:nil cid:updatedMessage.cid mid:updatedMessage.mid]];
                     updatedMessage.mediaAttachments = attachments;
                 }
                 
@@ -270,6 +270,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
                 TLInputPhoto$inputPhoto *inputId = [[TLInputPhoto$inputPhoto alloc] init];
                 inputId.n_id = photo.imageId;
                 inputId.access_hash = photo.accessHash;
+                inputId.file_reference = photo.originInfo.fileReference;
                 remotePhoto.n_id = inputId;
                 
                 TLInputSingleMedia$inputSingleMediaMeta *singleMedia = [[TLInputSingleMedia$inputSingleMediaMeta alloc] init];
@@ -286,6 +287,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
                 TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
                 inputDocument.n_id = video.videoId;
                 inputDocument.access_hash = video.accessHash;
+                inputDocument.file_reference = video.originInfo.fileReference;
                 remoteDocument.n_id = inputDocument;
                 
                 TLInputSingleMedia$inputSingleMediaMeta *singleMedia = [[TLInputSingleMedia$inputSingleMediaMeta alloc] init];
@@ -483,6 +485,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
         TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
         inputDocument.n_id = documentAttachment.documentId;
         inputDocument.access_hash = documentAttachment.accessHash;
+        inputDocument.file_reference = documentAttachment.originInfo.fileReference;
         remoteDocument.n_id = inputDocument;
         
         return remoteDocument;
@@ -704,6 +707,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     TLInputPhoto$inputPhoto *inputId = [[TLInputPhoto$inputPhoto alloc] init];
     inputId.n_id = photo.imageId;
     inputId.access_hash = photo.accessHash;
+    inputId.file_reference = photo.originInfo.fileReference;
     remotePhoto.n_id = inputId;
     
     TGImageMediaAttachment *attachment = [photo copy];
@@ -718,6 +722,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
     inputDocument.n_id = video.videoId;
     inputDocument.access_hash = video.accessHash;
+    inputDocument.file_reference = video.originInfo.fileReference;
     remoteDocument.n_id = inputDocument;
     
     TGVideoMediaAttachment *attachment = [video copy];
@@ -805,6 +810,7 @@ NSString *const TGChannelGroupKey = @"channelGroup";
     TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
     inputDocument.n_id = document.documentId;
     inputDocument.access_hash = document.accessHash;
+    inputDocument.file_reference = document.originInfo.fileReference;
     remoteDocument.n_id = inputDocument;
     
     TGDocumentMediaAttachment *attachment = [document copy];

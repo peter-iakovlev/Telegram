@@ -96,7 +96,7 @@
 - (void)setText:(NSString *)text
 {
     _textField.text = text;
-    if (_passwordChanged)
+    if (_passwordChanged != nil)
         _passwordChanged(text);
 }
 
@@ -107,8 +107,16 @@
 
 - (void)textFieldChanged
 {
-    if (_passwordChanged)
+    if (_passwordChanged != nil)
         _passwordChanged(_textField.text);
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)__unused textField
+{
+    if (_returnPressed != nil)
+        _returnPressed(_textField.text);
+    
+    return false;
 }
 
 - (NSString *)password

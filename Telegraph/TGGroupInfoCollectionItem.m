@@ -64,7 +64,7 @@
     } else {
         [view setUpdatingAvatar:_hasUpdatingAvatar animated:false];
         if (_updatingAvatar == nil)
-            [view setAvatarUri:_conversation.chatPhotoSmall animated:false];
+            [view setAvatarUri:_conversation.chatPhotoFullSmall animated:false];
         else
             [view setAvatarImage:_updatingAvatar animated:false];
     }
@@ -97,7 +97,7 @@
         if (_conversation.conversationId == 0) {
             [view setAvatarImage:_staticAvatar animated:true];
         } else if (_updatingAvatar == nil)
-            [view setAvatarUri:_conversation.chatPhotoSmall animated:true];
+            [view setAvatarUri:_conversation.chatPhotoFullSmall animated:true];
         else
             [view setAvatarImage:_updatingAvatar animated:true];
         
@@ -151,7 +151,7 @@
             [view setUpdatingAvatar:_hasUpdatingAvatar animated:true];
             
             if (_updatingAvatar == nil)
-                [view setAvatarUri:_conversation.chatPhotoSmall animated:false];
+                [view setAvatarUri:_conversation.chatPhotoFullSmall animated:false];
             else
                 [view setAvatarImage:_updatingAvatar animated:false];
         }

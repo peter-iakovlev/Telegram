@@ -1696,6 +1696,15 @@ static TGTelegramNetworking *singleton = nil;
     
     return nil;
 }
+
+- (int32_t)extractNetworkErrorCode:(id)error
+{
+    if ([error isKindOfClass:[TLError class]])
+        return ((TLError *)error).code;
+    else if ([error isKindOfClass:[MTRpcError class]])
+        return ((MTRpcError *)error).errorCode;
+    return 0;
+}
     
 - (MTSignal *)fetchContextDatacenterPublicKeys:(MTContext *)__unused context datacenterId:(NSInteger)datacenterId {
     return [[MTSignal alloc] initWithGenerator:^id<MTDisposable>(MTSubscriber *subscriber) {

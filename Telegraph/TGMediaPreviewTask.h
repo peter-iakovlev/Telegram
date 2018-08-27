@@ -16,16 +16,18 @@
 
 @class SThreadPool;
 
+@class TGMediaOriginInfo;
+
 @interface TGMediaPreviewTask : NSObject
 
 - (void)executeWithWorkerTask:(TGWorkerTask *)workerTask workerPool:(TGWorkerPool *)workerPool;
 - (void)executeWithWorkerTask:(TGWorkerTask *)workerTask threadPool:(SThreadPool *)workerPool;
 
-- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask;
+- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri options:(NSDictionary *)options completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask;
 - (void)executeTempDownloadWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri progress:(void (^)(float))progress completionWithData:(void (^)(NSData *))completionWithData workerTask:(TGWorkerTask *)workerTask;
-- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask;
+- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri options:(NSDictionary *)options progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask;
 - (void)executeWithTargetFilePath:(NSString *)targetFilePath document:(TGDocumentMediaAttachment *)document progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask;
-- (void)executeMultipartWithImageUri:(NSString *)imageUri targetFilePath:(NSString *)targetFilePath progress:(void (^)(float))progress completion:(void (^)(bool))completion;
+- (void)executeMultipartWithImageUri:(NSString *)imageUri identifier:(int64_t)identifier originInfo:(TGMediaOriginInfo *)originInfo targetFilePath:(NSString *)targetFilePath progress:(void (^)(float))progress completion:(void (^)(bool))completion;
 - (void)executeWithMapSnapshotOptions:(TGMapSnapshotOptions *)snapshotOptions completionWithImage:(void (^)(UIImage *image))completionWithImage workerTask:(TGWorkerTask *)workerTask;
 
 - (void)cancel;

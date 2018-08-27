@@ -133,15 +133,15 @@
         {
             TGUser *user = (TGUser *)authorPeer;
             if (user.photoUrlSmall.length > 0)
-                [_avatarModel setAvatarUri:user.photoUrlSmall];
+                [_avatarModel setAvatarUri:user.photoFullUrlSmall];
             else
                 [_avatarModel setAvatarFirstName:user.firstName lastName:user.lastName uid:user.uid];
         }
         else if ([authorPeer isKindOfClass:[TGConversation class]])
         {
             TGConversation *conversation = (TGConversation *)authorPeer;
-            if (conversation.chatPhotoSmall.length > 0)
-                [_avatarModel setAvatarUri:conversation.chatPhotoSmall];
+            if (conversation.chatPhotoFullSmall.length > 0)
+                [_avatarModel setAvatarUri:conversation.chatPhotoFullSmall];
             else
                 [_avatarModel setAvatarTitle:conversation.chatTitle groupId:conversation.conversationId];
         }

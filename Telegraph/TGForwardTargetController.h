@@ -27,6 +27,9 @@
 - (id)initWithDocumentFile:(NSURL *)fileUrl size:(int)size;
 - (id)initWithDocumentFiles:(NSArray *)fileDescs;
 
+- (id)initWithSelectPrivate:(NSSet *)excludedIds;
+- (id)initWithSelectGroup:(NSSet *)excludedIds;
+
 - (TGContactsController *)contactsController;
 
 @end

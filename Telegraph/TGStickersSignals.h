@@ -42,6 +42,8 @@
 
 + (SSignal *)cachedStickerPack:(id<TGStickerPackReference>)packReference;
 
++ (void)updateStickerPack:(TGStickerPack *)stickerPack;
+
 + (SSignal *)stickersForEmojis:(NSArray *)emojis includeRemote:(bool)includeRemote updateRemoteCached:(bool)updateRemoteCached;
 
 @end

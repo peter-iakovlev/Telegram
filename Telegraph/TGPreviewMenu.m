@@ -496,7 +496,7 @@
                         webPage.pageDescription = concreteResult.resultDescription;
                         
                         CGSize thumbnailSize = TGFitSize(size, CGSizeMake(320, 320));
-                        SSignal *thumbnailSignal = [TGSharedPhotoSignals cachedRemoteThumbnail:concreteResult.photo.imageInfo size:thumbnailSize pixelProcessingBlock:nil cacheVariantKey:@"mediaContextPanel" threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] diskCache:[TGSharedMediaUtils sharedMediaTemporaryPersistentCache]];
+                        SSignal *thumbnailSignal = [TGSharedPhotoSignals cachedRemoteThumbnail:concreteResult.photo.imageInfo size:thumbnailSize pixelProcessingBlock:nil cacheVariantKey:@"mediaContextPanel" threadPool:[TGSharedMediaUtils sharedMediaImageProcessingThreadPool] memoryCache:[TGSharedMediaUtils sharedMediaMemoryImageCache] diskCache:[TGSharedMediaUtils sharedMediaTemporaryPersistentCache] originInfo:concreteResult.photo.originInfo identifier:concreteResult.photo.imageId];
                         
                         TGEmbedItemView *embedItem = [[TGEmbedItemView alloc] initWithWebPageAttachment:webPage preview:true thumbnailSignal:thumbnailSignal peerId:0 messageId:0];
                         embedItem.parentController = parentController;

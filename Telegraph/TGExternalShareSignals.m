@@ -177,12 +177,9 @@
         }
     }
     
-    TGDocumentAttributeSticker *sticker = nil;
     TGDocumentAttributeImageSize *imageSize = nil;
     for (id attribute in documentAttachment.attributes) {
-        if ([attribute isKindOfClass:[TGDocumentAttributeSticker class]]) {
-            sticker = (TGDocumentAttributeSticker *)attribute;
-        } else if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
+        if ([attribute isKindOfClass:[TGDocumentAttributeImageSize class]]) {
             imageSize = (TGDocumentAttributeImageSize *)attribute;
         }
     }
@@ -197,6 +194,10 @@
         [uri appendFormat:@"&size=%d", (int)documentAttachment.size];
         [uri appendFormat:@"&width=%d&height=%d", (int)imageSize.size.width, (int)imageSize.size.height];
         [uri appendFormat:@"&mime-type=%@", [TGStringUtils stringByEscapingForURL:documentAttachment.mimeType]];
+        
+        TGMediaOriginInfo *originInfo = documentAttachment.originInfo ?: [TGMediaOriginInfo mediaOriginInfoForDocumentAttachment:documentAttachment];
+        if (originInfo != nil)
+            [uri appendFormat:@"&origin_info=%@", [originInfo stringRepresentation]];
 
         id asyncTaskId = [[TGImageManager instance] beginLoadingImageAsyncWithUri:uri decode:true progress:nil partialCompletion:nil completion:^(UIImage *image)
         {
@@ -241,6 +242,9 @@
             break;
         }
     }
+    
+    if (contactAttachment == nil)
+        return [SSignal fail:nil];
     
     NSString *firstName = contactAttachment.firstName;
     NSString *lastName = contactAttachment.lastName;
@@ -293,17 +297,24 @@
             
             ABRecordSetValue(contact, kABPersonPhoneProperty, phoneNumberMultiValue, &error);
             
-            if (error != NULL)
-                return nil;
+            if (error != NULL) {
+                if (contact != NULL)
+                    CFRelease(contact);
+                
+                if (phoneNumberMultiValue != NULL)
+                    CFRelease(phoneNumberMultiValue);
+                
+                return [SSignal fail:nil];
+            }
             
-            contactData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge id)contact ]));
+            contactData = (__bridge_transfer NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge_transfer id)contact ]));
         }
         
         filename = [[NSString stringWithFormat:@"%@ %@", firstName, lastName] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     }
     
     if (contactData.length == 0)
-        return nil;
+        return [SSignal fail:nil];
     
     NSURL *tempDirectory = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.vcf", filename]]];
     if ([contactData writeToURL:tempDirectory atomically:true])

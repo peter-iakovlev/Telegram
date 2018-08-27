@@ -20,7 +20,6 @@ extern "C" {
 #endif
 
 NSString *extractFileUrl(id fileLocation);
-bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *volumeId, int *localId, int64_t *secret);
     
 #ifdef __cplusplus
 }

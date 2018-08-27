@@ -165,7 +165,7 @@
     [progressWindow show:true];
     
     NSString *phoneNumber = _phoneNumber;
-    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePhone data:nil frontSide:nil reverseSide:nil selfie:nil files:nil plainData:[[TGPassportPhoneData alloc] initWithPhone:phoneNumber]];
+    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePhone data:nil frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:[[TGPassportPhoneData alloc] initWithPhone:phoneNumber]];
     
     SSignal *signal = [TGPassportSignals verifyPhone:_phoneNumber code:_code hash:_phoneCodeHash];
     signal = [signal mapToSignal:^SSignal *(id next)

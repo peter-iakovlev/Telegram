@@ -199,7 +199,7 @@
         
         _contactAvatarModel = [[TGModernLetteredAvatarViewModel alloc] initWithSize:CGSizeMake(40, 40) placeholder:[_context.presentation.images avatarPlaceholderWithDiameter:40.0f]];
         if (contact.photoUrlSmall.length != 0)
-            [_contactAvatarModel setAvatarUri:contact.photoUrlSmall];
+            [_contactAvatarModel setAvatarUri:contact.photoFullUrlSmall];
         else
             [_contactAvatarModel setAvatarFirstName:contact.firstName lastName:contact.lastName uid:contact.uid];
         
@@ -227,14 +227,15 @@
                 [lines addObject:phoneValue];
             }
         }
-        else
+        else if (contact.phoneNumber != nil)
         {
             NSString *phoneValue = contact.phoneNumber.length > 0 ? contact.phoneNumber : contactAttachment.phoneNumber;
             NSCharacterSet *letterChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
             if ([phoneValue.uppercaseString rangeOfCharacterFromSet:letterChars].location == NSNotFound) {
                 phoneValue = [TGPhoneUtils formatPhone:phoneValue forceInternational:contact.uid != 0];
             }
-            [lines addObject:phoneValue];
+            if (phoneValue != nil)
+                [lines addObject:phoneValue];
         }
         
         for (TGVCardValueArrayItem *email in vcard.emails.values)
@@ -732,7 +733,7 @@
                 //_contact = contact;
                 
                 if (contact.photoUrlSmall.length != 0)
-                    [_contactAvatarModel setAvatarUri:contact.photoUrlSmall];
+                    [_contactAvatarModel setAvatarUri:contact.photoFullUrlSmall];
                 else
                     [_contactAvatarModel setAvatarFirstName:contact.firstName lastName:contact.lastName uid:contact.uid];
             }

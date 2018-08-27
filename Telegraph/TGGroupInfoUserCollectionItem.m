@@ -64,7 +64,7 @@
             [view setStatus:status active:active];
         }
     }
-    [view setAvatarUri:_user.photoUrlSmall];
+    [view setAvatarUri:_user.photoFullUrlSmall];
     [view setEnableEditing:_canEdit animated:false];
     
     if (_conversation == nil)
@@ -79,7 +79,7 @@
         {
             [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId canPromote:_canPromote canRestrict:_canRestrict canBan:false canDelete:_canDelete];
             [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
-            [view setAvatarUri:_conversation.chatPhotoSmall];
+            [view setAvatarUri:_conversation.chatPhotoFullSmall];
         }
     }
     
@@ -237,7 +237,7 @@
                 }
             }
         }
-        [view setAvatarUri:_user.photoUrlSmall];
+        [view setAvatarUri:_user.photoFullUrlSmall];
     }
 }
 
@@ -267,7 +267,7 @@
         {
             [view setFirstName:_conversation.chatTitle lastName:@"" uidForPlaceholderCalculation:(int32_t)_conversation.conversationId canPromote:_canPromote canRestrict:_canRestrict canBan:false canDelete:_canDelete];
             [view setStatus:[self stringForMemberCount:_conversation.chatParticipantCount] active:false];
-            [view setAvatarUri:_conversation.chatPhotoSmall];
+            [view setAvatarUri:_conversation.chatPhotoFullSmall];
         }
     }
 }

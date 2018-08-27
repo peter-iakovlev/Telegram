@@ -69,6 +69,14 @@ typedef enum {
         if (strongSelf != nil)
             strongSelf->_nextItem.enabled = password.length != 0;
     };
+    _view.returnPressed = ^(NSString *password)
+    {
+        __strong TGPasswordSetupController *strongSelf = weakSelf;
+        if (strongSelf != nil) {
+            if (password.length > 0)
+                [strongSelf nextPressed];
+        }
+    };
     [self.view addSubview:_view];
     
     [self reset];

@@ -79,19 +79,10 @@
 {
     _errors = errors;
     
-    if (_errors.count == 0) {
+    if (_errors.count == 0)
         [self _setSubtext:_subtitle];
-    }
-    else {
-        NSString *subtext = nil;
-        NSString *text = TGLocalized(@"Passport.CorrectErrors");
-        if (text.length > 0)
-            subtext = text;
-        else
-            subtext = [errors componentsJoinedByString:@"\n"];
-        
-        [self _setSubtext:subtext];
-    }
+    else
+        [self _setSubtext:errors.firstObject];
 }
 
 - (void)_setSubtext:(NSString *)text
@@ -134,8 +125,8 @@
     
     [UIView performWithoutAnimation:^
     {
-        _titleLabel.frame = CGRectMake(15.0f + self.safeAreaInset.left, 9.0f, bounds.size.width - 15 - 40, 26);
-        _subtitleLabel.frame = CGRectMake(15.0f + self.safeAreaInset.left, CGRectGetMaxY(_titleLabel.frame) + 3.0f, _calculatedSize.width, _calculatedSize.height);
+        _titleLabel.frame = CGRectMake(15.0f + self.safeAreaInset.left, 9.0f, bounds.size.width - 15 - 30, 26);
+        _subtitleLabel.frame = CGRectMake(15.0f + self.safeAreaInset.left, CGRectGetMaxY(_titleLabel.frame) + 3.0f, bounds.size.width - 15 - 30, _calculatedSize.height);
     }];
     
     _checkView.frame = CGRectMake(bounds.size.width - _checkView.frame.size.width - 15.0f - self.safeAreaInset.right, CGFloor((bounds.size.height - _checkView.frame.size.height) / 2), _checkView.frame.size.width, _checkView.frame.size.height);

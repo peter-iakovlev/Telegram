@@ -9,7 +9,7 @@
 #import <LegacyComponents/TGProgressWindow.h>
 
 #import "TGTwoStepSetPaswordSignal.h"
-#import "TGAlertView.h"
+#import "TGCustomAlertView.h"
 #import "TGTwoStepConfig.h"
 #import "TGTwoStepConfigSignal.h"
 
@@ -145,7 +145,7 @@
             if (strongSelf != nil && strongSelf->_currentConfig != nil) {
                 TGProgressWindow *progressWindow = [[TGProgressWindow alloc] init];
                 [progressWindow show:true];
-                [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentSalt:nil currentPassword:nil currentSecret:nil nextSalt:strongSelf->_currentConfig.nextSalt nextPassword:@"" nextHint:nil email:nil secretRandom:nil nextSecureSalt:nil] deliverOn:[SQueue mainQueue]] onDispose:^{
+                [[[[TGTwoStepSetPaswordSignal setPasswordWithCurrentAlgo:nil currentPassword:nil currentSecret:nil nextAlgo:strongSelf->_currentConfig.nextAlgo nextPassword:@"" nextHint:nil email:nil nextSecureAlgo:nil secureRandom:nil srpId:0 srpB:nil] deliverOn:[SQueue mainQueue]] onDispose:^{
                     TGDispatchOnMainThread(^{
                         [progressWindow dismiss:true];
                     });
@@ -253,34 +253,17 @@
                 NSString *errorText = TGLocalized(@"TwoStepAuth.EmailInvalid");
                 if ([error respondsToSelector:@selector(hasPrefix:)] && [error hasPrefix:@"FLOOD_WAIT"])
                     errorText = TGLocalized(@"TwoStepAuth.FloodError");
-                [[[TGAlertView alloc] initWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil] show];
+                [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
             } completed:^{
             }];
         };
         
         if (email.length == 0) {
-            if (iosMajorVersion() >= 8)
+            [TGCustomAlertView presentAlertWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") destructive:true completionBlock:^(bool okButtonPressed)
             {
-                UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") preferredStyle:UIAlertControllerStyleAlert];
-                UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:TGLocalized(@"Common.Cancel") style:UIAlertActionStyleCancel handler:nil];
-                
-                UIAlertAction *okAction = [UIAlertAction actionWithTitle:TGLocalized(@"TwoStepAuth.EmailSkip") style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action)
-                                           {
-                                               block();
-                                           }];
-                
-                [alertController addAction:cancelAction];
-                [alertController addAction:okAction];
-                [self presentViewController:alertController animated:true completion:nil];
-            }
-            else
-            {
-                TGAlertView *alertView = [[TGAlertView alloc] initWithTitle:nil message:TGLocalized(@"TwoStepAuth.EmailSkipAlert") cancelButtonTitle:TGLocalized(@"Common.Cancel") okButtonTitle:TGLocalized(@"TwoStepAuth.EmailSkip") completionBlock:^(__unused bool okButtonPressed)
-                {
+                if (okButtonPressed)
                     block();
-                }];
-                [alertView show];
-            }
+            } disableKeyboardWorkaround:false];
         } else {
             block();
         }
@@ -305,7 +288,7 @@
                     __strong TGFastTwoStepVerificationSetupController *strongSelf = weakSelf;
                     if (strongSelf != nil) {
                         bool reload = false;
-                        if ((strongSelf->_currentConfig.currentSalt != nil) != (next.currentSalt != nil)) {
+                        if (strongSelf->_currentConfig.hasPassword != next.hasPassword) {
                             reload = true;
                         } else if (strongSelf->_currentConfig.unconfirmedEmailPattern.length != next.unconfirmedEmailPattern.length) {
                             reload = true;
@@ -327,7 +310,7 @@
             [self setRightBarButtonItem:_doneItem];
             [self checkInputValues];
             
-            if (_currentConfig.currentSalt.length != 0 && _currentConfig.unconfirmedEmailPattern.length == 0) {
+            if (_currentConfig.hasPassword && _currentConfig.unconfirmedEmailPattern.length == 0) {
                 if (_completion) {
                     _completion(true, _currentConfig, _passwordItem.username);
                 }

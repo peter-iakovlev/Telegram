@@ -20,6 +20,7 @@
 @property (nonatomic) CGPoint iconOffset;
 
 @property (nonatomic) SEL action;
+@property (nonatomic) NSInteger tag;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;
 

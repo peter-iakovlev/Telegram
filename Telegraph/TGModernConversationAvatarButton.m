@@ -190,7 +190,7 @@
             if (currentImage != nil)
                 currentPlaceholder = currentImage;
             
-            [_avatarView loadImage:uri filter:@"circle:37x37" placeholder:nil];
+            [_avatarView loadImage:uri filter:@"circle:37x37" placeholder:currentPlaceholder];
         }
     }
 }

@@ -87,7 +87,15 @@ static CTFontRef textFontForSize(CGFloat size)
         {
             NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"file-thumbnail://?"];
             if (document.documentId != 0)
+            {
                 [previewUri appendFormat:@"id=%" PRId64 "", document.documentId];
+                
+                [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+                [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+                
+                if (document.originInfo != nil)
+                    [previewUri appendFormat:@"&origin_info=%@", [document.originInfo stringRepresentation]];
+            }
             else
                 [previewUri appendFormat:@"local-id=%" PRId64 "", document.localDocumentId];
             
@@ -256,7 +264,7 @@ static CTFontRef textFontForSize(CGFloat size)
         
         [_contentModel setNeedsSubmodelContentsUpdate];
         _legacyThumbnailCacheUri = newLegacyThumbnailCacheUri;
-        rebind = [self updateImage:document dimensions:dimensions];
+        rebind = [self updateImage:document message:message dimensions:dimensions];
         if (sizeUpdated != NULL)
             *sizeUpdated = true;
     }
@@ -276,14 +284,22 @@ static CTFontRef textFontForSize(CGFloat size)
         *sizeUpdated = true;
 }
 
-- (bool)updateImage:(TGDocumentMediaAttachment *)document dimensions:(CGSize)dimensions
+- (bool)updateImage:(TGDocumentMediaAttachment *)document message:(TGMessage *)message dimensions:(CGSize)dimensions
 {
     bool rebind = false;
     if ((document.documentId != 0 || document.localDocumentId != 0) && _legacyThumbnailCacheUri.length != 0)
     {
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"file-thumbnail://?"];
         if (document.documentId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", document.documentId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (document.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [document.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", document.localDocumentId];
         

@@ -17,4 +17,8 @@
 + (NSString *)countryIdByCode:(int)code;
 + (NSString *)countryNameByCountryId:(NSString *)countryId code:(int *)code;
 
++ (NSString *)localizedCountryNameByCode:(int)code;
++ (NSString *)localizedCountryNameByCountryId:(NSString *)countryId;
++ (NSString *)localizedCountryNameByCountryId:(NSString *)countryId code:(int *)code;
+
 @end

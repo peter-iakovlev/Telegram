@@ -261,7 +261,7 @@
         __strong TGAddPaymentCardController *strongSelf = weakSelf;
         if (strongSelf != nil) {
             strongSelf->_selectedCountryCode = countryId;
-            NSString *countryName = countryId.length != 0 ? [TGLoginCountriesController countryNameByCountryId:countryId code:NULL] : nil;
+            NSString *countryName = countryId.length != 0 ? [TGLoginCountriesController localizedCountryNameByCountryId:countryId code:NULL] : nil;
             strongSelf->_countryItem.variant = countryName;
             [strongSelf checkInput];
         }

@@ -42,4 +42,7 @@
 - (id)avatarView;
 - (void)makeNameFieldFirstResponder;
 
+- (void)copyPhoneNumber:(id)sender;
+- (void)copyUsername:(id)sender;
+
 @end

@@ -33,6 +33,10 @@ typedef enum
 
 @class TLaccount_AuthorizationForm;
 
+@protocol TGPassportRequiredType
+
+@end
+
 @interface TGPassportForm : NSObject
 {
     @public
@@ -40,7 +44,6 @@ typedef enum
 }
 
 @property (nonatomic, readonly) NSArray *requiredTypes;
-@property (nonatomic, readonly) bool selfieRequired;
 @property (nonatomic, readonly) NSString *privacyPolicyUrl;
 @property (nonatomic, readonly) TGPassportErrors *errors;
 
@@ -56,9 +59,12 @@ typedef enum
 - (instancetype)initWithForm:(TGPassportForm *)form values:(NSArray<TGPassportDecryptedValue *> *)values;
 
 - (TGPassportDecryptedValue *)valueForType:(TGPassportType)type;
+- (bool)hasValues;
+
+- (NSArray *)fulfilledValues;
 
 - (instancetype)updateWithValues:(NSArray<TGPassportDecryptedValue *> *)values removeValueTypes:(NSArray *)valueTypes;
-- (NSData *)credentialsDataWithPayload:(NSString *)payload;
+- (NSData *)credentialsDataWithPayload:(NSString *)payload nonce:(NSString *)nonce;
 
 @end
 
@@ -69,12 +75,13 @@ typedef enum
 @property (nonatomic, readonly) TGPassportFile *frontSide;
 @property (nonatomic, readonly) TGPassportFile *reverseSide;
 @property (nonatomic, readonly) TGPassportFile *selfie;
+@property (nonatomic, readonly) NSArray *translation;
 @property (nonatomic, readonly) NSArray *files;
 @property (nonatomic, readonly) TGPassportPlainData *plainData;
 
 @property (nonatomic, readonly) NSData *valueHash;
 
-- (instancetype)initWithType:(TGPassportType)type data:(TGPassportSecureData *)data frontSide:(TGPassportFile *)frontSide reverseSide:(TGPassportFile *)reverseSide selfie:(TGPassportFile *)selfie files:(NSArray *)files plainData:(TGPassportPlainData *)plainData;
+- (instancetype)initWithType:(TGPassportType)type data:(TGPassportSecureData *)data frontSide:(TGPassportFile *)frontSide reverseSide:(TGPassportFile *)reverseSide selfie:(TGPassportFile *)selfie translation:(NSArray *)translation files:(NSArray *)files plainData:(TGPassportPlainData *)plainData;
 
 - (instancetype)updateWithValueHash:(NSData *)valueHash;
 
@@ -85,26 +92,39 @@ typedef enum
 
 
 @interface TGPassportSecureData : NSObject
+{
+    NSDictionary *_unknownFields;
+}
 
 @property (nonatomic, readonly) NSData *paddedData;
 @property (nonatomic, readonly) NSData *dataHash;
 @property (nonatomic, readonly) NSData *dataSecret;
 @property (nonatomic, readonly) NSData *encryptedDataSecret;
 
+@property (nonatomic, readonly) NSDictionary *unknownFields;
+
 - (instancetype)initWithPaddedData:(NSData *)paddedData dataSecret:(NSData *)dataSecret encryptedDataSecret:(NSData *)encryptedDataSecret;
+
+- (bool)isCompleted;
 
 @end
 
 @interface TGPassportPersonalDetailsData : TGPassportSecureData
 
 @property (nonatomic, readonly) NSString *firstName;
+@property (nonatomic, readonly) NSString *middleName;
 @property (nonatomic, readonly) NSString *lastName;
+@property (nonatomic, readonly) NSString *firstNameNative;
+@property (nonatomic, readonly) NSString *middleNameNative;
+@property (nonatomic, readonly) NSString *lastNameNative;
 @property (nonatomic, readonly) NSString *birthDate;
 @property (nonatomic, readonly) TGPassportGender gender;
 @property (nonatomic, readonly) NSString *countryCode;
 @property (nonatomic, readonly) NSString *residenceCountryCode;
 
-- (instancetype)initWithFirstName:(NSString *)firstName lastName:(NSString *)lastName birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode secret:(NSData *)secret;
+- (instancetype)initWithFirstName:(NSString *)firstName middleName:(NSString *)middleName lastName:(NSString *)lastName firstNameNative:(NSString *)firstNameNative middleNameNative:(NSString *)middleNameNative lastNameNative:(NSString *)lastNameNative birthDate:(NSString *)birthDate gender:(TGPassportGender)gender countryCode:(NSString *)countryCode residenceCountryCode:(NSString *)residenceCountryCode unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret;
+
+- (bool)hasNativeName;
 
 @end
 
@@ -113,7 +133,7 @@ typedef enum
 @property (nonatomic, readonly) NSString *documentNumber;
 @property (nonatomic, readonly) NSString *expiryDate;
 
-- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate secret:(NSData *)secret;
+- (instancetype)initWithDocumentNumber:(NSString *)documentNumber expiryDate:(NSString *)expiryDate unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret;
 
 @end
 
@@ -127,7 +147,7 @@ typedef enum
 @property (nonatomic, readonly) NSString *state;
 @property (nonatomic, readonly) NSString *countryCode;
 
-- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode secret:(NSData *)secret;
+- (instancetype)initWithStreet1:(NSString *)street1 street2:(NSString *)street2 postcode:(NSString *)postcode city:(NSString *)city state:(NSString *)state countryCode:(NSString *)countryCode unknownFields:(NSDictionary *)unknownFields secret:(NSData *)secret;
 
 @end
 
@@ -151,6 +171,29 @@ typedef enum
 
 @end
 
+@interface TGPassportRequiredType : NSObject <TGPassportRequiredType>
+
+@property (nonatomic, readonly) TGPassportType type;
+@property (nonatomic, readonly) bool includeNativeNames;
+@property (nonatomic, readonly) bool selfieRequired;
+@property (nonatomic, readonly) bool translationRequired;
+
+- (instancetype)initWithType:(TGPassportType)type includeNativeNames:(bool)includeNativeNames selfieRequired:(bool)selfieRequired translationRequired:(bool)translationRequired;
+
++ (instancetype)requiredTypeForType:(TGPassportType)type;
++ (NSArray *)requiredIdentityTypes;
++ (NSArray *)requiredAddressTypes;
+
+@end
+
+@interface TGPassportRequiredOneOfTypes : NSObject <TGPassportRequiredType>
+
+@property (nonatomic, readonly) NSArray<TGPassportRequiredType *> *types;
+
+- (instancetype)initWithTypes:(NSArray<TGPassportRequiredType *> *)types;
+
+@end
+
 extern NSString *const TGPassportFormTypePersonalDetails;
 extern NSString *const TGPassportFormTypePassport;
 extern NSString *const TGPassportFormTypeDriversLicense;
@@ -163,7 +206,11 @@ extern NSString *const TGPassportFormTypePhone;
 extern NSString *const TGPassportFormTypeEmail;
 
 extern NSString *const TGPassportIdentityFirstNameKey;
+extern NSString *const TGPassportIdentityFirstNameNativeKey;
+extern NSString *const TGPassportIdentityMiddleNameKey;
+extern NSString *const TGPassportIdentityMiddleNameNativeKey;
 extern NSString *const TGPassportIdentityLastNameKey;
+extern NSString *const TGPassportIdentityLastNameNativeKey;
 extern NSString *const TGPassportIdentityDateOfBirthKey;
 extern NSString *const TGPassportIdentityGenderKey;
 extern NSString *const TGPassportIdentityCountryCodeKey;

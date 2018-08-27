@@ -68,7 +68,7 @@
         __strong TGPasswordConfirmationController *strongSelf = weakSelf;
         if (strongSelf != nil)
         {
-            if (config.currentSalt.length != 0)
+            if (config.hasPassword)
             {
                 if (strongSelf->_completion)
                     strongSelf->_completion();

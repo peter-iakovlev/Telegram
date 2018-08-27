@@ -66,7 +66,7 @@
     _titleLabel.text = conversation.chatTitle;
     
     UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];    
-    if (conversation.chatPhotoSmall.length == 0)
+    if (conversation.chatPhotoFullSmall.length == 0)
     {
         if (conversation.conversationId < 0)
         {
@@ -79,7 +79,7 @@
     }
     else
     {
-        NSString *uri = conversation.chatPhotoSmall;
+        NSString *uri = conversation.chatPhotoFullSmall;
         if (!TGStringCompare(_avatarUrl, uri))
         {
             _avatarUrl = uri;

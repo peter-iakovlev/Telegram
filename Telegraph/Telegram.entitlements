@@ -30,6 +30,7 @@
 		<string>merchant.yandex.ph.telegra.Telegraph</string>
 		<string>merchant.sberbank.ph.telegra.Telegraph</string>
 		<string>merchant.sberbank.test.ph.telegra.Telegraph</string>
+		<string>merchant.privatbank.test.telergramios</string>
 	</array>
 	<key>com.apple.developer.ubiquity-container-identifiers</key>
 	<array>

@@ -47,7 +47,7 @@ __responder = [__responder nextResponder]; \
                 buttonType = TGMenuSheetButtonTypeCancel;
             
             __weak id weakTarget = target;
-            [itemViews addObject:[[TGMenuSheetButtonItemView alloc] initWithTitle:action.title type:buttonType action:^
+            TGMenuSheetButtonItemView *button = [[TGMenuSheetButtonItemView alloc] initWithTitle:action.title type:buttonType action:^
             {
                 __strong TGMenuSheetController *strongController = weakController;
                 if (strongController != nil && !action.disableAutomaticSheetDismiss)
@@ -59,7 +59,10 @@ __responder = [__responder nextResponder]; \
                 
                 if (actionBlock != nil)
                     actionBlock(strongTarget, action.action);
-            }]];
+            }];
+            if (action.type == TGActionSheetActionTypeLined)
+                button.thickDivider = true;
+            [itemViews addObject:button];
         }
         
         [controller setItemViews:itemViews];
@@ -100,7 +103,7 @@ __responder = [__responder nextResponder]; \
                 buttonType = TGMenuSheetButtonTypeCancel;
             
             __weak id weakTarget = target;
-            [itemViews addObject:[[TGMenuSheetButtonItemView alloc] initWithTitle:action.title type:buttonType action:^
+            TGMenuSheetButtonItemView *button = [[TGMenuSheetButtonItemView alloc] initWithTitle:action.title type:buttonType action:^
             {
                 __strong TGMenuSheetController *strongController = weakController;
                 if (strongController != nil && !action.disableAutomaticSheetDismiss)
@@ -112,7 +115,10 @@ __responder = [__responder nextResponder]; \
                 
                 if (actionBlock != nil)
                     actionBlock(strongController, strongTarget, action.action);
-            }]];
+            }];
+            if (action.type == TGActionSheetActionTypeLined)
+                button.thickDivider = true;
+            [itemViews addObject:button];
         }
         
         [controller setItemViews:itemViews animated:existingController != nil];

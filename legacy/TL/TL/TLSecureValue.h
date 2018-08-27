@@ -16,6 +16,7 @@
 @property (nonatomic, retain) TLSecureFile *front_side;
 @property (nonatomic, retain) TLSecureFile *reverse_side;
 @property (nonatomic, retain) TLSecureFile *selfie;
+@property (nonatomic, retain) NSArray *translation;
 @property (nonatomic, retain) NSArray *files;
 @property (nonatomic, retain) TLSecurePlainData *plain_data;
 @property (nonatomic, retain) NSData *n_hash;

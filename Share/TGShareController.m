@@ -235,7 +235,7 @@
                     }
                     if (isGif)
                     {
-                        uploadMediaSignal = [[SSignal single:@0] then:[TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api82_DocumentAttribute documentAttributeAnimated], [Api82_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)]]]];
+                        uploadMediaSignal = [[SSignal single:@0] then:[TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:data name:fileName == nil ? @"animation.gif" : fileName mimeType:@"image/gif" attributes:@[ [Api86_DocumentAttribute documentAttributeAnimated], [Api86_DocumentAttribute documentAttributeImageSizeWithW:@((int32_t)image.size.width) h:@((int32_t)image.size.height)]]]];
                     }
                     else
                     {
@@ -335,7 +335,7 @@
                 }
                 
                 NSMutableArray *attributes = [[NSMutableArray alloc] init];
-                [attributes addObject:[Api82_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
+                [attributes addObject:[Api86_DocumentAttribute_documentAttributeAudio documentAttributeAudioWithFlags:@(flags) duration:description[@"duration"] title:title performer:artist waveform:waveform]];
                 
                 uploadMediaSignal = [TGUploadMediaSignals uploadFileWithContext:strongSelf->_currentShareContext data:audioData name:fileName mimeType:description[@"mimeType"] attributes:attributes];
                 uploadMediaSignal = [[SSignal single:@0] then:uploadMediaSignal];
@@ -370,7 +370,7 @@
                 if (strongSelf == nil)
                     return [SSignal fail:nil];
                 
-                if ([next isKindOfClass:[Api82_InputMedia class]])
+                if ([next isKindOfClass:[Api86_InputMedia class]])
                 {
                     for (NSURL *url in urlsToDelete)
                     {

@@ -62,8 +62,30 @@
     for (TLPhoto *photoDesc in result.photos)
     {
         TGImageMediaAttachment *imageAttachment = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:photoDesc];
-        if (imageAttachment != nil)
+        if (imageAttachment != nil) {
+            TGMediaOriginInfo *origin = nil;
+            if ([photoDesc isKindOfClass:[TLPhoto$photo class]])
+            {
+                TLPhoto$photo *photo = (TLPhoto$photo *)photoDesc;
+                
+                NSMutableDictionary *fileReferences = [[NSMutableDictionary alloc] init];
+                for (TLPhotoSize$photoSize *size in photo.sizes)
+                {
+                    if (![size isKindOfClass:[TLPhotoSize$photoSize class]])
+                        continue;
+                    
+                    if ([size.location isKindOfClass:[TLFileLocation$fileLocation class]])
+                    {
+                        TLFileLocation$fileLocation *fileLocation = (TLFileLocation$fileLocation *)size.location;
+                        fileReferences[[NSString stringWithFormat:@"%lld_%d", fileLocation.volume_id, fileLocation.local_id]] = fileLocation.file_reference;
+                    }
+                }
+                
+                origin = [TGMediaOriginInfo mediaOriginInfoWithFileReference:photo.file_reference fileReferences:fileReferences userId:(int32_t)self.peerId offset:0];
+                imageAttachment.originInfo = origin;
+            }
             [array addObject:imageAttachment];
+        }
     }
     
     [TGDatabaseInstance() storePeerProfilePhotos:_peerId photosArray:array append:false];

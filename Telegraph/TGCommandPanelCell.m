@@ -124,7 +124,7 @@ static UIImage *arrowImage(UIColor *color) {
     else
     {
         _avatarView.hidden = false;
-        NSString *avatarUrl = user.photoUrlSmall;
+        NSString *avatarUrl = user.photoFullUrlSmall;
         
         CGFloat diameter = 32.0f;
         

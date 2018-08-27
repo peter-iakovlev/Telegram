@@ -965,8 +965,10 @@
                         location.volume_id = volumeId;
                         location.local_id = localId;
                         location.secret = secret;
+                        location.file_reference = [preparedDocument.originInfo fileReferenceForVolumeId:volumeId localId:localId];
+                        
                         __weak TGModernSendSecretMessageActor *weakSelf = self;
-                        [self.disposables add:[[[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagDocument] deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:^(NSData *data) {
+                        [self.disposables add:[[[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId originInfo:preparedDocument.originInfo identifier:preparedDocument.documentId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagDocument] deliverOn:[SQueue wrapConcurrentNativeQueue:[ActionStageInstance() globalStageDispatchQueue]]] startWithNext:^(NSData *data) {
                             __strong TGModernSendSecretMessageActor *strongSelf = weakSelf;
                             if (strongSelf != nil) {
                                 id media = [strongSelf decryptedExternalDocumentWithLayer:[strongSelf currentPeerLayer] id:preparedDocument.documentId accessHash:preparedDocument.accessHash date:preparedDocument.date mimeType:preparedDocument.mimeType size:preparedDocument.size thumbnailUri:thumbnailUri thumbnailData:data thumbnailSize:thumSize dcId:preparedDocument.datacenterId attributes:preparedDocument.attributes];

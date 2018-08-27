@@ -74,7 +74,7 @@
         _statusLabel.textColor = self.presentation.pallete.collectionMenuVariantColor;
     }
     
-    NSString *avatarUri = user.photoUrlSmall;
+    NSString *avatarUri = user.photoFullUrlSmall;
     CGSize size = CGSizeMake(66.0f, 66.0f);
     
     UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:66.0f];

@@ -124,7 +124,7 @@ static ASQueue *taskManagementQueue()
             
             if ([args[@"legacy-thumbnail-cache-url"] respondsToSelector:@selector(characterAtIndex:)])
             {
-                [previewTask executeWithTargetFilePath:nil uri:args[@"legacy-thumbnail-cache-url"] completion:^(bool success)
+                [previewTask executeWithTargetFilePath:nil uri:args[@"legacy-thumbnail-cache-url"] options:nil completion:^(bool success)
                 {
                     if (success)
                     {

@@ -17,7 +17,7 @@
 
 @implementation TGGenericPeerMediaGalleryImageItem
 
-- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash orLocalId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId legacyImageInfo:(TGImageInfo *)legacyImageInfo embeddedStickerDocuments:(NSArray *)embeddedStickerDocuments hasStickers:(bool)hasStickers
+- (instancetype)initWithImageId:(int64_t)imageId accessHash:(int64_t)accessHash orLocalId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId legacyImageInfo:(TGImageInfo *)legacyImageInfo embeddedStickerDocuments:(NSArray *)embeddedStickerDocuments hasStickers:(bool)hasStickers originInfo:(TGMediaOriginInfo *)originInfo
 {
     CGSize imageSize = CGSizeZero;
     NSString *legacyCacheUrl = [legacyImageInfo closestImageUrlWithSize:CGSizeMake(1000.0f, 1000.0f) resultingSize:&imageSize];
@@ -48,6 +48,9 @@
     [imageUri appendFormat:@"&messageId=%" PRId32 "", (int32_t)messageId];
     [imageUri appendFormat:@"&conversationId=%" PRId64 "", (int64_t)peerId];
     
+    if (originInfo != nil)
+        [imageUri appendFormat:@"&origin_info=%@", [originInfo stringRepresentation]];
+    
     NSString *escapedCacheUrl = (__bridge_transfer NSString *)CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault, (__bridge CFStringRef)legacyCacheUrl, (__bridge CFStringRef)@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-", (__bridge CFStringRef)@"&?= :/+", kCFStringEncodingUTF8);
     [imageUri appendFormat:@"&legacy-cache-url=%@", escapedCacheUrl];
     
@@ -61,13 +64,14 @@
         _peerId = peerId;
         self.embeddedStickerDocuments = embeddedStickerDocuments;
         self.hasStickers = hasStickers;
+        self.originInfo = originInfo;
     }
     return self;
 }
 
 - (instancetype)initWithMedia:(TGImageMediaAttachment *)media localId:(int64_t)localId peerId:(int64_t)peerId messageId:(int32_t)messageId
 {
-    self = [self initWithImageId:media.imageId accessHash:media.accessHash orLocalId:localId peerId:peerId messageId:messageId legacyImageInfo:media.imageInfo embeddedStickerDocuments:media.embeddedStickerDocuments hasStickers:media.hasStickers];
+    self = [self initWithImageId:media.imageId accessHash:media.accessHash orLocalId:localId peerId:peerId messageId:messageId legacyImageInfo:media.imageInfo embeddedStickerDocuments:media.embeddedStickerDocuments hasStickers:media.hasStickers originInfo:media.originInfo];
     if (self != nil)
     {
         _media = media;

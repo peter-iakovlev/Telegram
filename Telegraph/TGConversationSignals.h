@@ -3,6 +3,6 @@
 
 @interface TGConversationSignals : NSObject
 
-+ (SSignal *)conversationWithPeerId:(int64_t)peerId;
++ (SSignal *)conversationWithPeerId:(int64_t)peerId full:(bool)full;
 
 @end

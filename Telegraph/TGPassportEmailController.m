@@ -127,7 +127,7 @@
     if (_disposable == nil)
         _disposable = [[SMetaDisposable alloc] init];
     
-    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeEmail data:nil frontSide:nil reverseSide:nil selfie:nil files:nil plainData:[[TGPassportEmailData alloc] initWithEmail:email]];
+    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeEmail data:nil frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:[[TGPassportEmailData alloc] initWithEmail:email]];
     
     SSignal *signal = [[_settings.signal take:1] mapToSignal:^SSignal *(TGPassportPasswordRequest *request)
     {

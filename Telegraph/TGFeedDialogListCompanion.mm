@@ -396,8 +396,8 @@
         
         [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
-        if (conversation.chatPhotoSmall.length != 0)
-            [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
+        if (conversation.chatPhotoFullSmall.length != 0)
+            [dict setObject:conversation.chatPhotoFullSmall forKey:@"avatarUrl"];
         
         [dict setObject:[NSNumber numberWithBool:true] forKey:@"isChat"];
         [dict setObject:[NSNumber numberWithBool:conversation.isVerified] forKey:@"isVerified"];

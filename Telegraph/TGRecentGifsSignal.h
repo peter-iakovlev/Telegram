@@ -11,4 +11,6 @@
 + (void)removeRecentGifByDocumentId:(int64_t)documentId;
 + (SSignal *)recentGifs;
 
++ (SSignal *)remoteRecentGifs;
+
 @end

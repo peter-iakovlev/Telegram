@@ -30,7 +30,10 @@
     TGPassportDecryptedValue *_document;
     NSString *_countryCode;
  
+    bool _editing;
     bool _documentOnly;
+    
+    bool _scrollToTranslation;
     
     SMetaDisposable *_saveDisposable;
     
@@ -48,11 +51,19 @@
 
 @implementation TGPassportAddressController
 
-- (instancetype)initWithSettings:(SVariable *)settings files:(NSArray *)files documentOnly:(bool)documentOnly inhibitFiles:(bool)inhibitFiles errors:(TGPassportErrors *)errors existing:(bool)existing
+- (instancetype)initWithSettings:(SVariable *)settings files:(NSDictionary *)files documentOnly:(bool)documentOnly inhibitFiles:(bool)inhibitFiles translation:(bool)translation editing:(bool)editing errors:(TGPassportErrors *)errors existing:(bool)existing
 {
-    self = [super initWithSettings:settings files:files inhibitFiles:inhibitFiles errors:errors existing:existing];
+    bool needsFiles = !inhibitFiles;
+    bool needsTranslation = (translation || editing) && !inhibitFiles;
+    NSMutableArray *fileTypes = [[NSMutableArray alloc] init];
+    if (needsFiles)
+        [fileTypes addObject:@(TGPassportDocumentFileTypeGeneric)];
+    if (needsTranslation)
+        [fileTypes addObject:@(TGPassportDocumentFileTypeTranslation)];
+    self = [super initWithSettings:settings files:files fileTypes:fileTypes errors:errors existing:existing];
     if (self != nil)
     {
+        _editing = editing;
         _documentOnly = documentOnly;
         
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)];
@@ -61,8 +72,6 @@
         CGFloat minimalInset = 100.0f;
         if (isNarrowScreen)
             minimalInset = 90.0f;
-
-        [_scansSection addItem:[[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Passport.Address.ScansHelp")]];
         
         if (!documentOnly)
         {
@@ -89,12 +98,15 @@
                 __strong TGPassportAddressController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
                     if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressStreetLine1Key])
                     {
                         [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressStreetLine1Key];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -112,12 +124,15 @@
                 __strong TGPassportAddressController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
                     if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressStreetLine2Key])
                     {
                         [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressStreetLine2Key];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -135,12 +150,15 @@
                 __strong TGPassportAddressController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
                     if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressCityKey])
                     {
                         [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressCityKey];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -158,12 +176,15 @@
                 __strong TGPassportAddressController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
                     if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressStateKey])
                     {
                         [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressStateKey];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -190,12 +211,15 @@
                 __strong TGPassportAddressController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
                     if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressPostcodeKey])
                     {
                         [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressPostcodeKey];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -222,9 +246,11 @@
     return self;
 }
 
-- (instancetype)initWithType:(TGPassportType)type address:(TGPassportDecryptedValue *)address document:(TGPassportDecryptedValue *)document documentOnly:(bool)documentOnly settings:(SVariable *)settings errors:(TGPassportErrors *)errors
+- (instancetype)initWithType:(TGPassportType)type address:(TGPassportDecryptedValue *)address document:(TGPassportDecryptedValue *)document documentOnly:(bool)documentOnly translation:(bool)translation editing:(bool)editing settings:(SVariable *)settings errors:(TGPassportErrors *)errors
 {
-    self = [self initWithSettings:settings files:document.files documentOnly:documentOnly inhibitFiles:type == TGPassportTypeAddress errors:errors existing:address != nil || document != nil];
+    NSArray *files = document.files ?: @[];
+    NSArray *translationFiles = document.translation ?: @[];
+    self = [self initWithSettings:settings files:@{@(TGPassportDocumentFileTypeGeneric):files, @(TGPassportDocumentFileTypeTranslation):translationFiles} documentOnly:documentOnly inhibitFiles:type == TGPassportTypeAddress translation:translation editing:editing errors:errors existing:address != nil || document != nil];
     if (self != nil)
     {
         _type = document.type != TGPassportTypeUndefined ? document.type : (address.type != TGPassportTypeUndefined ? address.type : type);
@@ -241,9 +267,9 @@
     return self;
 }
 
-- (instancetype)initWithType:(TGPassportType)type address:(TGPassportDecryptedValue *)address documentOnly:(bool)documentOnly uploads:(NSArray *)uploads settings:(SVariable *)settings errors:(TGPassportErrors *)errors
+- (instancetype)initWithType:(TGPassportType)type address:(TGPassportDecryptedValue *)address documentOnly:(bool)documentOnly translation:(bool)translation editing:(bool)editing uploads:(NSArray *)uploads settings:(SVariable *)settings errors:(TGPassportErrors *)errors
 {
-    self = [self initWithSettings:settings files:nil documentOnly:documentOnly inhibitFiles:type == TGPassportTypeAddress errors:errors existing:false];
+    self = [self initWithSettings:settings files:nil documentOnly:documentOnly inhibitFiles:type == TGPassportTypeAddress translation:translation editing:editing errors:errors existing:false];
     if (self != nil)
     {
         self.title = [TGPassportAddressController documentDisplayNameForType:type];
@@ -255,12 +281,17 @@
         
         for (TGPassportFileUpload *upload in uploads)
         {
-            [self enqueueFileUpload:upload];
+            [self enqueueFileUpload:upload type:TGPassportDocumentFileTypeGeneric];
         }
         
         [self checkInputValues];
     }
     return self;
+}
+
+- (void)setScrollToTranslation
+{
+    _scrollToTranslation = true;
 }
 
 - (NSString *)deleteTitle
@@ -279,6 +310,18 @@
         return [super deleteConfirmationText];
 }
 
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    if (_scrollToTranslation)
+    {
+        _scrollToTranslation = false;
+        if (self.collectionView.contentSize.height > self.collectionView.frame.size.height)
+            [self.collectionView setContentOffset:CGPointMake(0.0f, self.collectionView.contentSize.height - self.collectionView.frame.size.height) animated:true];
+    }
+}
+
 - (void)setupWithAddress:(TGPassportDecryptedValue *)address {
     _address = address;
     if (_address == nil)
@@ -291,7 +334,7 @@
     _street2Item.username = addressData.street2;
     _cityItem.username = addressData.city;
     _stateItem.username = addressData.state;
-    _countryItem.variant = [TGLoginCountriesController countryNameByCountryId:addressData.countryCode code:NULL];
+    _countryItem.variant = [TGLoginCountriesController localizedCountryNameByCountryId:addressData.countryCode];
     _countryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
     _postcodeItem.username = addressData.postcode;
 }
@@ -358,6 +401,19 @@
     [self updateFileErrors];
 }
 
+- (bool)correctMainErrorIfNeeded
+{
+    bool updateFieldErrors = false;
+    if ((!_documentOnly && [self.errors errorForTypeMain:TGPassportTypeAddress]) || [self.errors errorForTypeMain:_type])
+    {
+        if (!_documentOnly)
+            [self.errors correctMainErrorForType:TGPassportTypeAddress];
+        [self.errors correctMainErrorForType:_type];
+        updateFieldErrors = true;
+    }
+    return updateFieldErrors;
+}
+
 - (void)donePressed
 {
     if (_saveDisposable == nil)
@@ -382,16 +438,35 @@
         if (hasData)
         {
             NSCharacterSet *whitespaceSet = [NSCharacterSet whitespaceAndNewlineCharacterSet];
-            TGPassportAddressData *addressData = [[TGPassportAddressData alloc] initWithStreet1:[strongSelf->_street1Item.username stringByTrimmingCharactersInSet:whitespaceSet] street2:[strongSelf->_street2Item.username stringByTrimmingCharactersInSet:whitespaceSet] postcode:[strongSelf->_postcodeItem.username stringByTrimmingCharactersInSet:whitespaceSet] city:[strongSelf->_cityItem.username stringByTrimmingCharactersInSet:whitespaceSet] state:[strongSelf->_stateItem.username stringByTrimmingCharactersInSet:whitespaceSet] countryCode:strongSelf->_countryCode secret:request.settings.secret];
             
-            addressValue = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeAddress data:addressData frontSide:nil reverseSide:nil selfie:nil files:nil plainData:nil];
+            NSDictionary *unknownFields = @{};
+            TGPassportDecryptedValue *previousAddress = strongSelf->_address;
+            if (previousAddress != nil)
+            {
+                TGPassportAddressData *previousData = (TGPassportAddressData *)previousAddress.data;
+                if ([previousData isKindOfClass:[TGPassportAddressData class]])
+                    unknownFields = previousData.unknownFields;
+            }
+            
+            TGPassportAddressData *addressData = [[TGPassportAddressData alloc] initWithStreet1:[strongSelf->_street1Item.username stringByTrimmingCharactersInSet:whitespaceSet] street2:[strongSelf->_street2Item.username stringByTrimmingCharactersInSet:whitespaceSet] postcode:[strongSelf->_postcodeItem.username stringByTrimmingCharactersInSet:whitespaceSet] city:[strongSelf->_cityItem.username stringByTrimmingCharactersInSet:whitespaceSet] state:[strongSelf->_stateItem.username stringByTrimmingCharactersInSet:whitespaceSet] countryCode:strongSelf->_countryCode unknownFields:unknownFields secret:request.settings.secret];
+            
+            addressValue = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeAddress data:addressData frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:nil];
             [signals addObject:[TGPassportSignals saveSecureValue:addressValue secret:request.settings.secret]];
         }
         
         TGPassportDecryptedValue *documentValue = nil;
         if (hasDocument)
         {
-            documentValue = [[TGPassportDecryptedValue alloc] initWithType:strongSelf->_type data:nil frontSide:nil reverseSide:nil selfie:nil files:strongSelf.files plainData:nil];
+            NSDictionary *unknownFields = @{};
+            TGPassportDecryptedValue *previousDocument = strongSelf->_document;
+            if (previousDocument != nil)
+            {
+                TGPassportDocumentData *previousData = (TGPassportDocumentData *)previousDocument.data;
+                if ([previousData isKindOfClass:[TGPassportDocumentData class]])
+                    unknownFields = previousData.unknownFields;
+            }
+            
+            documentValue = [[TGPassportDecryptedValue alloc] initWithType:strongSelf->_type data:nil frontSide:nil reverseSide:nil selfie:nil translation:strongSelf.files[@(TGPassportDocumentFileTypeTranslation)] files:strongSelf.files[@(TGPassportDocumentFileTypeGeneric)] plainData:nil];
             [signals addObject:[TGPassportSignals saveSecureValue:documentValue secret:request.settings.secret]];
         }
         
@@ -430,15 +505,24 @@
     } error:^(__unused id error)
     {
         [progressWindow dismiss:true];
-        
-        NSString *displayText = TGLocalized(@"Login.UnknownError");
+        __strong TGPassportAddressController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
         NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
-        [TGCustomAlertView presentAlertWithTitle:displayText message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
-    } completed:^
-    {
+        if ([errorText isEqualToString:@"APP_VERSION_OUTDATED"])
+        {
+            [strongSelf presentUpdateAppAlert];
+            return;
+        }
+        else if ([errorText isEqualToString:@"PASSWORD_REQUIRED"])
+        {
+            [strongSelf.navigationController.presentingViewController dismissViewControllerAnimated:true completion:nil];
+        }
         
-    }]];
+        NSString *displayText = TGLocalized(@"Login.UnknownError");
+        [TGCustomAlertView presentAlertWithTitle:displayText message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+    } completed:nil]];
 }
 
 - (NSString *)placeholder:(NSString *)string clip:(bool)clip
@@ -481,18 +565,27 @@
                 });
             }
             
-            strongSelf->_changed = true;
+            [strongSelf setChanged:true];
+            bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded];
             if ([strongSelf.errors errorForType:TGPassportTypeAddress dataField:TGPassportAddressCountryCodeKey])
             {
                 [strongSelf.errors correctErrorForType:TGPassportTypeAddress dataField:TGPassportAddressCountryCodeKey];
-                [strongSelf updateFieldErrors];
+                updateFieldErrors = true;
             }
+            if (updateFieldErrors)
+                [strongSelf updateFieldErrors];
             [strongSelf checkInputValues];
         }
     };
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:countriesController];
     [self presentViewController:navigationController animated:true completion:nil];
+}
+
+- (void)deleteFile:(TGPassportFile *)file
+{
+    [super deleteFile:file];
+    [self updateFieldErrors];
 }
 
 #pragma mark - View
@@ -506,11 +599,12 @@
     bool hasPostcode = _postcodeItem.username.length > 0 && _postcodeItem.username.length <= 12;
     bool hasAddress = (hasStreet && hasCity && hasCountry && hasStateIfNeeded && hasPostcode) || _documentOnly;
     
-    bool hasSomeFiles = self.files.count > 0 || _scansSection == nil;
-    bool hasNoUploads = self.uploads.count == 0;
+    bool hasFiles = _fileSections[@(TGPassportDocumentFileTypeGeneric)] == nil || self.files[@(TGPassportDocumentFileTypeGeneric)].count > 0 || _editing;
+    bool hasTranslation = _fileSections[@(TGPassportDocumentFileTypeTranslation)] == nil || self.files[@(TGPassportDocumentFileTypeTranslation)].count > 0 || _editing;
+    bool hasNoUploads = ![self hasActiveUploads];
     bool hasNoErrors = ([self.errors errorsForType:TGPassportTypeAddress].count + [self.errors errorsForType:_type].count) == 0;
     
-    self.navigationItem.rightBarButtonItem.enabled = hasAddress && hasSomeFiles && hasNoUploads && hasNoErrors;
+    self.navigationItem.rightBarButtonItem.enabled = hasAddress && hasFiles && hasTranslation && hasNoUploads && hasNoErrors;
 }
 
 - (void)focusOnItem:(TGUsernameCollectionItem *)item {

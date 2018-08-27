@@ -316,7 +316,7 @@
 
 - (void)conversationSelected:(TGConversation *)conversation
 {    
-    if (self.forwardMode || self.privacyMode)
+    if (self.forwardMode || self.privacyMode || self.showPrivateOnly || self.showGroupsAndChannelsOnly)
     {
         [_conversatioSelectedWatcher requestAction:@"conversationSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:conversation, @"conversation", nil]];
     }
@@ -733,7 +733,7 @@
                 TGDialogListController *dialogListController = self.dialogListController;
                 [dialogListController searchResultsReloaded:nil searchString:nil];
             });
-        }
+        } 
         else
         {
             if (inMessages)
@@ -750,7 +750,7 @@
 
 - (void)searchResultSelectedUser:(TGUser *)user
 {
-    if (self.forwardMode || self.privacyMode)
+    if (self.forwardMode || self.privacyMode || self.showPrivateOnly || self.showGroupsAndChannelsOnly)
     {
         [_conversatioSelectedWatcher requestAction:@"userSelected" options:[[NSDictionary alloc] initWithObjectsAndKeys:user, @"user", nil]];
     }
@@ -785,7 +785,7 @@
         [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
         if (conversation.chatPhotoSmall.length != 0)
-            [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
+            [dict setObject:conversation.chatPhotoFullSmall forKey:@"avatarUrl"];
         
         [dict setObject:[NSNumber numberWithBool:true] forKey:@"isChat"];
         [dict setObject:[NSNumber numberWithBool:conversation.isVerified] forKey:@"isVerified"];
@@ -884,7 +884,7 @@
         dict[@"encryptedUserId"] = [[NSNumber alloc] initWithInt:userId];
         
         if (user.photoUrlSmall != nil)
-            [dict setObject:user.photoUrlSmall forKey:@"avatarUrl"];
+            [dict setObject:user.photoFullUrlSmall forKey:@"avatarUrl"];
         [dict setObject:[NSNumber numberWithBool:false] forKey:@"isChat"];
         
         NSString *authorAvatarUrl = nil;
@@ -931,7 +931,7 @@
             [dict setObject:(conversation.chatTitle == nil ? @"" : conversation.chatTitle) forKey:@"title"];
         
         if (conversation.chatPhotoSmall.length != 0)
-            [dict setObject:conversation.chatPhotoSmall forKey:@"avatarUrl"];
+            [dict setObject:conversation.chatPhotoFullSmall forKey:@"avatarUrl"];
         
         [dict setObject:[NSNumber numberWithBool:true] forKey:@"isChat"];
         
@@ -1255,7 +1255,7 @@
 
 - (void)actorCompleted:(int)resultCode path:(NSString *)path result:(id)result
 {
-    bool hideSelf = self.forwardMode;
+    bool hideSelf = self.forwardMode || self.showPrivateOnly || self.showGroupsAndChannelsOnly;
     
     if ([path isEqualToString:[NSString stringWithFormat:@"/tg/search/dialogs/(%lu)", (unsigned long)[_searchString hash]]])
     {
@@ -1338,6 +1338,8 @@
             bool forwardMode = self.forwardMode;
             bool privacyMode = self.privacyMode;
             bool showGroupsOnly = self.showGroupsOnly;
+            bool showPrivateOnly = self.showPrivateOnly;
+            bool showGroupsAndChannelsOnly = self.showGroupsAndChannelsOnly;
             bool showSecretInForwardMode = self.showSecretInForwardMode;
             
             TGUser *selfUser = [[TGDatabase instance] loadUser:TGTelegraphInstance.clientUserId];
@@ -1394,6 +1396,33 @@
                     id<TGDialogListItem> conversation = loadedItems[i];
                     if (conversation.isChannel && conversation.isChannelGroup && (!self.botStartMode || conversation.channelRole == TGChannelRoleCreator || conversation.channelRole == TGChannelRoleModerator || conversation.channelRole == TGChannelRolePublisher)) {
                     } else if (conversation.conversationId <= INT_MIN || conversation.conversationId > 0) {
+                        [loadedItems removeObjectAtIndex:i];
+                        i--;
+                    }
+                }
+            }
+            
+            if (showPrivateOnly)
+            {
+                for (int i = 0; i < (int)loadedItems.count; i++)
+                {
+                    id<TGDialogListItem> conversation = loadedItems[i];
+                    if (!TGPeerIdIsUser(conversation.conversationId) || [self.excludedIds containsObject:@(conversation.conversationId)]) {
+                        [loadedItems removeObjectAtIndex:i];
+                        i--;
+                    }
+                }
+            } else if (showGroupsAndChannelsOnly)
+            {
+                for (int i = 0; i < (int)loadedItems.count; i++)
+                {
+                    id<TGDialogListItem> conversation = loadedItems[i];
+                    bool skip = false;
+                    if ([conversation isKindOfClass:[TGConversation class]])
+                    {
+                        skip = ((TGConversation *)conversation).isDeleted || ((TGConversation *)conversation).isDeactivated || ((TGConversation *)conversation).leftChat || ((TGConversation *)conversation).kickedFromChat;
+                    }
+                    if ((!TGPeerIdIsGroup(conversation.conversationId) && !TGPeerIdIsChannel(conversation.conversationId)) || skip || [self.excludedIds containsObject:@(conversation.conversationId)]) {
                         [loadedItems removeObjectAtIndex:i];
                         i--;
                     }
@@ -1467,7 +1496,7 @@
                 }
             }
         
-            if (forwardMode && !showGroupsOnly)
+            if (forwardMode && !showGroupsOnly && !showPrivateOnly && !showGroupsAndChannelsOnly)
             {
                 TGConversation *selfConversation = [self selfPeer];
                 [_conversationList insertObject:selfConversation atIndex:0];
@@ -1605,7 +1634,7 @@
 
 - (void)actionStageResourceDispatched:(NSString *)path resource:(id)resource arguments:(id)arguments
 {
-    bool hideSelf = self.forwardMode;
+    bool hideSelf = self.forwardMode || self.showPrivateOnly || self.showGroupsAndChannelsOnly;
     
     if ([path hasPrefix:@"/tg/dialoglist"])
     {
@@ -1882,7 +1911,7 @@
             }
         }
         
-        if (self.forwardMode && !self.showGroupsOnly)
+        if (self.forwardMode && !self.showGroupsOnly && !self.showPrivateOnly && !self.showGroupsAndChannelsOnly)
         {
             TGConversation *selfConversation = [self selfPeer];
             [_conversationList insertObject:selfConversation atIndex:0];
@@ -2091,12 +2120,12 @@
 //    }
     else if ([path hasPrefix:@"/tg/peerSettings/"])
     {
-        NSDictionary *dict = ((SGraphObjectNode *)resource).object;
-        
         NSMutableArray *updatedIndices = [[NSMutableArray alloc] init];
         NSMutableArray *updatedItems = [[NSMutableArray alloc] init];
         
         int64_t peerId = [[path substringWithRange:NSMakeRange(18, path.length - 1 - 18)] longLongValue];
+        bool isPrivateDefault = peerId == INT_MAX - 1;
+        bool isGroupDefault = peerId == INT_MAX - 2;
         
         int count = (int)_conversationList.count;
         for (int i = 0; i < count; i++)
@@ -2112,11 +2141,11 @@
                     mutePeerId = [conversation.chatParticipants.chatParticipantUids[0] intValue];
             }
             
-            if (mutePeerId == peerId)
+            if (mutePeerId == peerId || (TGPeerIdIsUser(mutePeerId) && isPrivateDefault) || (!TGPeerIdIsUser(mutePeerId) && isGroupDefault))
             {
                 TGConversation *newConversation = [conversation copy];
                 NSMutableDictionary *newData = [conversation.dialogListData mutableCopy];
-                [newData setObject:[[NSNumber alloc] initWithBool:[dict[@"muteUntil"] intValue] != 0] forKey:@"mute"];
+                [newData setObject:[[NSNumber alloc] initWithBool:[TGDatabaseInstance() isPeerMuted:mutePeerId forceUpdate:true]] forKey:@"mute"];
                 newConversation.dialogListData = newData;
                 
                 [_conversationList replaceObjectAtIndex:i withObject:newConversation];
@@ -2124,7 +2153,8 @@
                 [updatedIndices addObject:[[NSNumber alloc] initWithInt:i]];
                 [updatedItems addObject:newConversation];
                 
-                break;
+                if (mutePeerId == peerId)
+                    break;
             }
         }
         

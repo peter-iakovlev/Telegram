@@ -111,8 +111,9 @@ static ASQueue *taskManagementQueue()
                  
                  NSString *filePath = [fileDirectory stringByAppendingPathComponent:highQuality ? @"thumbnail-high" :  @"thumbnail"];
                  
+                 int64_t identifier = [args[@"documentId"] longLongValue];
                  __weak TGMediaPreviewTask *weakPreviewTask = previewTask;
-                 [previewTask executeMultipartWithImageUri:args[@"legacyThumbnailUri"] targetFilePath:filePath progress:^(float value)
+                 [previewTask executeMultipartWithImageUri:args[@"legacyThumbnailUri"] identifier:identifier originInfo:[TGMediaOriginInfo mediaOriginInfoWithStringRepresentation:args[@"origin_info"]] targetFilePath:filePath progress:^(float value)
                  {
                      if (progress)
                          progress(value);

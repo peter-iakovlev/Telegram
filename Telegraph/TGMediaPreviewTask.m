@@ -58,12 +58,12 @@
     [threadPool addTask:_task];
 }
 
-- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
+- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri options:(NSDictionary *)options completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
 {
-    [self executeWithTargetFilePath:targetFilePath uri:uri progress:nil completion:completion workerTask:workerTask];
+    [self executeWithTargetFilePath:targetFilePath uri:uri options:options progress:nil completion:completion workerTask:workerTask];
 }
 
-- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
+- (void)executeWithTargetFilePath:(NSString *)targetFilePath uri:(NSString *)uri options:(NSDictionary *)options progress:(void (^)(float))progress completion:(void (^)(bool))completion workerTask:(TGWorkerTask *)workerTask
 {
     _actionHandle = [[ASHandle alloc] initWithDelegate:self];
     _targetFilePath = targetFilePath;
@@ -72,13 +72,16 @@
     _workerTask = workerTask;
     _progress = progress;
     
+    if (options == nil)
+        options = @{};
+    
     if ([uri hasPrefix:@"http://"] || [uri hasPrefix:@"https://"])
     {
         [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri, @"path": targetFilePath == nil ? @"" : targetFilePath, @"cache": [[TGMediaStoreContext instance] temporaryFilesCache], @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} flags:0 watcher:self];
     }
     else
     {
-        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{} flags:0 watcher:self];
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/img/(download:%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:options flags:0 watcher:self];
     }
 }
 
@@ -105,7 +108,7 @@
     [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/temporaryDownload/(%@)", [TGStringUtils stringByEscapingForActorURL:uri]] options:@{@"url": uri, @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)} flags:0 watcher:self];
 }
 
-- (void)executeMultipartWithImageUri:(NSString *)imageUri targetFilePath:(NSString *)targetFilePath progress:(void (^)(float))progress completion:(void (^)(bool))completion
+- (void)executeMultipartWithImageUri:(NSString *)imageUri identifier:(int64_t)identifier originInfo:(TGMediaOriginInfo *)originInfo targetFilePath:(NSString *)targetFilePath progress:(void (^)(float))progress completion:(void (^)(bool))completion
 {
     _actionHandle = [[ASHandle alloc] initWithDelegate:self];
     
@@ -122,14 +125,20 @@
         fileLocation.volume_id = volumeId;
         fileLocation.local_id = (int32_t)localId;
         fileLocation.secret = secret;
+        fileLocation.file_reference = [originInfo fileReferenceForVolumeId:volumeId localId:localId];
         
-        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(image:%" PRId64 ":%d:%d)", volumeId, localId, datacenterId] options:@{
-            @"fileLocation": fileLocation,
-            @"storeFilePath": targetFilePath,
-            @"datacenterId": @(datacenterId),
-            @"encryptionArgs": @{},
-            @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)
-        } watcher:self];
+        NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithDictionary:@{
+                                                                                            @"identifier": @(identifier),
+                                                                                            @"fileLocation": fileLocation,
+                                                                                            @"storeFilePath": targetFilePath,
+                                                                                            @"datacenterId": @(datacenterId),
+                                                                                            @"encryptionArgs": @{},
+                                                                                            @"mediaTypeTag": @(TGNetworkMediaTypeTagImage)
+                                                                                            }];
+        if (originInfo != nil)
+            options[@"originInfo"] = originInfo;
+        
+        [ActionStageInstance() requestActor:[[NSString alloc] initWithFormat:@"/tg/multipart-file/(image:%" PRId64 ":%d:%d)", volumeId, localId, datacenterId] options:options watcher:self];
     }
     else if (completion)
     {

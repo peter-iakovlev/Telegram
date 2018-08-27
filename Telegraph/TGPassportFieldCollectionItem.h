@@ -1,4 +1,5 @@
 #import "TGCollectionItem.h"
+#import "TGPassportForm.h"
 
 @interface TGPassportFieldCollectionItem : TGCollectionItem
 
@@ -8,6 +9,9 @@
 @property (nonatomic, strong) NSArray *errors;
 @property (nonatomic) bool isChecked;
 @property (nonatomic) bool isRequired;
+
+@property (nonatomic) TGPassportRequiredType *type;
+@property (nonatomic, strong) NSArray *acceptedTypes;
 
 - (instancetype)initWithTitle:(NSString *)title action:(SEL)action;
 

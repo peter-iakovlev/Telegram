@@ -16,7 +16,7 @@
     {
         TGBridgeConversationSubscription *conversationSubscription = (TGBridgeConversationSubscription *)subscription;
                 
-        return [[TGConversationSignals conversationWithPeerId:conversationSubscription.peerId] mapToSignal:^SSignal *(TGConversation *conversation)
+        return [[TGConversationSignals conversationWithPeerId:conversationSubscription.peerId full:true] mapToSignal:^SSignal *(TGConversation *conversation)
         {
             SSignal *(^signal)(TGConversation *) = ^SSignal *(TGConversation *conversation)
             {

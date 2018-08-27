@@ -1331,63 +1331,68 @@ static void CreateAddressBookAsync(TGAddressBookCreated createdBlock)
             ABRecordRef defaultSource = ABAddressBookCopyDefaultSource(addressBook);
             CFArrayRef vCardPeople = ABPersonCreatePeopleInSourceWithVCardRepresentation(defaultSource, vCardData);
             CFIndex index = 0;
-            ABRecordRef person = CFArrayGetValueAtIndex(vCardPeople, index);
-            
-            CFRelease(vCardPeople);
-            CFRelease(defaultSource);
-            
-            void (^copySingleValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
-                CFTypeRef value = ABRecordCopyValue(person, property);
-                if (value != NULL) {
-                    ABRecordSetValue(newPerson, property, value, NULL);
-                    CFRelease(value);
-                }
-            };
+            if (vCardPeople != NULL && CFArrayGetCount(vCardPeople) > 0)
+            {
+                ABRecordRef person = CFArrayGetValueAtIndex(vCardPeople, index);
+                void (^copySingleValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                    CFTypeRef value = ABRecordCopyValue(person, property);
+                    if (value != NULL) {
+                        ABRecordSetValue(newPerson, property, value, NULL);
+                        CFRelease(value);
+                    }
+                };
 
-            void (^copyMultiValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
-                ABMultiValueRef values = ABRecordCopyValue(person, property);
-                NSInteger valueCount = (values == NULL) ? 0 : ABMultiValueGetCount(values);
-                
-                if (valueCount == 0) {
+                void (^copyMultiValueProperty)(ABPropertyID) = ^(ABPropertyID property) {
+                    ABMultiValueRef values = ABRecordCopyValue(person, property);
+                    NSInteger valueCount = (values == NULL) ? 0 : ABMultiValueGetCount(values);
+                    
+                    if (valueCount == 0) {
+                        if (values != NULL)
+                            CFRelease(values);
+                        return;
+                    }
+                    
+                    ABMutableMultiValueRef multiValue = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+                    
+                    for (CFIndex i = 0; i < valueCount; i++) {
+                        CFTypeRef value = ABMultiValueCopyValueAtIndex(values, i);
+                        CFStringRef label = ABMultiValueCopyLabelAtIndex(values, i);
+                        
+                        ABMultiValueAddValueAndLabel(multiValue, value, label, NULL);
+                        
+                        if (value != NULL)
+                            CFRelease(value);
+                        if (label != NULL)
+                            CFRelease(label);
+                    }
+                    
+                    ABRecordSetValue(newPerson, property, multiValue, nil);
+                    CFRelease(multiValue);
+                    
                     if (values != NULL)
                         CFRelease(values);
-                    return;
-                }
+                };
                 
-                ABMutableMultiValueRef multiValue = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+                copySingleValueProperty(kABPersonPrefixProperty);
+                copySingleValueProperty(kABPersonSuffixProperty);
+                copySingleValueProperty(kABPersonOrganizationProperty);
+                copySingleValueProperty(kABPersonJobTitleProperty);
+                copySingleValueProperty(kABPersonDepartmentProperty);
+                copySingleValueProperty(kABPersonBirthdayProperty);
                 
-                for (CFIndex i = 0; i < valueCount; i++) {
-                    CFTypeRef value = ABMultiValueCopyValueAtIndex(values, i);
-                    CFStringRef label = ABMultiValueCopyLabelAtIndex(values, i);
-                    
-                    ABMultiValueAddValueAndLabel(multiValue, value, label, NULL);
-                    
-                    if (value != NULL)
-                        CFRelease(value);
-                    if (label != NULL)
-                        CFRelease(label);
-                }
-                
-                ABRecordSetValue(newPerson, property, multiValue, nil);
-                CFRelease(multiValue);
-                
-                if (values != NULL)
-                    CFRelease(values);
-            };
+                copyMultiValueProperty(kABPersonPhoneProperty);
+                copyMultiValueProperty(kABPersonEmailProperty);
+                copyMultiValueProperty(kABPersonURLProperty);
+                copyMultiValueProperty(kABPersonAddressProperty);
+                copyMultiValueProperty(kABPersonSocialProfileProperty);
+                copyMultiValueProperty(kABPersonInstantMessageProperty);
+            }
             
-            copySingleValueProperty(kABPersonPrefixProperty);
-            copySingleValueProperty(kABPersonSuffixProperty);
-            copySingleValueProperty(kABPersonOrganizationProperty);
-            copySingleValueProperty(kABPersonJobTitleProperty);
-            copySingleValueProperty(kABPersonDepartmentProperty);
-            copySingleValueProperty(kABPersonBirthdayProperty);
+            if (vCardPeople != NULL)
+                CFRelease(vCardPeople);
             
-            copyMultiValueProperty(kABPersonPhoneProperty);
-            copyMultiValueProperty(kABPersonEmailProperty);
-            copyMultiValueProperty(kABPersonURLProperty);
-            copyMultiValueProperty(kABPersonAddressProperty);
-            copyMultiValueProperty(kABPersonSocialProfileProperty);
-            copyMultiValueProperty(kABPersonInstantMessageProperty);
+            if (defaultSource != NULL)
+                CFRelease(defaultSource);
         }
         
         ABAddressBookAddRecord(addressBook, newPerson, &error);

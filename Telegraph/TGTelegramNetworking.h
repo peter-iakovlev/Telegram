@@ -158,6 +158,7 @@ typedef enum {
 - (SSignal *)requestSignal:(TLMetaRpc *)rpc worker:(TGNetworkWorkerGuard *)worker;
 
 - (NSString *)extractNetworkErrorType:(id)error;
+- (int32_t)extractNetworkErrorCode:(id)error;
 
 - (MTNetworkUsageCalculationInfo *)dataUsageInfo;
 - (MTNetworkUsageCalculationInfo *)mediaUsageInfoForType:(TGNetworkMediaTypeTag)type;

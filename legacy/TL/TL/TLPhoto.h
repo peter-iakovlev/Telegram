@@ -32,6 +32,7 @@
 
 @property (nonatomic) int32_t flags;
 @property (nonatomic) int64_t access_hash;
+@property (nonatomic, retain) NSData *file_reference;
 @property (nonatomic) int32_t date;
 @property (nonatomic, retain) NSArray *sizes;
 

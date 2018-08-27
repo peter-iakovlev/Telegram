@@ -86,7 +86,7 @@
         if (_hasUpdatingAvatar)
             [view setAvatarImage:_updatingAvatar animated:false];
         else
-            [view setAvatarUri:_user.photoUrlSmall animated:false synchronous:_firstBind];
+            [view setAvatarUri:_user.photoFullUrlSmall animated:false synchronous:_firstBind];
     }
     
     if (_automaticallyManageUserPresence)
@@ -159,7 +159,7 @@
             }
             else
             {
-                [view setAvatarUri:_user.photoUrlSmall animated:animated synchronous:false];
+                [view setAvatarUri:_user.photoFullUrlSmall animated:animated synchronous:false];
             }
         }
         
@@ -223,7 +223,7 @@
                 if (_hasUpdatingAvatar)
                     [view setAvatarImage:_updatingAvatar animated:false];
                 else
-                    [view setAvatarUri:_user.photoUrlSmall animated:false synchronous:false];
+                    [view setAvatarUri:_user.photoFullUrlSmall animated:false synchronous:false];
             }
             
             [view setUpdatingAvatar:_hasUpdatingAvatar animated:true];

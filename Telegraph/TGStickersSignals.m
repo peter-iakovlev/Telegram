@@ -8,6 +8,7 @@
 #import "TGRecentStickersSignal.h"
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 #import "TGAppDelegate.h"
 
@@ -835,10 +836,14 @@ static OSSpinLock cachedPacksLock = 0;
         for (TLDocument *resultDocument in result.documents)
         {
             TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:resultDocument];
-            if (document.documentId != 0)
+            if ([packReference isKindOfClass:[TGStickerPackIdReference class]])
             {
-                [documents addObject:document];
+                int64_t stickerPackId = ((TGStickerPackIdReference *)packReference).packId;
+                int64_t stickerPackAccessHash = ((TGStickerPackIdReference *)packReference).packAccessHash;
+                document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocument:resultDocument stickerPackId:stickerPackId stickerPackAccessHash:stickerPackAccessHash];
             }
+            if (document.documentId != 0)
+                [documents addObject:document];
         }
         
         return [[TGStickerPack alloc] initWithPackReference:resultPackReference title:result.set.title stickerAssociations:stickerAssociations documents:documents packHash:packHash hidden:(result.set.flags & (1 << 1)) isMask:(result.set.flags & (1 << 3)) isFeatured:featured installedDate:result.set.installed_date];
@@ -1145,8 +1150,9 @@ static OSSpinLock cachedPacksLock = 0;
                     location.volume_id = volumeId;
                     location.local_id = localId;
                     location.secret = secret;
+                    location.file_reference = [document.originInfo fileReferenceForVolumeId:volumeId localId:localId];
                     
-                    SSignal *downloadSignal = [[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagDocument] onNext:^(id next)
+                    SSignal *downloadSignal = [[TGRemoteFileSignal dataForLocation:location datacenterId:datacenterId originInfo:document.originInfo identifier:document.documentId size:0 reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagDocument] onNext:^(id next)
                     {
                         if ([next isKindOfClass:[NSData class]])
                         {
@@ -1293,6 +1299,40 @@ static OSSpinLock cachedPacksLock = 0;
             [TGDatabaseInstance() storeStickerPack:next forReference:next.packReference];
         }];
     }];
+}
+
++ (void)updateStickerPack:(TGStickerPack *)stickerPack
+{
+    NSDictionary *currentDict = [self cachedStickerPacks];
+    if (currentDict.count == 0)
+        return;
+    
+    NSArray *stickerPacks = currentDict[@"packs"];
+    __block NSUInteger index = NSNotFound;
+    [stickerPacks enumerateObjectsUsingBlock:^(TGStickerPack *pack, NSUInteger idx, BOOL * _Nonnull stop)
+    {
+        if ([stickerPack.packReference isEqual:pack.packReference])
+        {
+            index = idx;
+            *stop = true;
+        }
+    }];
+    
+    if (index == NSNotFound)
+        return;
+
+    NSMutableArray *newStickerPacks = [stickerPacks mutableCopy];
+    [newStickerPacks replaceObjectAtIndex:index withObject:stickerPack];
+    
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithDictionary:currentDict];
+    dict[@"packs"] = newStickerPacks;
+    
+    OSSpinLockLock(&cachedPacksLock);
+    cachedPacks = dict;
+    OSSpinLockUnlock(&cachedPacksLock);
+    
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:dict];
+    [self storePacksData:data];
 }
 
 + (NSMutableDictionary<NSString *, NSArray *> *)stickerPackNameParts {

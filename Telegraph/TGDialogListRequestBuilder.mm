@@ -53,6 +53,7 @@
 {
     NSNumber *date = [options objectForKey:@"date"];
     NSNumber *limit = [options objectForKey:@"limit"];
+    NSNumber *force = [options objectForKey:@"force"];
     
     if (date == nil)
     {
@@ -64,6 +65,29 @@
 //#endif
         
         self.cancelToken = [TGTelegraphInstance doRequestDialogsListWithOffset:0 limit:limit requestBuilder:self];
+    }
+    else if (force != nil)
+    {
+        bool dialogListLoaded = [TGDatabaseInstance() customProperty:@"dialogListLoaded"].length != 0;
+        if (dialogListLoaded) {
+             [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphListNode alloc] initWithItems:@[]]];
+        } else {
+            NSData *data = [TGDatabaseInstance() customProperty:@"dialogListRemoteOffset"];
+            TGDialogListRemoteOffset *remoteOffset = nil;
+            if (data.length != 0) {
+                remoteOffset = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+            }
+            
+            if (remoteOffset == nil) {
+                remoteOffset = [[TGDialogListRemoteOffset alloc] initWithDate:[TGDatabaseInstance() loadConversationListRemoteOffsetDate] peerId:0 accessHash:0 messageId:0];
+            }
+            
+            [ActionStageInstance() dispatchOnStageQueue:^
+            {                
+                TGLog(@"Requesting dialog list with offset = %@", remoteOffset);
+                self.cancelToken = [TGTelegraphInstance doRequestDialogsListWithOffset:remoteOffset limit:80 requestBuilder:self];
+            }];
+        }
     }
     else
     {        
@@ -95,7 +119,7 @@
                 _cutoffConversations = cutoffConversations;
             }
             
-            if (filteredResult.count != 0 || dialogListLoaded) {
+            if ((filteredResult.count != 0 && ![force boolValue]) || dialogListLoaded) {
                 [ActionStageInstance() nodeRetrieved:self.path node:[[SGraphListNode alloc] initWithItems:filteredResult]];
             } else {
                 NSData *data = [TGDatabaseInstance() customProperty:@"dialogListRemoteOffset"];

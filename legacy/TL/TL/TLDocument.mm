@@ -72,7 +72,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x87232bc7;
+    return (int32_t)0x59534e4c;
 }
 
 - (int32_t)TLconstructorName
@@ -85,12 +85,12 @@
     TLDocument$document *object = [[TLDocument$document alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
+    object.file_reference = metaObject->getBytes((int32_t)0x8bad663c);
     object.date = metaObject->getInt32((int32_t)0xb76958ba);
     object.mime_type = metaObject->getString((int32_t)0xcd8e470b);
     object.size = metaObject->getInt32((int32_t)0x5a228f5e);
     object.thumb = metaObject->getObject((int32_t)0x712c4d9);
     object.dc_id = metaObject->getInt32((int32_t)0xae973dc4);
-    object.version = metaObject->getInt32((int32_t)0x4ea810e9);
     object.attributes = metaObject->getArray((int32_t)0xb339a07a);
     return object;
 }
@@ -108,6 +108,12 @@
         value.type = TLConstructedValueTypePrimitiveInt64;
         value.primitive.int64Value = self.access_hash;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8f305224, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.file_reference;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8bad663c, value));
     }
     {
         TLConstructedValue value;
@@ -138,12 +144,6 @@
         value.type = TLConstructedValueTypePrimitiveInt32;
         value.primitive.int32Value = self.dc_id;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xae973dc4, value));
-    }
-    {
-        TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4ea810e9, value));
     }
     {
         TLConstructedValue value;

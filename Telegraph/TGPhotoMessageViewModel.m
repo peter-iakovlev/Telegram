@@ -46,7 +46,15 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"photo-thumbnail://?"];
         if (imageMedia.imageId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", imageMedia.imageId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (imageMedia.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [imageMedia.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", localImageId];
         
@@ -145,8 +153,15 @@
             previewImageInfo = [[TGImageInfo alloc] init];
             
             NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"photo-thumbnail://?"];
-            if (imageMedia.imageId != 0)
+            if (imageMedia.imageId != 0) {
                 [previewUri appendFormat:@"id=%" PRId64 "", imageMedia.imageId];
+                
+                [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+                [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+                
+                if (imageMedia.originInfo != nil)
+                    [previewUri appendFormat:@"&origin_info=%@", [imageMedia.originInfo stringRepresentation]];
+            }
             else
                 [previewUri appendFormat:@"local-id=%" PRId64 "", localImageId];
             

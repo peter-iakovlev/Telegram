@@ -209,7 +209,7 @@
         else if (indexPath.section == 5)
         {
             TGVCardValueArrayItem *item = array.values[indexPath.row];
-            label = (__bridge NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(item.label)));
+            label = (__bridge_transfer NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(item.label)));
             
             NSDictionary *dict = (NSDictionary *)item.value;
             
@@ -243,7 +243,7 @@
         else
         {
             TGVCardValueArrayItem *item = array.values[indexPath.row];
-            label = (__bridge NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(item.label)));
+            label = (__bridge_transfer NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(item.label)));
             if (array.objectType == [NSString class]) {
                 stringValue = (NSString *)item.value;
                 

@@ -38,7 +38,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x14637196;
+    return (int32_t)0xdfdaabe1;
 }
 
 - (int32_t)TLconstructorName
@@ -52,6 +52,7 @@
     object.volume_id = metaObject->getInt64((int32_t)0xdfa67416);
     object.local_id = metaObject->getInt32((int32_t)0x1a9ce92a);
     object.secret = metaObject->getInt64((int32_t)0x6706b4b7);
+    object.file_reference = metaObject->getBytes((int32_t)0x8bad663c);
     return object;
 }
 
@@ -74,6 +75,12 @@
         value.type = TLConstructedValueTypePrimitiveInt64;
         value.primitive.int64Value = self.secret;
         values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x6706b4b7, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.file_reference;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8bad663c, value));
     }
 }
 
@@ -125,7 +132,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0x430f0724;
+    return (int32_t)0x196683d9;
 }
 
 - (int32_t)TLconstructorName
@@ -138,7 +145,7 @@
     TLInputFileLocation$inputDocumentFileLocation *object = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
     object.n_id = metaObject->getInt64((int32_t)0x7a5601fb);
     object.access_hash = metaObject->getInt64((int32_t)0x8f305224);
-    object.version = metaObject->getInt32((int32_t)0x4ea810e9);
+    object.file_reference = metaObject->getBytes((int32_t)0x8bad663c);
     return object;
 }
 
@@ -158,9 +165,9 @@
     }
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypePrimitiveInt32;
-        value.primitive.int32Value = self.version;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x4ea810e9, value));
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.file_reference;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x8bad663c, value));
     }
 }
 

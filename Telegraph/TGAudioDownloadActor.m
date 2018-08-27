@@ -121,6 +121,7 @@
             TLInputFileLocation$inputDocumentFileLocation *inputDocumentLocation = [[TLInputFileLocation$inputDocumentFileLocation alloc] init];
             inputDocumentLocation.n_id = audioAttachment.audioId;
             inputDocumentLocation.access_hash = audioAttachment.accessHash;
+            //inputDocumentLocation.file_reference = [audioAttachment.or]
             inputFileLocation = inputDocumentLocation;
             
             datacenterId = audioAttachment.datacenterId;

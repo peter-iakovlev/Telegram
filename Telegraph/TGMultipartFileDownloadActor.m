@@ -21,6 +21,8 @@
 #import <MTProtoKit/MTRequest.h>
 
 #import "TGCdnFileData.h"
+
+#import "TGDownloadMessagesSignal.h"
     
 @interface TGFilePartInfo : NSObject
 
@@ -87,6 +89,12 @@
     bool _isReuploading;
     
     SMetaDisposable *_partHashesDisposable;
+    
+    int64_t _identifier;
+    bool _isUpdatingFileReference;
+    TGMediaOriginInfo *_originInfo;
+    SMetaDisposable *_fileReferenceDisposable;
+    bool _retrying;
 }
 
 @end
@@ -151,6 +159,8 @@
     
     [_reuploadDisposable dispose];
     [_partHashesDisposable dispose];
+    
+    [_fileReferenceDisposable dispose];
 }
 
 - (void)storeCurrentIv
@@ -165,6 +175,8 @@
 {
     _storeFilePaths = [[NSMutableArray alloc] init];
     
+    _identifier = [options[@"identifier"] int64Value];
+    _originInfo = options[@"originInfo"];
     _fileLocation = options[@"fileLocation"];
     _size = [options[@"encryptedSize"] intValue];
     _decryptedSize = [options[@"decryptedSize"] intValue];
@@ -472,7 +484,20 @@
                             }
                         }
                         else
-                            [strongSelf filePartDownloadFailed:location offset:requestInfo.offset length:requestInfo.length];
+                        {
+                            int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                            NSString *errorString = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                            if (strongSelf->_originInfo != nil && errorCode == 400 && [errorString hasPrefix:@"FILE_REFERENCE_"] && !strongSelf->_retrying)
+                            {
+                                ((TGFilePartInfo *)strongSelf->_downloadingParts[@(requestInfo.offset)]).restart = true;
+                                
+                                [strongSelf updateFileReference:strongSelf->_originInfo offset:requestInfo.offset length:requestInfo.length];
+                            }
+                            else
+                            {
+                                [strongSelf filePartDownloadFailed:location offset:requestInfo.offset length:requestInfo.length];
+                            }
+                        }
                     }
                 }];
             }];
@@ -605,6 +630,44 @@
             }
         }];
     } error:nil completed:nil]];
+}
+
+- (void)updateFileReference:(TGMediaOriginInfo *)originInfo offset:(int)offset length:(int)length {
+    if (_isUpdatingFileReference)
+        return;
+    _isUpdatingFileReference = true;
+    if (_fileReferenceDisposable == nil) {
+        _fileReferenceDisposable = [[SMetaDisposable alloc] init];
+    }
+    
+    __weak TGMultipartFileDownloadActor *weakSelf = self;
+    [_fileReferenceDisposable setDisposable:[[TGDownloadMessagesSignal updatedOriginInfo:originInfo identifier:_identifier] startWithNext:^(TGMediaOriginInfo *next)
+    {
+        [ActionStageInstance() dispatchOnStageQueue:^{
+            __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_isUpdatingFileReference = false;
+                strongSelf->_originInfo = next;
+                strongSelf->_retrying = true;
+                if ([strongSelf->_fileLocation isKindOfClass:[TLInputFileLocation$inputDocumentFileLocation class]]) {
+                    TLInputFileLocation$inputDocumentFileLocation *location = (TLInputFileLocation$inputDocumentFileLocation *)strongSelf->_fileLocation;
+                    location.file_reference = [next fileReference];
+                } else if ([strongSelf->_fileLocation isKindOfClass:[TLInputFileLocation$inputFileLocation class]]) {
+                    TLInputFileLocation$inputFileLocation *location = (TLInputFileLocation$inputFileLocation *)strongSelf->_fileLocation;
+                    location.file_reference = [next fileReferenceForVolumeId:location.volume_id localId:location.local_id];
+                }
+                [strongSelf downloadFileParts];
+            }
+        }];
+    } error:^(__unused id error)
+    {
+        [ActionStageInstance() dispatchOnStageQueue:^{
+            __strong TGMultipartFileDownloadActor *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                [strongSelf filePartDownloadFailed:nil offset:offset length:length];
+            }
+        }];
+    } completed:nil]];
 }
 
 - (void)filePartDownloadProgress:(TLInputFileLocation *)__unused location offset:(int)offset length:(int)__unused length packetLength:(int)packetLength progress:(float)progress

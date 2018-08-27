@@ -55,7 +55,7 @@
                 if ([desc[@"groupId"] intValue] != groupId)
                     continue;
                 
-                if (groupId == 0 && index == 1 && defaultId != nil)
+                if (groupId == 0 && index == 0 && defaultId != nil)
                 {
                     _defaultCheckItem = [[TGCheckCollectionItem alloc] initWithTitle:[NSString stringWithFormat:TGLocalized(@"UserInfo.NotificationsDefaultSound"), [TGAlertSoundController soundNameFromId:defaultId.intValue]] action:@selector(alertTonePressed:)];
                     [alertTonesSectionItems addObject:_defaultCheckItem];
@@ -99,9 +99,9 @@
 {
     if (soundId == 0 || soundId == 1)
         return [TGAppDelegateInstance modernAlertSoundTitles][soundId];
-    if (soundId >= 2 && soundId <= 9)
+    else if (soundId >= 2 && soundId <= 9)
         return [TGAppDelegateInstance classicAlertSoundTitles][MAX(0, soundId - 2)];
-    if (soundId >= 100 && soundId <= 111)
+    else if (soundId >= 100 && soundId <= 111)
         return [TGAppDelegateInstance modernAlertSoundTitles][soundId - 100 + 1];
     return @"";
 }

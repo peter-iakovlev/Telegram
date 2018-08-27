@@ -25,7 +25,6 @@
 
 #import <LegacyComponents/TGProgressWindow.h>
 #import "TGLegacyComponentsContext.h"
-#import "TGAlertView.h"
 
 #import "TGCacheController.h"
 

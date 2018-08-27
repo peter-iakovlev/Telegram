@@ -53,7 +53,7 @@
     UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:40.0f];
    
     if (conversation.chatPhotoSmall.length != 0) {
-        [_avatarView loadImage:conversation.chatPhotoSmall filter:@"circle:40x40" placeholder:placeholder];
+        [_avatarView loadImage:conversation.chatPhotoFullSmall filter:@"circle:40x40" placeholder:placeholder];
     } else {
         [_avatarView loadGroupPlaceholderWithSize:size conversationId:conversation.conversationId title:conversation.chatTitle placeholder:placeholder];
     }

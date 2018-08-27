@@ -109,6 +109,7 @@
                             TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
                             inputDocument.n_id = document.documentId;
                             inputDocument.access_hash = document.accessHash;
+                            inputDocument.file_reference = document.originInfo.fileReference;
                             [inputStickers addObject:inputDocument];
                         }
                     }
@@ -149,6 +150,7 @@
                             TLInputPhoto$inputPhoto *inputPhoto = [[TLInputPhoto$inputPhoto alloc] init];
                             inputPhoto.n_id = attachment.imageId;
                             inputPhoto.access_hash = attachment.accessHash;
+                            inputPhoto.file_reference = attachment.originInfo.fileReference;
                             
                             remotePhoto.n_id = inputPhoto;
                             remotePhoto.ttl_seconds = preparedMessage.messageLifetime;
@@ -352,6 +354,7 @@
                                     TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
                                     inputDocument.n_id = document.documentId;
                                     inputDocument.access_hash = document.accessHash;
+                                    inputDocument.file_reference = document.originInfo.fileReference;
                                     [inputStickers addObject:inputDocument];
                                 }
                             }
@@ -394,11 +397,13 @@
                                     {
                                         inputDocument.n_id = ((TGVideoMediaAttachment *)attachment).videoId;
                                         inputDocument.access_hash = ((TGVideoMediaAttachment *)attachment).accessHash;
+                                        inputDocument.file_reference = ((TGVideoMediaAttachment *)attachment).originInfo.fileReference;
                                     }
                                     else if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
                                     {
                                         inputDocument.n_id = ((TGDocumentMediaAttachment *)attachment).documentId;
                                         inputDocument.access_hash = ((TGDocumentMediaAttachment *)attachment).accessHash;
+                                        inputDocument.file_reference = ((TGDocumentMediaAttachment *)attachment).originInfo.fileReference;
                                     }
                                     remoteDocument.n_id = inputDocument;
                                     remoteDocument.ttl_seconds = preparedMessage.messageLifetime;
@@ -452,7 +457,7 @@
                                 }
                                 
                                 if (preparedMessage.useMediaCache && preparedMessage.videoHash.length != 0)
-                                    [TGImageDownloadActor addServerMediaSataForAssetUrl:preparedMessage.videoHash attachment:videoAttachment];
+                                    [TGImageDownloadActor addServerMediaDataForAssetUrl:preparedMessage.videoHash attachment:videoAttachment];
                                 
                                 [TGDatabaseInstance() updateLastUseDateForMediaType:1 mediaId:videoAttachment.videoId messageId:messageId];
                                 

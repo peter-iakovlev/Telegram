@@ -2,7 +2,7 @@
 
 @implementation TGFileLocation
 
-- (instancetype)initWithDatacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId localId:(int32_t)localId secret:(int64_t)secret
+- (instancetype)initWithDatacenterId:(NSInteger)datacenterId volumeId:(int64_t)volumeId localId:(int32_t)localId secret:(int64_t)secret fileReference:(NSData *)fileReference
 {
     self = [super init];
     if (self != nil)
@@ -11,6 +11,7 @@
         _volumeId = volumeId;
         _localId = localId;
         _secret = secret;
+        _fileReference = fileReference;
     }
     return self;
 }
@@ -70,7 +71,7 @@ bool extractFileUrlComponents(NSString *fileUrl, int *datacenterId, int64_t *vol
     int64_t secret;
     
     if (extractFileUrlComponents(url, &datacenterId, &volumeId, &localId, &secret))
-        return [self initWithDatacenterId:datacenterId volumeId:volumeId localId:localId secret:secret];
+        return [self initWithDatacenterId:datacenterId volumeId:volumeId localId:localId secret:secret fileReference:nil];
     else
         return nil;
 }

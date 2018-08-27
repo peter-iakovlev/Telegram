@@ -84,7 +84,7 @@
         
         if (user.photoUrlSmall != nil)
         {
-            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:44x44" placeholder:placeholder];
+            [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:44x44" placeholder:placeholder];
         }
         else
         {

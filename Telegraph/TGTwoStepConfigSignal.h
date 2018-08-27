@@ -6,6 +6,4 @@
 
 + (SSignal *)twoStepConfig;
 
-+ (NSData *)TGSha512:(NSData *)data;
-
 @end

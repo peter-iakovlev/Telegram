@@ -42,9 +42,17 @@
     
     NSMutableString *uri = [[NSMutableString alloc] initWithString:@"sticker-preview://?"];
     if (document.documentId != 0)
+    {
         [uri appendFormat:@"documentId=%" PRId64 "", document.documentId];
+        
+        TGMediaOriginInfo *originInfo = document.originInfo ?: [TGMediaOriginInfo mediaOriginInfoForDocumentAttachment:document];
+        if (originInfo != nil)
+            [uri appendFormat:@"&origin_info=%@", [originInfo stringRepresentation]];
+    }
     else
+    {
         [uri appendFormat:@"localDocumentId=%" PRId64 "", document.localDocumentId];
+    }
     [uri appendFormat:@"&accessHash=%" PRId64 "", document.accessHash];
     [uri appendFormat:@"&datacenterId=%" PRId32 "", (int32_t)document.datacenterId];
     

@@ -79,7 +79,7 @@
         });
         
         if (user.photoUrlSmall.length != 0) {
-            [_avatarView loadImage:user.photoUrlSmall filter:@"circle:30x30" placeholder:placeholder];
+            [_avatarView loadImage:user.photoFullUrlSmall filter:@"circle:30x30" placeholder:placeholder];
         } else {
             [_avatarView loadUserPlaceholderWithSize:size uid:user.uid firstName:user.firstName lastName:user.lastName placeholder:placeholder];
         }

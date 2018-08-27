@@ -149,7 +149,7 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
 {
     if (url.length == 0)
         return;
-
+    
     UIView *parentView = self.parentController.view;
     if ([url hasPrefix:@"tel:"])
     {
@@ -187,7 +187,6 @@ const CGPoint TGGenericPeerMediaGalleryDefaultFooterViewCaptionOrigin = { 13.0f,
             displayString = [@"#" stringByAppendingString:[url substringFromIndex:@"hashtag://".length]];
         else if ([url hasPrefix:@"mention://"])
             displayString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
-        
         
         NSURL *link = [NSURL URLWithString:url];
         if (link.scheme.length == 0)

@@ -5,15 +5,17 @@
 #import "TGPassportSignals.h"
 #import "TLSecureValueError.h"
 
+NSString *const TGPassportErrorTargetMain = @"main";
 NSString *const TGPassportErrorTargetData = @"data";
 NSString *const TGPassportErrorTargetFrontSide = @"frontSide";
 NSString *const TGPassportErrorTargetReverseSide = @"reverseSide";
 NSString *const TGPassportErrorTargetSelfie = @"selfie";
+NSString *const TGPassportErrorTargetTranslation = @"translation";
 NSString *const TGPassportErrorTargetFiles = @"files";
 
-@implementation NSArray (SPDeepCopy)
+@implementation NSArray (DeepCopy)
 
-- (NSArray *) deepCopy {
+- (NSArray *)deepCopy {
     NSUInteger count = [self count];
     id cArray[count];
     
@@ -28,7 +30,7 @@ NSString *const TGPassportErrorTargetFiles = @"files";
     NSArray *ret = [NSArray arrayWithObjects:cArray count:count];
     return ret;
 }
-- (NSMutableArray *) mutableDeepCopy {
+- (NSMutableArray *)mutableDeepCopy {
     NSUInteger count = [self count];
     id cArray[count];
     
@@ -51,9 +53,9 @@ NSString *const TGPassportErrorTargetFiles = @"files";
 
 @end
 
-@implementation NSDictionary (SPDeepCopy)
+@implementation NSDictionary (DeepCopy)
 
-- (NSDictionary *) deepCopy {
+- (NSDictionary *)deepCopy {
     NSUInteger count = [self count];
     id cObjects[count];
     id cKeys[count];
@@ -139,16 +141,23 @@ NSString *const TGPassportErrorTargetFiles = @"files";
             NSDictionary *scopeDict = _dict[@(scope)];
             if (scopeDict == nil)
             {
+                NSMutableDictionary *mainErrors = [[NSMutableDictionary alloc] init];
                 NSMutableDictionary *dataErrors = [[NSMutableDictionary alloc] init];
                 NSMutableDictionary *frontSideErrors = [[NSMutableDictionary alloc] init];
                 NSMutableDictionary *reverseSideErrors = [[NSMutableDictionary alloc] init];
                 NSMutableDictionary *selfieErrors = [[NSMutableDictionary alloc] init];
+                NSMutableDictionary *translationErrors = [[NSMutableDictionary alloc] init];
                 NSMutableDictionary *fileErrors = [[NSMutableDictionary alloc] init];
-                scopeDict = @{ TGPassportErrorTargetData: dataErrors, TGPassportErrorTargetFrontSide: frontSideErrors, TGPassportErrorTargetReverseSide: reverseSideErrors, TGPassportErrorTargetSelfie: selfieErrors, TGPassportErrorTargetFiles: fileErrors };
+                scopeDict = @{ TGPassportErrorTargetMain: mainErrors, TGPassportErrorTargetData: dataErrors, TGPassportErrorTargetFrontSide: frontSideErrors, TGPassportErrorTargetReverseSide: reverseSideErrors, TGPassportErrorTargetSelfie: selfieErrors, TGPassportErrorTargetTranslation: translationErrors, TGPassportErrorTargetFiles: fileErrors };
                 _dict[@(scope)] = scopeDict;
             }
             
-            if ([error isKindOfClass:[TLSecureValueError$secureValueErrorData class]])
+            if ([error isKindOfClass:[TLSecureValueError$secureValueError class]])
+            {
+                NSMutableDictionary *mainErrors = scopeDict[TGPassportErrorTargetMain];
+                mainErrors[@"common"] = [[TGPassportError alloc] initWithError:error];
+            }
+            else if ([error isKindOfClass:[TLSecureValueError$secureValueErrorData class]])
             {
                 NSMutableDictionary *dataErrors = scopeDict[TGPassportErrorTargetData];
                 NSString *field = ((TLSecureValueError$secureValueErrorData *)error).field;
@@ -175,6 +184,20 @@ NSString *const TGPassportErrorTargetFiles = @"files";
                 NSString *fileHash = [TGStringUtils stringByEncodingInBase64:((TLSecureValueError$secureValueErrorSelfie *)error).file_hash];
                 if ([fileHashes containsObject:fileHash])
                     selfieErrors[@"common"] = [[TGPassportError alloc] initWithError:error];
+            }
+            else if ([error isKindOfClass:[TLSecureValueError$secureValueErrorTranslationFile class]])
+            {
+                NSMutableDictionary *translationErrors = scopeDict[TGPassportErrorTargetTranslation];
+                NSString *fileHash = [TGStringUtils stringByEncodingInBase64:((TLSecureValueError$secureValueErrorTranslationFile *)error).file_hash];
+                if (fileHash == nil)
+                    translationErrors[@"common"] = [[TGPassportError alloc] initWithError:error];
+                else if ([fileHashes containsObject:fileHash])
+                    translationErrors[fileHash] = [[TGPassportError alloc] initWithError:error];
+            }
+            else if ([error isKindOfClass:[TLSecureValueError$secureValueErrorTranslationFiles class]])
+            {
+                NSMutableDictionary *translationErrors = scopeDict[TGPassportErrorTargetTranslation];
+                translationErrors[@"common"] = [[TGPassportError alloc] initWithError:error];
             }
             else if ([error isKindOfClass:[TLSecureValueError$secureValueErrorFile class]])
             {
@@ -204,24 +227,35 @@ NSString *const TGPassportErrorTargetFiles = @"files";
 
 - (NSArray *)errorsForType:(TGPassportType)type
 {
+    NSArray *mainErrors = [_dict[@(type)][TGPassportErrorTargetMain] allValues];
     NSArray *dataErrors = [_dict[@(type)][TGPassportErrorTargetData] allValues];
     NSArray *frontSideErrors = [_dict[@(type)][TGPassportErrorTargetFrontSide] allValues];
     NSArray *reverseSideErrors = [_dict[@(type)][TGPassportErrorTargetReverseSide] allValues];
     NSArray *selfieErrors = [_dict[@(type)][TGPassportErrorTargetSelfie] allValues];
+    NSArray *translationErrors = [_dict[@(type)][TGPassportErrorTargetTranslation] allValues];
     NSArray *fileErrors = [_dict[@(type)][TGPassportErrorTargetFiles] allValues];
     
     NSMutableArray *result = [[NSMutableArray alloc] init];
+    [result addObjectsFromArray:mainErrors];
     [result addObjectsFromArray:dataErrors];
     [result addObjectsFromArray:frontSideErrors];
     [result addObjectsFromArray:reverseSideErrors];
     [result addObjectsFromArray:selfieErrors];
+    [result addObjectsFromArray:translationErrors];
     [result addObjectsFromArray:fileErrors];
     return result;
 }
 
 - (NSArray *)fieldErrorsForType:(TGPassportType)type
 {
-    return [_dict[@(type)][TGPassportErrorTargetData] allValues];
+    NSArray *main = [_dict[@(type)][TGPassportErrorTargetMain] allValues];
+    NSArray *all = [_dict[@(type)][TGPassportErrorTargetData] allValues];
+    return [main arrayByAddingObjectsFromArray:all];
+}
+
+- (TGPassportError *)errorForTypeMain:(TGPassportType)type
+{
+    return _dict[@(type)][TGPassportErrorTargetMain][@"common"];
 }
 
 - (TGPassportError *)errorForType:(TGPassportType)type dataField:(NSString *)field
@@ -249,40 +283,72 @@ NSString *const TGPassportErrorTargetFiles = @"files";
     return _dict[@(type)][TGPassportErrorTargetSelfie][@"common"];
 }
 
-- (NSString *)errorForType:(TGPassportType)type fileHash:(NSString *)fileHash
+- (TGPassportError *)errorForTypeTranslation:(TGPassportType)type
+{
+    return _dict[@(type)][TGPassportErrorTargetTranslation][@"common"];
+}
+
+- (TGPassportError *)errorForType:(TGPassportType)type fileHash:(NSString *)fileHash
 {
     return _dict[@(type)][TGPassportErrorTargetFiles][fileHash];
 }
 
+- (TGPassportError *)errorForType:(TGPassportType)type translationFileHash:(NSString *)fileHash
+{
+    return _dict[@(type)][TGPassportErrorTargetTranslation][fileHash];
+}
+
+- (void)correctMainErrorForType:(TGPassportType)type
+{
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
+}
+
 - (void)correctErrorForType:(TGPassportType)type dataField:(NSString *)field
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetData] removeObjectForKey:field];
 }
 
 - (void)correctFrontSideErrorForType:(TGPassportType)type
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetFrontSide] removeObjectForKey:@"common"];
 }
 
 - (void)correctReverseSideErrorForType:(TGPassportType)type
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetReverseSide] removeObjectForKey:@"common"];
 }
 
 - (void)correctSelfieErrorForType:(TGPassportType)type
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetSelfie] removeObjectForKey:@"common"];
 }
 
+- (void)correctTranslationErrorForType:(TGPassportType)type
+{
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
+    [_dict[@(type)][TGPassportErrorTargetTranslation] removeObjectForKey:@"common"];
+}
 
 - (void)correctFilesErrorForType:(TGPassportType)type
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetFiles] removeObjectForKey:@"common"];
 }
 
 - (void)correctFileErrorForType:(TGPassportType)type fileHash:(NSString *)fileHash
 {
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
     [_dict[@(type)][TGPassportErrorTargetFiles] removeObjectForKey:fileHash];
+}
+
+- (void)correctTranslationErrorForType:(TGPassportType)type fileHash:(NSString *)fileHash
+{
+    [_dict[@(type)][TGPassportErrorTargetMain] removeObjectForKey:@"common"];
+    [_dict[@(type)][TGPassportErrorTargetTranslation] removeObjectForKey:fileHash];
 }
 
 @end

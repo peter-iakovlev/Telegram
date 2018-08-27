@@ -1420,8 +1420,10 @@ static NSString *addGameShareHash(NSString *url, NSString *addHash) {
                             if (it != pUsers->end())
                             {
                                 contactUser.photoUrlSmall = it->second.photoUrlSmall;
+                                contactUser.photoFileReferenceSmall = it->second.photoFileReferenceSmall;
                                 contactUser.photoUrlMedium = it->second.photoUrlMedium;
                                 contactUser.photoUrlBig = it->second.photoUrlBig;
+                                contactUser.photoFileReferenceBig = it->second.photoFileReferenceBig;
                             }
                             
                             [additionalUsers addObject:contactUser];
@@ -6459,6 +6461,12 @@ static id mediaIdForMessage(TGMessage *message)
                         contentHints |= TGRemoteImageContentHintSaveToGallery;
                     
                     NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
+                    
+                    if (imageAttachment.originInfo != nil)
+                        options[@"originInfo"] = imageAttachment.originInfo;
+                    else
+                        options[@"originInfo"] = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:message.cid mid:message.mid];
+                    
                     bool storeAsAsset = !message.outgoing && [self imageDownloadsShouldAutosavePhotos];
                     if (message.messageLifetime > 0 && message.messageLifetime <= 60) {
                         storeAsAsset = false;
@@ -6487,6 +6495,9 @@ static id mediaIdForMessage(TGMessage *message)
                         return;
                     }
                     
+                    if (documentAttachment.originInfo == nil)
+                        documentAttachment.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:conversationId mid:message.mid];
+                    
                     id mediaId = [[TGMediaId alloc] initWithType:3 itemId:documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId];
                     [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, downloadUri.length != 0 ? downloadUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:highPriority messageId:message.mid itemId:mediaId groupId:conversationId itemClass:TGDownloadItemClassDocument];
                 }
@@ -6499,6 +6510,9 @@ static id mediaIdForMessage(TGMessage *message)
                     if (documentAttachment.documentId != 0 || documentAttachment.documentUri.length != 0)
                     {
                         NSString *downloadUri = documentAttachment.documentUri;
+                        
+                        if (documentAttachment.originInfo == nil)
+                            documentAttachment.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:((TGWebPageMediaAttachment *)attachment).url];
                         
                         id mediaId = [[TGMediaId alloc] initWithType:3 itemId:documentAttachment.documentId != 0 ? documentAttachment.documentId : documentAttachment.localDocumentId];
                         [[TGDownloadManager instance] requestItem:[NSString stringWithFormat:@"/tg/media/document/(%d:%" PRId64 ":%@)", documentAttachment.datacenterId, documentAttachment.documentId, downloadUri.length != 0 ? downloadUri : @""] options:[[NSDictionary alloc] initWithObjectsAndKeys:documentAttachment, @"documentAttachment", nil] changePriority:highPriority messageId:message.mid itemId:mediaId groupId:conversationId itemClass:TGDownloadItemClassDocument];
@@ -6515,6 +6529,12 @@ static id mediaIdForMessage(TGMessage *message)
                             contentHints |= TGRemoteImageContentHintSaveToGallery;
                         
                         NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
+                        
+                        if (imageAttachment.originInfo != nil)
+                            options[@"originInfo"] = imageAttachment.originInfo;
+                        else
+                            options[@"originInfo"] = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:((TGWebPageMediaAttachment *)attachment).url];
+                        
                         [options setObject:[[NSDictionary alloc] initWithObjectsAndKeys:
                                             [[NSNumber alloc] initWithInt:message.mid], @"messageId",
                                             [[NSNumber alloc] initWithLongLong:message.cid], @"conversationId",
@@ -6542,6 +6562,12 @@ static id mediaIdForMessage(TGMessage *message)
                         //    contentHints |= TGRemoteImageContentHintSaveToGallery;
                         
                         NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithObjectsAndKeys:[NSNumber numberWithInt:0], @"cancelTimeout", [TGRemoteImageView sharedCache], @"cache", [NSNumber numberWithBool:false], @"useCache", [NSNumber numberWithBool:false], @"allowThumbnailCache", [[NSNumber alloc] initWithInt:contentHints], @"contentHints", nil];
+                        
+//                        if (imageAttachment.originInfo != nil)
+//                            options[@"originInfo"] = imageAttachment.originInfo;
+//                        else
+//                            options[@"originInfo"] = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:((TGWebPageMediaAttachment *)attachment).url];
+                        
                         [options setObject:[[NSDictionary alloc] initWithObjectsAndKeys:
                                             [[NSNumber alloc] initWithInt:message.mid], @"messageId",
                                             [[NSNumber alloc] initWithLongLong:message.cid], @"conversationId",

@@ -143,6 +143,23 @@ static NSDictionary *countryCodes()
     return nil;
 }
 
++ (NSString *)localizedCountryNameByCode:(int)code
+{
+    for (NSArray *array in countryCodes()[@"countries"])
+    {
+        NSNumber *countryCode = [array objectAtIndex:0];
+        if ([countryCode intValue] == code)
+        {
+            if (iosMajorVersion() >= 10)
+                return [self localizedCountryNameByCountryId:[array objectAtIndex:1]];
+            else
+                return [array objectAtIndex:2];
+        }
+    }
+    
+    return nil;
+}
+
 + (NSString *)countryIdByCode:(int)code
 {
     for (NSArray *array in countryCodes()[@"countries"])
@@ -170,6 +187,27 @@ static NSDictionary *countryCodes()
         }
     }
     return nil;
+}
+
++ (NSString *)localizedCountryNameByCountryId:(NSString *)countryId
+{
+    return [self localizedCountryNameByCountryId:countryId code:NULL];
+}
+
++ (NSString *)localizedCountryNameByCountryId:(NSString *)countryId code:(int *)code
+{
+    if (iosMajorVersion() < 10)
+        return [self countryNameByCountryId:countryId code:code];
+        
+    NSLocale *locale = [effectiveLocalization() locale];
+    NSString *name = [locale localizedStringForCountryCode:countryId];
+    if (name.length == 0 || code != NULL)
+    {
+        NSString *enName = [self countryNameByCountryId:countryId code:code];
+        if (name.length == 0)
+            name = enName;
+    }
+    return name;
 }
 
 - (id)init {
@@ -232,6 +270,32 @@ static NSDictionary *countryCodes()
     [super controllerInsetUpdated:previousInset];
 }
 
+- (NSArray *)localizedCountries:(NSArray *)countries
+{
+    NSLocale *locale = [effectiveLocalization() locale];
+    NSMutableArray *newCountries = [[NSMutableArray alloc] init];
+    for (NSArray *array in countries)
+    {
+        NSNumber *countryId = [array objectAtIndex:0];
+        NSString *code = [array objectAtIndex:1];
+        NSString *name = [array objectAtIndex:2];
+        
+        NSString *localizedName = nil;
+        if (iosMajorVersion() >= 10 && ![locale.languageCode isEqualToString:@"en"])
+            localizedName = [locale localizedStringForCountryCode:code];
+            
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"id"] = countryId;
+        dict[@"code"] = code;
+        dict[@"name"] = name;
+        if (localizedName != nil)
+            dict[@"localizedName"] = localizedName;
+        
+        [newCountries addObject:dict];
+    }
+    return newCountries;
+}
+
 - (void)loadView
 {
     [super loadView];
@@ -242,9 +306,11 @@ static NSDictionary *countryCodes()
         
         NSMutableDictionary *sectionsDict = [[NSMutableDictionary alloc] init];
         
-        for (NSArray *array in countryCodes()[@"countries"])
+        NSArray *localizedCountries = [self localizedCountries:countryCodes()[@"countries"]];
+
+        for (NSDictionary *dict in localizedCountries)
         {
-            NSString *countryName = [array objectAtIndex:2];
+            NSString *countryName = dict[@"localizedName"] ?: dict[@"name"];
             NSNumber *countryKey = [[NSNumber alloc] initWithInt:[countryName characterAtIndex:0]];
             TGCountrySection *section = [sectionsDict objectForKey:countryKey];
             if (section == nil)
@@ -256,7 +322,7 @@ static NSDictionary *countryCodes()
                 
                 [_sections addObject:section];
             }
-            [section.items addObject:array];
+            [section.items addObject:dict];
         }
         
         [_sections sortUsingComparator:^NSComparisonResult(TGCountrySection *section1, TGCountrySection *section2)
@@ -276,10 +342,10 @@ static NSDictionary *countryCodes()
             section.headerView = [self generateSectionHeader:section.title first:index == 0];
             
             [_sectionIndexTitles addObject:section.title];
-            [section.items sortUsingComparator:^NSComparisonResult(NSArray *item1, NSArray *item2)
+            [section.items sortUsingComparator:^NSComparisonResult(NSDictionary *item1, NSDictionary *item2)
             {
-                NSString *name1 = [item1 objectAtIndex:2];
-                NSString *name2 = [item2 objectAtIndex:2];
+                NSString *name1 = item1[@"localizedName"] ?: item1[@"name"];
+                NSString *name2 = item2[@"localizedName"] ?: item2[@"name"];
                 return [name1 compare:name2 options:NSDiacriticInsensitiveSearch | NSWidthInsensitiveSearch | NSForcedOrderingSearch];
             }];
         }
@@ -445,6 +511,14 @@ static NSDictionary *countryCodes()
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSDictionary *item = nil;
+    if (tableView == _tableView)
+        item = [((TGCountrySection *)[_sections objectAtIndex:indexPath.section]).items objectAtIndex:indexPath.row];
+    else
+        item = [_searchResults objectAtIndex:indexPath.row];
+    
+    bool requiresSubtitle = item[@"localizedName"] != nil;
+    
     static NSString *CountryCellIdentifier = @"CC";
     TGLoginCountryCell *cell = (TGLoginCountryCell *)[tableView dequeueReusableCellWithIdentifier:CountryCellIdentifier];
     if (cell == nil)
@@ -457,18 +531,20 @@ static NSDictionary *countryCodes()
     if (self.presentation != nil)
         [cell setPresentation:self.presentation];
     
-    NSArray *item = nil;
-    
-    if (tableView == _tableView)
-        item = [((TGCountrySection *)[_sections objectAtIndex:indexPath.section]).items objectAtIndex:indexPath.row];
-    else
-        item = [_searchResults objectAtIndex:indexPath.row];
-    
     if (item != nil)
-    {   
-        [cell setTitle:[item objectAtIndex:2]];
+    {
+        if (requiresSubtitle)
+        {
+            [cell setTitle:item[@"localizedName"]];
+            [cell setSubtitle:item[@"name"]];
+        }
+        else
+        {
+            [cell setTitle:item[@"name"]];
+        }
+        
         if (_displayCodes) {
-            [cell setCode:[[NSString alloc] initWithFormat:@"+%d", [((NSNumber *)[item objectAtIndex:0]) intValue]]];
+            [cell setCode:[[NSString alloc] initWithFormat:@"+%d", [((NSNumber *)item[@"id"]) intValue]]];
         }
     }
     
@@ -477,7 +553,7 @@ static NSDictionary *countryCodes()
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSArray *item = nil;
+    NSDictionary *item = nil;
     
     if (tableView == _tableView)
         item = [((TGCountrySection *)[_sections objectAtIndex:indexPath.section]).items objectAtIndex:indexPath.row];
@@ -486,13 +562,15 @@ static NSDictionary *countryCodes()
     
     if (item != nil)
     {
+        NSString *name = item[@"localizedName"] ?: item[@"name"];
+        
         if (_countrySelected)
-            _countrySelected([item[0] intValue], item[2], item[1]);
+            _countrySelected([item[@"id"] intValue], name, item[@"code"]);
         
         id<ASWatcher> watcher = _watcherHandle.delegate;
         if (watcher != nil && [watcher respondsToSelector:@selector(actionStageActionRequested:options:)])
         {
-            [watcher actionStageActionRequested:@"countryCodeSelected" options:[NSDictionary dictionaryWithObjectsAndKeys:[item objectAtIndex:0], @"code", [item objectAtIndex:2], @"name", nil]];
+            [watcher actionStageActionRequested:@"countryCodeSelected" options:[NSDictionary dictionaryWithObjectsAndKeys:item[@"id"], @"code", name, @"name", nil]];
         }
         
         if (watcher == nil)
@@ -536,10 +614,11 @@ static NSDictionary *countryCodes()
     
     for (TGCountrySection *section in _sections)
     {
-        for (NSArray *item in section.items)
+        for (NSDictionary *item in section.items)
         {
-            NSString *countryName = [[item objectAtIndex:2] lowercaseString];
-            if ([countryName hasPrefix:string] || [countryName hasPrefix:mutableQuery])
+            NSString *countryName = [item[@"name"] lowercaseString];
+            NSString *localizedCountryName = [item[@"localizedName"] lowercaseString];
+            if ([countryName hasPrefix:string] || [countryName hasPrefix:mutableQuery] || [localizedCountryName hasPrefix:string])
             {
                 [_searchResults addObject:item];
             }

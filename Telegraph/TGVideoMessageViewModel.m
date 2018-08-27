@@ -67,7 +67,14 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
         if (video.videoId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (video.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [video.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
         
@@ -138,7 +145,15 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"video-thumbnail://?"];
         if (video.videoId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", video.videoId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (video.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [video.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", video.localVideoId];
         

@@ -11,4 +11,6 @@
 + (void)removeRecentStickerByDocumentId:(int64_t)documentId;
 + (SSignal *)recentStickers;
 
++ (SSignal *)remoteRecentStickers;
+
 @end

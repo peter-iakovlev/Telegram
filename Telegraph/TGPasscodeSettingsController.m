@@ -163,6 +163,8 @@
 
 - (void)viewDidLoad
 {
+    [super viewDidLoad];
+    
     bool hasPassword = [self hasPasscode];
     
     _infoItem.hidden = !hasPassword && self.view.frame.size.width < self.view.frame.size.height;

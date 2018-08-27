@@ -62,6 +62,8 @@
     [view setPhoneNumber:_phoneNumber];
     [view setUsername:_username];
     [view setShowCameraIcon:_showCameraIcon];
+    
+    
 }
 
 - (void)setHasDisclosureIndicator:(bool)flag
@@ -97,6 +99,28 @@
 
 - (void)localizationUpdated
 {
+}
+
+- (bool)itemWantsMenu
+{
+    return true;
+}
+
+- (bool)itemCanPerformAction:(SEL)action
+{
+    return action == @selector(copyPhoneNumber:) || (_username.length > 0 && action == @selector(copyUsername:));
+}
+
+- (void)itemPerformAction:(SEL)action
+{
+    if (action == @selector(copyPhoneNumber:))
+    {
+        
+    }
+    else if (action == @selector(copyUsername:))
+    {
+        
+    }
 }
 
 @end

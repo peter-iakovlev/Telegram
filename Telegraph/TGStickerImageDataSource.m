@@ -159,6 +159,7 @@ static ASQueue *taskManagementQueue()
                 documentAttachment.attributes = attributes;
                 documentAttachment.size = [args[@"size"] intValue];
                 documentAttachment.documentUri = args[@"documentUri"];
+                documentAttachment.originInfo = [TGMediaOriginInfo mediaOriginInfoWithStringRepresentation:args[@"origin_info"]];
                 
                 [previewTask executeWithTargetFilePath:filePath document:documentAttachment progress:^(float value)
                 {

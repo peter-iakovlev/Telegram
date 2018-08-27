@@ -25,6 +25,7 @@ extern NSString *authorNameYou;
 @property (nonatomic) bool doNotHideSearchAutomatically;
 
 @property (nonatomic) bool isDisplayingSearch;
+@property (nonatomic, strong) NSString *customSearchPlaceholder;
 
 @property (nonatomic, strong) TGPresentation *presentation;
 

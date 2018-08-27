@@ -146,10 +146,9 @@
         if ([attribute isKindOfClass:[TGDocumentAttributeAudio class]])
         {
             TGDocumentAttributeAudio *audioAttribute = (TGDocumentAttributeAudio *)attribute;
-            NSString *title = documentMediaAttachment.fileName;
             if (audioAttribute.title.length > 0)
             {
-                title = audioAttribute.title;
+                NSString *title = audioAttribute.title;
 
                 if (audioAttribute.performer.length > 0)
                     title = [NSString stringWithFormat:@"%@ — %@", audioAttribute.performer, title];

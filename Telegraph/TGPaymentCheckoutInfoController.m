@@ -134,7 +134,7 @@
             [items addObject:_shippindAddressState];
             
             _shippingAddressCountryId = currentInfo.shippingAddress.countryIso2;
-            NSString *countryName = _shippingAddressCountryId.length != 0 ? [TGLoginCountriesController countryNameByCountryId:_shippingAddressCountryId code:NULL] : nil;
+            NSString *countryName = _shippingAddressCountryId.length != 0 ? [TGLoginCountriesController localizedCountryNameByCountryId:_shippingAddressCountryId code:NULL] : nil;
             _shippingAddressCountry = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"CheckoutInfo.ShippingInfoCountry") variant:countryName == nil ? @"" : countryName action:@selector(countryPressed)];
             _shippingAddressCountry.minLeftPadding = minimalInset + 20.0f;
             _shippingAddressCountry.variantColor = TGPresentation.current.pallete.collectionMenuTextColor;
@@ -393,7 +393,7 @@
         __strong TGPaymentCheckoutInfoController *strongSelf = weakSelf;
         if (strongSelf != nil) {
             strongSelf->_shippingAddressCountryId = countryId;
-            NSString *countryName = countryId.length != 0 ? [TGLoginCountriesController countryNameByCountryId:countryId code:NULL] : nil;
+            NSString *countryName = countryId.length != 0 ? [TGLoginCountriesController localizedCountryNameByCountryId:countryId code:NULL] : nil;
             strongSelf->_shippingAddressCountry.variant = countryName;
             [strongSelf checkInputValues];
         }

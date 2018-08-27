@@ -1524,7 +1524,7 @@ static void adjustCellForUser(TGContactCell *contactCell, TGUser *user, int curr
     contactCell.itemId = user.uid;
     contactCell.user = user;
     
-    contactCell.avatarUrl = user.photoUrlSmall;
+    contactCell.avatarUrl = user.photoFullUrlSmall;
     if (currentSortOrder & TGContactListSortOrderDisplayFirstFirst)
     {
         if (user.firstName.length == 0)
@@ -3939,7 +3939,7 @@ static inline NSString *subtitleStringForUser(TGUser *user, bool &subtitleActive
     } else if ([label isEqualToString:@"X-iPhone"]) {
         return @"iPhone";
     } else if ([label hasPrefix:@"_$!<"] && [label hasSuffix:@">!$_"]) {
-        return (__bridge NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(label)));
+        return (__bridge_transfer NSString *)(ABAddressBookCopyLocalizedLabel((__bridge CFStringRef)(label)));
     } else if (label.length == 0) {
         return TGLocalized(@"ContactInfo.PhoneLabelMain");
     } else {

@@ -100,7 +100,8 @@
             }   
         }
         
-        [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:selfUser]];
+        if (selfUser != nil)
+            [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:selfUser]];
     }
     else if ([photo isKindOfClass:[TLUserProfilePhoto$userProfilePhotoEmpty class]])
     {
@@ -113,7 +114,8 @@
             selfUser.photoUrlBig = nil;
         }
         
-        [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:selfUser]];
+        if (selfUser != nil)
+            [TGUserDataRequestBuilder executeUserObjectsUpdate:[NSArray arrayWithObject:selfUser]];
     }
     
     [ActionStageInstance() actionCompleted:self.path result:nil];

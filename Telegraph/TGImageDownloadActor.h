@@ -22,6 +22,7 @@
 + (void)addUrlRewrite:(NSString *)currentUrl newUrl:(NSString *)newUrl;
 
 + (NSDictionary *)serverMediaDataForAssetUrl:(NSString *)assetUrl;
-+ (void)addServerMediaSataForAssetUrl:(NSString *)assetUrl attachment:(TGMediaAttachment *)attachment;
++ (void)addServerMediaDataForAssetUrl:(NSString *)assetUrl attachment:(TGMediaAttachment *)attachment;
++ (void)clearServerMediaSataForAssetUrl:(NSString *)assetUrl;
 
 @end

@@ -90,7 +90,7 @@
     _userId = bot.uid;
     
     CGFloat diameter = 70.0f;
-    NSString *avatarUrl = bot.photoUrlSmall;
+    NSString *avatarUrl = bot.photoFullUrlSmall;
     UIImage *placeholder = [_presentation.images avatarPlaceholderWithDiameter:diameter color:_presentation.pallete.collectionMenuBackgroundColor borderColor:_presentation.pallete.collectionMenuSeparatorColor];
     if (avatarUrl.length != 0)
     {

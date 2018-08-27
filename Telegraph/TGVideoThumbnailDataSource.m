@@ -122,7 +122,23 @@ static ASQueue *taskManagementQueue()
                 
                 NSString *temporaryThumbnailImagePath = [videoDirectory stringByAppendingPathComponent:@"video-thumb.jpg"];
                 
-                [previewTask executeWithTargetFilePath:temporaryThumbnailImagePath uri:args[@"legacy-thumbnail-cache-url"] completion:^(bool success)
+                NSMutableDictionary *options = [[NSMutableDictionary alloc] init];
+                TGMediaOriginInfo *originInfo = nil;
+                if (args[@"origin_info"] != nil)
+                {
+                    originInfo = [TGMediaOriginInfo mediaOriginInfoWithStringRepresentation:args[@"origin_info"]];
+                }
+                else if (args[@"cid"] != nil)
+                {
+                    int64_t cid = [args[@"cid"] longLongValue];
+                    int32_t mid = [args[@"mid"] intValue];
+                    originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:cid mid:mid];
+                }
+                
+                if (originInfo != nil)
+                    options[@"originInfo"] = originInfo;
+                
+                [previewTask executeWithTargetFilePath:temporaryThumbnailImagePath uri:args[@"legacy-thumbnail-cache-url"] options:options completion:^(bool success)
                 {
                     if (success)
                     {

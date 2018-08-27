@@ -58,6 +58,7 @@
     
     TGPIPSourceLocation *_targetPIPLocation;
     NSString *_initialAnchor;
+    bool _initiallyHidden;
     
     bool _autoNightEnabled;
     NSCalendar *_calendar;
@@ -78,7 +79,17 @@
         _shareDisposable = [[SMetaDisposable alloc] init];
         _openWebpageDisposable = [[SMetaDisposable alloc] init];
         _joinChannelDisposable = [[SMetaDisposable alloc] init];
-        _initialAnchor = anchor;
+        
+        TGProgressWindow *progressWindow = nil;
+        if (anchor.length > 0) {
+            if (!webPage.instantPage.isPartial || [anchor isEqualToString:@"general"]) {
+                _initialAnchor = anchor;
+            } else {
+                _initiallyHidden = true;
+                progressWindow = [[TGProgressWindow alloc] init];
+                [progressWindow showWithDelay:0.2];
+            }
+        }
         
         if (TGTelegraphInstance.clientUserId != 0)
         {
@@ -89,6 +100,11 @@
                     strongSelf->_webPage = updatedWebPage;
                     if (strongSelf->_pageView != nil) {
                         [strongSelf->_pageView setWebPage:updatedWebPage];
+                        if (progressWindow != nil) {
+                            [strongSelf->_pageView setInitialAnchor:anchor];
+                            [progressWindow dismiss:true];
+                            [strongSelf->_pageView setContentHidden:false animated:true];
+                        }
                     }
                 }
             }];
@@ -129,6 +145,9 @@
     _pageView.webPage = _webPage;
     _pageView.statusBarHeight = [self controllerStatusBarHeight];
     _pageView.initialAnchor = _initialAnchor;
+    if (_initiallyHidden) {
+        [_pageView setContentHidden:true animated:false];
+    }
     [self.view addSubview:_pageView];
     
     __weak TGInstantPageController *weakSelf = self;
@@ -188,7 +207,7 @@
         if (strongSelf != nil) {
             if (url.length == 0)
                 return;
-
+            
             NSURL *link = [NSURL URLWithString:url];
             bool useOpenIn = false;
             bool isWeblink = false;

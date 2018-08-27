@@ -21,7 +21,7 @@
 
 - (CGFloat)preferredHeightForMaximumHeight:(CGFloat)__unused maximumHeight
 {
-    return [TGViewController hasLargeScreen] ? 57.0f : 45.0f;
+    return 57.0f;
 }
 
 - (bool)followsKeyboard

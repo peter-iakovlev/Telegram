@@ -198,6 +198,64 @@
     return [self initWithSelectTarget:true];
 }
 
+- (id)initWithSelectPrivate:(NSSet *)excludedIds
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        _groupMode = true;
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.forwardMode = false;
+        _dialogListCompanion.showPrivateOnly = true;
+        _dialogListCompanion.excludedIds = excludedIds;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customSearchPlaceholder = @"Common.Search";
+        _dialogListController.presentation = TGPresentation.current;
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        
+        _contactsController = [[TGForwardContactsController alloc] initWithContactsMode:TGContactsModeRegistered | TGContactsModeClearSelectionImmediately];
+        _contactsController.presentation = TGPresentation.current;
+        _contactsController.watcher = _actionHandle;
+        _contactsController.customParentViewController = self;
+        
+        _controllerTitle = TGLocalized(@"Notifications.AddExceptionTitle");
+        _targetMode = true;
+    }
+    return self;
+}
+
+- (id)initWithSelectGroup:(NSSet *)excludedIds
+{
+    self = [super init];
+    if (self)
+    {
+        _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
+        _groupMode = true;
+        
+        _dialogListCompanion = [[TGTelegraphDialogListCompanion alloc] init];
+        _dialogListCompanion.forwardMode = false;
+        _dialogListCompanion.showGroupsAndChannelsOnly = true;
+        _dialogListCompanion.excludedIds = excludedIds;
+        _dialogListCompanion.conversatioSelectedWatcher = _actionHandle;
+        _dialogListController = [[TGDialogListController alloc] initWithCompanion:_dialogListCompanion];
+        _dialogListController.customSearchPlaceholder = @"Common.Search";
+        _dialogListController.presentation = TGPresentation.current;
+        _dialogListController.customParentViewController = self;
+        _dialogListController.doNotHideSearchAutomatically = true;
+        [ActionStageInstance() requestActor:[NSString stringWithFormat:@"/tg/dialoglist/(%d)", INT_MAX] options:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:25], @"limit", [NSNumber numberWithInt:INT_MAX], @"date", nil] watcher:_dialogListCompanion];
+        
+        _controllerTitle = TGLocalized(@"Notifications.AddExceptionTitle");
+        _targetMode = true;
+    }
+    return self;
+}
+
 - (id)initWithSelectGroup
 {
     self = [super init];
@@ -586,7 +644,7 @@
         if (conversation != nil)
         {
             _selectedTarget = conversation;
-            
+        
             if (_targetMode)
             {
                 if (conversation.isChat || conversation.isChannel || conversation.isChannelGroup)
@@ -605,7 +663,7 @@
                     _selectedTarget = conversation;
                     
                     if (!_skipConfirmation)
-                    {   
+                    {
                         NSString *alertText = nil;
                         if (_privacyMode)
                         {

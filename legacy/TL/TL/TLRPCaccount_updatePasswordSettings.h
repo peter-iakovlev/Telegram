@@ -4,10 +4,11 @@
 #import "TLMetaRpc.h"
 
 @class TLaccount_PasswordInputSettings;
+@class TLInputCheckPasswordSRP;
 
 @interface TLRPCaccount_updatePasswordSettings : TLMetaRpc
 
-@property (nonatomic, retain) NSData *current_password_hash;
+@property (nonatomic, retain) TLInputCheckPasswordSRP *password;
 @property (nonatomic, retain) TLaccount_PasswordInputSettings *n_new_settings;
 
 - (Class)responseClass;

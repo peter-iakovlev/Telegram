@@ -3053,6 +3053,8 @@ Unused sets are archived when you add more.";
 "Passport.Identity.DocumentDetails" = "DOCUMENT DETAILS";
 "Passport.Identity.Name" = "First Name";
 "Passport.Identity.NamePlaceholder" = "First Name";
+"Passport.Identity.MiddleName" = "Middle Name";
+"Passport.Identity.MiddleNamePlaceholder" = "Middle Name";
 "Passport.Identity.Surname" = "Last Name";
 "Passport.Identity.SurnamePlaceholder" = "Last Name";
 "Passport.Identity.DateOfBirth" = "Date of Birth";
@@ -3086,6 +3088,8 @@ Unused sets are archived when you add more.";
 "Passport.Identity.ReverseSideHelp" = "Upload a reverse side photo of the document";
 "Passport.Identity.Selfie" = "Selfie";
 "Passport.Identity.SelfieHelp" = "Upload a selfie holding this document";
+"Passport.Identity.Translation" = "Translation";
+"Passport.Identity.TranslationHelp" = "Upload a translation of this document";
 
 "Passport.Address.TypeResidentialAddress" = "Residential Address";
 "Passport.Address.TypePassportRegistration" = "Passport Registration";
@@ -3121,7 +3125,7 @@ Unused sets are archived when you add more.";
 "Passport.Address.Country" = "Country";
 "Passport.Address.CountryPlaceholder" = "Country";
 
-"Passport.Address.ScansHelp" = "The document must contain your first and last name, your residential address, a stamp / barcode / QR code / logo, and issue date, no more than 3 months ago";
+"Passport.Address.ScansHelp" = "The document must contain your first and last name, your residential address, a stamp / barcode / QR code / logo, and issue date, no more than 3 months ago.";
 
 "Passport.Phone.Title" = "Phone Number";
 "Passport.Phone.UseTelegramNumber" = "Use %@";
@@ -3218,3 +3222,164 @@ Unused sets are archived when you add more.";
 "PrivateDataSettings.Title" = "Data Settings";
 "Privacy.ChatsTitle" = "CHATS";
 "Privacy.DeleteDrafts" = "Delete All Cloud Drafts";
+
+"UserInfo.NotificationsDefaultEnabled" = "Default (Enabled)";
+"UserInfo.NotificationsDefaultDisabled" = "Default (Disabled)";
+
+"Notifications.MessageNotificationsExceptions" = "Exceptions";
+"Notifications.GroupNotificationsExceptions" = "Exceptions";
+
+"Notifications.ExceptionsNone" = "None";
+"Notifications.Exceptions_1" = "%@ chat";
+"Notifications.Exceptions_2" = "%@ chats";
+"Notifications.Exceptions_3_10" = "%@ chats";
+"Notifications.Exceptions_any" = "%@ chats";
+"Notifications.Exceptions_many" = "%@ chats";
+"Notifications.Exceptions_0" = "%@ chats";
+
+"Notifications.ExceptionMuteExpires.Minutes_1" = "In 1 minute";
+"Notifications.ExceptionMuteExpires.Minutes_2" = "In 2 minutes";
+"Notifications.ExceptionMuteExpires.Minutes_3_10" = "In %@ minutes";
+"Notifications.ExceptionMuteExpires.Minutes_any" = "In %@ minutes";
+"Notifications.ExceptionMuteExpires.Minutes_many" = "In %@ minutes";
+"Notifications.ExceptionMuteExpires.Minutes_0" = "In %@ minutes";
+
+"Notifications.ExceptionMuteExpires.Hours_1" = "In 1 hour";
+"Notifications.ExceptionMuteExpires.Hours_2" = "In 2 hours";
+"Notifications.ExceptionMuteExpires.Hours_3_10" = "In %@ hours";
+"Notifications.ExceptionMuteExpires.Hours_any" = "In %@ hours";
+"Notifications.ExceptionMuteExpires.Hours_many" = "In %@ hours";
+"Notifications.ExceptionMuteExpires.Hours_0" = "In %@ hours";
+
+"Notifications.ExceptionMuteExpires.Days_1" = "In 1 day";
+"Notifications.ExceptionMuteExpires.Days_2" = "In 2 days";
+"Notifications.ExceptionMuteExpires.Days_3_10" = "In %@ days";
+"Notifications.ExceptionMuteExpires.Days_any" = "In %@ days";
+"Notifications.ExceptionMuteExpires.Days_many" = "In %@ days";
+"Notifications.ExceptionMuteExpires.Days_0" = "In %@ days";
+
+"Notifications.ExceptionsTitle" = "Exceptions";
+"Notifications.ExceptionsChangeSound" = "Change Sound (%@)";
+"Notifications.ExceptionsDefaultSound" = "Default";
+"Notifications.ExceptionsMuted" = "Muted";
+"Notifications.ExceptionsUnmuted" = "Unmuted";
+"Notifications.AddExceptionTitle" = "Add Exception";
+
+"Notifications.ExceptionsMessagePlaceholder" = "This section will list all private chats with non-default notification settings.";
+"Notifications.ExceptionsGroupPlaceholder" = "This section will list all groups and channels with non-default notification settings.";
+
+"Passport.Identity.LatinNameHelp" = "Enter your name using the Latin alphabet";
+"Passport.Identity.NativeNameTitle" = "YOUR NAME IN %@";
+"Passport.Identity.NativeNameGenericTitle" = "NAME IN DOCUMENT LANGUAGE";
+"Passport.Identity.NativeNameHelp" = "Your name in the language of the country that issued the document.";
+"Passport.Identity.NativeNameGenericHelp" = "Your name in the language of the country (%@) that issued the document.";
+
+"Passport.Identity.Translations" = "TRANSLATION";
+"Passport.Identity.TranslationsHelp" = "Upload scans of verified translation of the document.";
+"Passport.FieldIdentityTranslationHelp" = "Upload a translation of your document";
+"Passport.FieldAddressTranslationHelp" = "Upload a translation of your document";
+
+"Passport.FieldOneOf.Or" = "%1$@ or %2$@";
+"Passport.Identity.UploadOneOfScan" = "Upload a scan of your %@";
+"Passport.Address.UploadOneOfScan" = "Upload a scan of your %@";
+
+"Passport.Address.TypeUtilityBillUploadScan" = "Upload a scan of your utiliity bill";
+"Passport.Address.TypeBankStatementUploadScan" = "Upload a scan of your bank statement";
+"Passport.Address.TypeRentalAgreementUploadScan" = "Upload a scan of your tenancy agreement";
+"Passport.Address.TypePassportRegistrationUploadScan" = "Upload a scan of your passport registration";
+"Passport.Address.TypeTemporaryRegistrationUploadScan" = "Upload a scan of your temporary registration";
+
+"Passport.Identity.OneOfTypePassport" = "passport";
+"Passport.Identity.OneOfTypeInternalPassport" = "internal passport";
+"Passport.Identity.OneOfTypeIdentityCard" = "identity card";
+"Passport.Identity.OneOfTypeDriversLicense" = "driver's license";
+
+"Passport.Address.OneOfTypePassportRegistration" = "passport registration";
+"Passport.Address.OneOfTypeUtilityBill" = "utility bill";
+"Passport.Address.OneOfTypeBankStatement" = "bank statement";
+"Passport.Address.OneOfTypeRentalAgreement" = "tenancy agreement";
+"Passport.Address.OneOfTypeTemporaryRegistration" = "temporary registration";
+
+"Passport.FieldOneOf.Delimeter" = ", ";
+"Passport.FieldOneOf.FinalDelimeter" = " or ";
+
+"Passport.Scans_1" = "%@ scan";
+"Passport.Scans_2" = "%@ scans";
+"Passport.Scans_3_10" = "%@ scans";
+"Passport.Scans_any" = "%@ scans";
+"Passport.Scans_many" = "%@ scans";
+"Passport.Scans_0" = "%@ scans";
+
+"NotificationsSound.None" = "None";
+"NotificationsSound.Note" = "Note";
+"NotificationsSound.Aurora" = "Aurora";
+"NotificationsSound.Bamboo" = "Bamboo";
+"NotificationsSound.Chord" = "Chord";
+"NotificationsSound.Circles" = "Circles";
+"NotificationsSound.Complete" = "Complete";
+"NotificationsSound.Hello" = "Hello";
+"NotificationsSound.Input" = "Input";
+"NotificationsSound.Keys" = "Keys";
+"NotificationsSound.Popcorn" = "Popcorn";
+"NotificationsSound.Pulse" = "Pulse";
+"NotificationsSound.Synth" = "Synth";
+
+"NotificationsSound.Tritone" = "Tri-tone";
+"NotificationsSound.Tremolo" = "Tremolo";
+"NotificationsSound.Alert" = "Alert";
+"NotificationsSound.Bell" = "Bell";
+"NotificationsSound.Calypso" = "Calypso";
+"NotificationsSound.Chime" = "Chime";
+"NotificationsSound.Glass" = "Glass";
+"NotificationsSound.Telegraph" = "Telegraph";
+
+"Settings.CopyPhoneNumber" = "Copy Phone Number";
+"Settings.CopyUsername" = "Copy Username";
+
+"Passport.Language.ar" = "Arabic";
+"Passport.Language.az" = "Azerbaijani";
+"Passport.Language.bg" = "Bulgarian";
+"Passport.Language.bn" = "Bangla";
+"Passport.Language.cs" = "Czech";
+"Passport.Language.da" = "Danish";
+"Passport.Language.de" = "German";
+"Passport.Language.dv" = "Divehi";
+"Passport.Language.dz" = "Dzongkha";
+"Passport.Language.el" = "Greek";
+"Passport.Language.en" = "English";
+"Passport.Language.es" = "Spanish";
+"Passport.Language.et" = "Estonian";
+"Passport.Language.fa" = "Persian";
+"Passport.Language.fr" = "French";
+"Passport.Language.he" = "Hebrew";
+"Passport.Language.hr" = "Croatian";
+"Passport.Language.hu" = "Hungarian";
+"Passport.Language.hy" = "Armenian";
+"Passport.Language.id" = "Indonesian";
+"Passport.Language.is" = "Icelandic";
+"Passport.Language.it" = "Italian";
+"Passport.Language.ja" = "Japanese";
+"Passport.Language.ka" = "Georgian";
+"Passport.Language.km" = "Khmer";
+"Passport.Language.ko" = "Korean";
+"Passport.Language.lo" = "Lao";
+"Passport.Language.lt" = "Lithuanian";
+"Passport.Language.lv" = "Latvian";
+"Passport.Language.mk" = "Macedonian";
+"Passport.Language.mn" = "Mongolian";
+"Passport.Language.ms" = "Malay";
+"Passport.Language.my" = "Burmese";
+"Passport.Language.ne" = "Nepali";
+"Passport.Language.nl" = "Dutch";
+"Passport.Language.pl" = "Polish";
+"Passport.Language.pt" = "Portuguese";
+"Passport.Language.ro" = "Romanian";
+"Passport.Language.ru" = "Russian";
+"Passport.Language.sk" = "Slovak";
+"Passport.Language.sl" = "Slovenian";
+"Passport.Language.th" = "Thai";
+"Passport.Language.tk" = "Turkmen";
+"Passport.Language.tr" = "Turkish";
+"Passport.Language.uk" = "Ukrainian";
+"Passport.Language.uz" = "Uzbek";
+"Passport.Language.vi" = "Vietnamese";

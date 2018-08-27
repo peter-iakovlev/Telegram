@@ -70,7 +70,7 @@
                 videoItem.caption = webPage.photo.caption;
                 item = videoItem;
             } else {
-                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId accessHash:webPage.photo.accessHash orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo embeddedStickerDocuments:webPage.photo.embeddedStickerDocuments hasStickers:webPage.photo.hasStickers];
+                TGGenericPeerMediaGalleryImageItem *imageItem = [[TGGenericPeerMediaGalleryImageItem alloc] initWithImageId:webPage.photo.imageId accessHash:webPage.photo.accessHash orLocalId:0 peerId:peerId messageId:messageId legacyImageInfo:webPage.photo.imageInfo embeddedStickerDocuments:webPage.photo.embeddedStickerDocuments hasStickers:webPage.photo.hasStickers originInfo:webPage.photo.originInfo];
                 imageItem.date = webPage.photo.date;
                 imageItem.messageId = messageId;
                 if ([webPage.pageType isEqualToString:@"invoice"]) {

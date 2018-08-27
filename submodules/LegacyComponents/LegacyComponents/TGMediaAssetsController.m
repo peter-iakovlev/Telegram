@@ -33,7 +33,6 @@
     TGMediaAssetsControllerIntent _intent;
     
     TGMediaPickerToolbarView *_toolbarView;
-    TGMediaSelectionContext *_selectionContext;
     
     SMetaDisposable *_groupingChangedDisposable;
     SMetaDisposable *_selectionChangedDisposable;
@@ -360,7 +359,7 @@
         _toolbarView.pallete = _pallete;
     _toolbarView.safeAreaInset = [TGViewController safeAreaInsetForOrientation:self.interfaceOrientation];
     _toolbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
-    if ((_intent != TGMediaAssetsControllerSendFileIntent && _intent != TGMediaAssetsControllerSendMediaIntent) || _selectionContext == nil)
+    if ((_intent != TGMediaAssetsControllerSendFileIntent && _intent != TGMediaAssetsControllerSendMediaIntent && _intent != TGMediaAssetsControllerPassportMultipleIntent) || _selectionContext == nil)
         [_toolbarView setRightButtonHidden:true];
     if (_selectionContext.allowGrouping)
     {
@@ -857,14 +856,25 @@
                     const char *gif89Header = "GIF89";
                     if (data.length >= 5 && (!memcmp(data.bytes, gif87Header, 5) || !memcmp(data.bytes, gif89Header, 5)))
                     {
-                        return [[TGGifConverter convertGifToMp4:data] map:^id(NSString *filePath)
+                        return [[TGGifConverter convertGifToMp4:data] map:^id(NSDictionary *result)
                         {
+                            NSString *filePath = result[@"path"];
+                            
                             NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
                             dict[@"type"] = @"file";
                             dict[@"tempFileUrl"] = [NSURL fileURLWithPath:filePath];
                             dict[@"fileName"] = @"animation.mp4";
                             dict[@"mimeType"] = @"video/mp4";
                             dict[@"isAnimation"] = @true;
+                            if (result[@"dimensions"] != nil) {
+                                dict[@"dimensions"] = result[@"dimensions"];
+                            }
+                            if (result[@"duration"] != nil) {
+                                dict[@"duration"] = result[@"duration"];
+                            }
+                            if (result[@"previewImage"] != nil) {
+                                dict[@"previewImage"] = result[@"previewImage"];
+                            }
                             
                             id generatedItem = descriptionGenerator(dict, caption, entities, nil);
                             return generatedItem;

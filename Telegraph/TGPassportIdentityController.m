@@ -20,6 +20,7 @@
 #import "TGPassportSignals.h"
 #import "TGPassportErrors.h"
 #import "TGPassportICloud.h"
+#import "TGPassportLanguageMap.h"
 
 #import "PhotoResources.h"
 #import "ImageResourceDatas.h"
@@ -44,10 +45,17 @@
     NSString *_residenceCountryCode;
     NSString *_expiryDate;
     
+    bool _editing;
     bool _documentOnly;
     bool _selfieRequired;
+    bool _translationRequired;
+    bool _nativeNames;
+    
+    bool _forceNativeNamesVisible;
     
     bool _scrollToSelfie;
+    bool _scrollToTranslation;
+    bool _scrollToNativeNames;
     
     SMetaDisposable *_ocrDisposable;
     
@@ -68,16 +76,32 @@
     
     SMetaDisposable *_saveDisposable;
     
+    TGPassportLanguageMap *_languageMap;
+    SMetaDisposable *_langDisposable;
+    
     TGCollectionMenuSection *_sidesSection;
     TGPassportFileCollectionItem *_frontItem;
     TGPassportFileCollectionItem *_reverseItem;
     TGPassportFileCollectionItem *_selfieItem;
-    TGCommentCollectionItem *_selfieErrorsItem;
+    TGPassportFileCollectionItem *_translationItem;
+    
+    NSString *_firstNameNative;
+    NSString *_middleNameNative;
+    NSString *_lastNameNative;
+    
+    TGUsernameCollectionItem *_firstNameItem;
+    TGUsernameCollectionItem *_middleNameItem;
+    TGUsernameCollectionItem *_lastNameItem;
+    
+    TGCollectionMenuSection *_nativeNameSection;
+    TGCommentCollectionItem *_nativeTitleItem;
+    TGUsernameCollectionItem *_firstNameNativeItem;
+    TGUsernameCollectionItem *_middleNameNativeItem;
+    TGUsernameCollectionItem *_lastNameNativeItem;
+    TGCommentCollectionItem *_nativeCommentItem;
     
     TGCollectionMenuSection *_mainSection;
     TGCommentCollectionItem *_errorsItem;
-    TGUsernameCollectionItem *_nameItem;
-    TGUsernameCollectionItem *_surnameItem;
     TGVariantCollectionItem *_genderItem;
     TGVariantCollectionItem *_birthDateItem;
     TGVariantCollectionItem *_countryItem;
@@ -87,23 +111,38 @@
     
     TGButtonCollectionItem *_scanItem;
 }
+
+@property (nonatomic, copy) bool (^checkLatinOnly)(NSString *);
+
 @end
 
 @implementation TGPassportIdentityController
 
-- (instancetype)initWithSettings:(SVariable *)settings files:(NSArray *)files documentOnly:(bool)documentOnly inhibitFiles:(bool)inhibitFiles selfie:(bool)selfie errors:(TGPassportErrors *)errors existing:(bool)existing
+- (instancetype)initWithSettings:(SVariable *)settings files:(NSDictionary *)files documentOnly:(bool)documentOnly inhibitFiles:(bool)inhibitFiles selfie:(bool)selfie translation:(bool)translation nativeNames:(bool)nativeNames editing:(bool)editing errors:(TGPassportErrors *)errors existing:(bool)existing
 {
-    self = [super initWithSettings:settings files:files inhibitFiles:true errors:errors existing:existing];
+    bool needsTranslation = (translation || editing) && !inhibitFiles;
+    NSArray *fileTypes = needsTranslation ? @[@(TGPassportDocumentFileTypeTranslation)] : @[];
+    self = [super initWithSettings:settings files:files fileTypes:fileTypes errors:errors existing:existing];
     if (self != nil)
     {
+        _editing = editing;
         _documentOnly = documentOnly;
         _selfieRequired = selfie;
+        _translationRequired = translation;
+        _nativeNames = nativeNames;
+        
+        self.checkLatinOnly = ^bool(NSString *text)
+        {
+            NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ- "];
+            NSCharacterSet *invalidChars = [validChars invertedSet];
+            return [text.uppercaseString rangeOfCharacterFromSet:invalidChars].location == NSNotFound;
+        };
         
         self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Done") style:UIBarButtonItemStyleDone target:self action:@selector(donePressed)];
         
-        CGFloat minimalInset = 120.0f;
-        
+        CGFloat minimalInset = 124.0f;
+                
         NSMutableArray *items = [[NSMutableArray alloc] init];
         
         if (!inhibitFiles)
@@ -117,7 +156,7 @@
                     
             items = [[NSMutableArray alloc] init];
         }
-        
+    
         [items addObject:[[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.Identity.DocumentDetails")]];
         
         __weak TGPassportIdentityController *weakSelf = self;
@@ -130,67 +169,210 @@
         
         if (!documentOnly)
         {
-            _nameItem = [[TGUsernameCollectionItem alloc] init];
-            _nameItem.placeholder = TGLocalized(@"Passport.Identity.NamePlaceholder");
-            _nameItem.title = TGLocalized(@"Passport.Identity.Name");
-            _nameItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
-            _nameItem.keyboardType = UIKeyboardTypeASCIICapable;
-            _nameItem.minimalInset = minimalInset;
-            _nameItem.usernameValid = true;
-            _nameItem.returnKeyType = UIReturnKeyNext;
-            _nameItem.returnPressed = focusOnNextItem;
-            _nameItem.usernameChanged = ^(__unused NSString *value)
+            if (!_editing && TGLocalized(@"Passport.Identity.LatinNameHelp").length > 0)
             {
-                __strong TGPassportIdentityController *strongSelf = weakSelf;
-                if (strongSelf != nil)
-                {
-                    strongSelf->_changed = true;
-                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityFirstNameKey])
-                    {
-                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityFirstNameKey];
-                        [strongSelf updateFieldErrors];
-                    }
-                    [strongSelf checkInputValues];
-                }
-            };
-            _nameItem.shouldChangeText = ^bool(NSString *text)
-            {
-                NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ- "];
-                NSCharacterSet *invalidChars = [validChars invertedSet];
-                return [text.uppercaseString rangeOfCharacterFromSet:invalidChars].location == NSNotFound;
-            };
-            [items addObject:_nameItem];
+                TGCommentCollectionItem *nameHelpItem = [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Passport.Identity.LatinNameHelp")];
+                nameHelpItem.sizeInset = -10.0f;
+                [items addObject:nameHelpItem];
+            }
             
-            _surnameItem = [[TGUsernameCollectionItem alloc] init];
-            _surnameItem.placeholder = TGLocalized(@"Passport.Identity.SurnamePlaceholder");
-            _surnameItem.title = TGLocalized(@"Passport.Identity.Surname");
-            _surnameItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
-            _surnameItem.keyboardType = UIKeyboardTypeASCIICapable;
-            _surnameItem.minimalInset = minimalInset;
-            _surnameItem.usernameValid = true;
-            _surnameItem.returnKeyType = UIReturnKeyNext;
-            _surnameItem.returnPressed = focusOnNextItem;
-            _surnameItem.usernameChanged = ^(__unused NSString *value)
+            for (TGPassportError *error in [errors fieldErrorsForType:TGPassportTypePersonalDetails])
+            {
+                if ([error.key isEqualToString:TGPassportIdentityFirstNameNativeKey] || [error.key isEqualToString:TGPassportIdentityMiddleNameNativeKey] || [error.key isEqualToString:TGPassportIdentityLastNameNativeKey])
+                {
+                    _forceNativeNamesVisible = true;
+                }
+            }
+            
+            _firstNameItem = [[TGUsernameCollectionItem alloc] init];
+            _firstNameItem.placeholder = TGLocalized(@"Passport.Identity.NamePlaceholder");
+            _firstNameItem.title = TGLocalized(@"Passport.Identity.Name");
+            _firstNameItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _firstNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+            _firstNameItem.minimalInset = minimalInset;
+            _firstNameItem.usernameValid = true;
+            _firstNameItem.returnKeyType = UIReturnKeyNext;
+            _firstNameItem.returnPressed = focusOnNextItem;
+            _firstNameItem.usernameChanged = ^(__unused NSString *value)
             {
                 __strong TGPassportIdentityController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
-                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityLastNameKey])
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityFirstNameKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
                     {
-                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityLastNameKey];
-                        [strongSelf updateFieldErrors];
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
-            _surnameItem.shouldChangeText = ^bool(NSString *text)
+            [items addObject:_firstNameItem];
+            
+            _middleNameItem = [[TGUsernameCollectionItem alloc] init];
+            _middleNameItem.placeholder = TGLocalized(@"Passport.Identity.MiddleNamePlaceholder");
+            _middleNameItem.title = TGLocalized(@"Passport.Identity.MiddleName");
+            _middleNameItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _middleNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+            _middleNameItem.minimalInset = minimalInset;
+            _middleNameItem.usernameValid = true;
+            _middleNameItem.returnKeyType = UIReturnKeyNext;
+            _middleNameItem.returnPressed = focusOnNextItem;
+            _middleNameItem.usernameChanged = ^(__unused NSString *value)
             {
-                NSCharacterSet *validChars = [NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZ- "];
-                NSCharacterSet *invalidChars = [validChars invertedSet];
-                return [text.uppercaseString rangeOfCharacterFromSet:invalidChars].location == NSNotFound;
+                __strong TGPassportIdentityController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityMiddleNameKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
+                    {
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
+                    }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
+                    [strongSelf checkInputValues];
+                }
             };
-            [items addObject:_surnameItem];
+            [items addObject:_middleNameItem];
+            
+            _lastNameItem = [[TGUsernameCollectionItem alloc] init];
+            _lastNameItem.placeholder = TGLocalized(@"Passport.Identity.SurnamePlaceholder");
+            _lastNameItem.title = TGLocalized(@"Passport.Identity.Surname");
+            _lastNameItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _lastNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+            _lastNameItem.minimalInset = minimalInset;
+            _lastNameItem.usernameValid = true;
+            _lastNameItem.returnKeyType = UIReturnKeyNext;
+            _lastNameItem.returnPressed = focusOnNextItem;
+            _lastNameItem.usernameChanged = ^(__unused NSString *value)
+            {
+                __strong TGPassportIdentityController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityLastNameKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
+                    {
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
+                    }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
+                    [strongSelf checkInputValues];
+                }
+            };
+            [items addObject:_lastNameItem];
+            
+            NSMutableArray *nameItems = [[NSMutableArray alloc] init];
+            if (TGLocalized(@"Passport.Identity.NativeNameTitle").length > 0)
+            {
+                _nativeTitleItem = [[TGCommentCollectionItem alloc] initWithText:@""];
+                _nativeTitleItem.sizeInset = -10.0f;
+                [nameItems addObject:_nativeTitleItem];
+            }
+            
+            _firstNameNativeItem = [[TGUsernameCollectionItem alloc] init];
+            _firstNameNativeItem.placeholder = TGLocalized(@"Passport.Identity.NamePlaceholder");
+            _firstNameNativeItem.title = TGLocalized(@"Passport.Identity.Name");
+            _firstNameNativeItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _firstNameNativeItem.keyboardType = UIKeyboardTypeDefault;
+            _firstNameNativeItem.minimalInset = minimalInset;
+            _firstNameNativeItem.usernameValid = true;
+            _firstNameNativeItem.returnKeyType = UIReturnKeyNext;
+            _firstNameNativeItem.returnPressed = focusOnNextItem;
+            _firstNameNativeItem.usernameChanged = ^(__unused NSString *value)
+            {
+                __strong TGPassportIdentityController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityFirstNameNativeKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
+                    {
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
+                    }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
+                    [strongSelf checkInputValues];
+                }
+            };
+            [nameItems addObject:_firstNameNativeItem];
+            
+            _middleNameNativeItem = [[TGUsernameCollectionItem alloc] init];
+            _middleNameNativeItem.placeholder = TGLocalized(@"Passport.Identity.MiddleNamePlaceholder");
+            _middleNameNativeItem.title = TGLocalized(@"Passport.Identity.MiddleName");
+            _middleNameNativeItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _middleNameNativeItem.keyboardType = UIKeyboardTypeDefault;
+            _middleNameNativeItem.minimalInset = minimalInset;
+            _middleNameNativeItem.usernameValid = true;
+            _middleNameNativeItem.returnKeyType = UIReturnKeyNext;
+            _middleNameNativeItem.returnPressed = focusOnNextItem;
+            _middleNameNativeItem.usernameChanged = ^(__unused NSString *value)
+            {
+                __strong TGPassportIdentityController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityMiddleNameNativeKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
+                    {
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
+                    }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
+                    [strongSelf checkInputValues];
+                }
+            };
+            [nameItems addObject:_middleNameNativeItem];
+            
+            _lastNameNativeItem = [[TGUsernameCollectionItem alloc] init];
+            _lastNameNativeItem.placeholder = TGLocalized(@"Passport.Identity.SurnamePlaceholder");
+            _lastNameNativeItem.title = TGLocalized(@"Passport.Identity.Surname");
+            _lastNameNativeItem.autocapitalizationType = UITextAutocapitalizationTypeWords;
+            _lastNameNativeItem.keyboardType = UIKeyboardTypeDefault;
+            _lastNameNativeItem.minimalInset = minimalInset;
+            _lastNameNativeItem.usernameValid = true;
+            _lastNameNativeItem.returnKeyType = UIReturnKeyNext;
+            _lastNameNativeItem.returnPressed = focusOnNextItem;
+            _lastNameNativeItem.usernameChanged = ^(__unused NSString *value)
+            {
+                __strong TGPassportIdentityController *strongSelf = weakSelf;
+                if (strongSelf != nil)
+                {
+                    [strongSelf setChanged:true];
+                    NSString *key = TGPassportIdentityLastNameNativeKey;
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
+                    if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:key])
+                    {
+                        [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:key];
+                        updateFieldErrors = true;
+                    }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
+                    [strongSelf checkInputValues];
+                }
+            };
+            [nameItems addObject:_lastNameNativeItem];
+            
+            if (TGLocalized(@"Passport.Identity.NativeNameHelp").length > 0)
+            {
+                _nativeCommentItem = [[TGCommentCollectionItem alloc] initWithText:@""];
+                [nameItems addObject:_nativeCommentItem];
+            }
+            
+            _nativeNameSection = [[TGCollectionMenuSection alloc] initWithItems:nameItems];
             
             _birthDateItem = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.Identity.DateOfBirth") variant:nil action:@selector(birthDatePressed)];
             _birthDateItem.minLeftPadding = minimalInset + 20.0f;
@@ -235,12 +417,15 @@
                 __strong TGPassportIdentityController *strongSelf = weakSelf;
                 if (strongSelf != nil)
                 {
-                    strongSelf->_changed = true;
+                    [strongSelf setChanged:true];
+                    bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:strongSelf->_type];
                     if ([strongSelf.errors errorForType:strongSelf->_type dataField:TGPassportIdentityDocumentNumberKey])
                     {
                         [strongSelf.errors correctErrorForType:strongSelf->_type dataField:TGPassportIdentityDocumentNumberKey];
-                        [strongSelf updateFieldErrors];
+                        updateFieldErrors = true;
                     }
+                    if (updateFieldErrors)
+                        [strongSelf updateFieldErrors];
                     [strongSelf checkInputValues];
                 }
             };
@@ -262,17 +447,19 @@
         
         _mainSection = [[TGCollectionMenuSection alloc] initWithItems:items];
 
-        UIEdgeInsets topSectionInsets = _mainSection.insets;
+        TGCollectionMenuSection *topSection = _mainSection;
+        UIEdgeInsets topSectionInsets = topSection.insets;
         topSectionInsets.top = 32.0f;
-        _mainSection.insets = topSectionInsets;
+        topSection.insets = topSectionInsets;
         [self.menuSections insertSection:_mainSection atIndex:0];
     }
     return self;
 }
 
-- (instancetype)initWithType:(TGPassportType)type details:(TGPassportDecryptedValue *)details document:(TGPassportDecryptedValue *)document documentOnly:(bool)documentOnly selfie:(bool)selfie settings:(SVariable *)settings errors:(TGPassportErrors *)errors
+- (instancetype)initWithType:(TGPassportType)type details:(TGPassportDecryptedValue *)details document:(TGPassportDecryptedValue *)document documentOnly:(bool)documentOnly selfie:(bool)selfie translation:(bool)translation nativeNames:(bool)nativeNames editing:(bool)editing settings:(SVariable *)settings errors:(TGPassportErrors *)errors
 {
-    self = [self initWithSettings:settings files:document.files documentOnly:documentOnly inhibitFiles:type == TGPassportTypePersonalDetails selfie:selfie errors:errors existing:details != nil || document != nil];
+    NSArray *translationFiles = document.translation ?: @[];
+    self = [self initWithSettings:settings files:@{@(TGPassportDocumentFileTypeTranslation):translationFiles} documentOnly:documentOnly inhibitFiles:type == TGPassportTypePersonalDetails selfie:selfie translation:translation nativeNames:nativeNames editing:editing errors:errors existing:details != nil || document != nil];
     if (self != nil)
     {
         _type = document.type != TGPassportTypeUndefined ? document.type : (details.type != TGPassportTypeUndefined ? details.type : type);
@@ -303,23 +490,29 @@
             _expiryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
         }
         
-        if (type == TGPassportTypePersonalDetails && details == nil)
+        if (type == TGPassportTypePersonalDetails)
         {
-            _scanItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.ScanPassport") action:@selector(scanPressed)];
-            _scanItem.iconOffset = CGPointMake(0.0f, -TGScreenPixel);
-            _scanItem.leftInset = 50.0f;
-            _scanItem.icon = self.presentation.images.passportScanIcon;
+            TGCollectionMenuSection *scanSection = nil;
+            if (details == nil)
+            {
+                _scanItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Passport.ScanPassport") action:@selector(scanPressed)];
+                _scanItem.iconOffset = CGPointMake(0.0f, -TGScreenPixel);
+                _scanItem.leftInset = 50.0f;
+                _scanItem.icon = self.presentation.images.passportScanIcon;
+                
+                scanSection = [[TGCollectionMenuSection alloc] initWithItems:@[_scanItem, [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Passport.ScanPassportHelp")]]];
+            }
             
-            TGCollectionMenuSection *scanSection = [[TGCollectionMenuSection alloc] initWithItems:@[_scanItem, [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Passport.ScanPassportHelp")]]];
+            TGCollectionMenuSection *topSection = scanSection ?: _mainSection;
             
-            UIEdgeInsets topSectionInsets = scanSection.insets;
-            topSectionInsets.top = 32.0f;
-            scanSection.insets = topSectionInsets;
-        
-            topSectionInsets = _mainSection.insets;
+            UIEdgeInsets topSectionInsets = _mainSection.insets;
             topSectionInsets.top = 0.0f;
             _mainSection.insets = topSectionInsets;
             
+            topSectionInsets = topSection.insets;
+            topSectionInsets.top = 32.0f;
+            topSection.insets = topSectionInsets;
+    
             [self.menuSections insertSection:scanSection atIndex:0];
         }
 
@@ -332,9 +525,9 @@
     return self;
 }
 
-- (instancetype)initWithType:(TGPassportType)type details:(TGPassportDecryptedValue *)details documentOnly:(bool)documentOnly selfie:(bool)selfie upload:(TGPassportFileUpload *)upload settings:(SVariable *)settings errors:(TGPassportErrors *)errors
+- (instancetype)initWithType:(TGPassportType)type details:(TGPassportDecryptedValue *)details documentOnly:(bool)documentOnly selfie:(bool)selfie translation:(bool)translation nativeNames:(bool)nativeNames editing:(bool)editing upload:(TGPassportFileUpload *)upload settings:(SVariable *)settings errors:(TGPassportErrors *)errors
 {
-    self = [self initWithSettings:settings files:nil documentOnly:documentOnly inhibitFiles:type == TGPassportTypePersonalDetails selfie:selfie errors:errors existing:false];
+    self = [self initWithSettings:settings files:nil documentOnly:documentOnly inhibitFiles:type == TGPassportTypePersonalDetails selfie:selfie translation:translation nativeNames:nativeNames editing:editing errors:errors existing:false];
     if (self != nil)
     {
         self.title = [TGPassportIdentityController documentDisplayNameForType:type];
@@ -348,6 +541,7 @@
         if (upload != nil)
             [self enqueueFrontSideUpload:upload];
         
+        [self updateFiles];
         [self checkInputValues];
     }
     return self;
@@ -359,11 +553,29 @@
     [_reverseSideUploadDisposable dispose];
     [_selfieUploadDisposable dispose];
     [_ocrDisposable dispose];
+    [_langDisposable dispose];
 }
 
 + (NSString *)localizedStringFromDate:(NSDate *)date
 {
     return [NSDateFormatter localizedStringFromDate:date dateStyle:NSDateFormatterMediumStyle timeStyle:NSDateFormatterNoStyle];
+}
+
+- (void)setLanguagesSignal:(SSignal *)languagesSignal
+{
+    if (_langDisposable == nil)
+        _langDisposable = [[SMetaDisposable alloc] init];
+    
+    __weak TGPassportIdentityController *weakSelf = self;
+    [_langDisposable setDisposable:[[languagesSignal deliverOn:[SQueue mainQueue]] startWithNext:^(TGPassportLanguageMap *next)
+    {
+        __strong TGPassportIdentityController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
+            
+            strongSelf->_languageMap = next;
+            [strongSelf updateNativeNameSection:false];
+    }]];
 }
 
 - (void)setPresentation:(TGPresentation *)presentation
@@ -376,6 +588,16 @@
 - (void)setScrollToSelfie
 {
     _scrollToSelfie = true;
+}
+
+- (void)setScrollToTranslation
+{
+    _scrollToTranslation = true;
+}
+
+- (void)setScrollToNativeNames
+{
+    _scrollToNativeNames = true;
 }
 
 - (NSString *)deleteTitle
@@ -401,23 +623,59 @@
     if (_scrollToSelfie)
     {
         _scrollToSelfie = false;
-        [self.collectionView setContentOffset:CGPointMake(0.0f, self.collectionView.contentSize.height - self.collectionView.frame.size.height) animated:true];
+        if (self.collectionView.contentSize.height > self.collectionView.frame.size.height)
+            [self.collectionView setContentOffset:CGPointMake(0.0f, self.collectionView.contentSize.height - self.collectionView.frame.size.height) animated:true];
+    } else if (_scrollToTranslation)
+    {
+        _scrollToTranslation = false;
+        if (self.collectionView.contentSize.height > self.collectionView.frame.size.height)
+            [self.collectionView setContentOffset:CGPointMake(0.0f, self.collectionView.contentSize.height - self.collectionView.frame.size.height) animated:true];
+    } else if (_scrollToNativeNames)
+    {
+        _scrollToNativeNames = false;
+        NSUInteger sectionIndex = [self.menuSections.sections indexOfObject:_nativeNameSection];
+        if (sectionIndex == NSNotFound)
+            return;
+        
+        [self.collectionView scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:sectionIndex] atScrollPosition:UICollectionViewScrollPositionCenteredVertically animated:true];
     }
 }
 
-- (void)setupWithDetails:(TGPassportDecryptedValue *)details {
+- (void)setupWithDetails:(TGPassportDecryptedValue *)details
+{
     _details = details;
-    if (_details == nil)
-        return;
     
     TGPassportPersonalDetailsData *personalData = (TGPassportPersonalDetailsData *)details.data;
+
+    _firstNameNative = personalData.firstNameNative;
+    _middleNameNative = personalData.middleNameNative;
+    _lastNameNative = personalData.lastNameNative;
+    
     _countryCode = personalData.countryCode;
     _residenceCountryCode = personalData.residenceCountryCode;
     _birthDate = personalData.birthDate;
     _gender = personalData.gender;
     
-    _nameItem.username = personalData.firstName;
-    _surnameItem.username = personalData.lastName;
+    _firstNameItem.username = personalData.firstName;
+    _firstNameItem.shouldChangeText = self.checkLatinOnly;
+    _firstNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+    
+    _middleNameItem.username = personalData.middleName;
+    _middleNameItem.shouldChangeText = self.checkLatinOnly;
+    _middleNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+    
+    _lastNameItem.username = personalData.lastName;
+    _lastNameItem.shouldChangeText = self.checkLatinOnly;
+    _lastNameItem.keyboardType = UIKeyboardTypeASCIICapable;
+    
+    _firstNameNativeItem.username = _firstNameNative;
+    _middleNameNativeItem.username = _middleNameNative;
+    _lastNameNativeItem.username = _lastNameNative;
+    
+    [self updateNativeNameSection:false];
+    
+    if (_details == nil)
+        return;
     
     if (personalData.birthDate.length > 0)
     {
@@ -434,13 +692,13 @@
     
     if (personalData.countryCode.length > 0)
     {
-        _countryItem.variant = [TGLoginCountriesController countryNameByCountryId:personalData.countryCode code:NULL];
+        _countryItem.variant = [TGLoginCountriesController localizedCountryNameByCountryId:personalData.countryCode];
         _countryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
     }
     
     if (personalData.residenceCountryCode.length > 0)
     {
-        _residenceCountryItem.variant = [TGLoginCountriesController countryNameByCountryId:personalData.residenceCountryCode code:NULL];
+        _residenceCountryItem.variant = [TGLoginCountriesController localizedCountryNameByCountryId:personalData.residenceCountryCode];
         _residenceCountryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
     }
 }
@@ -450,20 +708,26 @@
     UIColor *normalColor = self.presentation.pallete.collectionMenuTextColor;
     UIColor *errorColor = self.presentation.pallete.collectionMenuDestructiveColor;
     
-    _nameItem.titleColor = normalColor;
-    _surnameItem.titleColor = normalColor;
+    _firstNameItem.titleColor = normalColor;
+    _middleNameItem.titleColor = normalColor;
+    _lastNameItem.titleColor = normalColor;
     _genderItem.titleColor = normalColor;
     _birthDateItem.titleColor = normalColor;
     _countryItem.titleColor = normalColor;
     _residenceCountryItem.titleColor = normalColor;
+    _firstNameNativeItem.titleColor = normalColor;
+    _middleNameNativeItem.titleColor = normalColor;
+    _lastNameNativeItem.titleColor = normalColor;
     
     NSString *errorsString = @"";
     for (TGPassportError *error in [self.errors fieldErrorsForType:TGPassportTypePersonalDetails])
     {
         if ([error.key isEqualToString:TGPassportIdentityFirstNameKey])
-            _nameItem.titleColor = errorColor;
+            _firstNameItem.titleColor = errorColor;
+        else if ([error.key isEqualToString:TGPassportIdentityMiddleNameKey])
+            _middleNameItem.titleColor = errorColor;
         else if ([error.key isEqualToString:TGPassportIdentityLastNameKey])
-            _surnameItem.titleColor = errorColor;
+            _lastNameItem.titleColor = errorColor;
         else if ([error.key isEqualToString:TGPassportIdentityGenderKey])
             _genderItem.titleColor = errorColor;
         else if ([error.key isEqualToString:TGPassportIdentityDateOfBirthKey])
@@ -472,6 +736,12 @@
             _countryItem.titleColor = errorColor;
         else if ([error.key isEqualToString:TGPassportIdentityResidenceCountryCodeKey])
             _residenceCountryItem.titleColor = errorColor;
+        else if ([error.key isEqualToString:TGPassportIdentityFirstNameNativeKey])
+            _firstNameNativeItem.titleColor = errorColor;
+        else if ([error.key isEqualToString:TGPassportIdentityMiddleNameNativeKey])
+            _middleNameNativeItem.titleColor = errorColor;
+        else if ([error.key isEqualToString:TGPassportIdentityLastNameNativeKey])
+            _lastNameNativeItem.titleColor = errorColor;
         
         if (error.text.length > 0)
         {
@@ -525,11 +795,39 @@
             } completion:nil];
         }
     }
+    
+    [self updateFileErrors];
+}
+
+- (bool)correctMainErrorIfNeeded:(TGPassportType)type
+{
+    bool updateFieldErrors = false;
+    if ([self.errors errorForTypeMain:type])
+    {
+        [self.errors correctMainErrorForType:type];
+        updateFieldErrors = true;
+    }
+    return updateFieldErrors;
 }
 
 - (void)backPressed
 {
     [self.navigationController popViewControllerAnimated:true];
+}
+
+- (NSString *)transliterateName:(NSString *)name
+{
+    NSCharacterSet * set = [NSCharacterSet characterSetWithCharactersInString:@"абвгдеёжзийклмнопрстуфхцчшщъыьэюя"];
+    bool isCyrillic = [[name lowercaseString] rangeOfCharacterFromSet:set].location != NSNotFound;
+    
+    if (isCyrillic)
+        return [[TGPassportMRZ transliterateRussianName:[name uppercaseString]] capitalizedString];
+    
+    NSMutableString *buffer = [name mutableCopy];
+    CFMutableStringRef bufferRef = (__bridge CFMutableStringRef)buffer;
+    CFStringTransform(bufferRef, NULL, kCFStringTransformToLatin, false);
+    CFStringTransform(bufferRef, NULL, kCFStringTransformStripDiacritics, false);
+    return buffer;
 }
 
 - (void)donePressed
@@ -557,17 +855,53 @@
         TGPassportDecryptedValue *detailsValue = nil;
         if (hasData)
         {
-            TGPassportPersonalDetailsData *detailsData = [[TGPassportPersonalDetailsData alloc] initWithFirstName:[strongSelf->_nameItem.username stringByTrimmingCharactersInSet:whitespaceSet] lastName:[strongSelf->_surnameItem.username stringByTrimmingCharactersInSet:whitespaceSet] birthDate:strongSelf->_birthDate gender:strongSelf->_gender countryCode:strongSelf->_countryCode residenceCountryCode:strongSelf->_residenceCountryCode secret:request.settings.secret];
+            NSString *firstName = strongSelf->_firstNameItem.username;
+            NSString *middleName = strongSelf->_middleNameItem.username;
+            NSString *lastName = strongSelf->_lastNameItem.username;
             
-            detailsValue = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePersonalDetails data:detailsData frontSide:nil reverseSide:nil selfie:nil files:nil plainData:nil];
+            NSString *firstNameNative = strongSelf->_firstNameNativeItem.username ?: _firstNameNative;
+            NSString *middleNameNative = strongSelf->_middleNameNativeItem.username ? : _middleNameNative;
+            NSString *lastNameNative = strongSelf->_lastNameNativeItem.username ?: _lastNameNative;
+            
+            if (_nativeNames && ![strongSelf requiresNativeNameForCountry:strongSelf->_residenceCountryCode])
+            {
+                if (firstNameNative.length == 0)
+                    firstNameNative = firstName;
+                if (middleNameNative.length == 0)
+                    middleNameNative = middleName;
+                if (lastNameNative.length == 0)
+                    lastNameNative = lastName;
+            }
+            
+            NSDictionary *unknownFields = @{};
+            TGPassportDecryptedValue *previousDetails = strongSelf->_details;
+            if (previousDetails != nil)
+            {
+                TGPassportPersonalDetailsData *previousData = (TGPassportPersonalDetailsData *)previousDetails.data;
+                if ([previousData isKindOfClass:[TGPassportPersonalDetailsData class]])
+                    unknownFields = previousData.unknownFields;
+            }
+            
+            TGPassportPersonalDetailsData *detailsData = [[TGPassportPersonalDetailsData alloc] initWithFirstName:[firstName stringByTrimmingCharactersInSet:whitespaceSet] middleName:[middleName stringByTrimmingCharactersInSet:whitespaceSet] lastName:[lastName stringByTrimmingCharactersInSet:whitespaceSet] firstNameNative:[firstNameNative stringByTrimmingCharactersInSet:whitespaceSet] middleNameNative:[middleNameNative stringByTrimmingCharactersInSet:whitespaceSet] lastNameNative:[lastNameNative stringByTrimmingCharactersInSet:whitespaceSet] birthDate:strongSelf->_birthDate gender:strongSelf->_gender countryCode:strongSelf->_countryCode residenceCountryCode:strongSelf->_residenceCountryCode unknownFields:unknownFields secret:request.settings.secret];
+            
+            detailsValue = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePersonalDetails data:detailsData frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:nil];
             [signals addObject:[TGPassportSignals saveSecureValue:detailsValue secret:request.settings.secret]];
         }
         
         TGPassportDecryptedValue *documentValue = nil;
         if (hasDocument)
         {
-            TGPassportDocumentData *documentData = [[TGPassportDocumentData alloc] initWithDocumentNumber:[strongSelf->_documentNoItem.username stringByTrimmingCharactersInSet:whitespaceSet] expiryDate:strongSelf->_expiryDate secret:request.settings.secret];
-            documentValue = [[TGPassportDecryptedValue alloc] initWithType:strongSelf->_type data:documentData frontSide:strongSelf->_frontSide reverseSide:strongSelf->_reverseSide selfie:strongSelf->_selfie files:strongSelf.files plainData:nil];
+            NSDictionary *unknownFields = @{};
+            TGPassportDecryptedValue *previousDocument = strongSelf->_document;
+            if (previousDocument != nil)
+            {
+                TGPassportDocumentData *previousData = (TGPassportDocumentData *)previousDocument.data;
+                if ([previousData isKindOfClass:[TGPassportDocumentData class]])
+                    unknownFields = previousData.unknownFields;
+            }
+            
+            TGPassportDocumentData *documentData = [[TGPassportDocumentData alloc] initWithDocumentNumber:[strongSelf->_documentNoItem.username stringByTrimmingCharactersInSet:whitespaceSet] expiryDate:strongSelf->_expiryDate unknownFields:unknownFields secret:request.settings.secret];
+            documentValue = [[TGPassportDecryptedValue alloc] initWithType:strongSelf->_type data:documentData frontSide:strongSelf->_frontSide reverseSide:strongSelf->_reverseSide selfie:strongSelf->_selfie translation:strongSelf.files[@(TGPassportDocumentFileTypeTranslation)] files:nil plainData:nil];
             [signals addObject:[TGPassportSignals saveSecureValue:documentValue secret:request.settings.secret]];
         }
         
@@ -605,12 +939,24 @@
         [strongSelf.navigationController popViewControllerAnimated:true];
     } error:^(id error)
     {
-        NSString *displayText = TGLocalized(@"Login.UnknownError");
+        [progressWindow dismiss:true];
+        __strong TGPassportIdentityController *strongSelf = weakSelf;
+        if (strongSelf == nil)
+            return;
         
         NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
-        [TGCustomAlertView presentAlertWithTitle:displayText message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+        if ([errorText isEqualToString:@"APP_VERSION_OUTDATED"])
+        {
+            [strongSelf presentUpdateAppAlert];
+            return;
+        }
+        else if ([errorText isEqualToString:@"PASSWORD_REQUIRED"])
+        {
+            [strongSelf.navigationController.presentingViewController dismissViewControllerAnimated:true completion:nil];
+        }
         
-        [progressWindow dismiss:true];
+        NSString *displayText = TGLocalized(@"Login.UnknownError");
+        [TGCustomAlertView presentAlertWithTitle:displayText message:nil cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
     } completed:nil]];
 }
 
@@ -666,7 +1012,7 @@
     } sourceView:self.view sourceRect:^CGRect{
         __strong TGPassportIdentityController *strongSelf = weakSelf;
         if (strongSelf != nil)
-            return [strongSelf->_selfieItem.view convertRect:strongSelf->_selfieItem.view.bounds toView:strongSelf.view];
+            return [item.view convertRect:item.view.bounds toView:strongSelf.view];
         return CGRectZero;
     } barButtonItem:nil];
 }
@@ -722,12 +1068,15 @@
             });
         }
         
-        strongSelf->_changed = true;
+        [strongSelf setChanged:true];
+        bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
         if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityDateOfBirthKey])
         {
             [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityDateOfBirthKey];
-            [strongSelf updateFieldErrors];
+            updateFieldErrors = true;
         }
+        if (updateFieldErrors)
+            [strongSelf updateFieldErrors];
         [strongSelf checkInputValues];
     } dismissed:nil sourceView:self.view sourceRect:nil];
 }
@@ -765,12 +1114,15 @@
             strongSelf->_expiryDate = [[TGPassportIdentityController dateFormatter] stringFromDate:value];
         }
         
-        strongSelf->_changed = true;
+        [strongSelf setChanged:true];
+        bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
         if ([strongSelf.errors errorForType:strongSelf->_type dataField:TGPassportIdentityExpiryDateKey])
         {
             [strongSelf.errors correctErrorForType:strongSelf->_type dataField:TGPassportIdentityExpiryDateKey];
-            [strongSelf updateFieldErrors];
+            updateFieldErrors = true;
         }
+        if (updateFieldErrors)
+            [strongSelf updateFieldErrors];
         [strongSelf checkInputValues];
     } dismissed:nil sourceView:self.view sourceRect:nil];
 }
@@ -793,14 +1145,14 @@
          
          if (value.integerValue == 1)
          {
-             strongSelf->_changed = true;
+             [strongSelf setChanged:true];
              strongSelf->_gender = TGPassportGenderMale;
              strongSelf->_genderItem.variant = TGLocalized(@"Passport.Identity.GenderMale");
              strongSelf->_genderItem.variantColor = strongSelf.presentation.pallete.collectionMenuTextColor;
          }
          else if (value.integerValue == 2)
          {
-             strongSelf->_changed = true;
+             [strongSelf setChanged:true];
              strongSelf->_gender = TGPassportGenderFemale;
              strongSelf->_genderItem.variant = TGLocalized(@"Passport.Identity.GenderFemale");
              strongSelf->_genderItem.variantColor = strongSelf.presentation.pallete.collectionMenuTextColor;
@@ -820,11 +1172,14 @@
             });
          }
          
+         bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
          if (value.integerValue != 0 && [strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityGenderKey])
          {
              [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityGenderKey];
-             [strongSelf updateFieldErrors];
+             updateFieldErrors = true;
          }
+         if (updateFieldErrors)
+             [strongSelf updateFieldErrors];
          [strongSelf checkInputValues];
      } dismissed:nil sourceView:self.view sourceRect:nil];
 }
@@ -865,12 +1220,15 @@
             });
         }
         
-        strongSelf->_changed = true;
+        [strongSelf setChanged:true];
+        bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
         if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityCountryCodeKey])
         {
             [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityCountryCodeKey];
-            [strongSelf updateFieldErrors];
+            updateFieldErrors = true;
         }
+        if (updateFieldErrors)
+            [strongSelf updateFieldErrors];
         [strongSelf checkInputValues];
     };
     
@@ -904,13 +1262,18 @@
             });
         }
         
-        strongSelf->_changed = true;
+        [strongSelf setChanged:true];
+        bool updateFieldErrors = [strongSelf correctMainErrorIfNeeded:TGPassportTypePersonalDetails];
         if ([strongSelf.errors errorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityResidenceCountryCodeKey])
         {
             [strongSelf.errors correctErrorForType:TGPassportTypePersonalDetails dataField:TGPassportIdentityResidenceCountryCodeKey];
-            [strongSelf updateFieldErrors];
+            updateFieldErrors = true;
         }
+        if (updateFieldErrors)
+            [strongSelf updateFieldErrors];
         [strongSelf checkInputValues];
+        
+        [strongSelf updateNativeNameSection:true];
     };
     
     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithRootController:countriesController];
@@ -919,26 +1282,22 @@
 
 #pragma mark - Selfie
 
-- (NSUInteger)selfieTopIndex
-{
-    return _selfieErrorsItem != nil ? 2 : 1;
-}
-
 - (NSArray *)allFiles
 {
-    NSArray *baseFiles = [super allFiles];
+    NSMutableArray *baseFiles = [[NSMutableArray alloc] init];
     if (_frontSideUpload != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_frontSideUpload];
+        [baseFiles addObject:_frontSideUpload];
     if (_frontSide != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_frontSide];
+        [baseFiles addObject:_frontSide];
     if (_reverseSideUpload != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_reverseSideUpload];
+        [baseFiles addObject:_reverseSideUpload];
     if (_reverseSide != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_reverseSide];
+        [baseFiles addObject:_reverseSide];
     if (_selfieUpload != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_selfieUpload];
+        [baseFiles addObject:_selfieUpload];
     else if (_selfie != nil)
-        baseFiles = [baseFiles arrayByAddingObject:_selfie];
+        [baseFiles addObject:_selfie];
+    [baseFiles addObjectsFromArray:[super allFiles]];
     return baseFiles;
 }
 
@@ -946,13 +1305,10 @@
 {
     if ([file isEqual:_frontSide] || [file isEqual:_frontSideUpload])
         return _frontItem.imageSize;
-    
     if ([file isEqual:_reverseSide] || [file isEqual:_reverseSideUpload])
         return _reverseItem.imageSize;
-    
     if ([file isEqual:_selfie] || [file isEqual:_selfieUpload])
         return _selfieItem.imageSize;
-    
     return [super thumbnailSizeForFile:file];
 }
 
@@ -973,7 +1329,6 @@
         return _reverseItem;
     if ([passportFile isEqual:_selfieItem.file])
         return _selfieItem;
-    
     return [super itemForFile:passportFile];
 }
 
@@ -1056,6 +1411,7 @@
 
 - (void)deleteFile:(TGPassportFile *)file
 {
+    bool updated = false;
     if ([file isEqual:_frontSide] || [file isEqual:_frontSideUpload])
     {
         _frontSide = nil;
@@ -1065,9 +1421,11 @@
         [self.errors correctFrontSideErrorForType:self.type];
         
         [self updateSides];
+        [self updateFieldErrors];
         [self checkInputValues];
+        updated = true;
     }
-    if ([file isEqual:_reverseSide] || [file isEqual:_reverseSideUpload])
+    else if ([file isEqual:_reverseSide] || [file isEqual:_reverseSideUpload])
     {
         _reverseSide = nil;
         _reverseSideUpload = nil;
@@ -1076,9 +1434,11 @@
         [self.errors correctReverseSideErrorForType:self.type];
         
         [self updateSides];
+        [self updateFieldErrors];
         [self checkInputValues];
+        updated = true;
     }
-    if ([file isEqual:_selfie] || [file isEqual:_selfieUpload])
+    else if ([file isEqual:_selfie] || [file isEqual:_selfieUpload])
     {
         _selfie = nil;
         _selfieUpload = nil;
@@ -1087,10 +1447,15 @@
         [self.errors correctSelfieErrorForType:self.type];
         
         [self updateSides];
+        [self updateFieldErrors];
         [self checkInputValues];
+        updated = true;
     }
     
     [super deleteFile:file];
+    
+    if (!updated)
+        [self updateFieldErrors];
 }
 
 - (void)scanMRZIfNeeded:(TGPassportFileUpload *)fileUpload
@@ -1098,9 +1463,11 @@
     if (![self shouldScanDocument])
         return;
     
+    bool driversLicense = _type == TGPassportTypeDriversLicense;
+    
     __weak TGPassportIdentityController *weakSelf = self;
     _ocrDisposable = [[SMetaDisposable alloc] init];
-    [_ocrDisposable setDisposable:[[[TGPassportOCR recognizeMRZInImage:fileUpload.image] deliverOn:[SQueue mainQueue]] startWithNext:^(TGPassportMRZ *next)
+    [_ocrDisposable setDisposable:[[[TGPassportOCR recognizeDataInImage:fileUpload.image shouldBeDriversLicense:driversLicense] deliverOn:[SQueue mainQueue]] startWithNext:^(TGPassportMRZ *next)
     {
         __strong TGPassportIdentityController *strongSelf = weakSelf;
         if (strongSelf != nil)
@@ -1114,7 +1481,7 @@
     [self.errors correctFrontSideErrorForType:self.type];
     
     _frontSideUpload = fileUpload;
-    _changed = true;
+    [self setChanged:true];
     
     _frontSideProgress = [[SVariable alloc] init];
     
@@ -1163,7 +1530,7 @@
     [self.errors correctReverseSideErrorForType:self.type];
     
     _reverseSideUpload = fileUpload;
-    _changed = true;
+    [self setChanged:true];
     
     _reverseSideProgress = [[SVariable alloc] init];
     
@@ -1197,9 +1564,7 @@
             [strongSelf updateSides];
             [strongSelf checkInputValues];
         }
-    } completed:^
-    {
-    }]];
+    } completed:nil]];
     
     [self scanMRZIfNeeded:fileUpload];
     [self updateSides];
@@ -1212,7 +1577,7 @@
     [self.errors correctSelfieErrorForType:self.type];
     
     _selfieUpload = fileUpload;
-    _changed = true;
+    [self setChanged:true];
     
     _selfieProgress = [[SVariable alloc] init];
     
@@ -1245,12 +1610,63 @@
             [strongSelf updateSides];
             [strongSelf checkInputValues];
         }
-    } completed:^
-    {
-    }]];
+    } completed:nil]];
     
     [self updateSides];
     [self checkInputValues];
+}
+
+- (void)updateNativeNameSection:(bool)animated
+{
+    animated = false;
+    NSUInteger sectionIndex = [self.menuSections.sections indexOfObject:_nativeNameSection];
+    NSUInteger mainSectionIndex = [self.menuSections.sections indexOfObject:_mainSection];
+    if (mainSectionIndex == NSNotFound)
+        return;
+    
+    bool sectionShouldBeVisible = [self requiresNativeName] || _forceNativeNamesVisible;
+    
+    bool changed = true;
+    if (sectionIndex != NSNotFound)
+    {
+        if (!sectionShouldBeVisible) {
+            changed = true;
+            [self.menuSections deleteSection:sectionIndex];
+        }
+    }
+    else
+    {
+        if (sectionShouldBeVisible)
+        {
+            changed = true;
+            [self.menuSections insertSection:_nativeNameSection atIndex:mainSectionIndex + 1];
+        }
+    }
+    
+    if (sectionShouldBeVisible)
+    {
+        NSString *title = nil;
+        NSString *help = nil;
+        NSString *languageName = [self languageNameForCountry:_residenceCountryCode];
+        if (languageName.length == 0)
+        {
+            NSString *countryName = [TGLoginCountriesController localizedCountryNameByCountryId:_residenceCountryCode];
+            title = [NSString stringWithFormat:TGLocalized(@"Passport.Identity.NativeNameGenericTitle"), [countryName uppercaseString]];
+            help = [NSString stringWithFormat:TGLocalized(@"Passport.Identity.NativeNameGenericHelp"), countryName];
+        }
+        else
+        {
+            title = [NSString stringWithFormat:TGLocalized(@"Passport.Identity.NativeNameTitle"), [languageName uppercaseString]];
+            help = TGLocalized(@"Passport.Identity.NativeNameHelp");
+        }
+        _nativeTitleItem.text = title;
+        _nativeCommentItem.text = help;
+    }
+    
+    if (animated)
+        [self.menuSections commitRecordedChanges:self.collectionView];
+    else if (changed)
+        [self.collectionView reloadData];
 }
 
 - (void)updateSides
@@ -1395,7 +1811,12 @@
             };
             
             _reverseItem = item;
-            [_sidesSection insertItem:item atIndex:_sidesSection.items.count - 1];
+            
+            NSUInteger frontItemIndex = [_sidesSection indexOfItem:_frontItem];
+            if (frontItemIndex != NSNotFound)
+                [_sidesSection insertItem:item atIndex:frontItemIndex + 1];
+            else
+                [_sidesSection insertItem:item atIndex:_sidesSection.items.count - 1];
         }
         
         id file = _reverseSide ?: _reverseSideUpload;
@@ -1476,7 +1897,7 @@
         item.imageViewHidden = [file isEqual:_hiddenFile];
     }
     
-    if (_selfieRequired)
+    if (_selfieRequired || _editing)
     {
         TGPassportFileCollectionItem *item = _selfieItem;
         if (item == nil)
@@ -1583,22 +2004,54 @@
 
 #pragma mark - View
 
+- (NSString *)languageNameForCountry:(NSString *)country
+{
+    if (country.length == 0)
+        return nil;
+    
+    NSString *lang = _languageMap.map[[country uppercaseString]];
+    if (lang == nil)
+        return nil;
+    
+    NSString *string = TGLocalized([NSString stringWithFormat:@"Passport.Language.%@", lang]);
+    return string;
+}
+
+- (bool)requiresNativeNameForCountry:(NSString *)country
+{
+    if (country.length == 0)
+        return false;
+    
+    NSString *lang = _languageMap.map[[country uppercaseString]];
+    if ([lang isEqualToString:@"en"])
+        return false;
+    
+    return true;
+}
+
+- (bool)requiresNativeName
+{
+    return (_nativeNames || _editing) && [self requiresNativeNameForCountry:_residenceCountryCode];
+}
+
 - (void)checkInputValues
 {
-    bool hasName = (_nameItem.username.length > 0 && _nameItem.username.length <= 255) && (_surnameItem.username.length > 0 && _surnameItem.username.length <= 255);
+    bool hasName = (_firstNameItem.username.length > 0 && _firstNameItem.username.length <= 255) && (_lastNameItem.username.length > 0 && _lastNameItem.username.length <= 255) && _middleNameItem.username.length <= 255;
+    bool hasNativeNamefNeeded = ![self requiresNativeName] || ((_firstNameNativeItem.username.length > 0 && _firstNameNativeItem.username.length <= 255) && (_lastNameNativeItem.username.length > 0 && _lastNameNativeItem.username.length <= 255) && _middleNameNativeItem.username.length <= 255);
+    
     bool hasCountry = _countryCode.length > 0;
     bool hasResidenceCountry = _residenceCountryCode.length > 0;
     bool hasBirthDate = _birthDate.length > 0;
     bool hasGender = _gender != TGPassportGenderUndefined;
-    bool hasPersonalDetails = (hasName && hasCountry && hasResidenceCountry && hasBirthDate && hasGender) || _documentOnly;
+    bool hasPersonalDetails = (hasName && hasNativeNamefNeeded && hasCountry && hasResidenceCountry && hasBirthDate && hasGender) || _documentOnly;
     
     bool hasDocumentNumber = _documentNoItem == nil || (_documentNoItem.username.length > 0 && _documentNoItem.username.length <= 24);
-    bool hasDocumentExpiryDate = true;
-    bool hasAllSides = (_frontItem == nil || _frontSide != nil) && (_reverseItem == nil || _reverseSide != nil) && (_selfieItem == nil || _selfie != nil || _documentOnly);
-    bool hasNoUploads = _frontSideUpload == nil && _reverseSideUpload == nil && _selfieUpload == nil;
+    bool hasAllSides = (_frontItem == nil || _frontSide != nil) && (_reverseItem == nil || _reverseSide != nil) && (_selfieItem == nil || _selfie != nil || _editing);
+    bool hasTranslation = _fileSections[@(TGPassportDocumentFileTypeTranslation)] == nil || self.files[@(TGPassportDocumentFileTypeTranslation)].count > 0 || _editing;
+    bool hasNoUploads = _frontSideUpload == nil && _reverseSideUpload == nil && _selfieUpload == nil && ![self hasActiveUploads];
     bool hasNoErrors = ([self.errors errorsForType:TGPassportTypePersonalDetails].count + [self.errors errorsForType:_type].count) == 0;
     
-    self.navigationItem.rightBarButtonItem.enabled = hasPersonalDetails && hasDocumentNumber && hasDocumentExpiryDate && hasAllSides && hasNoUploads && hasNoErrors;
+    self.navigationItem.rightBarButtonItem.enabled = hasPersonalDetails && hasDocumentNumber && hasAllSides && hasTranslation && hasNoUploads && hasNoErrors;
 }
 
 - (void)focusOnItem:(TGUsernameCollectionItem *)item {
@@ -1613,12 +2066,18 @@
 }
 
 - (void)focusOnNextItem:(TGCollectionItem *)currentItem {
-    if (currentItem == _nameItem)
-        [self focusOnItem:_surnameItem];
-    else if (currentItem == _surnameItem)
+    if (currentItem == _firstNameItem)
+        [self focusOnItem:_middleNameItem];
+    else if (currentItem == _middleNameItem)
+        [self focusOnItem:_lastNameItem];
+    else if (currentItem == _lastNameItem)
         [self presentBirthDatePicker:true];
     else if (currentItem == _documentNoItem)
         [self expiryDatePressed];
+    else if (currentItem == _firstNameNativeItem)
+        [self focusOnItem:_middleNameNativeItem];
+    else if (currentItem == _middleNameNativeItem)
+        [self focusOnItem:_lastNameNativeItem];
 }
 
 + (NSString *)documentDisplayNameForType:(TGPassportType)type
@@ -1652,13 +2111,17 @@
 
 - (bool)shouldScanDocument
 {
-    bool hasName = _nameItem.username.length > 0 || _surnameItem.username.length > 0;
-    bool hasCountry = _countryCode.length > 0;
-    bool hasResidenceCountry = _residenceCountryCode.length > 0;
-    bool hasBirthDate = _birthDate.length > 0;
-    bool hasDocumentNumber = _documentNoItem.username.length > 0;
-    bool hasDocumentExpiryDate = _expiryDate.length > 0;
-    return !(hasName || hasCountry || hasResidenceCountry || hasBirthDate || hasDocumentNumber || hasDocumentExpiryDate);
+    return true;
+}
+
+- (bool)isTypeAccepted:(TGPassportType)type
+{
+    for (TGPassportRequiredType *requiredType in self.acceptedTypes)
+    {
+        if (requiredType.type == type)
+            return true;
+    }
+    return false;
 }
 
 - (void)applyScannedMRZ:(TGPassportMRZ *)mrz ignoreDocument:(bool)ignoreDocument
@@ -1667,84 +2130,144 @@
     {
         if ([mrz.documentType isEqualToString:@"P"] && _type != TGPassportTypePassport)
         {
+            if (![self isTypeAccepted:TGPassportTypePassport])
+                return;
+            
             _type = TGPassportTypePassport;
             self.title = [TGPassportIdentityController documentDisplayNameForType:_type];
+            [self updateSides];
         }
         else if ([mrz.documentType isEqualToString:@"I"] && _type != TGPassportTypeIdentityCard)
         {
+            if (![self isTypeAccepted:TGPassportTypeIdentityCard])
+                return;
+            
             _type = TGPassportTypeIdentityCard;
             self.title = [TGPassportIdentityController documentDisplayNameForType:_type];
+            [self updateSides];
+        }
+        else if ([mrz.documentType isEqualToString:@"DL"] && _type != TGPassportTypeDriversLicense)
+        {
+            if (![self isTypeAccepted:TGPassportTypeDriversLicense])
+                return;
+            
+            _type = TGPassportTypeDriversLicense;
+            self.title = [TGPassportIdentityController documentDisplayNameForType:_type];
+            [self updateSides];
         }
     }
     
-    _changed = true;
+    [self setChanged:true];
     
-    _nameItem.username = [mrz.firstName capitalizedString];
-    _surnameItem.username = [mrz.lastName capitalizedString];
-    if (mrz.birthDate != nil)
+    NSString *firstName = [mrz.firstName capitalizedString];
+    NSString *firstNameNative = [mrz.nativeFirstName capitalizedString];
+    NSString *lastName = [mrz.lastName capitalizedString];
+    NSString *lastNameNative = [mrz.nativeLastName capitalizedString];
+    NSString *middleName = [mrz.middleName capitalizedString];
+    NSString *middleNameNative = [mrz.nativeMiddleName capitalizedString];
+    
+    if (_firstNameItem.username.length == 0)
+        _firstNameItem.username = firstName;
+    if (_firstNameNativeItem.username.length == 0)
+    {
+        _firstNameNativeItem.username = firstNameNative;
+        _firstNameNative = firstNameNative;
+    }
+    
+    if (_middleNameItem.username.length == 0)
+        _middleNameItem.username = middleName;
+    if (_middleNameNativeItem.username.length == 0)
+    {
+        _middleNameNativeItem.username = middleNameNative;
+        _middleNameNative = middleNameNative;
+    }
+    
+    if (_lastNameItem.username.length == 0)
+        _lastNameItem.username = lastName;
+    if (_lastNameNativeItem.username.length == 0)
+    {
+        _lastNameNativeItem.username = lastNameNative;
+        _lastNameNative = lastNameNative;
+    }
+    
+    if (_birthDate == nil && mrz.birthDate != nil)
     {
         _birthDate = [[TGPassportIdentityController dateFormatter] stringFromDate:mrz.birthDate];
         _birthDateItem.variant = [TGPassportIdentityController localizedStringFromDate:mrz.birthDate];
         _birthDateItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
     }
     
-    if ([mrz.gender isEqualToString:@"M"])
+    if (_gender == TGPassportGenderUndefined)
     {
-        _gender = TGPassportGenderMale;
-        _genderItem.variant = TGLocalized(@"Passport.Identity.GenderMale");
-        _genderItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
-    }
-    else if ([mrz.gender isEqualToString:@"F"])
-    {
-        _gender = TGPassportGenderFemale;
-        _genderItem.variant = TGLocalized(@"Passport.Identity.GenderFemale");
-        _genderItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
-    }
-    
-    if (mrz.nationality.length > 0)
-    {
-        NSString *countryCode = [TGLoginCountriesController countryCodeByMRZCode:mrz.nationality];
-        if (countryCode != nil)
+        if ([mrz.gender isEqualToString:@"M"])
         {
-            _countryCode = countryCode;
-            _countryItem.variant = [TGLoginCountriesController countryNameByCountryId:_countryCode code:NULL];
-            _countryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            _gender = TGPassportGenderMale;
+            _genderItem.variant = TGLocalized(@"Passport.Identity.GenderMale");
+            _genderItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+        }
+        else if ([mrz.gender isEqualToString:@"F"])
+        {
+            _gender = TGPassportGenderFemale;
+            _genderItem.variant = TGLocalized(@"Passport.Identity.GenderFemale");
+            _genderItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
         }
     }
     
-    if (mrz.issuingCountry.length > 0)
+    if (_countryCode.length == 0)
     {
-        NSString *countryCode = [TGLoginCountriesController countryCodeByMRZCode:mrz.issuingCountry];
-        if (countryCode != nil)
+        if (mrz.nationality.length > 0)
         {
-            _residenceCountryCode = countryCode;
-            _residenceCountryItem.variant = [TGLoginCountriesController countryNameByCountryId:_residenceCountryCode code:NULL];
-            _residenceCountryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            NSString *countryCode = [TGLoginCountriesController countryCodeByMRZCode:mrz.nationality];
+            if (countryCode != nil)
+            {
+                _countryCode = countryCode;
+                _countryItem.variant = [TGLoginCountriesController localizedCountryNameByCountryId:_countryCode];
+                _countryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            }
+        }
+    }
+    
+    if (_residenceCountryCode.length == 0)
+    {
+        if (mrz.issuingCountry.length > 0)
+        {
+            NSString *countryCode = [TGLoginCountriesController countryCodeByMRZCode:mrz.issuingCountry];
+            if (countryCode != nil)
+            {
+                _residenceCountryCode = countryCode;
+                _residenceCountryItem.variant = [TGLoginCountriesController localizedCountryNameByCountryId:_residenceCountryCode];
+                _residenceCountryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            }
         }
     }
     
     if (!ignoreDocument)
     {
-        _documentNoItem.username = mrz.documentNumber;
+        if (_documentNoItem.username.length == 0)
+            _documentNoItem.username = mrz.documentNumber;
         
-        if (mrz.expiryDate != nil)
+        if (_expiryDate.length == 0)
         {
-            _expiryDate = [[TGPassportIdentityController dateFormatter] stringFromDate:mrz.expiryDate];
-            _expiryItem.variant = [TGPassportIdentityController localizedStringFromDate:mrz.expiryDate];
-            _expiryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
-        }
-        else if ([mrz.documentSubtype isEqualToString:@"N"])
-        {
-            _expiryDate = @"";
-            _expiryItem.variant = TGLocalized(@"Passport.Identity.ExpiryDateNone");
-            _expiryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            if (mrz.expiryDate != nil)
+            {
+                _expiryDate = [[TGPassportIdentityController dateFormatter] stringFromDate:mrz.expiryDate];
+                _expiryItem.variant = [TGPassportIdentityController localizedStringFromDate:mrz.expiryDate];
+                _expiryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            }
+            else if ([mrz.documentSubtype isEqualToString:@"N"])
+            {
+                _expiryDate = @"";
+                _expiryItem.variant = TGLocalized(@"Passport.Identity.ExpiryDateNone");
+                _expiryItem.variantColor = self.presentation.pallete.collectionMenuTextColor;
+            }
         }
     }
     
-    CGRect nameFrame = [_nameItem.boundView convertRect:_nameItem.boundView.bounds toView:self.collectionView];
-    UIView *snapshotView = [self.collectionView resizableSnapshotViewFromRect:CGRectMake(0, nameFrame.origin.y, self.collectionView.frame.size.width, self.collectionView.frame.size.height - nameFrame.origin.y) afterScreenUpdates:false withCapInsets:UIEdgeInsetsZero];
+    TGCollectionItemView *topItem = _firstNameItem.boundView ?: _documentNoItem.boundView;
+    CGRect topFrame = [topItem convertRect:topItem.bounds toView:self.collectionView];
+    UIView *snapshotView = [self.collectionView resizableSnapshotViewFromRect:CGRectMake(0, topFrame.origin.y, self.collectionView.frame.size.width, self.collectionView.frame.size.height - topFrame.origin.y) afterScreenUpdates:false withCapInsets:UIEdgeInsetsZero];
     
-    snapshotView.frame = CGRectMake(0.0f, nameFrame.origin.y, snapshotView.frame.size.width, snapshotView.frame.size.height);
+    snapshotView.frame = CGRectMake(0.0f, topFrame.origin.y, snapshotView.frame.size.width, snapshotView.frame.size.height);
     [self.collectionView addSubview:snapshotView];
     
     [UIView animateWithDuration:0.2 animations:^
@@ -1756,6 +2279,7 @@
     }];
     
     [self checkInputValues];
+    [self updateNativeNameSection:true];
 }
 
 - (void)scanPressed

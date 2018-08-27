@@ -383,7 +383,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {    
-    PGTick;
+    //PGTick;
     if (iosMajorVersion() >= 9) {
         if ([effectiveLocalization().code isEqualToString:@"ar"]) {
             [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
@@ -1435,6 +1435,8 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     else
     {
         TGNavigationController *loginNavigationController = [self loginNavigationController];
+        //if (iosMajorVersion() >= 12)
+        //    loginNavigationController.navigationBar.tintColor = TGAccentColor();
         NSMutableArray *viewControllers = [[loginNavigationController viewControllers] mutableCopy];
         
         if (phoneNumber.length != 0)
@@ -2004,33 +2006,35 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
 
 - (NSArray *)modernAlertSoundTitles
 {
-    static NSArray *soundArray = nil;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        NSMutableArray *array = [[NSMutableArray alloc] init];
-        [array addObject:@"None"];
-        [array addObject:@"Note"];
-        [array addObject:@"Aurora"];
-        [array addObject:@"Bamboo"];
-        [array addObject:@"Chord"];
-        [array addObject:@"Circles"];
-        [array addObject:@"Complete"];
-        [array addObject:@"Hello"];
-        [array addObject:@"Input"];
-        [array addObject:@"Keys"];
-        [array addObject:@"Popcorn"];
-        [array addObject:@"Pulse"];
-        [array addObject:@"Synth"];
-        soundArray = array;
-    });
-    
-    return soundArray;
+    return @[
+        TGLocalized(@"NotificationsSound.None"),
+        TGLocalized(@"NotificationsSound.Note"),
+        TGLocalized(@"NotificationsSound.Aurora"),
+        TGLocalized(@"NotificationsSound.Bamboo"),
+        TGLocalized(@"NotificationsSound.Chord"),
+        TGLocalized(@"NotificationsSound.Circles"),
+        TGLocalized(@"NotificationsSound.Complete"),
+        TGLocalized(@"NotificationsSound.Hello"),
+        TGLocalized(@"NotificationsSound.Input"),
+        TGLocalized(@"NotificationsSound.Keys"),
+        TGLocalized(@"NotificationsSound.Popcorn"),
+        TGLocalized(@"NotificationsSound.Pulse"),
+        TGLocalized(@"NotificationsSound.Synth")
+    ];
 }
 
 - (NSArray *)classicAlertSoundTitles
 {
+    return @[
+        TGLocalized(@"NotificationsSound.Tritone"),
+        TGLocalized(@"NotificationsSound.Tremolo"),
+        TGLocalized(@"NotificationsSound.Alert"),
+        TGLocalized(@"NotificationsSound.Bell"),
+        TGLocalized(@"NotificationsSound.Calypso"),
+        TGLocalized(@"NotificationsSound.Chime"),
+        TGLocalized(@"NotificationsSound.Glass"),
+        TGLocalized(@"NotificationsSound.Telegraph")
+    ];
     static NSArray *soundArray = nil;
     
     static dispatch_once_t onceToken;
@@ -2156,6 +2160,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
     }
     
     _deviceTokenListener = listener;
+
     if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)])
     {
         UIMutableUserNotificationCategory *muteActionCategory = [[UIMutableUserNotificationCategory alloc] init];
@@ -3158,6 +3163,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                 NSString *publicKey = dict[@"public_key"];
                 
                 NSString *payload = dict[@"payload"];
+                NSString *nonce = dict[@"nonce"];
                 
                 __weak TGAppDelegate *weakSelf = self;
                 void (^displayRequestBlock)(void) =
@@ -3174,7 +3180,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
                             return;
                     }
                     
-                    TGPassportFormRequest *formRequest = [[TGPassportFormRequest alloc] initWithBotId:botId scope:scope publicKey:publicKey bundleId:bundleId callbackUrl:callbackUrl payload:payload];
+                    TGPassportFormRequest *formRequest = [[TGPassportFormRequest alloc] initWithBotId:botId scope:scope publicKey:publicKey bundleId:bundleId callbackUrl:callbackUrl nonce:nonce payload:payload];
                     TGPassportRequestController *controller = [[TGPassportRequestController alloc] initWithFormRequest:formRequest];
                     TGNavigationController *navigationController = [TGNavigationController navigationControllerWithControllers:@[controller]];
                     navigationController.restrictLandscape = true;
@@ -3744,7 +3750,7 @@ static unsigned int overrideIndexAbove(__unused id self, __unused SEL _cmd)
             if (TGAppDelegateInstance.rootController.presentedViewController != nil && ![TGAppDelegateInstance.rootController.presentedViewController isKindOfClass:[TGNavigationController class]]) {
                 [TGAppDelegateInstance.rootController dismissViewControllerAnimated:false completion:nil];
             }
-            TGInstantPageController *controller = [[TGInstantPageController alloc] initWithWebPage:webpage anchor:nil peerId:0 messageId:0];
+            TGInstantPageController *controller = [[TGInstantPageController alloc] initWithWebPage:webpage anchor:[url urlAnchorPart] peerId:0 messageId:0];
             controller.disableActions = disableActions;
             
             if ([TGAppDelegateInstance.rootController.presentedViewController isKindOfClass:[TGNavigationController class]])

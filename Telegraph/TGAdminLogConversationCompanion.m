@@ -359,7 +359,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
     self.useInitialSnapshot = false;
     [self _setTitle:TGLocalized(@"Channel.AdminLog.TitleAllEvents") andStatus:@"" accentColored:false allowAnimatioon:false toggleMode:[self currentToggleMode]];
     [self _setAvatarConversationId:_conversation.conversationId title:_conversation.chatTitle icon:nil];
-    [self _setAvatarUrl:_conversation.chatPhotoSmall];
+    [self _setAvatarUrl:_conversation.chatPhotoFullSmall];
     
     [controller setLoadingMessages:true];
     [self loadMoreImpl:true];
@@ -1080,7 +1080,7 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
             TGModernConversationController *controller = self.controller;
             
             [self _setAvatarConversationId:_conversation.conversationId title:conversation.chatTitle icon:nil];
-            [self _setAvatarUrl:conversation.chatPhotoSmall];
+            [self _setAvatarUrl:conversation.chatPhotoFullSmall];
         });
     }
     
@@ -1152,11 +1152,11 @@ static bool isEventFilterAllSet(TGChannelEventFilter filter) {
 
 - (TGModernGalleryController *)galleryControllerForAvatar
 {
-    if (_conversation.chatPhotoSmall.length == 0)
+    if (_conversation.chatPhotoFullSmall.length == 0)
         return nil;
     
     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
-    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoSmall legacyUrl:_conversation.chatPhotoBig imageSize:CGSizeMake(640.0f, 640.0f)];
+    modernGallery.model = [[TGGroupAvatarGalleryModel alloc] initWithPeerId:_conversation.conversationId accessHash:_accessHash messageId:0 legacyThumbnailUrl:_conversation.chatPhotoFullSmall legacyUrl:_conversation.chatPhotoFullBig imageSize:CGSizeMake(640.0f, 640.0f)];
     
     return modernGallery;
 }

@@ -108,7 +108,7 @@
     _content.title = conversation.chatTitle;
     [_content setNeedsDisplay];
     
-    [self setAvatarUri:conversation.chatPhotoSmall];
+    [self setAvatarUri:conversation.chatPhotoFullSmall];
 }
 
 - (void)setAvatarUri:(NSString *)avatarUri

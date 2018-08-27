@@ -266,6 +266,8 @@
     user.customProperties = nameComponents;
     if (_user.photoUrlSmall.length > 0)
         user.photoUrlSmall = _user.photoUrlSmall;
+    if (_user.photoFileReferenceSmall != nil)
+        user.photoFileReferenceSmall = _user.photoFileReferenceSmall;
     
     self.userInfoItem.automaticallyManageUserPresence = false;
     [self.userInfoItem setUser:user animated:false];
@@ -860,7 +862,7 @@
             if (previewMode)
                 modernGallery.showInterface = false;
             
-            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_user.uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_user.uid currentAvatarLegacyThumbnailImageUri:user.photoFullUrlSmall currentAvatarLegacyImageUri:user.photoFullUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
             
             __weak TGVCardUserInfoController *weakSelf = self;
             __weak TGModernGalleryController *weakGallery = modernGallery;

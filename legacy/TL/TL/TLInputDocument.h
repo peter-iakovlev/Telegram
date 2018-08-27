@@ -18,6 +18,7 @@
 
 @property (nonatomic) int64_t n_id;
 @property (nonatomic) int64_t access_hash;
+@property (nonatomic, strong) NSData *file_reference;
 
 @end
 

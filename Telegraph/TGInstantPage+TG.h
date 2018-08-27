@@ -6,6 +6,6 @@
 
 @interface TGInstantPage (TG)
 
-+ (TGInstantPage *)parse:(TLPage *)pageDescription;
++ (TGInstantPage *)parse:(TLPage *)pageDescription webpageUrl:(NSString *)webpageUrl;
 
 @end

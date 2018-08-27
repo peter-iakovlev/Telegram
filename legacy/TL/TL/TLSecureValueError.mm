@@ -310,3 +310,141 @@
 
 
 @end
+
+@implementation TLSecureValueError$secureValueError : TLSecureValueError
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x869d758f;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x72e6b074;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLSecureValueError$secureValueError *object = [[TLSecureValueError$secureValueError alloc] init];
+    object.type = metaObject->getObject((int32_t)0x9211ab0a);
+    object.n_hash = metaObject->getBytes((int32_t)0xc152e470);
+    object.text = metaObject->getString((int32_t)0x94f1580d);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.type;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9211ab0a, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.n_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xc152e470, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.text;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x94f1580d, value));
+    }
+}
+
+
+@end
+
+@implementation TLSecureValueError$secureValueErrorTranslationFile : TLSecureValueError
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0xa1144770;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0xadd3ad9c;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLSecureValueError$secureValueErrorTranslationFile *object = [[TLSecureValueError$secureValueErrorTranslationFile alloc] init];
+    object.type = metaObject->getObject((int32_t)0x9211ab0a);
+    object.file_hash = metaObject->getBytes((int32_t)0xde1902e1);
+    object.text = metaObject->getString((int32_t)0x94f1580d);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.type;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9211ab0a, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeBytes;
+        value.nativeObject = self.file_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xde1902e1, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.text;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x94f1580d, value));
+    }
+}
+
+
+@end
+
+@implementation TLSecureValueError$secureValueErrorTranslationFiles : TLSecureValueError
+
+- (int32_t)TLconstructorSignature
+{
+    return (int32_t)0x34636dd8;
+}
+
+- (int32_t)TLconstructorName
+{
+    return (int32_t)0x22877d33;
+}
+
+- (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
+{
+    TLSecureValueError$secureValueErrorTranslationFiles *object = [[TLSecureValueError$secureValueErrorTranslationFiles alloc] init];
+    object.type = metaObject->getObject((int32_t)0x9211ab0a);
+    object.file_hash = metaObject->getArray((int32_t)0xde1902e1);
+    object.text = metaObject->getString((int32_t)0x94f1580d);
+    return object;
+}
+
+- (void)TLfillFieldsWithValues:(std::map<int32_t, TLConstructedValue> *)values
+{
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.type;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x9211ab0a, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeVector;
+        value.nativeObject = self.file_hash;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xde1902e1, value));
+    }
+    {
+        TLConstructedValue value;
+        value.type = TLConstructedValueTypeString;
+        value.nativeObject = self.text;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x94f1580d, value));
+    }
+}
+
+
+@end

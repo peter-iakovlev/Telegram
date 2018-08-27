@@ -5,6 +5,7 @@
 #import "TGTelegraph.h"
 
 #import "TGStickersSignals.h"
+#import "TGDownloadMessagesSignal.h"
 
 #import "TGAppDelegate.h"
 
@@ -12,6 +13,7 @@
 #import "TL/TLMetaScheme.h"
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 typedef enum {
     TGStickerSyncActionAdd,
@@ -153,6 +155,44 @@ static bool _syncedStickers = false;
     }
 }
 
++ (SSignal *)remoteRecentStickers {
+    return [self _remoteRecentStickers:0];
+}
+
++ (SSignal *)_remoteRecentStickers:(int32_t)hash {
+    TLRPCmessages_getRecentStickers$messages_getRecentStickers *getRecentStickers = [[TLRPCmessages_getRecentStickers$messages_getRecentStickers alloc] init];
+    getRecentStickers.flags = (1 << 0);
+    getRecentStickers.n_hash = hash;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getRecentStickers] mapToSignal:^SSignal *(id result) {
+        if ([result isKindOfClass:[TLmessages_RecentStickers$messages_recentStickers class]]) {
+            TLmessages_RecentStickers$messages_recentStickers *recentStickers = result;
+            
+            NSMutableArray *array = [[NSMutableArray alloc] init];
+            for (id desc in [recentStickers.stickers reverseObjectEnumerator]) {
+                TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
+                if (document.documentId != 0) {
+                    document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocumentRecentMask:desc];
+                    [array addObject:document];
+                }
+            };
+            
+            int32_t localHash = [self hashForDocumentsReverse:array];
+            if (localHash != recentStickers.n_hash) {
+                TGLog(@"(TGRecentMaskStickersSignal hash mismatch)");
+            }
+            
+            [self _storeRecentStickers:array];
+            
+            [[self _recentStickers] set:[SSignal single:array]];
+            
+            return [SSignal single:array];
+        } else {
+            return [SSignal single:nil];
+        }
+    }];
+}
+
 + (SSignal *)_syncRecentStickers {
     return [[SSignal defer:^SSignal *{
         NSArray *actions = [[NSArray alloc] initWithArray:[self _stickerActions]];
@@ -161,22 +201,39 @@ static bool _syncedStickers = false;
         SSignal *actionsSignal = [SSignal complete];
         
         for (TGMaskStickerSyncAction *action in actions) {
-            TLRPCmessages_saveRecentSticker$messages_saveRecentSticker *saveSticker = [[TLRPCmessages_saveRecentSticker$messages_saveRecentSticker alloc] init];
+            SSignal *(^saveStickerSignal)(TGMediaOriginInfo *) = ^SSignal *(TGMediaOriginInfo *originInfo)
+            {
+                TLRPCmessages_saveRecentSticker$messages_saveRecentSticker *saveSticker = [[TLRPCmessages_saveRecentSticker$messages_saveRecentSticker alloc] init];
+                TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+                inputDocument.n_id = action.document.documentId;
+                inputDocument.access_hash = action.document.accessHash;
+                inputDocument.file_reference = [originInfo fileReference];
+                saveSticker.n_id = inputDocument;
+                switch (action.action) {
+                    case TGStickerSyncActionAdd:
+                        saveSticker.unsave = false;
+                        break;
+                    case TGStickerSyncActionDelete:
+                        saveSticker.unsave = true;
+                        break;
+                }
+                return [[TGTelegramNetworking instance] requestSignal:saveSticker];
+            };
             
+            SSignal *saveActionSignal = [saveStickerSignal(action.document.originInfo) catch:^SSignal *(id error) {
+                int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                
+                if ([errorText hasPrefix:@"FILE_REFERENCE_"] && errorCode == 400 && action.document.originInfo != nil) {
+                    return [[TGDownloadMessagesSignal updatedOriginInfo:action.document.originInfo identifier:action.document.documentId] mapToSignal:^SSignal *(TGMediaOriginInfo *updatedOriginInfo) {
+                        return saveStickerSignal(updatedOriginInfo);
+                    }];
+                } else {
+                    return [SSignal fail:error];
+                }
+            }];
             
-            TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
-            inputDocument.n_id = action.document.documentId;
-            inputDocument.access_hash = action.document.accessHash;
-            saveSticker.n_id = inputDocument;
-            switch (action.action) {
-                case TGStickerSyncActionAdd:
-                    saveSticker.unsave = false;
-                    break;
-                case TGStickerSyncActionDelete:
-                    saveSticker.unsave = true;
-                    break;
-            }
-            actionsSignal = [actionsSignal then:[[[[TGTelegramNetworking instance] requestSignal:saveSticker] mapToSignal:^SSignal *(__unused id next) {
+            actionsSignal = [actionsSignal then:[[saveActionSignal mapToSignal:^SSignal *(__unused id next) {
                 return [SSignal complete];
             }] catch:^SSignal *(__unused id error) {
                 return [SSignal complete];
@@ -184,35 +241,8 @@ static bool _syncedStickers = false;
         }
         
         return [[actionsSignal then:[[self _loadRecentStickers] mapToSignal:^SSignal *(NSArray *array) {
-            TLRPCmessages_getRecentStickers$messages_getRecentStickers *getRecentStickers = [[TLRPCmessages_getRecentStickers$messages_getRecentStickers alloc] init];
-            getRecentStickers.flags = (1 << 0);
-            getRecentStickers.n_hash = [self hashForDocumentsReverse:array];
-            
-            return [[[TGTelegramNetworking instance] requestSignal:getRecentStickers] mapToSignal:^SSignal *(id result) {
-                if ([result isKindOfClass:[TLmessages_RecentStickers$messages_recentStickers class]]) {
-                    TLmessages_RecentStickers$messages_recentStickers *recentStickers = result;
-                    
-                    NSMutableArray *array = [[NSMutableArray alloc] init];
-                    for (id desc in [recentStickers.stickers reverseObjectEnumerator]) {
-                        TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
-                        if (document.documentId != 0) {
-                            [array addObject:document];
-                        }
-                    }
-                    
-                    int32_t localHash = [self hashForDocumentsReverse:array];
-                    if (localHash != recentStickers.n_hash) {
-                        TGLog(@"(TGRecentMaskStickersSignal hash mismatch)");
-                    }
-                    
-                    [self _storeRecentStickers:array];
-                    
-                    [[self _recentStickers] set:[SSignal single:array]];
-                    
-                    return [SSignal complete];
-                } else {
-                    return [SSignal complete];
-                }
+            return [[self _remoteRecentStickers:[self hashForDocumentsReverse:array]] mapToSignal:^SSignal *(__unused id value) {
+                return [SSignal complete];
             }];
         }]] then:[[SSignal defer:^SSignal *{
             if ([self _stickerActions].count == 0) {

@@ -19,6 +19,7 @@
 #import "TLWebPage_manual.h"
 
 #import "TGImageMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 @interface TGGiphySearchActor () <TGRawHttpActor>
 {
@@ -55,7 +56,9 @@
             if ([gif isKindOfClass:[TLFoundGif$foundGifCached class]]) {
                 TLFoundGif$foundGifCached *concreteGif = (TLFoundGif$foundGifCached *)gif;
                 TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:concreteGif.document];
+                document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocument:concreteGif.document];
                 TGImageMediaAttachment *image = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:concreteGif.photo];
+                image.originInfo = [TGMediaOriginInfo mediaOriginInfoForPhoto:concreteGif.photo];
                 if (document.documentId != 0) {
                     TGInternalGifSearchResult *item = [[TGInternalGifSearchResult alloc] initWithUrl:concreteGif.url document:document photo:image.imageId == 0 ? nil : image];
                     if (![processedItems containsObject:item]) {

@@ -22,6 +22,12 @@ void extractUserPhoto(TLUserProfilePhoto *photo, TGUser *target)
         target.photoUrlSmall = extractFileUrl(profilePhoto.photo_small);
         target.photoUrlMedium = nil;
         target.photoUrlBig = extractFileUrl(profilePhoto.photo_big);
+        
+        if ([profilePhoto.photo_small isKindOfClass:[TLFileLocation$fileLocation class]])
+            target.photoFileReferenceSmall = ((TLFileLocation$fileLocation *)profilePhoto.photo_small).file_reference;
+        
+        if ([profilePhoto.photo_big isKindOfClass:[TLFileLocation$fileLocation class]])
+            target.photoFileReferenceBig = ((TLFileLocation$fileLocation *)profilePhoto.photo_big).file_reference;
     }
     else
     {

@@ -38,11 +38,7 @@
     
     NSMutableAttributedString *attributedText = [[NSMutableAttributedString alloc] initWithString:_subtitle ?: @""];
     if (_errors.count > 0) {
-        NSString *text = TGLocalized(@"Passport.CorrectErrors");
-        if (text.length > 0)
-            attributedText = [[NSMutableAttributedString alloc] initWithString:text];
-        else
-            attributedText = [[NSMutableAttributedString alloc] initWithString:[_errors componentsJoinedByString:@"\n"]];
+        attributedText = [[NSMutableAttributedString alloc] initWithString:[_errors firstObject]];
     }
     
     NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
@@ -52,7 +48,7 @@
     [attributedText addAttribute:NSParagraphStyleAttributeName value:style range:NSMakeRange(0, attributedText.length)];
     [attributedText addAttribute:NSFontAttributeName value:font range:NSMakeRange(0, attributedText.length)];
     
-    CGSize textSize = [attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 15.0f - 40.0f - safeAreaInset.left - safeAreaInset.right, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
+    CGSize textSize = [attributedText boundingRectWithSize:CGSizeMake(containerSize.width - 15.0f - 30.0f - safeAreaInset.left - safeAreaInset.right, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin context:NULL].size;
     
     textSize.width = CGCeil(textSize.width);
     textSize.height = CGCeil(textSize.height);
@@ -117,7 +113,10 @@
     {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        [actionTarget performSelector:_action];
+        if ([NSStringFromSelector(_action) rangeOfString:@":"].location != NSNotFound)
+            [actionTarget performSelector:_action withObject:self];
+        else
+            [actionTarget performSelector:_action];
 #pragma clang diagnostic pop
     }
 }

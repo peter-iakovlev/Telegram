@@ -95,7 +95,7 @@
     }
     else
     {
-        [_avatarView loadImage:appSession.bot.photoUrlSmall filter:@"circle:20x20" placeholder:placeholder];
+        [_avatarView loadImage:appSession.bot.photoFullUrlSmall filter:@"circle:20x20" placeholder:placeholder];
     }
 
     [self setNeedsLayout];

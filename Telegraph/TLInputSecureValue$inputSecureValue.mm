@@ -6,7 +6,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return 0x67872e8;
+    return 0xdb21d0a7;
 }
 
 - (int32_t)TLconstructorName
@@ -34,6 +34,16 @@
     
     if (self.flags & (1 << 3)) {
         TLMetaClassStore::serializeObject(os, self.selfie, true);
+    }
+    
+    if (self.flags & (1 << 6)) {
+        int32_t vectorSignature = TL_UNIVERSAL_VECTOR_CONSTRUCTOR;
+        [os writeInt32:vectorSignature];
+        
+        [os writeInt32:(int32_t)self.translation.count];
+        for (TLInputSecureFile *file in self.translation) {
+            TLMetaClassStore::serializeObject(os, file, true);
+        }
     }
     
     if (self.flags & (1 << 4)) {

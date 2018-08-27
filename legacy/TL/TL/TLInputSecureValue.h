@@ -16,6 +16,7 @@
 @property (nonatomic, retain) TLInputSecureFile *front_side;
 @property (nonatomic, retain) TLInputSecureFile *reverse_side;
 @property (nonatomic, retain) TLInputSecureFile *selfie;
+@property (nonatomic, retain) NSArray *translation;
 @property (nonatomic, retain) NSArray *files;
 @property (nonatomic, retain) TLSecurePlainData *plain_data;
 

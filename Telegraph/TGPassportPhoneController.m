@@ -120,7 +120,7 @@
     
     phoneNumber = [TGPhoneUtils cleanPhone:phoneNumber];
     
-    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePhone data:nil frontSide:nil reverseSide:nil selfie:nil files:nil plainData:[[TGPassportPhoneData alloc] initWithPhone:phoneNumber]];
+    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypePhone data:nil frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:[[TGPassportPhoneData alloc] initWithPhone:phoneNumber]];
     
     SSignal *signal = [[_settings.signal take:1] mapToSignal:^SSignal *(TGPassportPasswordRequest *request)
     {

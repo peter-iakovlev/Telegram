@@ -21,6 +21,8 @@
         if ([attachment isKindOfClass:[TGDocumentMediaAttachment class]])
         {
             document = attachment;
+            if (document.originInfo == nil)
+                document.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:message.cid mid:message.mid];
             break;
         } else if ([attachment isKindOfClass:[TGAudioMediaAttachment class]]) {
             TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:attachment peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:((TGAudioMediaAttachment *)attachment).duration];
@@ -29,9 +31,14 @@
             return item;
         } else if ([attachment isKindOfClass:[TGWebPageMediaAttachment class]]) {
             document = ((TGWebPageMediaAttachment *)attachment).document;
+            if (document.originInfo == nil)
+                document.originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil url:((TGWebPageMediaAttachment *)attachment).url];
             break;
         } else if ([attachment isKindOfClass:[TGVideoMediaAttachment class]]) {
             if (((TGVideoMediaAttachment *)attachment).roundMessage) {
+                if (((TGVideoMediaAttachment *)attachment).originInfo == nil)
+                    ((TGVideoMediaAttachment *)attachment).originInfo = [TGMediaOriginInfo mediaOriginInfoWithFileReference:nil fileReferences:nil cid:message.cid mid:message.mid];
+                
                 TGMusicPlayerItem *item = [[TGMusicPlayerItem alloc] initWithKey:@(message.mid) media:attachment peerId:message.cid author:author date:(int32_t)message.date performer:nil title:nil duration:((TGVideoMediaAttachment *)attachment).duration];
                 item->_peerId = message.fromUid;
                 item->_isVoice = true;

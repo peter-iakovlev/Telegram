@@ -95,15 +95,15 @@
 }];
 }
 
-+ (SSignal *)multipartDownload:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId size:(NSUInteger)size mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
++ (SSignal *)multipartDownload:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId originInfo:(TGMediaOriginInfo *)originInfo identifier:(int64_t)identifier size:(NSUInteger)size mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
     id resource = nil;
     if ([location isKindOfClass:[TLInputFileLocation$inputFileLocation class]]) {
         TLInputFileLocation$inputFileLocation *concreteLocation = (TLInputFileLocation$inputFileLocation *)location;
-        resource = [[CloudFileMediaResource alloc] initWithDatacenterId:(int32_t)datacenterId volumeId:concreteLocation.volume_id localId:concreteLocation.local_id secret:concreteLocation.secret size:size == 0 ? nil : @(size) legacyCacheUrl:nil legacyCachePath:nil mediaType:@(mediaTypeTag)];
+        resource = [[CloudFileMediaResource alloc] initWithDatacenterId:(int32_t)datacenterId volumeId:concreteLocation.volume_id localId:concreteLocation.local_id secret:concreteLocation.secret size:size == 0 ? nil : @(size) legacyCacheUrl:nil legacyCachePath:nil mediaType:@(mediaTypeTag) originInfo:originInfo identifier:identifier];
     } else if ([location isKindOfClass:[TLInputFileLocation$inputDocumentFileLocation class]]) {
         TLInputFileLocation$inputDocumentFileLocation *concreteLocation = (TLInputFileLocation$inputDocumentFileLocation *)location;
-        resource = [[CloudDocumentMediaResource alloc] initWithDatacenterId:(int32_t)datacenterId fileId:concreteLocation.n_id accessHash:concreteLocation.access_hash size:size == 0 ? nil : @(size) mediaType:@(mediaTypeTag)];
+        resource = [[CloudDocumentMediaResource alloc] initWithDatacenterId:(int32_t)datacenterId fileId:concreteLocation.n_id accessHash:concreteLocation.access_hash size:size == 0 ? nil : @(size) mediaType:@(mediaTypeTag) originInfo:originInfo identifier:identifier];
     } else if ([location isKindOfClass:[TLInputFileLocation$inputSecureFileLocation class]]) {
         TLInputFileLocation$inputSecureFileLocation *concreteLocation = (TLInputFileLocation$inputSecureFileLocation *)location;
         resource = [[CloudSecureMediaResource alloc] initWithDatacenterId:(int32_t)datacenterId fileId:concreteLocation.n_id accessHash:concreteLocation.access_hash size:size == 0 ? nil : @(size) fileHash:nil thumbnail:false mediaType:@(mediaTypeTag)];
@@ -326,10 +326,10 @@
 
 
 
-+ (SSignal *)dataForLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId size:(NSUInteger)size reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
++ (SSignal *)dataForLocation:(TLInputFileLocation *)location datacenterId:(NSInteger)datacenterId originInfo:(TGMediaOriginInfo *)originInfo identifier:(int64_t)identifier size:(NSUInteger)size reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag
 {
-    if (true || size >= 1 * 1024 * 1024) {
-        return [[[self multipartDownload:location datacenterId:datacenterId size:size mediaTypeTag:mediaTypeTag] filter:^bool(id next) {
+//    if (true || size >= 1 * 1024 * 1024) {
+        return [[[self multipartDownload:location datacenterId:datacenterId originInfo:originInfo identifier:identifier size:size mediaTypeTag:mediaTypeTag] filter:^bool(id next) {
             if (!reportProgress) {
                 return ![next respondsToSelector:@selector(floatValue)];
             } else {
@@ -341,20 +341,20 @@
             }
             return current;
         }];
-    } else {
-        return [[[self partsForLocation:location datacenterId:datacenterId size:size mediaTypeTag:mediaTypeTag] map:^id(id next)
-        {
-            if ([next isKindOfClass:[TGRemoteFileDataEvent class]])
-                return [next data];
-            else if (reportProgress && [next isKindOfClass:[TGRemoteFileProgressEvent class]])
-                return @([(TGRemoteFileProgressEvent *)next progress]);
-            
-            return nil;
-        }] filter:^bool(id value)
-        {
-            return value != nil;
-        }];
-    }
+//    } else {
+//        return [[[self partsForLocation:location datacenterId:datacenterId size:size mediaTypeTag:mediaTypeTag] map:^id(id next)
+//        {
+//            if ([next isKindOfClass:[TGRemoteFileDataEvent class]])
+//                return [next data];
+//            else if (reportProgress && [next isKindOfClass:[TGRemoteFileProgressEvent class]])
+//                return @([(TGRemoteFileProgressEvent *)next progress]);
+//
+//            return nil;
+//        }] filter:^bool(id value)
+//        {
+//            return value != nil;
+//        }];
+//    }
 }
 
 + (SSignal *)dataForWebLocation:(TLInputWebFileLocation *)location datacenterId:(NSInteger)datacenterId size:(NSUInteger)size reportProgress:(bool)reportProgress mediaTypeTag:(TGNetworkMediaTypeTag)mediaTypeTag {

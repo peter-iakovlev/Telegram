@@ -945,12 +945,15 @@ const NSInteger TGNeoConversationControllerInitialRenderCount = 4;
 
 - (void)table:(WKInterfaceTable *)table updateRowController:(TGTableRowController *)controller forIndexPath:(TGIndexPath *)indexPath
 {
+    if (![controller isKindOfClass:[TGTableRowController class]])
+        return;
+    
     __weak TGNeoConversationController *weakSelf = self;
     
     id model = _rowModels[indexPath.row];
     NSUInteger index = [self numberOfRowsInTable:self.table section:0] - indexPath.row - 1;
     
-    if ([model isKindOfClass:[TGChatTimestamp class]])
+    if ([model isKindOfClass:[TGChatTimestamp class]] && [controller isKindOfClass:[TGNeoConversationTimeRowController class]])
     {
         TGNeoConversationTimeRowController *timeController = (TGNeoConversationTimeRowController *)controller;
         [timeController updateWithTimestamp:model];

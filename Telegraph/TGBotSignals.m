@@ -15,6 +15,7 @@
 #import "TGMessage+Telegraph.h"
 #import "TGConversation+Telegraph.h"
 #import "TGConversationAddMessagesActor.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 #import "TGBotContextResults.h"
 #import "TGBotContextExternalResult.h"
@@ -315,7 +316,7 @@
                     }
                 }
                 
-                [TGDatabaseInstance() transactionAddMessages:@[message] updateConversationDatas:chats notifyAdded:true];
+                [TGDatabaseInstance() transactionAddMessages:message != nil ? @[message] : @[] updateConversationDatas:chats notifyAdded:true];
             }
         }
         
@@ -472,11 +473,13 @@
                                 TGImageMediaAttachment *photo = nil;
                                 if (concreteResult.photo != nil) {
                                     photo = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:concreteResult.photo];
+                                    photo.originInfo = [TGMediaOriginInfo mediaOriginInfoForPhoto:concreteResult.photo];
                                 }
                                 
                                 TGDocumentMediaAttachment *document = nil;
                                 if (concreteResult.document != nil) {
                                     document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:concreteResult.document];
+                                    document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocument:concreteResult.document];
                                 }
                                 
                                 [array addObject:[[TGBotContextMediaResult alloc] initWithQueryId:result.query_id resultId:concreteResult.n_id type:concreteResult.type photo:photo document:document title:concreteResult.title resultDescription:concreteResult.n_description sendMessage:[self parseBotContextSendMessage:concreteResult.send_message]]];

@@ -5,6 +5,7 @@
 
 #import "TGImageMediaAttachment+Telegraph.h"
 #import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 static TGRichText *parseText(TLRichText *textDesc) {
     if ([textDesc isKindOfClass:[TLRichText$textPlain class]]) {
@@ -147,7 +148,7 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
 
 @implementation TGInstantPage (TG)
 
-+ (TGInstantPage *)parse:(TLPage *)pageDescription {
++ (TGInstantPage *)parse:(TLPage *)pageDescription webpageUrl:(NSString *)webpageUrl {
     NSMutableArray *blocks = [[NSMutableArray alloc] init];
     for (TLPageBlock *block in pageDescription.blocks) {
         TGInstantPageBlock *parsedBlock = parseBlock(block);
@@ -160,11 +161,25 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
     NSMutableDictionary *videos = [[NSMutableDictionary alloc] init];
     NSMutableDictionary *documents = [[NSMutableDictionary alloc] init];
     for (id mediaDesc in pageDescription.photos) {
+        TGMediaOriginInfo *origin = nil;
+        if ([mediaDesc isKindOfClass:[TLPhoto$photo class]])
+        {
+            TLPhoto$photo *photo = (TLPhoto$photo *)mediaDesc;
+            origin = [TGMediaOriginInfo mediaOriginInfoForPhoto:photo webpageUrl:webpageUrl];
+        }
+        
         TGImageMediaAttachment *imageMedia = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:mediaDesc];
+        imageMedia.originInfo = origin;
         images[@(((TGImageMediaAttachment *)imageMedia).imageId)] = imageMedia;
     }
     for (id documentDesc in pageDescription.documents) {
         TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:documentDesc];
+        
+        if ([documentDesc isKindOfClass:[TLDocument$document class]])
+        {
+            TLDocument$document *document = (TLDocument$document *)documentDesc;
+            documentAttachment.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocument:document webpageUrl:webpageUrl];
+        }
         
         bool isAnimated = false;
         TGVideoMediaAttachment *videoMedia = nil;
@@ -190,6 +205,7 @@ static TGInstantPageBlock *parseBlock(TLPageBlock *blockDesc) {
                 TGVideoInfo *videoInfo = [[TGVideoInfo alloc] init];
                 [videoInfo addVideoWithQuality:1 url:[[NSString alloc] initWithFormat:@"video:%lld:%lld:%d:%d", videoMedia.videoId, videoMedia.accessHash, documentAttachment.datacenterId, documentAttachment.size] size:documentAttachment.size];
                 videoMedia.videoInfo = videoInfo;
+                videoMedia.originInfo = documentAttachment.originInfo;
             } else if ([attribute isKindOfClass:[TGDocumentAttributeAnimated class]]) {
                 isAnimated = true;
             }

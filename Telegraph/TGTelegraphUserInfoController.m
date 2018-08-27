@@ -664,18 +664,22 @@
     
     NSString *variant = TGLocalized(@"UserInfo.NotificationsEnabled");
     NSNumber *muteUntil = _userNotificationSettings[@"muteUntil"];
-    if (muteUntil == nil)
+    
+    bool usesDefault = false;
+    if (muteUntil == nil) {
         muteUntil = _defaultNotificationSettings[@"muteUntil"];
+        usesDefault = true;
+    }
     
     if (muteUntil.intValue <= [[TGTelegramNetworking instance] approximateRemoteTime])
     {
-        variant = TGLocalized(@"UserInfo.NotificationsEnabled");
+        variant = usesDefault ? TGLocalized(@"UserInfo.NotificationsDefaultEnabled") : TGLocalized(@"UserInfo.NotificationsEnabled");
     }
     else
     {
         int muteExpiration = muteUntil.intValue - (int)[[TGTelegramNetworking instance] approximateRemoteTime];
         if (muteExpiration >= 7 * 24 * 60 * 60)
-            variant = TGLocalized(@"UserInfo.NotificationsDisabled");
+            variant = usesDefault ? TGLocalized(@"UserInfo.NotificationsDefaultDisabled"): TGLocalized(@"UserInfo.NotificationsDisabled");
         else
         {
             variant = [TGStringUtils stringForRemainingMuteInterval:muteExpiration];
@@ -1099,8 +1103,12 @@ static UIView *_findBackArrow(UIView *view)
 - (void)notificationsPressed
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
+    
+    bool defaultEnabled = [_defaultNotificationSettings[@"muteUntil"] intValue] <= [[TGTelegramNetworking instance] approximateRemoteTime];
+    NSString *defaultTitle = defaultEnabled ? TGLocalized(@"UserInfo.NotificationsDefaultEnabled") : TGLocalized(@"UserInfo.NotificationsDefaultDisabled");
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:defaultTitle action:@"default"]];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsEnable") action:@"enable"]];
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsDefault") action:@"default"]];
     
     NSArray *muteIntervals = @[
         @(1 * 60 * 60),
@@ -1125,9 +1133,7 @@ static UIView *_findBackArrow(UIView *view)
         else if ([action isEqualToString:@"disable"])
             [controller _commitEnableNotifications:@false orMuteFor:0];
         else if (![action isEqualToString:@"cancel"])
-        {
-            [controller _commitEnableNotifications:false orMuteFor:[action intValue]];
-        }
+            [controller _commitEnableNotifications:@false orMuteFor:[action intValue]];
     } target:self] showInView:self.view];
 }
 
@@ -1322,10 +1328,16 @@ static UIView *_findBackArrow(UIView *view)
         
         ABRecordSetValue(contact, kABPersonPhoneProperty, phoneNumberMultiValue, &error);
         
-        if (error != NULL)
+        if (error != NULL) {
+            if (contact != NULL)
+                CFRelease(contact);
+            
+            if (phoneNumberMultiValue != NULL)
+                CFRelease(phoneNumberMultiValue);
+            
             return nil;
-        
-        contactData = (__bridge NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge id)contact ]));
+        }
+        contactData = (__bridge_transfer NSData *)(ABPersonCreateVCardRepresentationWithPeople((__bridge CFArrayRef)@[ (__bridge_transfer id)contact ]));
         
         filename = user.displayName;
     }
@@ -1662,7 +1674,7 @@ static UIView *_findBackArrow(UIView *view)
             if (previewMode)
                 modernGallery.showInterface = false;
             
-            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoFullUrlSmall currentAvatarLegacyImageUri:user.photoFullUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
             
             __weak TGTelegraphUserInfoController *weakSelf = self;
             __weak TGModernGalleryController *weakGallery = modernGallery;

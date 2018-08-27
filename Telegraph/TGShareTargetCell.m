@@ -149,9 +149,9 @@
             if (user.photoUrlSmall.length != 0)
             {
                 _avatarView.fadeTransitionDuration = 0.3;
-                if (![user.photoUrlSmall isEqualToString:_avatarView.currentUrl])
+                if (![user.photoFullUrlSmall isEqualToString:_avatarView.currentUrl])
                 {
-                    [_avatarView loadImage:user.photoUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                    [_avatarView loadImage:user.photoFullUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
                 }
             }
             else
@@ -230,12 +230,12 @@
                     }
                 }
                 
-                if (conversation.chatPhotoSmall.length != 0)
+                if (conversation.chatPhotoFullSmall.length != 0)
                 {
                     _avatarView.fadeTransitionDuration = 0.3;
-                    if (![conversation.chatPhotoSmall isEqualToString:_avatarView.currentUrl])
+                    if (![conversation.chatPhotoFullSmall isEqualToString:_avatarView.currentUrl])
                     {
-                        [_avatarView loadImage:conversation.chatPhotoSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                        [_avatarView loadImage:conversation.chatPhotoFullSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
                     }
                 }
                 else
@@ -253,9 +253,9 @@
         if (user.photoUrlSmall.length != 0)
         {
             _avatarView.fadeTransitionDuration = 0.3;
-            if (![user.photoUrlSmall isEqualToString:_avatarView.currentUrl])
+            if (![user.photoFullUrlSmall isEqualToString:_avatarView.currentUrl])
             {
-                [_avatarView loadImage:user.photoUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                [_avatarView loadImage:user.photoFullUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
             }
         }
         else

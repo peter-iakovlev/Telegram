@@ -64,11 +64,13 @@
 
 - (void)becomeFirstResponder
 {
+    [super becomeFirstResponder];
     [_textField becomeFirstResponder];
 }
 
 - (void)resignFirstResponder
 {
+    [super resignFirstResponder];
     [_textField resignFirstResponder];
 }
 

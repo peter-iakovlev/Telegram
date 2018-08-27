@@ -61,4 +61,6 @@
 - (void)applyScrollState:(TGInstantPageScrollState *)scrollState;
 - (TGInstantPageScrollState *)currentScrollState;
 
+- (void)setContentHidden:(bool)hidden animated:(bool)animated;
+
 @end

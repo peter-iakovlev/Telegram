@@ -9,5 +9,6 @@
 + (bool)isFaved:(TGDocumentMediaAttachment *)sticker;
 + (void)setSticker:(TGDocumentMediaAttachment *)document faved:(bool)faved;
 + (SSignal *)favoriteStickers;
++ (SSignal *)remoteFavedStickers;
 
 @end

@@ -54,7 +54,7 @@
 
 - (int32_t)TLconstructorSignature
 {
-    return (int32_t)0xa63011e;
+    return (int32_t)0xd18b4d16;
 }
 
 - (int32_t)TLconstructorName
@@ -65,7 +65,7 @@
 - (id<TLObject>)TLbuildFromMetaObject:(std::shared_ptr<TLMetaObject>)metaObject
 {
     TLRPCauth_checkPassword$auth_checkPassword *object = [[TLRPCauth_checkPassword$auth_checkPassword alloc] init];
-    object.password_hash = metaObject->getBytes((int32_t)0xeb3dbe1);
+    object.password = metaObject->getObject((int32_t)0x5aa034f2);
     return object;
 }
 
@@ -73,9 +73,9 @@
 {
     {
         TLConstructedValue value;
-        value.type = TLConstructedValueTypeBytes;
-        value.nativeObject = self.password_hash;
-        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0xeb3dbe1, value));
+        value.type = TLConstructedValueTypeObject;
+        value.nativeObject = self.password;
+        values->insert(std::pair<int32_t, TLConstructedValue>((int32_t)0x5aa034f2, value));
     }
 }
 

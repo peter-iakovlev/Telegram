@@ -7,6 +7,8 @@
 #import <LegacyComponents/ActionStage.h>
 #import "TGDatabase.h"
 
+#import "TGImageInfo+Telegraph.h"
+
 #import "TGGenericPeerMediaGalleryDefaultHeaderView.h"
 #import "TGGenericPeerMediaGalleryActionsAccessoryView.h"
 #import "TGGenericPeerMediaGalleryDefaultFooterView.h"
@@ -127,7 +129,29 @@
         index++;
         
         NSString *legacyThumbnailUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeMake(160.0f, 160.0f) resultingSize:NULL];
+        {
+            int datacenterId = 0;
+            int64_t volumeId = 0;
+            int localId = 0;
+            int64_t secret = 0;
+            if (extractFileUrlComponents(legacyThumbnailUrl, &datacenterId, &volumeId, &localId, &secret)) {
+                NSData *fileReference = [imageMedia.originInfo fileReferenceForVolumeId:volumeId localId:localId];
+                if (fileReference != nil)
+                    legacyThumbnailUrl = [legacyThumbnailUrl stringByAppendingFormat:@"_%@", [fileReference stringByEncodingInHex]];
+            }
+        }
         NSString *legacyUrl = [imageMedia.imageInfo closestImageUrlWithSize:CGSizeMake(640.0f, 640.0f) resultingSize:NULL];
+        {
+            int datacenterId = 0;
+            int64_t volumeId = 0;
+            int localId = 0;
+            int64_t secret = 0;
+            if (extractFileUrlComponents(legacyUrl, &datacenterId, &volumeId, &localId, &secret)) {
+                NSData *fileReference = [imageMedia.originInfo fileReferenceForVolumeId:volumeId localId:localId];
+                if (fileReference != nil)
+                    legacyUrl = [legacyUrl stringByAppendingFormat:@"_%@", [fileReference stringByEncodingInHex]];
+            }
+        }
         bool isCurrent = false;
         
         if (index == 0)

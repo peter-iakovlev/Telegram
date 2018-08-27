@@ -396,7 +396,7 @@
 {
     if (url.length == 0)
         return;
-
+    
     if ([url hasPrefix:@"tel:"])
     {
         TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:url.length < 70 ? url : [[url substringToIndex:70] stringByAppendingString:@"..."] actions:@[

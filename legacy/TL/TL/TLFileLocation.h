@@ -20,6 +20,7 @@
 @interface TLFileLocation$fileLocation : TLFileLocation
 
 @property (nonatomic) int32_t dc_id;
+@property (nonatomic, strong) NSData *file_reference;
 
 @end
 

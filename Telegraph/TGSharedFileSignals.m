@@ -410,12 +410,12 @@
     }] catch:^SSignal *(__unused id error)
     {
         NSInteger datacenterId = 0;
-        TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:thumbnailUrl datacenterId:&datacenterId];
+        TLInputFileLocation *location = [TGSharedMediaSignals inputFileLocationForImageUrl:thumbnailUrl datacenterId:&datacenterId originInfo:documentAttachment.originInfo];
         if (location == nil)
             return [SSignal fail:nil];
         else
         {
-            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
+            return [[TGSharedMediaSignals memoizedDataSignalForRemoteLocation:location datacenterId:datacenterId originInfo:documentAttachment.originInfo identifier:documentAttachment.documentId reportProgress:false mediaTypeTag:TGNetworkMediaTypeTagImage] mapToSignal:^SSignal *(NSData *data)
             {
                 NSString *photoDirectoryPath = [self pathForFileDirectory:documentAttachment];
                 NSString *genericThumbnailPath = [photoDirectoryPath stringByAppendingPathComponent:@"thumbnail"];

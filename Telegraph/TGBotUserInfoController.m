@@ -784,8 +784,12 @@ static UIView *_findBackArrow(UIView *view)
 - (void)notificationsPressed
 {
     NSMutableArray *actions = [[NSMutableArray alloc] init];
+    
+    bool defaultEnabled = [_defaultNotificationSettings[@"muteUntil"] intValue] <= [[TGTelegramNetworking instance] approximateRemoteTime];
+    NSString *defaultTitle = defaultEnabled ? TGLocalized(@"UserInfo.NotificationsDefaultEnabled") : TGLocalized(@"UserInfo.NotificationsDefaultDisabled");
+    
+    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:defaultTitle action:@"default"]];
     [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsEnable") action:@"enable"]];
-    [actions addObject:[[TGActionSheetAction alloc] initWithTitle:TGLocalized(@"UserInfo.NotificationsDefault") action:@"default"]];
     
     NSArray *muteIntervals = @[
                                @(1 * 60 * 60),
@@ -810,9 +814,7 @@ static UIView *_findBackArrow(UIView *view)
           else if ([action isEqualToString:@"disable"])
               [controller _commitEnableNotifications:@false orMuteFor:0];
           else if (![action isEqualToString:@"cancel"])
-          {
               [controller _commitEnableNotifications:false orMuteFor:[action intValue]];
-          }
       } target:self] showInView:self.view];
 }
 
@@ -1200,7 +1202,7 @@ static UIView *_findBackArrow(UIView *view)
             if (previewMode)
                 modernGallery.showInterface = false;
             
-            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+            modernGallery.model = [[TGUserAvatarGalleryModel alloc] initWithPeerId:_uid currentAvatarLegacyThumbnailImageUri:user.photoFullUrlSmall currentAvatarLegacyImageUri:user.photoFullUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
             
             __weak TGBotUserInfoController *weakSelf = self;
             __weak TGModernGalleryController *weakGallery = modernGallery;

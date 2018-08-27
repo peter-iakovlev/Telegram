@@ -202,12 +202,14 @@
         _forgetButton.userInteractionEnabled = false;
         _forgetButton.alpha = 0.0f;
         [_activityIndicator startAnimating];
+        _button.userInteractionEnabled = false;
     }
     else
     {
         _forgetButton.userInteractionEnabled = true;
         _forgetButton.alpha = 1.0f;
         [_activityIndicator stopAnimating];
+        _button.userInteractionEnabled = true;
     }
 }
 
@@ -215,7 +217,8 @@
 {
     if ([string isEqualToString:@"\n"])
     {
-        [self nextButtonPressed];
+        if (_forgetButton.userInteractionEnabled)
+            [self nextButtonPressed];
         return false;
     }
     

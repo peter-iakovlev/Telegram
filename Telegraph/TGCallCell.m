@@ -172,21 +172,20 @@
     
     CGFloat diameter = TGIsPad() ? 45.0f : 40.0f;
     
-    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:diameter];
-    
+    UIImage *placeholder = [self.presentation.images avatarPlaceholderWithDiameter:diameter];    
     bool animateState = false;
     if (peer.photoUrlSmall.length != 0)
     {
         _avatarView.fadeTransitionDuration = animateState ? 0.14 : 0.3;
-        if (![peer.photoUrlSmall isEqualToString:_avatarView.currentUrl])
+        if (![peer.photoFullUrlSmall isEqualToString:_avatarView.currentUrl])
         {
             if (animateState)
             {
                 UIImage *currentImage = [_avatarView currentImage];
-                [_avatarView loadImage:peer.photoUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:(currentImage != nil ? currentImage : placeholder) forceFade:true];
+                [_avatarView loadImage:peer.photoFullUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:(currentImage != nil ? currentImage : placeholder) forceFade:true];
             }
             else
-                [_avatarView loadImage:peer.photoUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
+                [_avatarView loadImage:peer.photoFullUrlSmall filter:TGIsPad() ? @"circle:45x45" : @"circle:40x40" placeholder:placeholder];
         }
     }
     else

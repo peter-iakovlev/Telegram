@@ -13,7 +13,6 @@
 @interface TGWallpaperManager ()
 {
     bool _infoLoaded;
-    dispatch_once_t _infoLoadToken;
     
     TGWallpaperInfo *_storedWallpaperInfo;
     
@@ -68,7 +67,8 @@
     {
         _infoLoaded = true;
         
-        dispatch_once(&_infoLoadToken, ^
+        static dispatch_once_t infoLoadToken;
+        dispatch_once(&infoLoadToken, ^
         {
             NSString *fileName = [self _currentWallpaperPath];
             

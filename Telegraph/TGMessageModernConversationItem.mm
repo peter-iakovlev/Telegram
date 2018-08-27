@@ -645,7 +645,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
     id author = [self currentAuthorPeer];
     if ([author isKindOfClass:[TGConversation class]]) {
         TGConversation *conversation = author;
-        [model setAuthorAvatarUrl:conversation.chatPhotoSmall groupId:conversation.conversationId];
+        [model setAuthorAvatarUrl:conversation.chatPhotoFullSmall groupId:conversation.conversationId];
         [model setAuthorNameColor:_context.presentation.pallete.chatIncomingAccentColor];
         if (_author != nil && [_author isKindOfClass:[TGUser class]]) {
             [model setAuthorSignature:[_author displayName]];
@@ -654,7 +654,7 @@ static UIColor *coloredNameForUid(int uid, __unused int currentUserId)
         }
     } else if ([author isKindOfClass:[TGUser class]]) {
         TGUser *user = author;
-        [model setAuthorAvatarUrl:user.photoUrlSmall];
+        [model setAuthorAvatarUrl:user.photoFullUrlSmall];
         [model setAuthorNameColor:coloredNameForUid(user.uid, TGMessageModernConversationItemLocalUserId)];
     } else if (_message.authorSignature != nil) {
         [model setAuthorSignature:_message.authorSignature];

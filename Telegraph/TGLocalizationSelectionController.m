@@ -233,13 +233,6 @@
     [self setNavigationBarHidden:false animated:animated];
 }
 
-
-
-
-
-
-
-
 - (BOOL)searchDisplayController:(UISearchDisplayController *)__unused controller shouldReloadTableForSearchString:(NSString *)searchString
 {
     _filterString = [searchString lowercaseString];

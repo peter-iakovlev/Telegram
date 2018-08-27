@@ -23,10 +23,6 @@
 
 - (void)checkUpdatesSuccess:(TLhelp_AppUpdate *)updateDesc
 {
-//    TGDispatchOnMainThread(^{
-//        [TGAppDelegateInstance presentUpdateAppController:[TGUpdateAppInfo demo]];
-//    });
-//    return;
     if ([updateDesc isKindOfClass:[TLhelp_AppUpdate$help_appUpdateMeta class]])
     {
         dispatch_async(dispatch_get_main_queue(), ^
@@ -37,7 +33,6 @@
             [TGAppDelegateInstance presentUpdateAppController:updateInfo];
         });
     }
-    
     [ActionStageInstance() actionCompleted:self.path result:nil];
 }
 

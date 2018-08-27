@@ -19,7 +19,12 @@ static INPerson *personWithLegacyUser(TGLegacyUser *user) {
     NSPersonNameComponents *nameComponents = [[NSPersonNameComponents alloc] init];
     nameComponents.givenName = user.firstName;
     nameComponents.familyName = user.lastName;
-    return [[INPerson alloc] initWithPersonHandle:[[INPersonHandle alloc] initWithValue:identifier type:INPersonHandleTypeUnknown] nameComponents:nameComponents displayName:displayName image:nil contactIdentifier:identifier customIdentifier:customIdentifier];
+    INPersonHandleType type = INPersonHandleTypeUnknown;
+    if (user.phoneNumber.length > 0) {
+        identifier = user.phoneNumber;
+        type = INPersonHandleTypePhoneNumber;
+    }
+    return [[INPerson alloc] initWithPersonHandle:[[INPersonHandle alloc] initWithValue:identifier type:type] nameComponents:nameComponents displayName:displayName image:nil contactIdentifier:identifier customIdentifier:customIdentifier];
 }
 
 static INPerson *personWithContact(CNContact *contact) {
@@ -37,7 +42,14 @@ static INPerson *personWithContact(CNContact *contact) {
     NSPersonNameComponents *nameComponents = [[NSPersonNameComponents alloc] init];
     nameComponents.givenName = contact.givenName;
     nameComponents.familyName = contact.familyName;
-    return [[INPerson alloc] initWithPersonHandle:[[INPersonHandle alloc] initWithValue:contact.identifier type:INPersonHandleTypeUnknown] nameComponents:nameComponents displayName:displayName image:nil contactIdentifier:contact.identifier customIdentifier:nil];
+    
+    INPersonHandleType type = INPersonHandleTypeUnknown;
+    NSString *identifier = contact.identifier;
+    if (contact.phoneNumbers.firstObject != nil) {
+        identifier = contact.phoneNumbers.firstObject.value.stringValue;
+        type = INPersonHandleTypePhoneNumber;
+    }
+    return [[INPerson alloc] initWithPersonHandle:[[INPersonHandle alloc] initWithValue:contact.identifier type:type] nameComponents:nameComponents displayName:displayName image:nil contactIdentifier:contact.identifier customIdentifier:nil];
 }
 
 @interface IntentHandler () <INSendMessageIntentHandling, INStartAudioCallIntentHandling> {

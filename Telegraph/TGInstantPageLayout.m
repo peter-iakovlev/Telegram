@@ -462,7 +462,7 @@ static CGFloat spacingBetweenBlocks(TGInstantPageBlock *upper, TGInstantPageBloc
 }
 
 - (bool)matchesAnchor:(NSString *)anchor {
-    return [_anchor isEqualToString:anchor];
+    return [[_anchor lowercaseString] isEqualToString:anchor];
 }
 
 @end

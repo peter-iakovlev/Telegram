@@ -5,6 +5,7 @@
 #import "TL/TLMetaScheme.h"
 
 #import "TGTwoStepConfigSignal.h"
+#import "TGTwoStepUtils.h"
 
 #import <MTProtoKit/MTEncryption.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -21,57 +22,59 @@
 
 + (SSignal *)passwordSettings:(NSString *)password config:(TGTwoStepConfig *)config outPasswordHash:(NSData **)outPasswordHash
 {
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendData:config.currentSalt];
-    [data appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [data appendData:config.currentSalt];
-    NSData *currentPasswordHash = MTSha256(data);
-    
-    if (outPasswordHash != NULL)
-        *outPasswordHash = currentPasswordHash;
-    
+    NSData *x = nil;
     TLRPCaccount_getPasswordSettings$account_getPasswordSettings *getPasswordSettings = [[TLRPCaccount_getPasswordSettings$account_getPasswordSettings alloc] init];
-    getPasswordSettings.current_password_hash = currentPasswordHash;
+    getPasswordSettings.password = [TGTwoStepUtils srpPasswordWithPassword:password algo:config.currentAlgo srpId:config.srpId srpB:config.srpB outX:&x];
+    
+    if (outPasswordHash != NULL && x != nil)
+        *outPasswordHash = x;
     
     return [[[[TGTelegramNetworking instance] requestSignal:getPasswordSettings requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error)
     {
         return [SSignal fail:[[TGTelegramNetworking instance] extractNetworkErrorType:error]];
     }] map:^id(TLaccount_PasswordSettings *result) {
         NSData *decryptedSecret = nil;
-        if (result.secure_secret != nil)
-            decryptedSecret = [TGPassportSignals decryptedSecureSecretWithData:result.secure_secret passord:password secureSalt:result.secure_salt];
+        int64_t secretHash = 0;
+        TGSecurePasswordKdfAlgo *secureAlgo = nil;
+        if (result.secure_settings != nil) {
+            if (result.secure_settings.secure_secret != nil) {
+                secureAlgo = [TGSecurePasswordKdfAlgo algoWithTL:result.secure_settings.secure_algo];
+                decryptedSecret = [TGPassportSignals decryptedSecureSecretWithData:result.secure_settings.secure_secret password:password secureAlgo:secureAlgo];
+            }
+            secretHash = result.secure_settings.secure_secret_id;
+        }
         
-        return [[TGPasswordSettings alloc] initWithPassword:password email:result.email secret:decryptedSecret secretHash:result.secure_secret_id secureSalt:result.secure_salt];
+        return [[TGPasswordSettings alloc] initWithPassword:password email:result.email secret:decryptedSecret secretHash:secretHash secureAlgo:secureAlgo];
     }];
 }
 
-+ (SSignal *)passwordHashSettings:(NSData *)currentPasswordHash secretPasswordHash:(NSData *)secretPasswordHash
++ (SSignal *)passwordHashSettings:(NSData *)currentPasswordHash secretPasswordHash:(NSData *)secretPasswordHash config:(TGTwoStepConfig *)config
 {
     TLRPCaccount_getPasswordSettings$account_getPasswordSettings *getPasswordSettings = [[TLRPCaccount_getPasswordSettings$account_getPasswordSettings alloc] init];
-    getPasswordSettings.current_password_hash = currentPasswordHash;
+    getPasswordSettings.password = [TGTwoStepUtils srpPasswordWithX:currentPasswordHash algo:config.currentAlgo srpId:config.srpId srpB:config.srpB];
     
     return [[[[TGTelegramNetworking instance] requestSignal:getPasswordSettings requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error)
     {
         return [SSignal fail:[[TGTelegramNetworking instance] extractNetworkErrorType:error]];
     }] map:^id(TLaccount_PasswordSettings *result) {
         NSData *decryptedSecret = nil;
-        if (result.secure_secret != nil)
-            decryptedSecret = [TGPassportSignals decryptedSecureSecretWithData:result.secure_secret passwordHash:secretPasswordHash];
-        
-        return [[TGPasswordSettings alloc] initWithPassword:nil email:result.email secret:decryptedSecret secretHash:result.secure_secret_id secureSalt:result.secure_salt];
+        int64_t secretHash = 0;
+        TGSecurePasswordKdfAlgo *secureAlgo = nil;
+        if (result.secure_settings != nil) {
+            if (result.secure_settings.secure_secret != nil) {
+                secureAlgo = [TGSecurePasswordKdfAlgo algoWithTL:result.secure_settings.secure_algo];
+                decryptedSecret = [TGPassportSignals decryptedSecureSecretWithData:result.secure_settings.secure_secret passwordHash:secretPasswordHash];
+            }
+            secretHash = result.secure_settings.secure_secret_id;
+        }
+        return [[TGPasswordSettings alloc] initWithPassword:nil email:result.email secret:decryptedSecret secretHash:secretHash secureAlgo:secureAlgo];
     }];
 }
 
 + (SSignal *)checkPassword:(NSString *)password config:(TGTwoStepConfig *)config
 {
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendData:config.currentSalt];
-    [data appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [data appendData:config.currentSalt];
-    NSData *currentPasswordHash = MTSha256(data);
-    
     TLRPCaccount_getPasswordSettings$account_getPasswordSettings *getPasswordSettings = [[TLRPCaccount_getPasswordSettings$account_getPasswordSettings alloc] init];
-    getPasswordSettings.current_password_hash = currentPasswordHash;
+    getPasswordSettings.password = [TGTwoStepUtils srpPasswordWithPassword:password algo:config.currentAlgo srpId:config.srpId srpB:config.srpB];
     
     return [[[TGTelegramNetworking instance] requestSignal:getPasswordSettings requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error)
     {
@@ -79,52 +82,10 @@
     }];
 }
 
-+ (SSignal *)verifiedPasswordHash:(NSString *)password config:(TGTwoStepConfig *)config
++ (SSignal *)tmpPassword:(NSString *)password config:(TGTwoStepConfig *)config durationSeconds:(int32_t)durationSeconds
 {
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendData:config.currentSalt];
-    [data appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [data appendData:config.currentSalt];
-    NSData *currentPasswordHash = MTSha256(data);
-    
-    TLRPCaccount_getPasswordSettings$account_getPasswordSettings *getPasswordSettings = [[TLRPCaccount_getPasswordSettings$account_getPasswordSettings alloc] init];
-    getPasswordSettings.current_password_hash = currentPasswordHash;
-    
-    return [[[[TGTelegramNetworking instance] requestSignal:getPasswordSettings requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error)
-    {
-        return [SSignal fail:[[TGTelegramNetworking instance] extractNetworkErrorType:error]];
-    }] map:^id(__unused id result) {
-        return currentPasswordHash;
-    }];
-}
-
-+ (SSignal *)authorizeWithPassword:(NSString *)password config:(TGTwoStepConfig *)config
-{
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendData:config.currentSalt];
-    [data appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [data appendData:config.currentSalt];
-    NSData *currentPasswordHash = MTSha256(data);
-    
-    TLRPCauth_checkPassword$auth_checkPassword *checkPassword = [[TLRPCauth_checkPassword$auth_checkPassword alloc] init];
-    checkPassword.password_hash = currentPasswordHash;
-    
-    return [[[TGTelegramNetworking instance] requestSignal:checkPassword requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error)
-    {
-        return [SSignal fail:[[TGTelegramNetworking instance] extractNetworkErrorType:error]];
-    }];
-}
-
-+ (SSignal *)tmpPassword:(NSString *)password config:(TGTwoStepConfig *)config durationSeconds:(int32_t)durationSeconds {
     TLRPCaccount_getTmpPassword$account_getTmpPassword *getTmpPassword = [[TLRPCaccount_getTmpPassword$account_getTmpPassword alloc] init];
-    
-    NSMutableData *data = [[NSMutableData alloc] init];
-    [data appendData:config.currentSalt];
-    [data appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [data appendData:config.currentSalt];
-    NSData *currentPasswordHash = MTSha256(data);
-    
-    getTmpPassword.password_hash = currentPasswordHash;
+    getTmpPassword.password = [TGTwoStepUtils srpPasswordWithPassword:password algo:config.currentAlgo srpId:config.srpId srpB:config.srpB];
     getTmpPassword.period = durationSeconds;
     
     return [[[[TGTelegramNetworking instance] requestSignal:getTmpPassword requestClass:TGRequestClassFailOnFloodErrors] catch:^SSignal *(id error) {

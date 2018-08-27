@@ -5,6 +5,7 @@
 #import "TGTelegraph.h"
 
 #import "TGStickersSignals.h"
+#import "TGDownloadMessagesSignal.h"
 
 #import "TGAppDelegate.h"
 
@@ -12,6 +13,7 @@
 #import "TL/TLMetaScheme.h"
 
 #import "TGDocumentMediaAttachment+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 typedef enum {
     TGGifSyncActionAdd,
@@ -157,6 +159,51 @@ static bool _syncedGifs = false;
     }
 }
 
++ (SSignal *)remoteRecentGifs {
+    return [self _remoteRecentGifs:0];
+}
+
++ (SSignal *)_remoteRecentGifs:(int32_t)hash {
+    TLRPCmessages_getSavedGifs$messages_getSavedGifs *getSavedGifs = [[TLRPCmessages_getSavedGifs$messages_getSavedGifs alloc] init];
+    getSavedGifs.n_hash = hash;
+    
+    return [[[TGTelegramNetworking instance] requestSignal:getSavedGifs] mapToSignal:^SSignal *(id result) {
+        if ([result isKindOfClass:[TLmessages_SavedGifs$messages_savedGifs class]]) {
+            TLmessages_SavedGifs$messages_savedGifs *savedGifs = result;
+            NSMutableArray *array = [[NSMutableArray alloc] init];
+            for (id desc in [savedGifs.gifs reverseObjectEnumerator]) {
+                TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
+                if (document.documentId != 0) {
+                    document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocumentRecentGif:desc];
+                    
+                    [array addObject:document];
+                }
+            }
+            
+            int32_t localHash = [self hashForDocumentsReverse:array];
+            if (localHash != savedGifs.n_hash) {
+                TGLog(@"(TGRecentGifsSignal hash mismatch)");
+            }
+            
+            [self _storeRecentGifs:array];
+            
+            if (array.count != 0 && TGAppDelegateInstance.alwaysShowStickersMode == 0)
+            {
+                TGAppDelegateInstance.alwaysShowStickersMode = 2;
+                [TGAppDelegateInstance saveSettings];
+                
+                [TGStickersSignals dispatchStickers];
+            }
+            
+            [[self _recentGifs] set:[SSignal single:array]];
+            
+            return [SSignal single:array];
+        } else {
+            return [SSignal single:nil];
+        }
+    }];
+}
+
 + (SSignal *)_syncRecentGifs {
     return [[SSignal defer:^SSignal *{
         NSArray *actions = [[NSArray alloc] initWithArray:[self _gifActions]];
@@ -165,20 +212,39 @@ static bool _syncedGifs = false;
         SSignal *actionsSignal = [SSignal complete];
         
         for (TGGifSyncAction *action in actions) {
-            TLRPCmessages_saveGif$messages_saveGif *saveGif = [[TLRPCmessages_saveGif$messages_saveGif alloc] init];
-            TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
-            inputDocument.n_id = action.document.documentId;
-            inputDocument.access_hash = action.document.accessHash;
-            saveGif.n_id = inputDocument;
-            switch (action.action) {
-                case TGGifSyncActionAdd:
-                    saveGif.unsave = false;
-                    break;
-                case TGGifSyncActionDelete:
-                    saveGif.unsave = true;
-                    break;
-            }
-            actionsSignal = [actionsSignal then:[[[[TGTelegramNetworking instance] requestSignal:saveGif] mapToSignal:^SSignal *(__unused id next) {
+            SSignal *(^saveGifSignal)(TGMediaOriginInfo *) = ^SSignal *(TGMediaOriginInfo *originInfo)
+            {
+                TLRPCmessages_saveGif$messages_saveGif *saveGif = [[TLRPCmessages_saveGif$messages_saveGif alloc] init];
+                TLInputDocument$inputDocument *inputDocument = [[TLInputDocument$inputDocument alloc] init];
+                inputDocument.n_id = action.document.documentId;
+                inputDocument.access_hash = action.document.accessHash;
+                inputDocument.file_reference = [originInfo fileReference];
+                saveGif.n_id = inputDocument;
+                switch (action.action) {
+                    case TGGifSyncActionAdd:
+                        saveGif.unsave = false;
+                        break;
+                    case TGGifSyncActionDelete:
+                        saveGif.unsave = true;
+                        break;
+                }
+                return [[TGTelegramNetworking instance] requestSignal:saveGif];
+            };
+            
+            SSignal *saveActionSignal = [saveGifSignal(action.document.originInfo) catch:^SSignal *(id error) {
+                int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                
+                if ([errorText hasPrefix:@"FILE_REFERENCE_"] && errorCode == 400 && action.document.originInfo != nil) {
+                    return [[TGDownloadMessagesSignal updatedOriginInfo:action.document.originInfo identifier:action.document.documentId] mapToSignal:^SSignal *(TGMediaOriginInfo *updatedOriginInfo) {
+                        return saveGifSignal(updatedOriginInfo);
+                    }];
+                } else {
+                    return [SSignal fail:error];
+                }
+            }];
+         
+            actionsSignal = [actionsSignal then:[[saveActionSignal mapToSignal:^SSignal *(__unused id next) {
                 return [SSignal complete];
             }] catch:^SSignal *(__unused id error) {
                 return [SSignal complete];
@@ -186,41 +252,8 @@ static bool _syncedGifs = false;
         }
         
         return [[actionsSignal then:[[self _loadRecentGifs] mapToSignal:^SSignal *(NSArray *array) {
-            TLRPCmessages_getSavedGifs$messages_getSavedGifs *getSavedGifs = [[TLRPCmessages_getSavedGifs$messages_getSavedGifs alloc] init];
-            getSavedGifs.n_hash = [self hashForDocumentsReverse:array];
-            
-            return [[[TGTelegramNetworking instance] requestSignal:getSavedGifs] mapToSignal:^SSignal *(id result) {
-                if ([result isKindOfClass:[TLmessages_SavedGifs$messages_savedGifs class]]) {
-                    TLmessages_SavedGifs$messages_savedGifs *savedGifs = result;
-                    NSMutableArray *array = [[NSMutableArray alloc] init];
-                    for (id desc in [savedGifs.gifs reverseObjectEnumerator]) {
-                        TGDocumentMediaAttachment *document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:desc];
-                        if (document.documentId != 0) {
-                            [array addObject:document];
-                        }
-                    }
-                    
-                    int32_t localHash = [self hashForDocumentsReverse:array];
-                    if (localHash != savedGifs.n_hash) {
-                        TGLog(@"(TGRecentGifsSignal hash mismatch)");
-                    }
-                    
-                    [self _storeRecentGifs:array];
-                    
-                    if (array.count != 0 && TGAppDelegateInstance.alwaysShowStickersMode == 0)
-                    {
-                        TGAppDelegateInstance.alwaysShowStickersMode = 2;
-                        [TGAppDelegateInstance saveSettings];
-                        
-                        [TGStickersSignals dispatchStickers];
-                    }
-                    
-                    [[self _recentGifs] set:[SSignal single:array]];
-                    
-                    return [SSignal complete];
-                } else {
-                    return [SSignal complete];
-                }
+            return [[self _remoteRecentGifs:[self hashForDocumentsReverse:array]] mapToSignal:^SSignal *(__unused id value) {
+                return [SSignal complete];
             }];
         }]] then:[[SSignal defer:^SSignal *{
             if ([self _gifActions].count == 0) {
@@ -255,11 +288,14 @@ static bool _syncedGifs = false;
     if (document.documentId == 0) {
         return;
     }
+    
+    TGDocumentMediaAttachment *addedDocument = [document copy];
+    addedDocument.originInfo = [TGMediaOriginInfo mediaOriginInfoForRecentGifWithFileReference:document.originInfo.fileReference fileReferences:document.originInfo.fileReferences];
 
     SSignal *signal = [[[[self _recentGifs] signal] take:1] map:^id(NSArray *documents) {
         NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:documents];
         NSInteger index = -1;
-        int64_t documentId = document.documentId;
+        int64_t documentId = addedDocument.documentId;
         for (TGDocumentMediaAttachment *document in updatedDocuments) {
             index++;
             if (document.documentId == documentId) {
@@ -267,7 +303,7 @@ static bool _syncedGifs = false;
                 break;
             }
         }
-        [updatedDocuments addObject:document];
+        [updatedDocuments addObject:addedDocument];
         NSUInteger limit = [self maxSavedGifs];
         if (updatedDocuments.count > limit) {
             [updatedDocuments removeObjectsInRange:NSMakeRange(0, updatedDocuments.count - limit)];
@@ -295,7 +331,10 @@ static bool _syncedGifs = false;
 + (void)addRemoteRecentGifFromDocuments:(NSArray *)addedDocuments {
     SSignal *signal = [[[[self _recentGifs] signal] take:1] map:^id(NSArray *documents) {
         NSMutableArray *updatedDocuments = [[NSMutableArray alloc] initWithArray:documents];
-        for (TGDocumentMediaAttachment *addedDocument in addedDocuments) {
+        for (TGDocumentMediaAttachment *document in addedDocuments) {
+            TGDocumentMediaAttachment *addedDocument = [document copy];
+            addedDocument.originInfo = [TGMediaOriginInfo mediaOriginInfoForRecentGifWithFileReference:document.originInfo.fileReference fileReferences:document.originInfo.fileReferences];
+            
             int64_t documentId = addedDocument.documentId;
             NSInteger index = -1;
             for (TGDocumentMediaAttachment *document in updatedDocuments) {

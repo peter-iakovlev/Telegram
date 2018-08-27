@@ -69,6 +69,7 @@
             TLInputWebFileLocation *webLocation = [TGSharedMediaSignals inputWebFileLocationForImageUrl:_url datacenterId:&datacenterId];
             if (datacenterId == -1)
                 datacenterId = webFileDatacenterId;
+            
             _downloadDisposable = [[TGRemoteFileSignal dataForWebLocation:webLocation datacenterId:datacenterId size:[options[@"size"] intValue] reportProgress:true mediaTypeTag:mediaTypeTag] startWithNext:^(id next) {
                 __strong TGTemporaryFileDownloadActor *strongSelf = weakSelf;
                 if (strongSelf != nil) {
@@ -113,7 +114,7 @@
     {
         __weak TGTemporaryFileDownloadActor *weakSelf = self;
         TGNetworkMediaTypeTag mediaTypeTag = (TGNetworkMediaTypeTag)([options[@"mediaTypeTag"] intValue]);
-        _downloadDisposable = [[TGRemoteFileSignal dataForLocation:options[@"inputLocation"] datacenterId:[options[@"datacenterId"] integerValue] size:[options[@"size"] intValue] reportProgress:true mediaTypeTag:mediaTypeTag] startWithNext:^(id next) {
+        _downloadDisposable = [[TGRemoteFileSignal dataForLocation:options[@"inputLocation"] datacenterId:[options[@"datacenterId"] integerValue] originInfo:options[@"originInfo"] identifier:[options[@"identifier"] longLongValue] size:[options[@"size"] intValue] reportProgress:true mediaTypeTag:mediaTypeTag] startWithNext:^(id next) {
             __strong TGTemporaryFileDownloadActor *strongSelf = weakSelf;
             if (strongSelf != nil) {
                 if ([next respondsToSelector:@selector(floatValue)]) {

@@ -37,7 +37,6 @@
 
 #import "TGAppDelegate.h"
 #import "TGInterfaceManager.h"
-#import "TGAlertView.h"
 
 #import <LegacyComponents/TGModernGalleryController.h>
 #import "TGProfileUserAvatarGalleryModel.h"
@@ -259,6 +258,10 @@
 #endif
         
         [ActionStageInstance() watchForPath:@"/tg/loggedOut" watcher:self];
+        
+        UIMenuItem *copyPhoneItem = [[UIMenuItem alloc] initWithTitle:TGLocalized(@"Settings.CopyPhoneNumber") action:@selector(copyPhoneNumber:)];
+        UIMenuItem *copyUsernameItem = [[UIMenuItem alloc] initWithTitle:TGLocalized(@"Settings.CopyUsername") action:@selector(copyUsername:)];
+        [[UIMenuController sharedMenuController] setMenuItems:@[copyPhoneItem, copyUsernameItem]];
     }
     return self;
 }
@@ -910,7 +913,7 @@
                 {
                     TGModernGalleryController *modernGallery = [[TGModernGalleryController alloc] initWithContext:[TGLegacyComponentsContext shared]];
                     
-                    TGProfileUserAvatarGalleryModel *model = [[TGProfileUserAvatarGalleryModel alloc] initWithCurrentAvatarLegacyThumbnailImageUri:user.photoUrlSmall currentAvatarLegacyImageUri:user.photoUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
+                    TGProfileUserAvatarGalleryModel *model = [[TGProfileUserAvatarGalleryModel alloc] initWithCurrentAvatarLegacyThumbnailImageUri:user.photoFullUrlSmall currentAvatarLegacyImageUri:user.photoFullUrlBig currentAvatarImageSize:CGSizeMake(640.0f, 640.0f)];
                     
                     __weak TGAccountSettingsController *weakSelf = self;
                     

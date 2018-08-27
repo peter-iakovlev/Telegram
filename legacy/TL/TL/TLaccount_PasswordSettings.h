@@ -3,17 +3,17 @@
 #import "TLObject.h"
 #import "TLMetaRpc.h"
 
+@class TLSecureSecretSettings;
 
 @interface TLaccount_PasswordSettings : NSObject <TLObject>
 
+@property (nonatomic) int32_t flags;
 @property (nonatomic, retain) NSString *email;
-@property (nonatomic, retain) NSData *secure_salt;
-@property (nonatomic, retain) NSData *secure_secret;
-@property (nonatomic) int64_t secure_secret_id;
+@property (nonatomic, retain) TLSecureSecretSettings *secure_settings;
 
 @end
 
-@interface TLaccount_PasswordSettings$account_passwordSettings : TLaccount_PasswordSettings
+@interface TLaccount_PasswordSettings$account_passwordSettingsMeta : TLaccount_PasswordSettings
 
 
 @end

@@ -10,8 +10,9 @@
 @property (nonatomic, readonly, strong) NSString *bundleId;
 @property (nonatomic, readonly, strong) NSString *callbackUrl;
 @property (nonatomic, readonly, strong) NSString *origin;
+@property (nonatomic, readonly, strong) NSString *nonce;
 @property (nonatomic, readonly, strong) NSString *payload;
 
-- (instancetype)initWithBotId:(int32_t)botId scope:(NSString *)scope publicKey:(NSString *)publicKey bundleId:(NSString *)bundleId callbackUrl:(NSString *)callbackUrl payload:(NSString *)payload;
+- (instancetype)initWithBotId:(int32_t)botId scope:(NSString *)scope publicKey:(NSString *)publicKey bundleId:(NSString *)bundleId callbackUrl:(NSString *)callbackUrl nonce:(NSString *)nonce payload:(NSString *)payload;
 
 @end

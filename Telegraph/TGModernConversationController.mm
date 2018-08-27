@@ -2505,11 +2505,9 @@ typedef enum {
             
             CGFloat targetDismissOffset = 0.0f;
             bool scrollToBottom = false;
-            bool dismiss = false;
             if (gestureRecognizer.state != UIGestureRecognizerStateCancelled && (velocity.y > 800.0f || _keyboardDismissOffset > keyboardHeight / 2.0f))
             {
                 targetDismissOffset = _keyboardHeight > FLT_EPSILON ? _keyboardHeight : _inputTextPanel.customKeyboardHeight;
-                dismiss = true;
                 
                 if (_collectionView.contentOffset.y < -_collectionView.contentInset.top + 100.0f)
                     scrollToBottom = true;
@@ -4014,10 +4012,9 @@ typedef enum {
     }
 }
 
-- (UIViewController *)openMediaFromMessage:(int32_t)messageId peerId:(int64_t)peerId instant:(bool)instant previewMode:(bool)previewMode previewActions:(NSArray **)__unused previewActions cancelPIP:(bool)cancelPIP
+- (UIViewController *)openMediaFromMessage:(int32_t)messageId peerId:(int64_t)peerId instant:(bool)__unused instant previewMode:(bool)previewMode previewActions:(NSArray **)__unused previewActions cancelPIP:(bool)cancelPIP
 {
     TGMessageModernConversationItem *mediaMessageItem = nil;
-    TGModernCollectionCell *mediaItemCell = nil;
     
     int index = -1;
     for (TGMessageModernConversationItem *messageItem in _items)
@@ -4043,7 +4040,6 @@ typedef enum {
             if ((messageItem->_mediaAvailabilityStatus || forceOpen) && cell != nil)
             {
                 mediaMessageItem = messageItem;
-                mediaItemCell = cell;
             }
             
             break;
@@ -5480,8 +5476,6 @@ typedef enum {
                 }
             }
             
-            bool addedPin = false;
-            
             TGConversation *conversation = [TGDatabaseInstance() loadConversationWithId:[self peerId]];
             bool canLink = [_companion canCreateLinksToMessages] && conversation.isChannelGroup && (conversation.channelRole == TGChannelRoleCreator || conversation.channelAdminRights.canChangeInviteLink);
             
@@ -5651,9 +5645,8 @@ typedef enum {
                 moreAction = [[NSDictionary alloc] initWithObjectsAndKeys:TGLocalized(@"Conversation.ContextMenuMore"), @"title", @"select", @"action", nil];
             }
             
-            if (!addedPin && messageItem->_message.actionInfo == nil && canPin) {
+            if (messageItem->_message.actionInfo == nil && canPin) {
                 pinAction = [[NSDictionary alloc] initWithObjectsAndKeys:unpin ? TGLocalized(@"Conversation.Unpin") : TGLocalized(@"Conversation.Pin"), @"title", unpin ? @"unpin" : @"pin", @"action", nil];
-                addedPin = true;
             }
             
             if (canLink && messageItem->_message.actionInfo == nil) {
@@ -6189,7 +6182,7 @@ typedef enum {
 {
     if (url.length == 0)
         return;
-
+    
     if ([url hasPrefix:@"tel:"])
     {
         TGCustomActionSheet *actionSheet = [[TGCustomActionSheet alloc] initWithTitle:url.length < 70 ? url : [[url substringToIndex:70] stringByAppendingString:@"..."] actions:@
@@ -7974,7 +7967,6 @@ typedef enum {
                                         
                                         if (video != nil && !isAnimated) {
                                             TGVideoMediaAttachment *videoMedia = [[TGVideoMediaAttachment alloc] init];
-                                            videoMedia = [[TGVideoMediaAttachment alloc] init];
                                             videoMedia.videoId = concreteResult.document.documentId;
                                             videoMedia.accessHash = concreteResult.document.accessHash;
                                             videoMedia.duration = video.duration;
@@ -9338,11 +9330,9 @@ typedef enum {
     if ([UIDevice currentDevice].userInterfaceIdiom == UIUserInterfaceIdiomPhone)
         controllerWindow.frame = CGRectMake(0, 0, screenSize.width, screenSize.height);
     
-    bool standalone = true;
     CGRect startFrame = CGRectMake(0, screenSize.height, screenSize.width, screenSize.height);
     if (cameraView != nil)
     {
-        standalone = false;
         if (TGIsPad())
             startFrame = CGRectZero;
         else
@@ -11039,11 +11029,9 @@ static UIView *_findBackArrow(UIView *view)
     int32_t scrollBackMessageId = [_scrollStack popMessageId];
     if (scrollBackMessageId != 0)
     {
-        int32_t messageId = scrollBackMessageId;
-        scrollBackMessageId = 0;
         _hasUnseenMessagesBelow = false;
         
-        [_companion navigateToMessageId:messageId scrollBackMessageId:0 forceUnseenMention:false animated:true];
+        [_companion navigateToMessageId:scrollBackMessageId scrollBackMessageId:0 forceUnseenMention:false animated:true];
     }
     else
     {
@@ -11671,15 +11659,21 @@ static UIView *_findBackArrow(UIView *view)
                 }
             }
             else if ([menuAction isEqualToString:@"moderate"]) {
-                TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)menuMessageItem->_message.fromUid];
-                if (user != nil) {
-                    [self _showModerateSheetForMessageIndices:@[[TGMessageIndex indexWithPeerId:menuMessageItem->_message.fromUid messageId:menuMessageItem->_message.mid]] author:user];
+                if (menuMessageItem != nil)
+                {
+                    TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)menuMessageItem->_message.fromUid];
+                    if (user != nil) {
+                        [self _showModerateSheetForMessageIndices:@[[TGMessageIndex indexWithPeerId:menuMessageItem->_message.fromUid messageId:menuMessageItem->_message.mid]] author:user];
+                    }
                 }
             }
             else if ([menuAction isEqualToString:@"ban"]) {
-                TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)menuMessageItem->_message.fromUid];
-                if (user != nil && [self isAdminLog]) {
-                    [((TGAdminLogConversationCompanion *)_companion) banUser:user];
+                if (menuMessageItem != nil)
+                {
+                    TGUser *user = [TGDatabaseInstance() loadUser:(int32_t)menuMessageItem->_message.fromUid];
+                    if (user != nil && [self isAdminLog]) {
+                        [((TGAdminLogConversationCompanion *)_companion) banUser:user];
+                    }
                 }
             }
             else if ([menuAction isEqualToString:@"reply"])
@@ -11703,12 +11697,10 @@ static UIView *_findBackArrow(UIView *view)
                 [self endMessageEditing:false];
                 
                 if (menuMessageItem != nil) {
-                    bool isCaption = false;
                     NSString *messageText = nil;
                     if (menuMessageItem->_message.caption.length != 0)
                     {
                         messageText = menuMessageItem->_message.caption;
-                        isCaption = true;
                     }
                     else if (menuMessageItem->_message.text.length != 0)
                     {
@@ -11733,16 +11725,19 @@ static UIView *_findBackArrow(UIView *view)
             else if ([menuAction isEqualToString:@"pin"]) {
                 [self endEditing];
                 
-                __weak TGModernConversationController *weakSelf = self;
-                [[[[_companion updatePinnedMessage:menuMessageItem->_message.mid] deliverOn:[SQueue mainQueue]] onDispose:^{
-                }] startWithNext:nil error:^(__unused id error) {
-                    __strong TGModernConversationController *strongSelf = weakSelf;
-                    if (strongSelf != nil) {
-                        NSString *errorText = TGLocalized(@"Login.UnknownError");
-                        [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
-                    }
-                } completed:^{
-                }];
+                if (menuMessageItem != nil)
+                {
+                    __weak TGModernConversationController *weakSelf = self;
+                    [[[[_companion updatePinnedMessage:menuMessageItem->_message.mid] deliverOn:[SQueue mainQueue]] onDispose:^{
+                    }] startWithNext:nil error:^(__unused id error) {
+                        __strong TGModernConversationController *strongSelf = weakSelf;
+                        if (strongSelf != nil) {
+                            NSString *errorText = TGLocalized(@"Login.UnknownError");
+                            [TGCustomAlertView presentAlertWithTitle:nil message:errorText cancelButtonTitle:TGLocalized(@"Common.OK") okButtonTitle:nil completionBlock:nil];
+                        }
+                    } completed:^{
+                    }];
+                }
             } else if ([menuAction isEqualToString:@"unpin"]) {
                 [self endEditing];
                 
@@ -11757,8 +11752,11 @@ static UIView *_findBackArrow(UIView *view)
                 } completed:^{
                 }];
             } else if ([menuAction isEqualToString:@"report"]) {
-                _contextMenuController.ignoreNextDismissal = true;
-                [_companion reportMessageIndices:@[[TGMessageIndex indexWithPeerId:menuMessageItem->_message.cid messageId:menuMessageItem->_message.mid] ] menuController:_contextMenuController];
+                if (menuMessageItem != nil)
+                {
+                    _contextMenuController.ignoreNextDismissal = true;
+                    [_companion reportMessageIndices:@[[TGMessageIndex indexWithPeerId:menuMessageItem->_message.cid messageId:menuMessageItem->_message.mid] ] menuController:_contextMenuController];
+                }
             } else if ([menuAction isEqualToString:@"forward"]) {
                 NSMutableArray *messageIndices = [[NSMutableArray alloc] init];
                 if (groupMessageItems.count > 0)
@@ -11841,39 +11839,45 @@ static UIView *_findBackArrow(UIView *view)
             {
                 [self endEditing];
                 
-                for (id attachment in menuMessageItem->_message.mediaAttachments)
+                if (menuMessageItem != nil)
                 {
-                    if ([attachment isKindOfClass:[TGActionMediaAttachment class]])
+                    for (id attachment in menuMessageItem->_message.mediaAttachments)
                     {
-                        TGActionMediaAttachment *action = (TGActionMediaAttachment *)attachment;
-                        if (action.actionType == TGMessageActionPhoneCall)
+                        if ([attachment isKindOfClass:[TGActionMediaAttachment class]])
                         {
-                            int64_t callId = [action.actionData[@"callId"] int64Value];
-                            int64_t accessHash = 0;
-                            
-                            NSString *path = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls"];
-                            NSMutableArray *logs = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil] mutableCopy];
-                            NSString *logPrefix = [NSString stringWithFormat:@"%lld-", callId];
-                            for (NSString *log in logs)
+                            TGActionMediaAttachment *action = (TGActionMediaAttachment *)attachment;
+                            if (action.actionType == TGMessageActionPhoneCall)
                             {
-                                if ([log hasPrefix:logPrefix])
+                                int64_t callId = [action.actionData[@"callId"] int64Value];
+                                int64_t accessHash = 0;
+                                
+                                NSString *path = [[TGAppDelegate documentsPath] stringByAppendingPathComponent:@"calls"];
+                                NSMutableArray *logs = [[[NSFileManager defaultManager] contentsOfDirectoryAtPath:path error:nil] mutableCopy];
+                                NSString *logPrefix = [NSString stringWithFormat:@"%lld-", callId];
+                                for (NSString *log in logs)
                                 {
-                                    NSString *accessHashString = [log substringWithRange:NSMakeRange(logPrefix.length, log.length - logPrefix.length - 4)];
-                                    accessHash = [accessHashString integerValue];
-                                    break;
+                                    if ([log hasPrefix:logPrefix])
+                                    {
+                                        NSString *accessHashString = [log substringWithRange:NSMakeRange(logPrefix.length, log.length - logPrefix.length - 4)];
+                                        accessHash = [accessHashString integerValue];
+                                        break;
+                                    }
                                 }
+                                
+                                if (callId != 0 && accessHash != 0)
+                                    [TGCallController presentRatingAlertView:callId accessHash:accessHash presentTabAlert:false];
                             }
-                            
-                            if (callId != 0 && accessHash != 0)
-                                [TGCallController presentRatingAlertView:callId accessHash:accessHash presentTabAlert:false];
+                            break;
                         }
-                        break;
                     }
                 }
             }
             else if ([menuAction isEqualToString:@"stopLiveLocation"])
             {
-                [[TGLiveLocationSignals stopLiveLocationWithPeerId:[self peerId] messageId:menuMessageItem->_message.mid] startWithNext:nil];
+                if (menuMessageItem != nil)
+                {
+                    [[TGLiveLocationSignals stopLiveLocationWithPeerId:[self peerId] messageId:menuMessageItem->_message.mid] startWithNext:nil];
+                }
             }
         }
     }
@@ -12513,7 +12517,6 @@ static UIView *_findBackArrow(UIView *view)
     NSArray *previousResults = reset ? nil : _searchResults;
     
     int32_t maxId = [previousResults.lastObject searchMessageId];
-    int32_t maxDate = 0;
     
     __weak TGModernConversationController *weakSelf = self;
     [_searchDisposable setDisposable:[[[[TGGlobalMessageSearchSignals searchMessages:_searchQuery peerId:((TGGenericModernConversationCompanion *)_companion).conversationId accessHash:[_companion requestAccessHash] userId:_searchingByNameUser.uid maxId:maxId limit:reset ? 10 : 50 itemMapping:^id(id item)
@@ -12718,7 +12721,7 @@ static UIView *_findBackArrow(UIView *view)
                 TGMessage *message = nil;
                 if (item != nil) {
                     message = item->_message;
-
+                    
                     NSString *link = [(TGMessageViewModel *)item.viewModel linkAtPoint:[_collectionView convertPoint:collectionPoint toView:[cell contentViewForBinding]]];
                     if (link.length > 0)
                     {
@@ -12760,7 +12763,7 @@ static UIView *_findBackArrow(UIView *view)
                             for (TGModernCollectionCell *cell in _collectionView.visibleCells)
                             {
                                 TGMessageModernConversationItem *messageItem = cell.boundItem;
-                                if (messageItem != nil && messageItem->_message.mid == mid)
+                                if (messageItem != nil && message.mid == mid)
                                 {
                                     sourceRect = [[cell contentViewForBinding] convertRect:[messageItem effectiveContentFrame] toView:_view];
                                     break;
@@ -13294,17 +13297,11 @@ static UIView *_findBackArrow(UIView *view)
                 _currentEditingMessageContext = [[SVariable alloc] init];
                 [_currentEditingMessageContext set:[_companion editingContextForMessageWithId:messageItem->_message.mid]];
                 
-                bool isCaption = false;
                 NSString *messageText = nil;
                 if (messageItem->_message.caption.length != 0)
-                {
                     messageText = messageItem->_message.caption;
-                    isCaption = true;
-                }
                 else if (messageItem->_message.text.length != 0)
-                {
                     messageText = messageItem->_message.text;
-                }
                 
                 NSArray *messageEntities = messageItem->_message.entities;
                 

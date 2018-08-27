@@ -437,7 +437,6 @@
         }
         else if ([attachment isKindOfClass:[TGBridgeForwardedMessageMediaAttachment class]])
         {
-            hasForwardHeader = true;
         }
         else if ([attachment isKindOfClass:[TGBridgeReplyMessageMediaAttachment class]])
         {

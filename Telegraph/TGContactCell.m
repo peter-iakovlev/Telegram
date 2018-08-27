@@ -339,6 +339,8 @@
     self.selectedBackgroundView.frame = frame;
     
     CGSize viewSize = self.contentView.frame.size;
+    //viewSize.width = MAX(viewSize.width, frame.size.width);
+    //self.contentView.frame = CGRectMake(self.contentView.frame.origin.x, self.contentView.frame.origin.y, viewSize.width, viewSize.height);
     
     int leftPadding = _selectionEnabled ? (TGIsPad() ? 45.0f : 34.0f) : 0;
     if (self.editing)

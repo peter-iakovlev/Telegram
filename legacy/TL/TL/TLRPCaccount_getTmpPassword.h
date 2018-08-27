@@ -4,10 +4,11 @@
 #import "TLMetaRpc.h"
 
 @class TLaccount_TmpPassword;
+@class TLInputCheckPasswordSRP;
 
 @interface TLRPCaccount_getTmpPassword : TLMetaRpc
 
-@property (nonatomic, retain) NSData *password_hash;
+@property (nonatomic, retain) TLInputCheckPasswordSRP *password;
 @property (nonatomic) int32_t period;
 
 - (Class)responseClass;

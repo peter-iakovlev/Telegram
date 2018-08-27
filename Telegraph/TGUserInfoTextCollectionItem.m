@@ -9,13 +9,12 @@
 
 #import "TGPresentation.h"
 
-@interface TGUserInfoTextCollectionItem () {
+@interface TGUserInfoTextCollectionItem ()
+{
     TGModernTextViewModel *_textModel;
     CGSize _containerSize;
     UIEdgeInsets _safeAreaInset;
-    
 }
-
 @end
 
 @implementation TGUserInfoTextCollectionItem

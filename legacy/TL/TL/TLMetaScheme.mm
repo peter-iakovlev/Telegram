@@ -292,6 +292,9 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueErrorSelfie new]);
     TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueErrorFile new]);
     TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueErrorFiles new]);
+    TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueError new]);
+    TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueErrorTranslationFile new]);
+    TLMetaClassStore::registerObjectClass([TLSecureValueError$secureValueErrorTranslationFiles new]);
     TLMetaClassStore::registerVectorClass([NSArray_SecureValue new]);
     TLMetaClassStore::registerObjectClass([TLLangPackDifference$langPackDifference new]);
     TLMetaClassStore::registerVectorClass([NSArray_InputChannel new]);
@@ -428,7 +431,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLPrivacyRule$privacyValueDisallowAll new]);
     TLMetaClassStore::registerObjectClass([TLPrivacyRule$privacyValueDisallowUsers new]);
     TLMetaClassStore::registerObjectClass([TLmessages_BotResults$messages_botResultsMeta new]);
-    TLMetaClassStore::registerObjectClass([TLaccount_PasswordSettings$account_passwordSettings new]);
+    TLMetaClassStore::registerObjectClass([TLaccount_PasswordSettings$account_passwordSettingsMeta new]);
     TLMetaClassStore::registerObjectClass([TLScheme$scheme new]);
     TLMetaClassStore::registerObjectClass([TLScheme$schemeNotModified new]);
     TLMetaClassStore::registerVectorClass([NSArray_ChannelParticipant new]);
@@ -480,8 +483,7 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLcontacts_ForeignLink$contacts_foreignLinkUnknown new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_ForeignLink$contacts_foreignLinkRequested new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_ForeignLink$contacts_foreignLinkMutual new]);
-    TLMetaClassStore::registerObjectClass([TLaccount_Password$account_noPassword new]);
-    TLMetaClassStore::registerObjectClass([TLaccount_Password$account_password new]);
+    TLMetaClassStore::registerObjectClass([TLaccount_Password$account_passwordMeta new]);
     TLMetaClassStore::registerObjectClass([TLInputPaymentCredentials$inputPaymentCredentialsSaved new]);
     TLMetaClassStore::registerObjectClass([TLInputPaymentCredentials$inputPaymentCredentials new]);
     TLMetaClassStore::registerObjectClass([TLInputPaymentCredentials$inputPaymentCredentialsApplePay new]);
@@ -763,6 +765,18 @@ void TLRegisterClasses()
     TLMetaClassStore::registerObjectClass([TLPrivacyKey$privacyKeyStatusTimestamp new]);
     TLMetaClassStore::registerObjectClass([TLPrivacyKey$privacyKeyChatInvite new]);
     TLMetaClassStore::registerObjectClass([TLPrivacyKey$privacyKeyPhoneCall new]);
+    TLMetaClassStore::registerObjectClass([TLPasswordKdfAlgo$passwordKdfAlgoUnknown new]);
+    TLMetaClassStore::registerObjectClass([TLPasswordKdfAlgo$passwordKdfAlgoSHA256SHA256PBKDF2HMACSHA512iter100000SHA256ModPow new]);
+    TLMetaClassStore::registerObjectClass([TLSecurePasswordKdfAlgo$securePasswordKdfAlgoUnknown new]);
+    TLMetaClassStore::registerObjectClass([TLSecurePasswordKdfAlgo$securePasswordKdfAlgoPBKDF2HMACSHA512iter100000 new]);
+    TLMetaClassStore::registerObjectClass([TLSecurePasswordKdfAlgo$securePasswordKdfAlgoSHA512 new]);
+    TLMetaClassStore::registerObjectClass([TLSecureSecretSettings$secureSecretSettings new]);
+    TLMetaClassStore::registerObjectClass([TLSecureRequiredType$secureRequiredType new]);
+    TLMetaClassStore::registerObjectClass([TLSecureRequiredType$secureRequiredTypeOneOf new]);
+    TLMetaClassStore::registerObjectClass([TLInputCheckPasswordSRP$inputCheckPasswordSRP new]);
+    TLMetaClassStore::registerObjectClass([TLInputCheckPasswordSRP$inputCheckPasswordEmpty new]);
+    TLMetaClassStore::registerObjectClass([TLhelp_PassportConfig$help_passportConfigNotModified new]);
+    TLMetaClassStore::registerObjectClass([TLhelp_PassportConfig$help_passportConfig new]);
     TLMetaClassStore::registerVectorClass([NSArray_DisabledFeature new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_Contacts$contacts_contactsNotModified new]);
     TLMetaClassStore::registerObjectClass([TLcontacts_Contacts$contacts_contacts new]);

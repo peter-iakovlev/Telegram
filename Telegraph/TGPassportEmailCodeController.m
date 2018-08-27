@@ -111,7 +111,7 @@
     [progressWindow showWithDelay:0.3];
     
     NSString *email = _email;
-    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeEmail data:nil frontSide:nil reverseSide:nil selfie:nil files:nil plainData:[[TGPassportEmailData alloc] initWithEmail:email]];
+    TGPassportDecryptedValue *value = [[TGPassportDecryptedValue alloc] initWithType:TGPassportTypeEmail data:nil frontSide:nil reverseSide:nil selfie:nil translation:nil files:nil plainData:[[TGPassportEmailData alloc] initWithEmail:email]];
     
     SSignal *signal = [TGPassportSignals verifyEmail:email code:_codeItem.username];
     signal = [signal mapToSignal:^SSignal *(id next)

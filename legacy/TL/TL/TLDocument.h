@@ -26,6 +26,7 @@
 @property (nonatomic) int32_t dc_id;
 @property (nonatomic) int32_t version;
 @property (nonatomic, retain) NSArray *attributes;
+@property (nonatomic, retain) NSData *file_reference;
 
 @end
 

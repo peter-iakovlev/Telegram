@@ -13,6 +13,7 @@
 
 #import "TGAppDelegate.h"
 #import "TGTelegraph.h"
+#import "TGDatabase.h"
 
 #import "TGHeaderCollectionItem.h"
 #import "TGSwitchCollectionItem.h"
@@ -23,8 +24,13 @@
 #import "TGCustomActionSheet.h"
 
 #import "TGAlertSoundController.h"
+#import "TGNotificationExceptionsController.h"
+#import "TGNotificationException.h"
 
 #import "TGAccountSignals.h"
+#import "TGNotificationExceptionsSignal.h"
+#import "TGUserSignal.h"
+#import "TGConversationSignals.h"
 
 #import "TGPresentation.h"
 
@@ -33,10 +39,12 @@
     TGSwitchCollectionItem *_privateAlert;
     TGSwitchCollectionItem *_privatePreview;
     TGVariantCollectionItem *_privateSound;
+    TGVariantCollectionItem *_privateExceptions;
     
     TGSwitchCollectionItem *_groupAlert;
     TGSwitchCollectionItem *_groupPreview;
     TGVariantCollectionItem *_groupSound;
+    TGVariantCollectionItem *_groupExceptions;
     
     TGSwitchCollectionItem *_inAppSounds;
     TGSwitchCollectionItem *_inAppVibrate;
@@ -47,10 +55,16 @@
     NSMutableDictionary *_privateNotificationSettings;
     NSMutableDictionary *_groupNotificationSettings;
     
+    NSArray *_privateExceptionItems;
+    NSArray *_groupExceptionItems;
+    NSDictionary *_exceptionsPeers;
+    
     bool _selectingPrivateSound;
     
     id<SDisposable> _contactsJoinedDisposable;
     SMetaDisposable *_updateContactsJoinedDisposable;
+    
+    id<SDisposable> _exceptionsDisposable;
 }
 
 @end
@@ -68,6 +82,7 @@
         _actionHandle = [[ASHandle alloc] initWithDelegate:self releaseOnMainThread:true];
         
         [self setTitleText:TGLocalized(@"Notifications.Title")];
+        self.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:TGLocalized(@"Common.Back") style:UIBarButtonItemStylePlain target:self action:@selector(backPressed)];
         
         _privateAlert = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.MessageNotificationsAlert") isOn:true];
         _privateAlert.interfaceHandle = _actionHandle;
@@ -80,11 +95,16 @@
         _privateSound = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.MessageNotificationsSound") variant:currentPrivateSound action:@selector(privateSoundPressed)];
         _privateSound.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
         
+        _privateExceptions = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.MessageNotificationsExceptions") variant:@"" action:@selector(privateExceptionsPressed)];
+        _privateExceptions.enabled = false;
+        _privateExceptions.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
+        
         TGCollectionMenuSection *messageNotificationsSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.MessageNotifications")],
             _privateAlert,
             _privatePreview,
             _privateSound,
+            _privateExceptions,
             [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Notifications.MessageNotificationsHelp")]
         ]];
         UIEdgeInsets topSectionInsets = messageNotificationsSection.insets;
@@ -100,11 +120,16 @@
         _groupPreview = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.GroupNotificationsPreview") isOn:true];
         _groupPreview.interfaceHandle = _actionHandle;
         
+        _groupExceptions = [[TGVariantCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.GroupNotificationsExceptions") variant:@"" action:@selector(groupExceptionsPressed)];
+        _groupExceptions.enabled = false;
+        _groupExceptions.deselectAutomatically = [[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad;
+        
         TGCollectionMenuSection *groupNotificationsSection = [[TGCollectionMenuSection alloc] initWithItems:@[
             [[TGHeaderCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.GroupNotifications")],
             _groupAlert,
             _groupPreview,
             _groupSound,
+            _groupExceptions,
             [[TGCommentCollectionItem alloc] initWithText:TGLocalized(@"Notifications.GroupNotificationsHelp")]
         ]];
         [self.menuSections addSection:groupNotificationsSection];
@@ -130,7 +155,7 @@
         [self.menuSections addSection:inAppNotificationsSection];
         
         _joinedContacts = [[TGSwitchCollectionItem alloc] initWithTitle:TGLocalized(@"NotificationSettings.ContactJoined") isOn:true];
-        TGCollectionMenuSection *contactsSection = [[TGCollectionMenuSection alloc] initWithItems:@[_joinedContacts]];
+        //TGCollectionMenuSection *contactsSection = [[TGCollectionMenuSection alloc] initWithItems:@[_joinedContacts]];
         //[self.menuSections addSection:contactsSection];
 
         TGButtonCollectionItem *resetItem = [[TGButtonCollectionItem alloc] initWithTitle:TGLocalized(@"Notifications.ResetAllNotifications") action:@selector(resetAllNotifications)];
@@ -169,6 +194,17 @@
                 [strongSelf->_joinedContacts setIsOn:[next boolValue] animated:true];
             }
         }];
+                
+        _exceptionsDisposable = [[[TGNotificationSettingsController notificatonsExceptionsSignal] deliverOn:[SQueue mainQueue]] startWithNext:^(NSDictionary *next) {
+            __strong TGNotificationSettingsController *strongSelf = weakSelf;
+            if (strongSelf != nil) {
+                strongSelf->_privateExceptionItems = next[@"private"];
+                strongSelf->_groupExceptionItems = next[@"group"];
+                strongSelf->_exceptionsPeers = next[@"peers"];
+                [strongSelf updateExceptions];
+            }
+        }];
+        
     }
     return self;
 }
@@ -181,7 +217,77 @@
     [_updateContactsJoinedDisposable dispose];
 }
 
+- (void)updateExceptions
+{
+    _privateExceptions.enabled = true;
+    _privateExceptions.variant = _privateExceptionItems.count > 0 ? [effectiveLocalization() getPluralized:@"Notifications.Exceptions" count:(int32_t)_privateExceptionItems.count] : TGLocalized(@"Notifications.ExceptionsNone");
+    
+    _groupExceptions.enabled = true;
+    _groupExceptions.variant = _groupExceptionItems.count > 0 ? [effectiveLocalization() getPluralized:@"Notifications.Exceptions" count:(int32_t)_groupExceptionItems.count] : TGLocalized(@"Notifications.ExceptionsNone");
+}
+
++ (SSignal *)notificatonsExceptionsSignal
+{
+    return [[TGNotificationExceptionsSignal notificationExceptionsSignal] mapToSignal:^SSignal *(NSDictionary *dict)
+    {
+        NSMutableArray *peerSignals = [[NSMutableArray alloc] init];
+        for (TGNotificationException *exception in dict[@"private"])
+        {
+            if (exception.peerId == 0)
+                continue;
+            [peerSignals addObject:[[[TGUserSignal userWithUserId:(int32_t)exception.peerId] catch:^SSignal *(__unused id error) {
+                return [SSignal single:[NSNull null]];
+            }] take:1]];
+        }
+        for (TGNotificationException *exception in dict[@"group"])
+        {
+            if (exception.peerId == 0)
+                continue;
+            [peerSignals addObject:[[[TGConversationSignals conversationWithPeerId:exception.peerId full:false] catch:^SSignal *(__unused id error) {
+                return [SSignal single:[NSNull null]];
+            }] take:1]];
+        }
+        
+        return [[SSignal combineSignals:peerSignals] map:^id(NSArray *peers)
+        {
+            NSMutableDictionary *peersMap = [[NSMutableDictionary alloc] init];
+            for (id peer in peers)
+            {
+                if ([peer isKindOfClass:[TGUser class]])
+                    peersMap[@(((TGUser *)peer).uid)] = peer;
+                else if ([peer isKindOfClass:[TGConversation class]])
+                    peersMap[@(((TGConversation *)peer).conversationId)] = peer;
+            }
+            
+            NSMutableIndexSet *indexesToRemove = [[NSMutableIndexSet alloc] init];
+            NSMutableArray *private = [[NSMutableArray alloc] initWithArray:dict[@"private"]];
+            [private enumerateObjectsUsingBlock:^(TGNotificationException *exception, NSUInteger index, __unused BOOL *stop) {
+                TGUser *user = peersMap[@(exception.peerId)];
+                if (user.isDeleted || user.restrictionReason.length > 0 || user.uid == TGTelegraphInstance.clientUserId)
+                    [indexesToRemove addIndex:index];
+            }];
+            [private removeObjectsAtIndexes:indexesToRemove];
+            
+            [indexesToRemove removeAllIndexes];
+            NSMutableArray *group = [[NSMutableArray alloc] initWithArray:dict[@"group"]];
+            [group enumerateObjectsUsingBlock:^(TGNotificationException *exception, NSUInteger index, __unused BOOL *stop) {
+                TGConversation *conversation = peersMap[@(exception.peerId)];
+                if (conversation.isDeleted || conversation.isDeactivated || conversation.leftChat || conversation.kickedFromChat || conversation.restrictionReason.length > 0 || conversation.chatTitle.length == 0)
+                    [indexesToRemove addIndex:index];
+            }];
+            [group removeObjectsAtIndexes:indexesToRemove];
+            
+            return @{@"private": private, @"group": group, @"peers": peersMap};
+        }];
+    }];
+}
+
 #pragma mark -
+
+- (void)backPressed
+{
+    [self.navigationController popViewControllerAnimated:true];
+}
 
 - (void)resetAllNotifications
 {
@@ -205,7 +311,12 @@
     _privateNotificationSettings = [[NSMutableDictionary alloc] initWithDictionary:@{@"muteUntil": @(0), @"soundId": @(1), @"previewText": @(true)}];
     _groupNotificationSettings = [[NSMutableDictionary alloc] initWithDictionary:@{@"muteUntil": @(0), @"soundId": @(1), @"previewText": @(true)}];
     
+    _privateExceptionItems = @[];
+    _groupExceptionItems = @[];
+    _exceptionsPeers = @{};
+    
     [self _updateItems:true];
+    [self updateExceptions];
     
     [ActionStageInstance() requestActor:@"/tg/resetPeerSettings" options:nil watcher:TGTelegraphInstance];
 }
@@ -314,6 +425,42 @@
             } watcher:TGTelegraphInstance];
         }
     }
+}
+
+- (void)privateExceptionsPressed
+{
+    TGNotificationExceptionsController *controller = [[TGNotificationExceptionsController alloc] initWithExceptions:_privateExceptionItems peers:_exceptionsPeers group:false];
+    controller.presentation = self.presentation;
+    __weak TGNotificationSettingsController *weakSelf = self;
+    controller.updatedExceptions = ^(NSArray *exceptions, NSDictionary *peers)
+    {
+        __strong TGNotificationSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_privateExceptionItems = exceptions;
+            strongSelf->_exceptionsPeers = peers;
+            [strongSelf updateExceptions];
+        }
+    };
+    [self.navigationController pushViewController:controller animated:true];
+}
+
+- (void)groupExceptionsPressed
+{
+    TGNotificationExceptionsController *controller = [[TGNotificationExceptionsController alloc] initWithExceptions:_groupExceptionItems peers:_exceptionsPeers group:true];
+    controller.presentation = self.presentation;
+    __weak TGNotificationSettingsController *weakSelf = self;
+    controller.updatedExceptions = ^(NSArray *exceptions, NSDictionary *peers)
+    {
+        __strong TGNotificationSettingsController *strongSelf = weakSelf;
+        if (strongSelf != nil)
+        {
+            strongSelf->_groupExceptionItems = exceptions;
+            strongSelf->_exceptionsPeers = peers;
+            [strongSelf updateExceptions];
+        }
+    };
+    [self.navigationController pushViewController:controller animated:true];
 }
 
 #pragma mark -

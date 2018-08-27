@@ -24,6 +24,7 @@
         _size = documentMedia.size;
         _thumbnailInfo = documentMedia.thumbnailInfo;
         _attributes = documentMedia.attributes;
+        _originInfo = documentMedia.originInfo;
         
         self.replyMessage = replyMessage;
         self.botContextResult = botContextResult;
@@ -80,6 +81,7 @@
     documentAttachment.mimeType = _mimeType;
     documentAttachment.size = _size;
     documentAttachment.thumbnailInfo = _thumbnailInfo;
+    documentAttachment.originInfo = _originInfo;
     [attachments addObject:documentAttachment];
     
     if (self.replyMessage != nil)
@@ -117,6 +119,7 @@
     documentAttachment.mimeType = _mimeType;
     documentAttachment.size = _size;
     documentAttachment.thumbnailInfo = _thumbnailInfo;
+    documentAttachment.originInfo = _originInfo;
     return documentAttachment;
 }
 

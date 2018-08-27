@@ -1,5 +1,7 @@
 #import "TGModernGalleryMessageImageItemView.h"
 
+#import "TGTelegramNetworking.h"
+
 #import "TGModernGalleryMessageImageItem.h"
 
 #import <LegacyComponents/TGModernGalleryEmbeddedStickersHeaderView.h>
@@ -95,7 +97,23 @@
                     TGImageMediaAttachment *imageMedia = [[TGImageMediaAttachment alloc] init];
                     imageMedia.imageId = ((TGModernGalleryImageItem *)self.item).imageId;
                     imageMedia.accessHash = ((TGModernGalleryImageItem *)self.item).accessHash;
-                    [_stickersInfo set:[TGDownloadMessagesSignal mediaStickerpacks:imageMedia]];
+                    imageMedia.originInfo = ((TGModernGalleryImageItem *)self.item).originInfo;
+                    [_stickersInfo set:[[TGDownloadMessagesSignal mediaStickerpacks:imageMedia] catch:^SSignal *(id error) {
+                        NSString *errorText = [[TGTelegramNetworking instance] extractNetworkErrorType:error];
+                        int32_t errorCode = [[TGTelegramNetworking instance] extractNetworkErrorCode:error];
+                        if ([errorText hasPrefix:@"FILE_REFERENCE_"] && errorCode == 400) {
+                            return [[TGDownloadMessagesSignal updatedOriginInfo:imageMedia.originInfo identifier:imageMedia.imageId] mapToSignal:^SSignal *(TGMediaOriginInfo *updatedOriginInfo)
+                            {
+                                TGImageMediaAttachment *updatedImageMedia = [[TGImageMediaAttachment alloc] init];
+                                updatedImageMedia.imageId = imageMedia.imageId;
+                                updatedImageMedia.accessHash = imageMedia.accessHash;
+                                updatedImageMedia.originInfo = updatedOriginInfo;
+                                return [TGDownloadMessagesSignal mediaStickerpacks:updatedImageMedia];
+                            }];
+                        } else {
+                            return [SSignal fail:error];
+                        }
+                    }]];
                 }
                 
                 __weak TGModernGalleryMessageImageItemView *weakSelf = self;

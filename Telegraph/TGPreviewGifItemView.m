@@ -262,10 +262,10 @@
                                             return nil;
                                         }];
                                         return [dataSignal mapToSignal:^SSignal *(NSData *data) {
-                                            return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                                            return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSDictionary *dict) {
                                                 return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
                                                     NSError *error = nil;
-                                                    [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                                    [[NSFileManager defaultManager] moveItemAtPath:dict[@"path"] toPath:videoPath error:&error];
                                                     if (error != nil) {
                                                         [subsctiber putError:nil];
                                                     } else {

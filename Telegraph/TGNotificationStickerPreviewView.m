@@ -66,9 +66,17 @@
         NSMutableString *imageUri = [[NSMutableString alloc] init];
         [imageUri appendString:@"sticker://?"];
         if (attachment.documentId != 0)
+        {
             [imageUri appendFormat:@"&documentId=%" PRId64, attachment.documentId];
+            
+            TGMediaOriginInfo *originInfo = attachment.originInfo ?: [TGMediaOriginInfo mediaOriginInfoForDocumentAttachment:attachment];
+            if (originInfo != nil)
+                [imageUri appendFormat:@"&origin_info=%@", [originInfo stringRepresentation]];
+        }
         else
+        {
             [imageUri appendFormat:@"&localDocumentId=%" PRId64, attachment.localDocumentId];
+        }
         [imageUri appendFormat:@"&accessHash=%" PRId64, attachment.accessHash];
         [imageUri appendFormat:@"&datacenterId=%d", (int)attachment.datacenterId];
         [imageUri appendFormat:@"&fileName=%@", [TGStringUtils stringByEscapingForURL:attachment.fileName]];

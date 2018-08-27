@@ -81,7 +81,7 @@
         }
         
         int code = 0;
-        [TGLoginCountriesController countryNameByCountryId:countryId code:&code];
+        [TGLoginCountriesController localizedCountryNameByCountryId:countryId code:&code];
         if (code == 0)
             code = 1;
         
@@ -466,7 +466,7 @@
 - (void)updateCountry
 {
     int countryCode = [[_countryTextField.text substringFromIndex:1] intValue];
-    NSString *countryName = [TGLoginCountriesController countryNameByCode:countryCode];
+    NSString *countryName = [TGLoginCountriesController localizedCountryNameByCode:countryCode];
     
     if (countryName != nil)
     {

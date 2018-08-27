@@ -1,6 +1,6 @@
 #import "TGShareContactSignals.h"
 
-#import "ApiLayer82.h"
+#import "ApiLayer86.h"
 #import "TGUploadedMessageContentMedia.h"
 #import "TGShareContactController.h"
 #import "TGVCard.h"
@@ -12,7 +12,7 @@
     TGUploadedMessageContentMedia *(^content)(TGContactModel *) = ^TGUploadedMessageContentMedia *(TGContactModel *contact)
     {
         TGPhoneNumberModel *phoneNumber = contact.phoneNumbers.firstObject;
-        Api82_InputMedia_inputMediaContact *inputContact = [Api82_InputMedia inputMediaContactWithPhoneNumber:phoneNumber.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName vcard:contact.vcard.vcardString];
+        Api86_InputMedia_inputMediaContact *inputContact = [Api86_InputMedia inputMediaContactWithPhoneNumber:phoneNumber.phoneNumber firstName:contact.firstName.length == 0 ? @"" : contact.firstName lastName:contact.lastName.length == 0 ? @"" : contact.lastName vcard:contact.vcard.vcardString];
         
         return [[TGUploadedMessageContentMedia alloc] initWithInputMedia:inputContact];
     };

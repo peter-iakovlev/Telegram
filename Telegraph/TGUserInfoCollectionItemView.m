@@ -764,4 +764,14 @@
     }
 }
 
+- (void)copyPhoneNumber:(id)__unused sender
+{
+    [[UIPasteboard generalPasteboard] setString:_phoneLabel.text];
+}
+
+- (void)copyUsername:(id)__unused sender
+{
+    [[UIPasteboard generalPasteboard] setString:_usernameLabel.text];
+}
+
 @end

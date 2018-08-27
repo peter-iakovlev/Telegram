@@ -760,6 +760,8 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
             
             NSArray *components = [actionMedia.actionData[@"values"] componentsSeparatedByString:@","];
             NSString *values = @"";
+            bool hasIdentity = false;
+            bool hasAddress = false;
             for (NSString *component in components)
             {
                 NSString *value = nil;
@@ -767,17 +769,34 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                 {
                     value = TGLocalized(@"Notification.PassportValuePersonalDetails");
                 }
-                else if ([component isEqualToString:@"passport"] || [component isEqualToString:@"identity_card"] || [component isEqualToString:@"driver_license"])
+                else if ([component isEqualToString:@"passport"] || [component isEqualToString:@"identity_card"] || [component isEqualToString:@"driver_license"] || [component isEqualToString:@"internal_passport"])
                 {
-                    value = TGLocalized(@"Notification.PassportValueProofOfIdentity");
+                    if (!hasIdentity)
+                    {
+                        value = TGLocalized(@"Notification.PassportValueProofOfIdentity");
+                        hasIdentity = true;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                        
                 }
                 else if ([component isEqualToString:@"address"])
                 {
                     value = TGLocalized(@"Notification.PassportValueAddress");
                 }
-                else if ([component isEqualToString:@"utility_bill"] || [component isEqualToString:@"bank_statement"] || [component isEqualToString:@"rental_agreement"])
+                else if ([component isEqualToString:@"utility_bill"] || [component isEqualToString:@"bank_statement"] || [component isEqualToString:@"rental_agreement"] || [component isEqualToString:@"passport_registration"] || [component isEqualToString:@"temporary_registration"])
                 {
-                    value = TGLocalized(@"Notification.PassportValueProofOfAddress");
+                    if (!hasAddress)
+                    {
+                        value = TGLocalized(@"Notification.PassportValueProofOfAddress");
+                        hasAddress = true;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 else if ([component isEqualToString:@"phone"])
                 {
@@ -789,7 +808,7 @@ static TGUser *findUserInArray(int32_t uid, NSArray *array)
                 }
                 
                 if (values.length == 0)
-                    values = value;
+                    values = value ?: @"";
                 else
                     values = [values stringByAppendingString:[NSString stringWithFormat:@", %@", value]];
             }

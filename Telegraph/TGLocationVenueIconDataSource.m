@@ -116,7 +116,7 @@ static ASQueue *taskManagementQueue()
          }
          else
          {
-             [previewTask executeWithTargetFilePath:nil uri:[TGLocationVenueIconDataSource iconAddressForUri:uri size:NULL] completion:^(bool success)
+             [previewTask executeWithTargetFilePath:nil uri:[TGLocationVenueIconDataSource iconAddressForUri:uri size:NULL] options:nil completion:^(bool success)
               {
                   if (success)
                   {

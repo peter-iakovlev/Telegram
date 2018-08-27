@@ -65,7 +65,15 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"animation-thumbnail://?"];
         if (document.documentId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", document.documentId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (document.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [document.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", document.localDocumentId];
         
@@ -149,7 +157,15 @@
         
         NSMutableString *previewUri = [[NSMutableString alloc] initWithString:@"animation-thumbnail://?"];
         if (_document.documentId != 0)
+        {
             [previewUri appendFormat:@"id=%" PRId64 "", _document.documentId];
+            
+            [previewUri appendFormat:@"&cid=%" PRId64 "", message.cid];
+            [previewUri appendFormat:@"&mid=%" PRId32 "", message.mid];
+            
+            if (_document.originInfo != nil)
+                [previewUri appendFormat:@"&origin_info=%@", [_document.originInfo stringRepresentation]];
+        }
         else
             [previewUri appendFormat:@"local-id=%" PRId64 "", _document.localDocumentId];
         
@@ -316,10 +332,10 @@
                         return nil;
                     }];
                     return [dataSignal mapToSignal:^SSignal *(NSData *data) {
-                        return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSString *tempPath) {
+                        return [[TGGifConverter convertGifToMp4:data] mapToSignal:^SSignal *(NSDictionary *dict) {
                             return [[SSignal alloc] initWithGenerator:^id<SDisposable>(SSubscriber *subsctiber) {
                                 NSError *error = nil;
-                                [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:videoPath error:&error];
+                                [[NSFileManager defaultManager] moveItemAtPath:dict[@"path"] toPath:videoPath error:&error];
                                 if (error != nil) {
                                     [subsctiber putError:nil];
                                 } else {

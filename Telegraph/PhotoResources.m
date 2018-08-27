@@ -37,14 +37,14 @@ static NSString *pathForPhotoDirectory(TGImageMediaAttachment *imageAttachment) 
     return [filesDirectory stringByAppendingPathComponent:photoDirectoryName];
 }
 
-static id<MediaResource> imageUrlResource(NSString *url, int fileSize, NSString *legacyCacheUrl, NSString *legacyFilePath) {
+static id<MediaResource> imageUrlResource(NSString *url, int fileSize, NSString *legacyCacheUrl, NSString *legacyFilePath, TGMediaOriginInfo *originInfo, int64_t identifier) {
     if (url != nil) {
         int datacenterId = 0;
         int64_t volumeId = 0;
         int localId = 0;
         int64_t secret = 0;
         if (extractFileUrlComponents(url, &datacenterId, &volumeId, &localId, &secret)) {
-            return [[CloudFileMediaResource alloc] initWithDatacenterId:datacenterId volumeId:volumeId localId:localId secret:secret size:fileSize == 0 ? nil : @(fileSize) legacyCacheUrl:legacyCacheUrl legacyCachePath:legacyFilePath mediaType:@(TGNetworkMediaTypeTagImage)];
+            return [[CloudFileMediaResource alloc] initWithDatacenterId:datacenterId volumeId:volumeId localId:localId secret:secret size:fileSize == 0 ? nil : @(fileSize) legacyCacheUrl:legacyCacheUrl legacyCachePath:legacyFilePath mediaType:@(TGNetworkMediaTypeTagImage) originInfo:originInfo identifier:identifier];
         } else {
             return nil;
         }
@@ -60,7 +60,7 @@ static id<MediaResource> imageThumbnailResource(TGImageMediaAttachment *image, C
         NSString *photoDirectoryPath = pathForPhotoDirectory(image);
         NSString *genericThumbnailPath = [photoDirectoryPath stringByAppendingPathComponent:@"image-thumb.jpg"];
         
-        return imageUrlResource(url, fileSize, url, genericThumbnailPath);
+        return imageUrlResource(url, fileSize, url, genericThumbnailPath, image.originInfo, image.imageId);
     } else {
         return nil;
     }
@@ -70,7 +70,7 @@ static id<MediaResource> videoThumbnailResource(TGVideoMediaAttachment *video, C
     int fileSize = 0;
     NSString *url = [video.thumbnailInfo closestImageUrlWithSize:CGSizeZero resultingSize:resultingSize resultingFileSize:&fileSize];
     if (url != nil) {
-        return imageUrlResource(url, fileSize, url, nil);
+        return imageUrlResource(url, fileSize, url, nil, video.originInfo, video.videoId);
     } else {
         return nil;
     }
@@ -80,7 +80,7 @@ id<MediaResource> imageFullSizeResource(TGImageMediaAttachment *image, CGSize *r
     int fileSize = 0;
     NSString *url = [image.imageInfo closestImageUrlWithSize:CGSizeMake(1136.0f, 1136.0f) resultingSize:resultingSize resultingFileSize:&fileSize];
     if (url != nil) {
-        return imageUrlResource(url, fileSize, url, nil);
+        return imageUrlResource(url, fileSize, url, nil, image.originInfo, image.imageId);
     } else {
         return nil;
     }
@@ -95,7 +95,7 @@ id<MediaResource> videoFullSizeResource(TGVideoMediaAttachment *video) {
         int32_t datacenterId = [[urlComponents objectAtIndex:3] intValue];
         int32_t fileSize = [[urlComponents objectAtIndex:4] intValue];
         
-        return [[CloudDocumentMediaResource alloc] initWithDatacenterId:datacenterId fileId:videoId accessHash:accessHash size:fileSize == 0 ? nil : @(fileSize) mediaType:@(TGNetworkMediaTypeTagVideo)];
+        return [[CloudDocumentMediaResource alloc] initWithDatacenterId:datacenterId fileId:videoId accessHash:accessHash size:fileSize == 0 ? nil : @(fileSize) mediaType:@(TGNetworkMediaTypeTagVideo) originInfo:video.originInfo identifier:video.videoId];
     } else {
         return nil;
     }
@@ -538,7 +538,7 @@ SSignal *secureMediaTransform(MediaBox *mediaBox, TGPassportFile *file, bool thu
                     NSNumber *width = [properties objectForKey:(__bridge id)kCGImagePropertyPixelWidth];
                     NSNumber *height = [properties objectForKey:(__bridge id)kCGImagePropertyPixelHeight];
                     if (width != nil && height != nil)
-                    return CGSizeMake(width.floatValue, height.floatValue);
+                        return CGSizeMake(width.floatValue, height.floatValue);
                 }
                 return CGSizeZero;
             };

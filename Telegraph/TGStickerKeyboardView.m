@@ -768,7 +768,7 @@ typedef enum {
             {
                 int64_t unpinnedPackId = [TGDatabaseInstance() groupStickerPackUnpinned:strongSelf->_peerId];
                 strongSelf->_groupStickersUnpinned = (groupStickerPackReference.packId != 0 && unpinnedPackId == groupStickerPackReference.packId) || unpinnedPackId == -1;
-                [strongSelf->_tabPanel setAvatarUrl:conversation.chatPhotoSmall peerId:conversation.conversationId title:conversation.chatTitle];
+                [strongSelf->_tabPanel setAvatarUrl:conversation.chatPhotoFullSmall peerId:conversation.conversationId title:conversation.chatTitle];
                 
                 if (unpinnedPackId != 0 && !strongSelf->_groupStickersUnpinned)
                     [TGDatabaseInstance() storeGroupStickerPackUnpinned:0 forPeerId:strongSelf->_peerId];
@@ -1374,13 +1374,31 @@ typedef enum {
 - (TGDocumentMediaAttachment *)documentAtIndexPath:(NSIndexPath *)indexPath
 {
     if (indexPath.section == 0)
-        return _favoriteDocuments[indexPath.item];
+    {
+        TGDocumentMediaAttachment *document = _favoriteDocuments[indexPath.item];
+        if (document.originInfo == nil)
+            document.originInfo = [TGMediaOriginInfo mediaOriginInfoForFavoriteStickerWithFileReference:nil fileReferences:nil];
+        return document;
+    }
     else if (indexPath.section == 1)
-        return _recentDocuments[indexPath.item];
+    {
+        TGDocumentMediaAttachment *document = _recentDocuments[indexPath.item];
+        if (document.originInfo == nil)
+            document.originInfo = [TGMediaOriginInfo mediaOriginInfoForRecentStickerWithFileReference:nil fileReferences:nil];
+        return document;
+    }
     else if (indexPath.section == 2 || indexPath.section == [self lastGroupSection])
-        return _groupDocuments[indexPath.item];
+    {
+        TGDocumentMediaAttachment *document = _groupDocuments[indexPath.item];
+        return document;
+    }
     else
-        return ((TGStickerPack *)_stickerPacks[indexPath.section - 3]).documents[indexPath.item];
+    {
+        TGDocumentMediaAttachment *document = ((TGStickerPack *)_stickerPacks[indexPath.section - 3]).documents[indexPath.item];
+        if (document.originInfo == nil)
+            document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocumentAttachment:document];
+        return document;
+    }
 }
 
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView viewForSupplementaryElementOfKind:(NSString *)kind atIndexPath:(NSIndexPath *)indexPath

@@ -105,7 +105,7 @@
             
             if (args[@"id"] != nil && args[@"messageId"] != nil && args[@"conversationId"] != nil && args[@"legacy-cache-url"] && args[@"legacy-thumbnail-cache-url"])
             {
-                [ActionStageInstance() requestActor:path options:@{
+                NSMutableDictionary *options = [[NSMutableDictionary alloc] initWithDictionary:@{
                     @"mediaId": args[@"id"],
                     @"messageId": args[@"messageId"],
                     @"conversationId": args[@"conversationId"],
@@ -130,7 +130,12 @@
                         if (progress)
                             progress(value);
                     }
-                } watcher:self];
+                }];
+                
+                if (args[@"origin_info"] != nil)
+                    options[@"originInfo"] = args[@"origin_info"];
+                
+                [ActionStageInstance() requestActor:path options:options watcher:self];
             }
         }
         else

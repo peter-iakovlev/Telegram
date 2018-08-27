@@ -179,7 +179,7 @@
 {
     if ([url hasPrefix:@"mention://"])
     {
-        //NSString *displayString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
+        NSString *displayString = [@"@" stringByAppendingString:[url substringFromIndex:@"mention://".length]];
     }
     else
     {
@@ -191,7 +191,7 @@
 {
     if (url.length == 0)
         return;
-
+    
     UIView *parentView = self.view;
 
     NSString *displayString = url;

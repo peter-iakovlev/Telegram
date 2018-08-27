@@ -13,6 +13,7 @@
 #import "TGWebPageMediaAttachment+Telegraph.h"
 #import "TGImageInfo+Telegraph.h"
 #import "TGWebDocument+Telegraph.h"
+#import "TGMediaOriginInfo+Telegraph.h"
 
 #import <LegacyComponents/TGRemoteImageView.h>
 
@@ -31,16 +32,18 @@
 
 @implementation TGMessage (Telegraph)
 
-+ (NSArray *)parseTelegraphMedia:(id)media mediaLifetime:(int32_t *)mediaLifetime
++ (NSArray *)parseTelegraphMedia:(id)media mediaLifetime:(int32_t *)mediaLifetime cid:(int64_t)cid mid:(int32_t)mid
 {
     NSMutableArray *mediaAttachments = [[NSMutableArray alloc] init];
     
     if ([media isKindOfClass:[TLMessageMedia$messageMediaPhoto class]])
     {
         TLMessageMedia$messageMediaPhoto *mediaPhoto = (TLMessageMedia$messageMediaPhoto *)media;
+    
+        TGMediaOriginInfo *origin = [TGMediaOriginInfo mediaOriginInfoForPhoto:mediaPhoto.photo cid:cid mid:mid];
         
-
         TGImageMediaAttachment *imageMediaAttachment = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:mediaPhoto.photo];
+        imageMediaAttachment.originInfo = origin;
         [mediaAttachments addObject:imageMediaAttachment];
         
         if (mediaLifetime != nil) {
@@ -135,6 +138,10 @@
     {
         TLMessageMedia$messageMediaDocument *documentMedia = (TLMessageMedia$messageMediaDocument *)media;
         TGDocumentMediaAttachment *documentAttachment = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:documentMedia.document];
+        
+        TGMediaOriginInfo *origin = [TGMediaOriginInfo mediaOriginInfoForDocument:documentMedia.document cid:cid mid:mid];
+        documentAttachment.originInfo = origin;
+        
         int32_t videoTTLSeconds = documentMedia.ttl_seconds;
         
         bool isAnimated = false;
@@ -150,6 +157,7 @@
                 videoMedia.dimensions = video.size;
                 videoMedia.thumbnailInfo = documentAttachment.thumbnailInfo;
                 videoMedia.roundMessage = video.isRoundMessage;
+                videoMedia.originInfo = origin;
                 
                 for (id additionalAttribute in documentAttachment.attributes) {
                     if ([additionalAttribute isKindOfClass:[TLDocumentAttribute$documentAttributeHasStickers class]]) {
@@ -182,8 +190,7 @@
     }
     else if ([media isKindOfClass:[TLMessageMedia$messageMediaWebPage class]])
     {
-        TGWebPageMediaAttachment *webPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:((TLMessageMedia$messageMediaWebPage *)media).webpage];
-        
+        TGWebPageMediaAttachment *webPage = [[TGWebPageMediaAttachment alloc] initWithTelegraphWebPageDesc:((TLMessageMedia$messageMediaWebPage *)media).webpage];        
         [mediaAttachments addObject:webPage];
     } else if ([media isKindOfClass:[TLMessageMedia$messageMediaGame class]]) {
         TLMessageMedia$messageMediaGame *gameDesc = ((TLMessageMedia$messageMediaGame *)media);
@@ -191,11 +198,13 @@
         TGImageMediaAttachment *image = nil;
         if (gameDesc.game.photo != nil) {
             image = [[TGImageMediaAttachment alloc] initWithTelegraphDesc:gameDesc.game.photo];
+            image.originInfo = [TGMediaOriginInfo mediaOriginInfoForPhoto:gameDesc.game.photo cid:cid mid:mid];
         }
         
         TGDocumentMediaAttachment *document = nil;
         if (gameDesc.game.document != nil) {
             document = [[TGDocumentMediaAttachment alloc] initWithTelegraphDocumentDesc:gameDesc.game.document];
+            document.originInfo = [TGMediaOriginInfo mediaOriginInfoForDocument:gameDesc.game.document cid:cid mid:mid];
         }
         
         TGGameMediaAttachment *gameMedia = [[TGGameMediaAttachment alloc] initWithGameId:gameDesc.game.n_id accessHash:gameDesc.game.access_hash shortName:gameDesc.game.short_name title:gameDesc.game.title gameDescription:gameDesc.game.n_description photo:image document:document];
@@ -420,7 +429,7 @@
             if (concreteMessage.media != nil)
             {
                 int32_t mediaLifetime = 0;
-                NSArray *parsedMedia = [TGMessage parseTelegraphMedia:concreteMessage.media mediaLifetime:&mediaLifetime];
+                NSArray *parsedMedia = [TGMessage parseTelegraphMedia:concreteMessage.media mediaLifetime:&mediaLifetime cid:self.cid mid:self.mid];
                 if (mediaAttachments == nil)
                     mediaAttachments = parsedMedia;
                 else

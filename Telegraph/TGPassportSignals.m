@@ -27,10 +27,13 @@
 #import "MediaBox.h"
 #import "TelegramMediaResources.h"
 #import "TGPassportFile.h"
+#import "TGPassportLanguageMap.h"
 
+#import "TGTwoStepUtils.h"
 #import "TGTwoStepConfigSignal.h"
 #import "TGUserDataRequestBuilder.h"
 #import "TGUploadFileSignals.h"
+#import "TGServiceSignals.h"
 
 @implementation TGPassportSignals
 
@@ -39,6 +42,21 @@ static SPipe *passportPipe;
 + (void)load
 {
     passportPipe = [[SPipe alloc] init];
+}
+
++ (SSignal *)languageMap
+{
+    return [[TGDatabaseInstance() passportLanguageMapSignal] mapToSignal:^SSignal *(TGPassportLanguageMap *initialLanguageMap)
+    {
+        SSignal *currentSignal = initialLanguageMap ? [SSignal single:initialLanguageMap] : [SSignal complete];
+        SSignal *updateSignal = [[[TGServiceSignals passportLanguages:initialLanguageMap.n_hash] onNext:^(TGPassportLanguageMap *newLanguageMap) {
+            if (newLanguageMap != nil)
+                [TGDatabaseInstance() storePassportLanguageMap:newLanguageMap];
+        }] mapToSignal:^id(TGPassportLanguageMap *newLanguageMap) {
+            return newLanguageMap ? [SSignal single:newLanguageMap] : [SSignal complete];
+        }];
+        return [currentSignal then:updateSignal];
+    }];
 }
 
 + (SSignal *)hasPassport
@@ -102,7 +120,7 @@ static SPipe *passportPipe;
     }];
 }
 
-+ (SSignal *)acceptAuthorizationForBotId:(int32_t)botId scope:(NSString *)scope publicKey:(NSString *)publicKey finalForm:(TGPassportDecryptedForm *)finalForm payload:(NSString *)payload
++ (SSignal *)acceptAuthorizationForBotId:(int32_t)botId scope:(NSString *)scope publicKey:(NSString *)publicKey finalForm:(TGPassportDecryptedForm *)finalForm payload:(NSString *)payload nonce:(NSString *)nonce
 {
     TLRPCaccount_acceptAuthorization *acceptAuthorization = [[TLRPCaccount_acceptAuthorization alloc] init];
     acceptAuthorization.bot_id = botId;
@@ -110,7 +128,7 @@ static SPipe *passportPipe;
     acceptAuthorization.public_key = publicKey;
     
     NSMutableArray *valueHashes = [[NSMutableArray alloc] init];
-    for (TGPassportDecryptedValue *value in finalForm.values)
+    for (TGPassportDecryptedValue *value in finalForm.fulfilledValues)
     {
         TLSecureValueHash$secureValueHash *valueHash = [[TLSecureValueHash$secureValueHash alloc] init];
         valueHash.type = [self secureValueTypeForType:value.type];
@@ -119,7 +137,7 @@ static SPipe *passportPipe;
     }
     acceptAuthorization.value_hashes = valueHashes;
     
-    NSData *credentialsData = [finalForm credentialsDataWithPayload:payload];
+    NSData *credentialsData = [finalForm credentialsDataWithPayload:payload nonce:nonce];
     NSData *credentialsSecret = [self secretWithSecretRandom:nil];
 
     NSData *paddedData = [self paddedDataForEncryption:credentialsData];
@@ -131,7 +149,7 @@ static SPipe *passportPipe;
     uint8_t *cipherBuffer = malloc(cipherBufferSize);
     SecKeyEncrypt(key, kSecPaddingOAEP, credentialsSecret.bytes, credentialsSecret.length, &cipherBuffer[0], &cipherBufferSize);
     
-    NSData *encryptedCredentialsSecret = [NSData dataWithBytes:cipherBuffer length:cipherBufferSize];
+    NSData *encryptedCredentialsSecret = [NSData dataWithBytesNoCopy:cipherBuffer length:cipherBufferSize freeWhenDone:true];
     
     TLSecureCredentialsEncrypted$secureCredentialsEncrypted *encryptedCredentials = [[TLSecureCredentialsEncrypted$secureCredentialsEncrypted alloc] init];
     encryptedCredentials.data = encryptedData;
@@ -178,7 +196,7 @@ static SPipe *passportPipe;
     NSMutableData *secretHashData = [[NSMutableData alloc] init];
     [secretHashData appendData:secret];
     [secretHashData appendData:hash];
-    NSData *secretHash = [TGTwoStepConfigSignal TGSha512:secretHashData];
+    NSData *secretHash = [TGTwoStepUtils SHA512:secretHashData];
     NSData *secretKey = [secretHash subdataWithRange:NSMakeRange(0, 32)];
     NSData *secretIv = [secretHash subdataWithRange:NSMakeRange(32, 16)];
     
@@ -211,6 +229,7 @@ static SPipe *passportPipe;
             TGPassportFile *frontSide = nil;
             TGPassportFile *reverseSide = nil;
             TGPassportFile *selfie = nil;
+            NSMutableArray *translation = nil;
             NSMutableArray *files = nil;
             TGPassportPlainData *plainData = nil;
             
@@ -266,6 +285,22 @@ static SPipe *passportPipe;
                 selfie = [[TGPassportFile alloc] initWithTL:secureFile fileSecret:[self encrypted:false data:secureFile.secret hash:secureFile.file_hash secret:secret]];
             }
             
+            if (value.translation != nil)
+            {
+                translation = [[NSMutableArray alloc] init];
+                for (TLSecureFile$secureFile *secureFile in value.translation)
+                {
+                    if (![secureFile isKindOfClass:[TLSecureFile$secureFile class]])
+                        continue;
+                    
+                    NSData *fileSecret = [self encrypted:false data:secureFile.secret hash:secureFile.file_hash secret:secret];
+                    if (fileSecret == nil)
+                        continue;
+                    TGPassportFile *file = [[TGPassportFile alloc] initWithTL:secureFile fileSecret:fileSecret];
+                    [translation addObject:file];
+                }
+            }
+            
             if (value.files != nil)
             {
                 files = [[NSMutableArray alloc] init];
@@ -294,7 +329,7 @@ static SPipe *passportPipe;
                 }
             }
             
-            TGPassportDecryptedValue *decryptedValue = [[TGPassportDecryptedValue alloc] initWithType:type data:data frontSide:frontSide reverseSide:reverseSide selfie:selfie files:files plainData:plainData];
+            TGPassportDecryptedValue *decryptedValue = [[TGPassportDecryptedValue alloc] initWithType:type data:data frontSide:frontSide reverseSide:reverseSide selfie:selfie translation:translation files:files plainData:plainData];
             decryptedValue = [decryptedValue updateWithValueHash:value.n_hash];
             if (decryptedValue != nil)
                 [result addObject:decryptedValue];
@@ -349,6 +384,91 @@ static SPipe *passportPipe;
         TGPassportType type = [self typeForSecureValueType:valueType];
         if (type != TGPassportTypeUndefined)
             [types addObject:@(type)];
+    }
+    return types;
+}
+
++ (NSArray *)identityTypes
+{
+    return @[ @(TGPassportTypePersonalDetails), @(TGPassportTypePassport), @(TGPassportTypeDriversLicense), @(TGPassportTypeIdentityCard), @(TGPassportTypeInternalPassport) ];
+}
+
++ (bool)isIdentityType:(TGPassportType)type
+{
+    switch (type)
+    {
+        case TGPassportTypePersonalDetails:
+        case TGPassportTypePassport:
+        case TGPassportTypeIdentityCard:
+        case TGPassportTypeDriversLicense:
+        case TGPassportTypeInternalPassport:
+            return true;
+            
+        default:
+            return false;
+    }
+}
+
++ (NSArray *)addressTypes
+{
+    return @[ @(TGPassportTypeAddress), @(TGPassportTypeUtilityBill), @(TGPassportTypeBankStatement), @(TGPassportTypeRentalAgreement), @(TGPassportTypePassportRegistration), @(TGPassportTypeTemporaryRegistration) ];
+}
+
++ (bool)isAddressType:(TGPassportType)type
+{
+    switch (type)
+    {
+        case TGPassportTypeAddress:
+        case TGPassportTypeUtilityBill:
+        case TGPassportTypeBankStatement:
+        case TGPassportTypeRentalAgreement:
+        case TGPassportTypePassportRegistration:
+        case TGPassportTypeTemporaryRegistration:
+            return true;
+            
+        default:
+            return false;
+    }
+}
+
++ (NSArray *)requiredTypesForSecureRequiredTypes:(NSArray *)requiredTypes
+{
+    NSMutableArray *types = [[NSMutableArray alloc] init];
+    
+    TGPassportRequiredType *(^typeFromTL)(TLSecureRequiredType$secureRequiredType *) = ^TGPassportRequiredType *(TLSecureRequiredType$secureRequiredType *tl)
+    {
+        TGPassportType type = [self typeForSecureValueType:tl.type];
+        if (type == TGPassportTypeUndefined)
+            return nil;
+        
+        return [[TGPassportRequiredType alloc] initWithType:type includeNativeNames:tl.flags & (1 << 0) selfieRequired:tl.flags & (1 << 1) translationRequired:tl.flags & (1 << 2)];
+    };
+    
+    for (TLSecureRequiredType *requiredType in requiredTypes)
+    {
+        if ([requiredType isKindOfClass:[TLSecureRequiredType$secureRequiredType class]])
+        {
+            TLSecureRequiredType$secureRequiredType *concreteType = (TLSecureRequiredType$secureRequiredType *)requiredType;
+            TGPassportRequiredType *type = typeFromTL(concreteType);
+            if (type != nil)
+                [types addObject:type];
+        } else if ([requiredType isKindOfClass:[TLSecureRequiredType$secureRequiredTypeOneOf class]])
+        {
+            TLSecureRequiredType$secureRequiredTypeOneOf *concreteType = (TLSecureRequiredType$secureRequiredTypeOneOf *)requiredType;
+            
+            NSMutableArray *subtypes = [[NSMutableArray alloc] init];
+            for (TLSecureRequiredType$secureRequiredType *subtype in concreteType.types)
+            {
+                if (![subtype isKindOfClass:[TLSecureRequiredType$secureRequiredType class]])
+                    continue;
+                
+                TGPassportRequiredType *type = typeFromTL(subtype);
+                if (type != nil)
+                    [subtypes addObject:type];
+            }
+            [types addObject:[[TGPassportRequiredOneOfTypes alloc] initWithTypes:subtypes]];
+        }
+
     }
     return types;
 }
@@ -556,6 +676,34 @@ static SPipe *passportPipe;
         inputSecureValue.selfie = selfie;
     }
     
+    if (value.translation.count > 0)
+    {
+        NSMutableArray *inputFiles = [[NSMutableArray alloc] init];
+        for (TGPassportFile *file in value.translation)
+        {
+            if (file.uploaded)
+            {
+                TLInputSecureFile$inputSecureFileUploaded *inputSecureFileUploaded = [[TLInputSecureFile$inputSecureFileUploaded alloc] init];
+                inputSecureFileUploaded.n_id = file.fileId;
+                inputSecureFileUploaded.parts = file.parts;
+                inputSecureFileUploaded.md5_checksum = file.md5Checksum;
+                inputSecureFileUploaded.file_hash = file.fileHash;
+                inputSecureFileUploaded.secret = file.encryptedFileSecret;
+                [inputFiles addObject:inputSecureFileUploaded];
+            }
+            else
+            {
+                TLInputSecureFile$inputSecureFile *inputSecureFile = [[TLInputSecureFile$inputSecureFile alloc] init];
+                inputSecureFile.n_id = file.fileId;
+                inputSecureFile.access_hash = file.accessHash;
+                [inputFiles addObject:inputSecureFile];
+            }
+        }
+        
+        inputSecureValue.flags |= (1 << 6);
+        inputSecureValue.translation = inputFiles;
+    }
+    
     if (value.files.count > 0)
     {
         NSMutableArray *inputFiles = [[NSMutableArray alloc] init];
@@ -698,28 +846,28 @@ static SPipe *passportPipe;
 {
     NSData *secureSecretId = MTSha256(secureSecret);
     int64_t hash = 0;
-    //[[NSData alloc] initWithBytes:(((int8_t *)messageKeyFull.bytes) + messageKeyFull.length - 16) length:16]
     [secureSecretId getBytes:&hash length:8];
     return hash;
 }
 
-+ (NSData *)encryptedSecureSecretWithData:(NSData *)data passord:(NSString *)password nextSecureSalt:(NSData *)nextSecureSalt secureSaltOut:(NSData *__autoreleasing *)secureSaltOut
++ (NSData *)encryptedSecureSecretWithData:(NSData *)data password:(NSString *)password nextSecureAlgo:(TGSecurePasswordKdfAlgo *)nextSecureAlgo secureAlgoOut:(TGSecurePasswordKdfAlgo *__autoreleasing *)secureAlgoOut
 {
-    NSMutableData *finalSecureSalt = [[NSMutableData alloc] initWithData:nextSecureSalt];
+    NSData *nextSecureSalt = nil;
+    if ([nextSecureAlgo respondsToSelector:@selector(salt)])
+        nextSecureSalt = [nextSecureAlgo performSelector:@selector(salt)];
     
-    uint8_t randomData[8];
-    __unused int result = SecRandomCopyBytes(kSecRandomDefault, 8, randomData);
+    NSMutableData *finalSecureSalt = [[NSMutableData alloc] initWithData:nextSecureSalt];
+    uint8_t randomData[32];
+    __unused int result = SecRandomCopyBytes(kSecRandomDefault, 32, randomData);
     [finalSecureSalt appendBytes:randomData length:8];
     
-    if (secureSaltOut != NULL)
-        *secureSaltOut = finalSecureSalt;
+    if ([nextSecureAlgo isKindOfClass:[TGSecurePasswordKdfAlgoPBKDF2HMACSHA512iter100000 class]])
+        nextSecureAlgo = [[TGSecurePasswordKdfAlgoPBKDF2HMACSHA512iter100000 alloc] initWithSalt:finalSecureSalt];
     
-    NSMutableData *passwordHashData = [[NSMutableData alloc] init];
-    [passwordHashData appendData:finalSecureSalt];
-    [passwordHashData appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [passwordHashData appendData:finalSecureSalt];
+    if (secureAlgoOut != NULL)
+        *secureAlgoOut = nextSecureAlgo;
     
-    NSData *passwordHash = [TGTwoStepConfigSignal TGSha512:passwordHashData];
+    NSData *passwordHash = [TGTwoStepUtils securePasswordHashWithPassword:password secureAlgo:nextSecureAlgo];
     NSData *secretKey = [passwordHash subdataWithRange:NSMakeRange(0, 32)];
     NSData *iv = [passwordHash subdataWithRange:NSMakeRange(32, 16)];
     
@@ -727,14 +875,9 @@ static SPipe *passportPipe;
     return encryptedSecret;
 }
 
-+ (NSData *)decryptedSecureSecretWithData:(NSData *)data passord:(NSString *)password secureSalt:(NSData *)secureSalt
++ (NSData *)decryptedSecureSecretWithData:(NSData *)data password:(NSString *)password secureAlgo:(TGSecurePasswordKdfAlgo *)secureAlgo
 {
-    NSMutableData *passwordHashData = [[NSMutableData alloc] init];
-    [passwordHashData appendData:secureSalt];
-    [passwordHashData appendData:[password dataUsingEncoding:NSUTF8StringEncoding]];
-    [passwordHashData appendData:secureSalt];
-    
-    NSData *passwordHash = [TGTwoStepConfigSignal TGSha512:passwordHashData];
+    NSData *passwordHash = [TGTwoStepUtils securePasswordHashWithPassword:password secureAlgo:secureAlgo];
     NSData *secretKey = [passwordHash subdataWithRange:NSMakeRange(0, 32)];
     NSData *iv = [passwordHash subdataWithRange:NSMakeRange(32, 16)];
     

@@ -78,6 +78,9 @@
 
 #import "TGUnseenPeerMentionsState.h"
 #import "TGUnseenPeerMentionsMessageIdsState.h"
+#import "TGNotificationException.h"
+
+#import "TGPassportLanguageMap.h"
 
 @interface TGDatabaseIndexHolder : NSObject {
     @public std::set<int32_t> _messageIds;
@@ -8109,6 +8112,55 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
     return minMediaMid;
 }
 
+- (void)loadPeerNotificationExceptions:(void (^)(NSArray *, NSArray *))completion
+{
+    if (completion == nil)
+        return;
+    
+    [self dispatchOnDatabaseThread:^
+    {
+        NSMutableArray *privateExceptions = [[NSMutableArray alloc] init];
+        NSMutableArray *groupExceptions = [[NSMutableArray alloc] init];
+        FMResultSet *result = [_database executeQuery:[NSString stringWithFormat:@"SELECT pid, notification_type, mute, preview_text FROM %@ WHERE notification_type!=%d OR mute!=%d", _peerPropertiesTableName, INT32_MIN, INT32_MIN]];
+        while ([result next])
+        {
+            NSNumber *soundId = nil;
+            NSNumber *muteUntil = nil;
+            
+            int64_t peerId = [result longLongIntForColumn:@"pid"];
+            
+            int storedSoundId = [result intForColumn:@"notification_type"];
+            if (storedSoundId != INT32_MIN)
+                soundId = @(storedSoundId);
+            
+            int storedMuteUntil = [result intForColumn:@"mute"];
+            if (storedMuteUntil != INT32_MIN) {
+                if (storedMuteUntil - (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) <= 0) {
+                    muteUntil = @0;
+                    [_database executeQuery:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mute=0 WHERE pid=%lld", _peerPropertiesTableName, peerId]];
+                } else {
+                    muteUntil = @(storedMuteUntil);
+                }
+            }
+            
+            TG_SYNCHRONIZED_BEGIN(_mutedPeers);
+            _mutedPeers[peerId] = storedMuteUntil;
+            TG_SYNCHRONIZED_END(_mutedPeers);
+            
+            if (peerId != INT_MAX - 1 && peerId != INT_MAX - 2)
+            {
+                TGNotificationException *exception = [[TGNotificationException alloc] initWithPeerId:peerId notificationType:soundId muteUntil:muteUntil];
+                if (TGPeerIdIsUser(peerId))
+                    [privateExceptions addObject:exception];
+                else
+                    [groupExceptions addObject:exception];
+            }
+        }
+        
+        completion(privateExceptions, groupExceptions);
+    } synchronous:false];
+}
+
 - (void)loadPeerNotificationSettings:(int64_t)peerId soundId:(NSNumber **)soundId muteUntil:(NSNumber **)muteUntil previewText:(NSNumber **)previewText messagesMuted:(NSNumber **)messagesMuted notFound:(bool *)notFound
 {
     __block bool found = false;
@@ -8166,51 +8218,59 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
 
 - (BOOL)isPeerMuted:(int64_t)peerId
 {
-    bool found = false;
-    int muteDate = 0;
-    
-    TG_SYNCHRONIZED_BEGIN(_mutedPeers);
-    std::map<int64_t, int>::iterator it = _mutedPeers.find(peerId);
-    if (it != _mutedPeers.end())
+    return [self isPeerMuted:peerId forceUpdate:false];
+}
+
+- (BOOL)isPeerMuted:(int64_t)peerId forceUpdate:(bool)forceUpdate
+{
+    if (!forceUpdate)
     {
-        found = true;
-        muteDate = it->second;
+        bool found = false;
+        int muteDate = 0;
         
-        bool usedDefault = false;
-        if (muteDate == INT32_MIN)
+        TG_SYNCHRONIZED_BEGIN(_mutedPeers);
+        std::map<int64_t, int>::iterator it = _mutedPeers.find(peerId);
+        if (it != _mutedPeers.end())
         {
-            found = false;
-            usedDefault = true;
+            found = true;
+            muteDate = it->second;
             
-            int64_t defaultPeerId = 0;
-            if (peerId > 0 || peerId <= INT_MIN)
-                defaultPeerId = INT_MAX - 1;
-            else
-                defaultPeerId = INT_MAX - 2;
-            
-            std::map<int64_t, int>::iterator it = _mutedPeers.find(defaultPeerId);
-            if (it != _mutedPeers.end())
+            bool usedDefault = false;
+            if (muteDate == INT32_MIN)
             {
-                found = true;
-                muteDate = it->second;
+                found = false;
+                usedDefault = true;
+                
+                int64_t defaultPeerId = 0;
+                if (peerId > 0 || peerId <= INT_MIN)
+                    defaultPeerId = INT_MAX - 1;
+                else
+                    defaultPeerId = INT_MAX - 2;
+                
+                std::map<int64_t, int>::iterator it = _mutedPeers.find(defaultPeerId);
+                if (it != _mutedPeers.end())
+                {
+                    found = true;
+                    muteDate = it->second;
+                }
+            }
+            
+            if (!usedDefault && muteDate != 0 && muteDate - (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) <= 0)
+            {
+                muteDate = 0;
+                _mutedPeers[peerId] = muteDate;
+                
+                [self dispatchOnDatabaseThread:^
+                {
+                    [_database executeQuery:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mute=0 WHERE pid=%lld", _peerPropertiesTableName, peerId]];
+                } synchronous:false];
             }
         }
+        TG_SYNCHRONIZED_END(_mutedPeers);
         
-        if (!usedDefault && muteDate != 0 && muteDate - (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) <= 0)
-        {
-            muteDate = 0;
-            _mutedPeers[peerId] = muteDate;
-            
-            [self dispatchOnDatabaseThread:^
-            {
-                [_database executeQuery:[NSString stringWithFormat:@"UPDATE OR IGNORE %@ SET mute=0 WHERE pid=%lld", _peerPropertiesTableName, peerId]];
-            } synchronous:false];
-        }
+        if (found)
+            return muteDate > 0;
     }
-    TG_SYNCHRONIZED_END(_mutedPeers);
-    
-    if (found)
-        return muteDate > 0;
     
     __block bool blockIsMuted = false;
     
@@ -8734,6 +8794,14 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
             TGClearNotificationsFutureAction *action = [[TGClearNotificationsFutureAction alloc] init];
             [self storeFutureActions:[NSArray arrayWithObject:action]];
         }
+        
+        NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+        dict[@"soundId"] = @1;
+        dict[@"muteUntil"] = @0;
+        dict[@"previewText"] = @1;
+        
+        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerSettings/(%d)", INT32_MAX - 1] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
+        [ActionStageInstance() dispatchResource:[[NSString alloc] initWithFormat:@"/tg/peerSettings/(%d)", INT32_MAX - 2] resource:[[SGraphObjectNode alloc] initWithObject:dict]];
     } synchronous:false];
 }
 
@@ -9390,6 +9458,24 @@ static inline TGFutureAction *loadFutureActionFromQueryResult(FMResultSet *resul
             
             [_database executeUpdate:[[NSString alloc] initWithFormat:@"INSERT OR REPLACE INTO %@ (hash_high, hash_low, data) VALUES(?, ?, ?)", _serverAssetsTableName], [[NSNumber alloc] initWithLongLong:hash_high], [[NSNumber alloc] initWithLongLong:hash_low], data];
         }
+    } synchronous:false];
+}
+
+- (void)removeServerAssetData:(NSString *)key
+{
+    [self dispatchOnDatabaseThread:^
+    {
+        NSData *keyData = [key dataUsingEncoding:NSUTF8StringEncoding];
+        const char *ptr = (const char *)[keyData bytes];
+        unsigned char md5Buffer[16];
+        CC_MD5(ptr, (CC_LONG)keyData.length, md5Buffer);
+        
+        int64_t hash_high = 0;
+        memcpy(&hash_high, md5Buffer, 8);
+        int64_t hash_low = 0;
+        memcpy(&hash_low, md5Buffer + 8, 8);
+        
+         [_database executeUpdate:[[NSString alloc] initWithFormat:@"DELETE FROM %@ WHERE hash_high=? AND hash_low=?", _serverAssetsTableName], [[NSNumber alloc] initWithLongLong:hash_high], [[NSNumber alloc] initWithLongLong:hash_low]];
     } synchronous:false];
 }
 
@@ -20598,6 +20684,26 @@ readMessageContentsInteractive:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> 
         }]];
     } synchronous:false];
     return disposable;
+}
+
+- (SSignal *)passportLanguageMapSignal
+{
+    return [[self customPropertySignal:@"passportLangMap"] map:^id(NSData *data)
+    {
+        TGPassportLanguageMap *map = nil;
+        @try {
+            map = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+        } @catch (NSException *e) {
+            
+        }
+        return map;
+    }];
+}
+
+- (void)storePassportLanguageMap:(TGPassportLanguageMap *)map
+{
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:map];
+    [self setCustomProperty:@"passportLangMap" value:data];
 }
 
 - (void)resetStartupTime:(NSTimeInterval)value
